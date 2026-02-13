@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LogOut, Shield, Users, BookOpen } from "lucide-react";
+import { LogOut, Shield, Users, BookOpen, UserPlus, GraduationCap } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { AuthUser } from "@/lib/auth";
 import { ROLES } from "@/types/auth";
@@ -37,7 +37,7 @@ export default function DashboardNav({ user }: { user: AuthUser }) {
               >
                 Dashboard
               </Link>
-              {(user.role === "super_admin" || user.role === "admin") && (
+              {user.role === "super_admin" && (
                 <Link
                   href="/dashboard/users"
                   className="px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 font-medium flex items-center gap-2"
@@ -45,6 +45,24 @@ export default function DashboardNav({ user }: { user: AuthUser }) {
                   <Users className="h-4 w-4" />
                   Users
                 </Link>
+              )}
+              {(user.role === "super_admin" || user.role === "admin") && (
+                <>
+                  <Link
+                    href="/dashboard/students"
+                    className="px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 font-medium flex items-center gap-2"
+                  >
+                    <GraduationCap className="h-4 w-4" />
+                    Students
+                  </Link>
+                  <Link
+                    href="/dashboard/employees"
+                    className="px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 font-medium flex items-center gap-2"
+                  >
+                    <UserPlus className="h-4 w-4" />
+                    Employees
+                  </Link>
+                </>
               )}
               <Link
                 href="/dashboard/classes"
