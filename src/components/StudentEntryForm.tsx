@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function StudentEntryForm() {
   const router = useRouter();
@@ -53,75 +55,60 @@ export default function StudentEntryForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <p className="text-sm text-red-500 bg-red-50 p-2 rounded">{error}</p>
+        <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>
       )}
-      <div>
-        <label htmlFor="full_name" className="block text-sm font-medium text-foreground mb-1">
-          Full name *
-        </label>
-        <input
+      <div className="space-y-2">
+        <Label htmlFor="full_name">Full name *</Label>
+        <Input
           id="full_name"
           type="text"
           value={form.full_name}
           onChange={(e) => setForm((p) => ({ ...p, full_name: e.target.value }))}
-          className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           placeholder="e.g. John Doe"
         />
       </div>
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1">
-          Email
-        </label>
-        <input
+      <div className="space-y-2">
+        <Label htmlFor="email">Email</Label>
+        <Input
           id="email"
           type="email"
           value={form.email}
           onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-          className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           placeholder="student@example.com"
         />
       </div>
       <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="date_of_birth" className="block text-sm font-medium text-foreground mb-1">
-            Date of birth
-          </label>
-          <input
+        <div className="space-y-2">
+          <Label htmlFor="date_of_birth">Date of birth</Label>
+          <Input
             id="date_of_birth"
             type="date"
             value={form.date_of_birth}
             onChange={(e) => setForm((p) => ({ ...p, date_of_birth: e.target.value }))}
-            className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           />
         </div>
-        <div>
-          <label htmlFor="grade" className="block text-sm font-medium text-foreground mb-1">
-            Grade
-          </label>
-          <input
+        <div className="space-y-2">
+          <Label htmlFor="grade">Grade</Label>
+          <Input
             id="grade"
             type="text"
             value={form.grade}
             onChange={(e) => setForm((p) => ({ ...p, grade: e.target.value }))}
-            className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             placeholder="e.g. 10"
           />
         </div>
       </div>
-      <div>
-        <label htmlFor="section" className="block text-sm font-medium text-foreground mb-1">
-          Section
-        </label>
-        <input
+      <div className="space-y-2">
+        <Label htmlFor="section">Section</Label>
+        <Input
           id="section"
           type="text"
           value={form.section}
           onChange={(e) => setForm((p) => ({ ...p, section: e.target.value }))}
-          className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           placeholder="e.g. A"
         />
       </div>
-      <SubmitButton loading={loading} loadingLabel="Adding…">
+      <SubmitButton loading={loading} loadingLabel="Adding…" className="w-full">
         Add student
       </SubmitButton>
     </form>

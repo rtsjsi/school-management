@@ -6,6 +6,8 @@ import { createUser } from "@/app/dashboard/users/actions";
 import { ROLES } from "@/types/auth";
 import type { UserRole } from "@/types/auth";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function CreateUserForm() {
   const router = useRouter();
@@ -50,68 +52,54 @@ export default function CreateUserForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <p className="text-sm text-red-500 bg-red-50 p-2 rounded">{error}</p>
+        <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>
       )}
       {success && (
-        <p className="text-sm text-green-600 bg-green-50 p-2 rounded">
+        <p className="text-sm text-primary bg-primary/10 p-2 rounded-md">
           User created successfully.
         </p>
       )}
 
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1">
-          Email *
-        </label>
-        <input
+      <div className="space-y-2">
+        <Label htmlFor="email">Email *</Label>
+        <Input
           id="email"
           type="email"
           value={form.email}
           onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-          className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           placeholder="user@example.com"
           required
         />
       </div>
-
-      <div>
-        <label htmlFor="password" className="block text-sm font-medium text-foreground mb-1">
-          Password * (min 6 characters)
-        </label>
-        <input
+      <div className="space-y-2">
+        <Label htmlFor="password">Password * (min 6 characters)</Label>
+        <Input
           id="password"
           type="password"
           value={form.password}
           onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
-          className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           placeholder="••••••••"
           required
           minLength={6}
         />
       </div>
-
-      <div>
-        <label htmlFor="full_name" className="block text-sm font-medium text-foreground mb-1">
-          Full name
-        </label>
-        <input
+      <div className="space-y-2">
+        <Label htmlFor="full_name">Full name</Label>
+        <Input
           id="full_name"
           type="text"
           value={form.full_name}
           onChange={(e) => setForm((p) => ({ ...p, full_name: e.target.value }))}
-          className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           placeholder="Jane Doe"
         />
       </div>
-
-      <div>
-        <label htmlFor="role" className="block text-sm font-medium text-foreground mb-1">
-          Role *
-        </label>
+      <div className="space-y-2">
+        <Label htmlFor="role">Role *</Label>
         <select
           id="role"
           value={form.role}
           onChange={(e) => setForm((p) => ({ ...p, role: e.target.value as UserRole }))}
-          className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         >
           {(Object.keys(ROLES) as UserRole[]).map((r) => (
             <option key={r} value={r}>
@@ -120,8 +108,7 @@ export default function CreateUserForm() {
           ))}
         </select>
       </div>
-
-      <SubmitButton loading={loading} loadingLabel="Creating…">
+      <SubmitButton loading={loading} loadingLabel="Creating…" className="w-full">
         Create user
       </SubmitButton>
     </form>
