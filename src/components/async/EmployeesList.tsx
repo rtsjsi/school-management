@@ -1,6 +1,7 @@
 import { getUser, isAdminOrAbove } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import EmployeeEntryForm from "@/components/EmployeeEntryForm";
+import { EmployeeEditDialog } from "@/components/EmployeeEditDialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -50,6 +51,7 @@ export async function EmployeesList() {
                     <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>Department</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -59,6 +61,9 @@ export async function EmployeesList() {
                       <TableCell className="text-muted-foreground">{e.email ?? "—"}</TableCell>
                       <TableCell>{e.role}</TableCell>
                       <TableCell>{e.department ?? "—"}</TableCell>
+                      <TableCell className="text-right">
+                        <EmployeeEditDialog employee={e} />
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

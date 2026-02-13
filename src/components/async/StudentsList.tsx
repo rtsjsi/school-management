@@ -1,6 +1,7 @@
 import { getUser, isAdminOrAbove } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import StudentEntryForm from "@/components/StudentEntryForm";
+import { StudentEditDialog } from "@/components/StudentEditDialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -75,6 +76,7 @@ export async function StudentsList() {
                       <TableHead>Roll #</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Admission</TableHead>
+                      {canEdit && <TableHead className="text-right">Actions</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -102,6 +104,11 @@ export async function StudentsList() {
                               ? new Date(studentData.admission_date).toLocaleDateString()
                               : "—"}
                           </TableCell>
+                          {canEdit && (
+                            <TableCell className="text-right">
+                              <StudentEditDialog student={s} />
+                            </TableCell>
+                          )}
                         </TableRow>
                       );
                     })}
