@@ -14,15 +14,15 @@ export default async function StudentsPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
           <GraduationCap className="h-7 w-7 text-primary" />
-          Students
+          Student Master
         </h1>
         <p className="text-muted-foreground mt-1">
-          Add and manage students.
+          Manage student records, personal details, and academic information.
         </p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Suspense fallback={<TableSkeleton rows={3} columns={4} />}>
+        <Suspense fallback={<TableSkeleton rows={5} columns={8} />}>
           <StudentsList />
         </Suspense>
       </div>

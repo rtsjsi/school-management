@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 
 export async function StudentsList() {
   const user = await getUser();
@@ -18,11 +19,23 @@ export async function StudentsList() {
   const supabase = await createClient();
   const { data: students } = await supabase
     .from("students")
-    .select("id, full_name, email, grade, section, date_of_birth, created_at")
+    .select("id, student_id, full_name, email, phone_number, grade, section, roll_number, status, admission_date, date_of_birth, created_at")
     .order("created_at", { ascending: false })
     .limit(10);
 
   const canEdit = isAdminOrAbove(user);
+
+  // Status badge colors
+  const getStatusBadge = (status: string) => {
+    const statusMap: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
+      active: "default",
+      inactive: "secondary",
+      transferred: "outline",
+      graduated: "secondary",
+      suspended: "destructive",
+    };
+    return statusMap[status] || "default";
+  };
 
   return (
     <>
@@ -30,7 +43,7 @@ export async function StudentsList() {
         <Card>
           <CardHeader>
             <CardTitle>Add student</CardTitle>
-            <CardDescription>Create a new student record.</CardDescription>
+            <CardDescription>Create a new student record with complete information.</CardDescription>
           </CardHeader>
           <CardContent>
             <StudentEntryForm />
@@ -42,38 +55,60 @@ export async function StudentsList() {
         <CardHeader>
           <CardTitle>{canEdit ? "Students" : "Student list"}</CardTitle>
           <CardDescription>
-            {canEdit ? "Latest students. Add new via the form." : "Read-only view."}
+            {canEdit 
+              ? "Latest students. Add new via the form." 
+              : "Read-only view of student records."}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {students && students.length > 0 ? (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Grade</TableHead>
-                    <TableHead>Section</TableHead>
-                    <TableHead>DOB</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {students.map((s) => (
-                    <TableRow key={s.id}>
-                      <TableCell className="font-medium">{s.full_name}</TableCell>
-                      <TableCell className="text-muted-foreground">{s.email ?? "—"}</TableCell>
-                      <TableCell>{s.grade ?? "—"}</TableCell>
-                      <TableCell>{s.section ?? "—"}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {s.date_of_birth ? new Date(s.date_of_birth).toLocaleDateString() : "—"}
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Student ID</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Grade</TableHead>
+                      <TableHead>Section</TableHead>
+                      <TableHead>Roll #</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Admission</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {students.map((s) => (
+                      <TableRow key={s.id}>
+                        <TableCell className="font-mono text-xs text-muted-foreground">
+                          {s.student_id || "—"}
+                        </TableCell>
+                        <TableCell className="font-medium">{s.full_name}</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">{s.email ?? "—"}</TableCell>
+                        <TableCell>{s.grade ?? "—"}</TableCell>
+                        <TableCell>{s.section ?? "—"}</TableCell>
+                        <TableCell className="text-center">
+                          {s.roll_number ?? "—"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={getStatusBadge((s as any).status || "active")}>
+                            {(s as any).status || "active"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {(s as any).admission_date 
+                            ? new Date((s as any).admission_date).toLocaleDateString()
+                            : "—"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
               {students.length > 0 && (
-                <p className="text-xs text-muted-foreground mt-4">Showing latest 10 students</p>
+                <p className="text-xs text-muted-foreground mt-4">
+                  Showing latest {students.length} students
+                </p>
               )}
             </>
           ) : (
