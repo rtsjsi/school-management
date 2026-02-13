@@ -6,40 +6,49 @@
   .text-balance {
     text-wrap: balance;
   }
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+  .shadow-card-hover {
+    box-shadow: var(--shadow-card-hover);
+  }
 }
 
 
 
 @layer base {
   :root {
-    /* #1F4E78 blue theme */
+    /* #1F4E78 blue theme – refined for premium feel */
     --primary: 210 59% 30%;
     --primary-foreground: 0 0% 100%;
-    --background: 210 20% 98%;
-    --foreground: 210 20% 12%;
+    --background: 210 25% 98%;
+    --foreground: 210 25% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 210 20% 12%;
+    --card-foreground: 210 25% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 210 20% 12%;
-    --secondary: 210 20% 94%;
-    --secondary-foreground: 210 20% 12%;
-    --muted: 210 20% 94%;
-    --muted-foreground: 210 15% 45%;
-    --accent: 210 40% 94%;
+    --popover-foreground: 210 25% 11%;
+    --secondary: 210 20% 95%;
+    --secondary-foreground: 210 25% 11%;
+    --muted: 210 18% 95%;
+    --muted-foreground: 210 12% 42%;
+    --accent: 210 35% 94%;
     --accent-foreground: 210 59% 30%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 210 20% 90%;
-    --input: 210 20% 90%;
+    --border: 210 18% 91%;
+    --input: 210 18% 91%;
     --ring: 210 59% 30%;
     --chart-1: 210 59% 45%;
     --chart-2: 210 50% 55%;
     --chart-3: 210 45% 65%;
     --chart-4: 210 40% 75%;
     --chart-5: 210 35% 85%;
-    --radius: 0.5rem;
-    --sidebar: 210 59% 22%;
+    --radius: 0.625rem;
+    --radius-card: 0.75rem;
+    --sidebar: 210 55% 18%;
     --sidebar-foreground: 0 0% 98%;
+    --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 6px 12px -2px rgb(0 0 0 / 0.05);
+    --shadow-card-hover: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 12px 24px -4px rgb(0 0 0 / 0.08);
   }
   .dark {
     --background: 210 25% 8%;

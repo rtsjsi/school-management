@@ -72,30 +72,33 @@ export default async function DashboardPage() {
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
           Welcome, {user.fullName ?? user.email ?? "User"}
         </h1>
-        <p className="text-muted-foreground mt-1">
-          Signed in as <Badge variant="secondary">{roleLabel}</Badge>
+        <p className="text-muted-foreground mt-1.5">
+          Signed in as <Badge variant="secondary" className="font-medium">{roleLabel}</Badge>
         </p>
       </div>
 
       {/* Stat cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {statCards.map((stat) => {
           const Icon = stat.icon;
           const card = (
-            <Card key={stat.title} className="border-border/50">
+            <Card
+              key={stat.title}
+              className={stat.href ? "hover:shadow-card-hover hover:border-primary/20 transition-all duration-200" : ""}
+            >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   {stat.title}
                 </CardTitle>
-                <div className="rounded-md bg-primary/10 p-2">
+                <div className="rounded-lg bg-primary/10 p-2.5">
                   <Icon className="h-4 w-4 text-primary" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-foreground">{stat.value}</div>
+                <div className="text-2xl font-bold tracking-tight text-foreground">{stat.value}</div>
                 <p className="text-xs text-muted-foreground mt-1">{stat.description}</p>
                 {stat.href && (
-                  <Button variant="link" className="mt-2 h-auto p-0 text-primary" asChild>
+                  <Button variant="link" className="mt-2 h-auto p-0 text-primary font-medium" asChild>
                     <Link href={stat.href}>
                       View <ArrowRight className="ml-1 h-3 w-3" />
                     </Link>
@@ -104,7 +107,7 @@ export default async function DashboardPage() {
               </CardContent>
             </Card>
           );
-          return stat.href ? <Link key={stat.title} href={stat.href} className="block">{card}</Link> : <div key={stat.title}>{card}</div>;
+          return stat.href ? <Link key={stat.title} href={stat.href} className="block group">{card}</Link> : <div key={stat.title}>{card}</div>;
         })}
       </div>
 
@@ -112,7 +115,7 @@ export default async function DashboardPage() {
       {isAdminOrAbove(user) ? (
         <Card>
           <CardHeader>
-            <CardTitle>Recent students</CardTitle>
+            <CardTitle className="text-base">Recent students</CardTitle>
             <CardDescription>Latest student entries</CardDescription>
           </CardHeader>
           <CardContent>
@@ -155,7 +158,7 @@ export default async function DashboardPage() {
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Role permissions</CardTitle>
+            <CardTitle className="text-base">Role permissions</CardTitle>
             <CardDescription>Your access level</CardDescription>
           </CardHeader>
           <CardContent>
@@ -169,9 +172,9 @@ export default async function DashboardPage() {
       )}
 
       {isSuperAdmin(user) && (
-        <Card className="border-primary/20 bg-primary/5">
+        <Card className="border-primary/25 bg-primary/5 shadow-card">
           <CardHeader>
-            <CardTitle className="text-primary">Super Admin</CardTitle>
+            <CardTitle className="text-base text-primary">Super Admin</CardTitle>
             <CardDescription>You have full access. Use the Users page to assign roles.</CardDescription>
           </CardHeader>
         </Card>

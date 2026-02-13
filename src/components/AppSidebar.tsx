@@ -59,13 +59,16 @@ export function AppSidebar({ user }: { user: AuthUser }) {
   );
 
   const sidebar = (
-    <div className="flex h-full w-64 flex-col bg-sidebar text-sidebar-foreground">
-      <div className="flex h-14 items-center gap-2 border-b border-sidebar-foreground/10 px-4">
-        <Link href="/dashboard" className="font-semibold text-lg tracking-tight">
+    <div className="flex h-full w-64 flex-col bg-sidebar text-sidebar-foreground shadow-xl">
+      <div className="flex h-16 items-center gap-2 border-b border-sidebar-foreground/10 px-5">
+        <Link
+          href="/dashboard"
+          className="font-semibold text-lg tracking-tight text-sidebar-foreground hover:opacity-90 transition-opacity"
+        >
           School
         </Link>
       </div>
-      <nav className="flex-1 space-y-1 p-3">
+      <nav className="flex-1 space-y-0.5 p-3 overflow-y-auto">
         {filteredNav.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
@@ -73,13 +76,13 @@ export function AppSidebar({ user }: { user: AuthUser }) {
             <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}>
               <span
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 border-l-2",
                   isActive
-                    ? "bg-sidebar-foreground/15 text-sidebar-foreground"
-                    : "text-sidebar-foreground/80 hover:bg-sidebar-foreground/10 hover:text-sidebar-foreground"
+                    ? "bg-sidebar-foreground/15 text-sidebar-foreground border-sidebar-foreground/50"
+                    : "border-transparent text-sidebar-foreground/85 hover:bg-sidebar-foreground/10 hover:text-sidebar-foreground"
                 )}
               >
-                <Icon className="h-4 w-4 shrink-0" />
+                <Icon className="h-4 w-4 shrink-0 opacity-90" />
                 {item.label}
               </span>
             </Link>
@@ -88,14 +91,14 @@ export function AppSidebar({ user }: { user: AuthUser }) {
       </nav>
       <Separator className="bg-sidebar-foreground/10" />
       <div className="p-3">
-        <div className="rounded-lg bg-sidebar-foreground/5 px-3 py-2 text-xs text-sidebar-foreground/80">
-          <p className="font-medium text-sidebar-foreground">{roleLabel}</p>
-          <p className="truncate mt-0.5">{user.email ?? user.fullName ?? "User"}</p>
+        <div className="rounded-xl bg-sidebar-foreground/5 border border-sidebar-foreground/10 px-3 py-2.5 text-xs text-sidebar-foreground/90">
+          <p className="font-semibold text-sidebar-foreground">{roleLabel}</p>
+          <p className="truncate mt-0.5 text-sidebar-foreground/80">{user.email ?? user.fullName ?? "User"}</p>
         </div>
         <Button
           variant="ghost"
           size="sm"
-          className="mt-2 w-full justify-start text-sidebar-foreground/90 hover:bg-sidebar-foreground/10 hover:text-sidebar-foreground"
+          className="mt-2 w-full justify-start text-sidebar-foreground/90 hover:bg-sidebar-foreground/10 hover:text-sidebar-foreground rounded-lg"
           onClick={handleSignOut}
           disabled={signingOut}
         >
@@ -113,23 +116,24 @@ export function AppSidebar({ user }: { user: AuthUser }) {
   return (
     <>
       {/* Mobile header */}
-      <div className="sticky top-0 z-40 flex h-14 items-center gap-2 border-b bg-background px-4 lg:hidden">
+      <div className="sticky top-0 z-40 flex h-14 items-center gap-2 border-b border-border/80 bg-card shadow-card px-4 lg:hidden">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setMobileOpen((o) => !o)}
           aria-label="Toggle menu"
+          className="rounded-lg"
         >
           <Menu className="h-5 w-5" />
         </Button>
-        <Link href="/dashboard" className="font-semibold">
+        <Link href="/dashboard" className="font-semibold text-foreground">
           School Management
         </Link>
       </div>
       {/* Mobile overlay */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden transition-opacity"
           onClick={() => setMobileOpen(false)}
           aria-hidden
         />
