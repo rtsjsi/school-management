@@ -78,30 +78,33 @@ export async function StudentsList() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {students.map((s) => (
-                      <TableRow key={s.id}>
-                        <TableCell className="font-mono text-xs text-muted-foreground">
-                          {s.student_id || "—"}
-                        </TableCell>
-                        <TableCell className="font-medium">{s.full_name}</TableCell>
-                        <TableCell className="text-muted-foreground text-sm">{s.email ?? "—"}</TableCell>
-                        <TableCell>{s.grade ?? "—"}</TableCell>
-                        <TableCell>{s.section ?? "—"}</TableCell>
-                        <TableCell className="text-center">
-                          {s.roll_number ?? "—"}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={getStatusBadge((s as any).status || "active")}>
-                            {(s as any).status || "active"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {(s as any).admission_date 
-                            ? new Date((s as any).admission_date).toLocaleDateString()
-                            : "—"}
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {students.map((s) => {
+                      const studentData = s as typeof s & { status?: string; admission_date?: string };
+                      return (
+                        <TableRow key={s.id}>
+                          <TableCell className="font-mono text-xs text-muted-foreground">
+                            {s.student_id || "—"}
+                          </TableCell>
+                          <TableCell className="font-medium">{s.full_name}</TableCell>
+                          <TableCell className="text-muted-foreground text-sm">{s.email ?? "—"}</TableCell>
+                          <TableCell>{s.grade ?? "—"}</TableCell>
+                          <TableCell>{s.section ?? "—"}</TableCell>
+                          <TableCell className="text-center">
+                            {s.roll_number ?? "—"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={getStatusBadge(studentData.status || "active")}>
+                              {studentData.status || "active"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {studentData.admission_date 
+                              ? new Date(studentData.admission_date).toLocaleDateString()
+                              : "—"}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>

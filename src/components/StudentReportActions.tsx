@@ -18,7 +18,7 @@ interface Student {
   date_of_birth?: string;
   parent_name?: string;
   parent_contact?: string;
-  [key: string]: any;
+  [key: string]: string | number | boolean | null | undefined;
 }
 
 interface StudentReportActionsProps {
