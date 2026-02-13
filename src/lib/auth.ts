@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/types/auth";
 
@@ -16,7 +17,9 @@ export type AuthUser = {
   fullName: string | null;
 };
 
-export async function getUser(): Promise<AuthUser | null> {
+// Cache getUser per request so multiple calls don't query Supabase multiple times
+// This deduplicates calls on the same page load
+export const getUser = cache(async (): Promise<AuthUser | null> => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -44,7 +47,7 @@ export async function getUser(): Promise<AuthUser | null> {
     role,
     fullName,
   };
-}
+});
 
 export async function requireUser(): Promise<AuthUser> {
   const user = await getUser();
