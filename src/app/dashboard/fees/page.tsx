@@ -1,31 +1,82 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { getUser } from "@/lib/auth";
+import { getUser, isAdminOrAbove } from "@/lib/auth";
 import { DollarSign } from "lucide-react";
-import { FeesList } from "@/components/async/FeesList";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TableSkeleton } from "@/components/skeletons/TableSkeleton";
+import FeeStructureForm from "@/components/FeeStructureForm";
+import { FeeStructureList } from "@/components/FeeStructureList";
+import FeeCollectionForm from "@/components/FeeCollectionForm";
+import { FeeCollectionList } from "@/components/FeeCollectionList";
+import { OutstandingFeesList } from "@/components/OutstandingFeesList";
+import FeeDueForm from "@/components/FeeDueForm";
+import FeeReports from "@/components/FeeReports";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function FeesPage() {
   const user = await getUser();
   if (!user) redirect("/login");
+
+  const supabase = await createClient();
+  const { data: students } = await supabase
+    .from("students")
+    .select("id, full_name, grade")
+    .order("full_name");
+
+  const canEdit = isAdminOrAbove(user);
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
           <DollarSign className="h-7 w-7 text-primary" />
-          Fees management
+          Fees Management
         </h1>
         <p className="text-muted-foreground mt-1">
-          Manage student fees and payments.
+          Fee structures, collection, outstanding tracking, and reports.
         </p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Suspense fallback={<TableSkeleton rows={3} columns={4} />}>
-          <FeesList />
-        </Suspense>
-      </div>
+      <Tabs defaultValue="structure" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="structure">Fee Structure</TabsTrigger>
+          <TabsTrigger value="collection">Fee Collection</TabsTrigger>
+          <TabsTrigger value="outstanding">Outstanding</TabsTrigger>
+          <TabsTrigger value="reports">Reports</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="structure" className="space-y-6">
+          {canEdit && <FeeStructureForm />}
+          <Suspense fallback={<TableSkeleton rows={3} columns={4} />}>
+            <FeeStructureList />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="collection" className="space-y-6">
+          {canEdit && students && students.length > 0 && (
+            <FeeCollectionForm students={students} />
+          )}
+          {canEdit && students && students.length === 0 && (
+            <p className="text-sm text-muted-foreground">Add students first to collect fees.</p>
+          )}
+          <Suspense fallback={<TableSkeleton rows={5} columns={6} />}>
+            <FeeCollectionList />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="outstanding" className="space-y-6">
+          {canEdit && students && students.length > 0 && (
+            <FeeDueForm students={students} />
+          )}
+          <Suspense fallback={<TableSkeleton rows={5} columns={6} />}>
+            <OutstandingFeesList />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="reports" className="space-y-6">
+          <FeeReports />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
