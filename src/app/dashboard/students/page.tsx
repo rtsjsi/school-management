@@ -7,14 +7,15 @@ import StudentEntryForm from "@/components/StudentEntryForm";
 export default async function StudentsPage() {
   const user = await getUser();
   if (!user) redirect("/login");
-  if (!isAdminOrAbove(user)) redirect("/dashboard");
 
   const supabase = await createClient();
   const { data: students } = await supabase
     .from("students")
-    .select("id, full_name, email, grade, section, created_at")
+    .select("id, full_name, email, grade, section, date_of_birth, created_at")
     .order("created_at", { ascending: false })
-    .limit(50);
+    .limit(100);
+
+  const canEdit = isAdminOrAbove(user);
 
   return (
     <div>
@@ -23,17 +24,23 @@ export default async function StudentsPage() {
         Students
       </h1>
       <p className="text-muted-foreground mt-1">
-        Add and manage students (Admin & Super Admin only).
+        {canEdit
+          ? "Add and manage students (Admin & Super Admin)."
+          : "View student list (read-only)."}
       </p>
 
-      <div className="mt-8 grid lg:grid-cols-2 gap-8">
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Add student</h2>
-          <StudentEntryForm />
-        </div>
+      <div className={`mt-8 grid gap-8 ${canEdit ? "lg:grid-cols-2" : ""}`}>
+        {canEdit && (
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Add student</h2>
+            <StudentEntryForm />
+          </div>
+        )}
 
         <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Recent students</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-4">
+            {canEdit ? "Recent students" : "Students"}
+          </h2>
           {students && students.length > 0 ? (
             <ul className="divide-y divide-gray-200">
               {students.map((s) => (
@@ -44,12 +51,17 @@ export default async function StudentsPage() {
                     {(s.grade || s.section) && (
                       <span> · {[s.grade, s.section].filter(Boolean).join(" ")}</span>
                     )}
+                    {s.date_of_birth && (
+                      <span> · DOB: {new Date(s.date_of_birth).toLocaleDateString()}</span>
+                    )}
                   </div>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-muted-foreground text-sm">No students yet. Add one using the form.</p>
+            <p className="text-muted-foreground text-sm">
+              {canEdit ? "No students yet. Add one using the form." : "No students yet."}
+            </p>
           )}
         </div>
       </div>

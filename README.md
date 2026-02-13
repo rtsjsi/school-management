@@ -35,7 +35,10 @@ Use the **same Supabase project** for both so data and auth are shared.
    cp .env.example .env.local
    ```
 
-   In [Supabase](https://supabase.com) → Project Settings → API: use **Project URL** and **anon public** key.
+   In [Supabase](https://supabase.com) → Project Settings → API set:
+   - **Project URL** → `NEXT_PUBLIC_SUPABASE_URL`
+   - **anon public** key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - **service_role** key → `SUPABASE_SERVICE_ROLE_KEY` (required for correct role-based access; server-only, never expose to client)
 
 3. **Database & roles** – apply the migration using either **Option A (Dashboard)** or **Option B (CLI)** below.  
    After the migration, new users get role `teacher` by default. To make your first user a Super Admin, run in SQL Editor:  

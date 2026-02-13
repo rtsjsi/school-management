@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/types/auth";
 
 const VALID_ROLES: UserRole[] = ["super_admin", "admin", "teacher"];
@@ -24,14 +24,15 @@ export async function getUser(): Promise<AuthUser | null> {
 
   if (!user) return null;
 
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("role, full_name")
-    .eq("id", user.id)
-    .maybeSingle();
+  // Prefer admin client (bypasses RLS) so role is always read correctly
+  const admin = createAdminClient();
+  const profileSource = admin
+    ? await admin.from("profiles").select("role, full_name").eq("id", user.id).maybeSingle()
+    : await supabase.from("profiles").select("role, full_name").eq("id", user.id).maybeSingle();
 
-  if (profileError) {
-    console.error("[auth] profiles fetch error:", profileError.message);
+  const profile = profileSource.data;
+  if (profileSource.error) {
+    console.error("[auth] profiles fetch error:", profileSource.error.message);
   }
 
   const role = normalizeRole(profile?.role);
