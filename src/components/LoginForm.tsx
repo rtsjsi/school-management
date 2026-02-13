@@ -150,20 +150,6 @@ export default function LoginForm() {
         </button>
       </form>
 
-      {/* Divider */}
-      <div className="flex items-center gap-4 my-6">
-        <div className="flex-1 h-px bg-gray-200" />
-        <span className="text-sm text-muted-foreground">or</span>
-        <div className="flex-1 h-px bg-gray-200" />
-      </div>
-
-      {/* Sign Up Link */}
-      <p className="text-center text-sm text-muted-foreground">
-        Don't have an account?{" "}
-        <Link href="/signup" className="text-blue-600 hover:text-blue-700 font-semibold transition-colors">
-          Sign up
-        </Link>
-      </p>
     </div>
   );
 }
