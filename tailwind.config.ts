@@ -6,6 +6,8 @@ const config: Config = {
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    // Explicitly include auth route group (parentheses can break globs on some systems)
+    "./src/app/(auth)/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
   	extend: {

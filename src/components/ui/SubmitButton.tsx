@@ -20,7 +20,7 @@ export function SubmitButton({
     <button
       type="submit"
       disabled={disabled || loading}
-      className={`w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 px-4 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${buttonBase} ${className}`}
+      className={`bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${buttonBase} ${className}`}
       {...props}
     >
       {loading ? (
