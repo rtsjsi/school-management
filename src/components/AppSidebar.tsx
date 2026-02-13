@@ -10,6 +10,9 @@ import {
   GraduationCap,
   UserPlus,
   BookOpen,
+  DollarSign,
+  FileQuestion,
+  Receipt,
   LogOut,
   Loader2,
   Menu,
@@ -27,6 +30,9 @@ const navItems: { href: string; label: string; icon: React.ComponentType<{ class
   { href: "/dashboard/students", label: "Students", icon: GraduationCap },
   { href: "/dashboard/employees", label: "Employees", icon: UserPlus, roles: ["super_admin", "admin"] },
   { href: "/dashboard/classes", label: "Classes", icon: BookOpen },
+  { href: "/dashboard/fees", label: "Fees management", icon: DollarSign },
+  { href: "/dashboard/exams", label: "Exam management", icon: FileQuestion },
+  { href: "/dashboard/expenses", label: "Expense management", icon: Receipt },
 ];
 
 export function AppSidebar({ user }: { user: AuthUser }) {

@@ -3,7 +3,6 @@ import { getUser, isSuperAdmin, isAdminOrAbove } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { ROLES } from "@/types/auth";
 import {
-  Shield,
   BookOpen,
   GraduationCap,
   UserPlus,
@@ -40,13 +39,6 @@ export default async function DashboardPage() {
   const roleLabel = ROLES[user.role as keyof typeof ROLES] ?? user.role;
 
   const statCards = [
-    {
-      title: "Your role",
-      value: roleLabel,
-      description: "Role-based access",
-      icon: Shield,
-      href: null,
-    },
     ...(isAdminOrAbove(user)
       ? [{
           title: "Total students",
