@@ -1,15 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 
 export default function LoginForm() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; password?: string; submit?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
 
   const validateForm = () => {
@@ -37,11 +40,23 @@ export default function LoginForm() {
     if (!validateForm()) return;
 
     setIsLoading(true);
+    setErrors((prev) => ({ ...prev, submit: undefined }));
+
     try {
-      // TODO: Integrate with Supabase authentication
-      // For now, just simulate a delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      console.log("Login attempt:", { email, password, rememberMe });
+      const supabase = createClient();
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        setErrors((prev) => ({ ...prev, submit: error.message }));
+        return;
+      }
+
+      if (data.user) {
+        router.push("/dashboard");
+        router.refresh();
+      }
+    } catch {
+      setErrors((prev) => ({ ...prev, submit: "Something went wrong. Please try again." }));
     } finally {
       setIsLoading(false);
     }
@@ -133,6 +148,11 @@ export default function LoginForm() {
           </Link>
         </div>
 
+        {/* Submit error */}
+        {errors.submit && (
+          <p className="text-sm text-red-500 bg-red-50 p-3 rounded-lg">{errors.submit}</p>
+        )}
+
         {/* Submit Button */}
         <button
           type="submit"
@@ -149,7 +169,6 @@ export default function LoginForm() {
           )}
         </button>
       </form>
-
     </div>
   );
 }
