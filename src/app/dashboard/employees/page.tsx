@@ -2,7 +2,9 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getUser, isAdminOrAbove } from "@/lib/auth";
 import { UserPlus } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmployeesList } from "@/components/async/EmployeesList";
+import { EmployeeDepartmentReport } from "@/components/EmployeeDepartmentReport";
 import { TableSkeleton } from "@/components/skeletons/TableSkeleton";
 
 export default async function EmployeesPage() {
@@ -15,18 +17,29 @@ export default async function EmployeesPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
           <UserPlus className="h-7 w-7 text-primary" />
-          Employees
+          Employee Master
         </h1>
         <p className="text-muted-foreground mt-1">
-          Add and manage employees.
+          Employee directory, department reports, and management.
         </p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Suspense fallback={<TableSkeleton rows={3} columns={3} />}>
-          <EmployeesList />
-        </Suspense>
-      </div>
+      <Tabs defaultValue="directory" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="directory">Directory</TabsTrigger>
+          <TabsTrigger value="department">Department Report</TabsTrigger>
+        </TabsList>
+        <TabsContent value="directory" className="space-y-6">
+          <Suspense fallback={<TableSkeleton rows={5} columns={6} />}>
+            <EmployeesList />
+          </Suspense>
+        </TabsContent>
+        <TabsContent value="department" className="space-y-6">
+          <Suspense fallback={<TableSkeleton rows={5} columns={4} />}>
+            <EmployeeDepartmentReport />
+          </Suspense>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

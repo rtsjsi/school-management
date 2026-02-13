@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 
 export async function EmployeesList() {
   const user = await getUser();
@@ -20,57 +21,74 @@ export async function EmployeesList() {
   const supabase = await createClient();
   const { data: employees } = await supabase
     .from("employees")
-    .select("id, full_name, email, role, department, created_at")
+    .select("id, employee_id, full_name, email, phone_number, role, department, designation, employee_type, joining_date, status, shifts(name)")
     .order("created_at", { ascending: false })
-    .limit(10);
+    .limit(50);
+
+  const { data: shifts } = await supabase
+    .from("shifts")
+    .select("id, name")
+    .order("name");
+
+  const canEdit = isAdminOrAbove(user);
+  const shiftList = shifts ?? [];
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle>Add employee</CardTitle>
-          <CardDescription>Create a new employee record.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <EmployeeEntryForm />
-        </CardContent>
-      </Card>
+      {canEdit && (
+        <EmployeeEntryForm shifts={shiftList} />
+      )}
 
       <Card>
         <CardHeader>
-          <CardTitle>Employees</CardTitle>
-          <CardDescription>Latest employees. Add new via the form.</CardDescription>
+          <CardTitle>Employee Directory</CardTitle>
+          <CardDescription>All employees with key details.</CardDescription>
         </CardHeader>
         <CardContent>
           {employees && employees.length > 0 ? (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {employees.map((e) => (
-                    <TableRow key={e.id}>
-                      <TableCell className="font-medium">{e.full_name}</TableCell>
-                      <TableCell className="text-muted-foreground">{e.email ?? "—"}</TableCell>
-                      <TableCell>{e.role}</TableCell>
-                      <TableCell>{e.department ?? "—"}</TableCell>
-                      <TableCell className="text-right">
-                        <EmployeeEditDialog employee={e} />
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Emp ID</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Department</TableHead>
+                      <TableHead>Designation</TableHead>
+                      <TableHead>Shift</TableHead>
+                      <TableHead>Status</TableHead>
+                      {canEdit && <TableHead className="text-right">Actions</TableHead>}
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              {employees.length > 0 && (
-                <p className="text-xs text-muted-foreground mt-4">Showing latest 10 employees</p>
-              )}
+                  </TableHeader>
+                  <TableBody>
+                    {employees.map((e) => {
+                      const shiftData = e.shifts as { name?: string } | { name?: string }[] | null;
+                      const shiftName = Array.isArray(shiftData) ? shiftData[0]?.name : shiftData?.name;
+                      return (
+                        <TableRow key={e.id}>
+                          <TableCell className="font-mono text-xs">{e.employee_id ?? "—"}</TableCell>
+                          <TableCell className="font-medium">{e.full_name}</TableCell>
+                          <TableCell className="text-muted-foreground text-sm">{e.email ?? "—"}</TableCell>
+                          <TableCell>{e.department ?? "—"}</TableCell>
+                          <TableCell>{e.designation ?? "—"}</TableCell>
+                          <TableCell>{shiftName ?? "—"}</TableCell>
+                          <TableCell>
+                            <Badge variant={(e.status as string) === "active" ? "default" : "secondary"}>
+                              {e.status ?? "active"}
+                            </Badge>
+                          </TableCell>
+                          {canEdit && (
+                            <TableCell className="text-right">
+                              <EmployeeEditDialog employee={e} shifts={shiftList} />
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             </>
           ) : (
             <p className="text-sm text-muted-foreground py-8 text-center">

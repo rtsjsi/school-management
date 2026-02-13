@@ -16,6 +16,7 @@ import {
   LogOut,
   Loader2,
   Menu,
+  Clock,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { AuthUser } from "@/lib/auth";
@@ -33,6 +34,7 @@ const navItems: { href: string; label: string; icon: React.ComponentType<{ class
   { href: "/dashboard/fees", label: "Fees management", icon: DollarSign },
   { href: "/dashboard/exams", label: "Exam management", icon: FileQuestion },
   { href: "/dashboard/expenses", label: "Expense management", icon: Receipt },
+  { href: "/dashboard/attendance", label: "Shift & Attendance", icon: Clock, roles: ["super_admin", "admin"] },
 ];
 
 export function AppSidebar({ user }: { user: AuthUser }) {

@@ -1,0 +1,81 @@
+import { Suspense } from "react";
+import { redirect } from "next/navigation";
+import { getUser, isAdminOrAbove } from "@/lib/auth";
+import { Clock } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ShiftForm from "@/components/ShiftForm";
+import HolidayForm from "@/components/HolidayForm";
+import AttendanceManualForm from "@/components/AttendanceManualForm";
+import AttendancePunchForm from "@/components/AttendancePunchForm";
+import { createClient } from "@/lib/supabase/server";
+import { ShiftList } from "@/components/ShiftList";
+import { HolidayList } from "@/components/HolidayList";
+import { AttendanceDailyRegister } from "@/components/AttendanceDailyRegister";
+import AttendanceReports from "@/components/AttendanceReports";
+import { TableSkeleton } from "@/components/skeletons/TableSkeleton";
+
+export default async function AttendancePage() {
+  const user = await getUser();
+  if (!user) redirect("/login");
+  if (!isAdminOrAbove(user)) redirect("/dashboard");
+
+  const supabase = await createClient();
+  const { data: employees } = await supabase
+    .from("employees")
+    .select("id, full_name")
+    .eq("status", "active")
+    .order("full_name");
+
+  const empList = employees ?? [];
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+          <Clock className="h-7 w-7 text-primary" />
+          Shift & Attendance
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Shifts, holidays, manual attendance, punches, and reports.
+        </p>
+      </div>
+
+      <Tabs defaultValue="shifts" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="shifts">Shifts</TabsTrigger>
+          <TabsTrigger value="holidays">Holidays</TabsTrigger>
+          <TabsTrigger value="attendance">Attendance</TabsTrigger>
+          <TabsTrigger value="reports">Reports</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="shifts" className="space-y-6">
+          <ShiftForm />
+          <Suspense fallback={<TableSkeleton rows={3} columns={4} />}>
+            <ShiftList />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="holidays" className="space-y-6">
+          <HolidayForm />
+          <Suspense fallback={<TableSkeleton rows={5} columns={3} />}>
+            <HolidayList />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="attendance" className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-2">
+            <AttendancePunchForm employees={empList} />
+            <AttendanceManualForm employees={empList} />
+          </div>
+          <Suspense fallback={<TableSkeleton rows={5} columns={6} />}>
+            <AttendanceDailyRegister />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="reports" className="space-y-6">
+          <AttendanceReports />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
