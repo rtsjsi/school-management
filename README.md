@@ -2,6 +2,18 @@
 
 School management app built with **Next.js 14** (React), **Supabase** (database & auth), and deployed on **Vercel**.
 
+## Running the app
+
+The same codebase runs **locally** and on **Vercel**; only environment variables change.
+
+| Where    | How to run |
+|----------|------------|
+| **Local** | `npm install` then `npm run dev` → [http://localhost:3000](http://localhost:3000). Use `.env.local` for `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`. |
+| **Local (production build)** | `npm run build` then `npm run start` → same as Vercel runtime. |
+| **Vercel** | Push to `main` (or your connected branch). Set the same env vars in Vercel → **Settings → Environment Variables**. |
+
+Use the **same Supabase project** for both so data and auth are shared.
+
 ## Stack
 
 - **React** – UI (Next.js App Router)
