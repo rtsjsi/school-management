@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { SubmitButton } from "@/components/ui/Button";
 
 export default function StudentEntryForm() {
   const router = useRouter();
@@ -120,13 +121,9 @@ export default function StudentEntryForm() {
           placeholder="e.g. A"
         />
       </div>
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium py-2 rounded-lg"
-      >
-        {loading ? "Adding…" : "Add student"}
-      </button>
+      <SubmitButton loading={loading} loadingLabel="Adding…">
+        Add student
+      </SubmitButton>
     </form>
   );
 }

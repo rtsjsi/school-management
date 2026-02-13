@@ -1,20 +1,27 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LogOut, Shield, Users, BookOpen, UserPlus, GraduationCap } from "lucide-react";
+import { LogOut, Shield, Users, BookOpen, UserPlus, GraduationCap, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { AuthUser } from "@/lib/auth";
 import { ROLES } from "@/types/auth";
 
 export default function DashboardNav({ user }: { user: AuthUser }) {
   const router = useRouter();
+  const [signingOut, setSigningOut] = useState(false);
 
   const handleSignOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
+    setSigningOut(true);
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      router.push("/login");
+      router.refresh();
+    } finally {
+      setSigningOut(false);
+    }
   };
 
   const roleLabel = ROLES[user.role as keyof typeof ROLES] ?? user.role;
@@ -80,11 +87,17 @@ export default function DashboardNav({ user }: { user: AuthUser }) {
               <span>{user.email ?? user.fullName ?? "User"}</span>
             </div>
             <button
+              type="button"
               onClick={handleSignOut}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 font-medium"
+              disabled={signingOut}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 font-medium disabled:opacity-70 disabled:pointer-events-none transition-opacity"
             >
-              <LogOut className="h-4 w-4" />
-              Sign out
+              {signingOut ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              ) : (
+                <LogOut className="h-4 w-4" />
+              )}
+              {signingOut ? "Signing out…" : "Sign out"}
             </button>
           </div>
         </div>

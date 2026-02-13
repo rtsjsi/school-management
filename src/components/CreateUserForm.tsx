@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createUser } from "@/app/dashboard/users/actions";
 import { ROLES } from "@/types/auth";
 import type { UserRole } from "@/types/auth";
+import { SubmitButton } from "@/components/ui/Button";
 
 export default function CreateUserForm() {
   const router = useRouter();
@@ -120,13 +121,9 @@ export default function CreateUserForm() {
         </select>
       </div>
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium py-2 rounded-lg"
-      >
-        {loading ? "Creating…" : "Create user"}
-      </button>
+      <SubmitButton loading={loading} loadingLabel="Creating…">
+        Create user
+      </SubmitButton>
     </form>
   );
 }

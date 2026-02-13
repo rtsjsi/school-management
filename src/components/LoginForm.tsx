@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
+import { SubmitButton } from "@/components/ui/Button";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
@@ -154,20 +155,11 @@ export default function LoginForm() {
         )}
 
         {/* Submit Button */}
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-2.5 rounded-lg transition-colors duration-200 mt-6 flex items-center justify-center gap-2"
-        >
-          {isLoading ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Signing in...
-            </>
-          ) : (
-            "Sign In"
-          )}
-        </button>
+        <div className="mt-6">
+          <SubmitButton loading={isLoading} loadingLabel="Signing in…">
+            Sign In
+          </SubmitButton>
+        </div>
       </form>
     </div>
   );
