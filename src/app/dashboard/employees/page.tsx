@@ -3,6 +3,15 @@ import { getUser, isAdminOrAbove } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { UserPlus } from "lucide-react";
 import EmployeeEntryForm from "@/components/EmployeeEntryForm";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export default async function EmployeesPage() {
   const user = await getUser();
@@ -17,40 +26,62 @@ export default async function EmployeesPage() {
     .limit(50);
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-        <UserPlus className="h-7 w-7" />
-        Employees
-      </h1>
-      <p className="text-muted-foreground mt-1">
-        Add and manage employees (Admin & Super Admin only).
-      </p>
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+          <UserPlus className="h-7 w-7 text-primary" />
+          Employees
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Add and manage employees (Admin & Super Admin only).
+        </p>
+      </div>
 
-      <div className="mt-8 grid lg:grid-cols-2 gap-8">
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Add employee</h2>
-          <EmployeeEntryForm />
-        </div>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Add employee</CardTitle>
+            <CardDescription>Create a new employee record.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <EmployeeEntryForm />
+          </CardContent>
+        </Card>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Recent employees</h2>
-          {employees && employees.length > 0 ? (
-            <ul className="divide-y divide-gray-200">
-              {employees.map((e) => (
-                <li key={e.id} className="py-3 first:pt-0">
-                  <div className="font-medium text-foreground">{e.full_name}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {e.email && <span>{e.email}</span>}
-                    <span> · {e.role}</span>
-                    {e.department && <span> · {e.department}</span>}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-muted-foreground text-sm">No employees yet. Add one using the form.</p>
-          )}
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Employees</CardTitle>
+            <CardDescription>All employees. Add new via the form.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {employees && employees.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Department</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {employees.map((e) => (
+                    <TableRow key={e.id}>
+                      <TableCell className="font-medium">{e.full_name}</TableCell>
+                      <TableCell className="text-muted-foreground">{e.email ?? "—"}</TableCell>
+                      <TableCell>{e.role}</TableCell>
+                      <TableCell>{e.department ?? "—"}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-sm text-muted-foreground py-8 text-center">
+                No employees yet. Add one using the form.
+              </p>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

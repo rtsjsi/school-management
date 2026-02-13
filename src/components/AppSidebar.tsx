@@ -1,0 +1,144 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
+import {
+  LayoutDashboard,
+  Users,
+  GraduationCap,
+  UserPlus,
+  BookOpen,
+  LogOut,
+  Loader2,
+  Menu,
+} from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import type { AuthUser } from "@/lib/auth";
+import { ROLES } from "@/types/auth";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+
+const navItems: { href: string; label: string; icon: React.ComponentType<{ className?: string }>; roles?: ("super_admin" | "admin" | "teacher")[] }[] = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard/users", label: "Users", icon: Users, roles: ["super_admin"] },
+  { href: "/dashboard/students", label: "Students", icon: GraduationCap },
+  { href: "/dashboard/employees", label: "Employees", icon: UserPlus, roles: ["super_admin", "admin"] },
+  { href: "/dashboard/classes", label: "Classes", icon: BookOpen },
+];
+
+export function AppSidebar({ user }: { user: AuthUser }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const [signingOut, setSigningOut] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      router.push("/login");
+      router.refresh();
+    } finally {
+      setSigningOut(false);
+    }
+  };
+
+  const roleLabel = ROLES[user.role as keyof typeof ROLES] ?? user.role;
+  const filteredNav = navItems.filter(
+    (item) => !item.roles || item.roles.includes(user.role)
+  );
+
+  const sidebar = (
+    <div className="flex h-full w-64 flex-col bg-sidebar text-sidebar-foreground">
+      <div className="flex h-14 items-center gap-2 border-b border-sidebar-foreground/10 px-4">
+        <Link href="/dashboard" className="font-semibold text-lg tracking-tight">
+          School
+        </Link>
+      </div>
+      <nav className="flex-1 space-y-1 p-3">
+        {filteredNav.map((item) => {
+          const isActive = pathname === item.href;
+          const Icon = item.icon;
+          return (
+            <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}>
+              <span
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  isActive
+                    ? "bg-sidebar-foreground/15 text-sidebar-foreground"
+                    : "text-sidebar-foreground/80 hover:bg-sidebar-foreground/10 hover:text-sidebar-foreground"
+                )}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                {item.label}
+              </span>
+            </Link>
+          );
+        })}
+      </nav>
+      <Separator className="bg-sidebar-foreground/10" />
+      <div className="p-3">
+        <div className="rounded-lg bg-sidebar-foreground/5 px-3 py-2 text-xs text-sidebar-foreground/80">
+          <p className="font-medium text-sidebar-foreground">{roleLabel}</p>
+          <p className="truncate mt-0.5">{user.email ?? user.fullName ?? "User"}</p>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="mt-2 w-full justify-start text-sidebar-foreground/90 hover:bg-sidebar-foreground/10 hover:text-sidebar-foreground"
+          onClick={handleSignOut}
+          disabled={signingOut}
+        >
+          {signingOut ? (
+            <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+          ) : (
+            <LogOut className="h-4 w-4 shrink-0" />
+          )}
+          <span className="ml-2">{signingOut ? "Signing out…" : "Sign out"}</span>
+        </Button>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Mobile header */}
+      <div className="sticky top-0 z-40 flex h-14 items-center gap-2 border-b bg-background px-4 lg:hidden">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setMobileOpen((o) => !o)}
+          aria-label="Toggle menu"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+        <Link href="/dashboard" className="font-semibold">
+          School Management
+        </Link>
+      </div>
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          onClick={() => setMobileOpen(false)}
+          aria-hidden
+        />
+      )}
+      {/* Sidebar: fixed on desktop, drawer on mobile */}
+      <aside
+        className={cn(
+          "fixed left-0 z-50 w-64 transform transition-transform duration-200 ease-in-out lg:translate-x-0",
+          "top-0 h-full lg:top-0",
+          "top-14 h-[calc(100vh-3.5rem)] lg:top-0 lg:h-full",
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        {sidebar}
+      </aside>
+    </>
+  );
+}

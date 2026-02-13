@@ -5,6 +5,16 @@ import { Users } from "lucide-react";
 import { ROLES } from "@/types/auth";
 import type { UserRole } from "@/types/auth";
 import CreateUserForm from "@/components/CreateUserForm";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 
 export default async function UsersPage() {
   const user = await getUser();
@@ -17,39 +27,62 @@ export default async function UsersPage() {
     : { data: [] };
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-        <Users className="h-7 w-7" />
-        User management
-      </h1>
-      <p className="text-muted-foreground mt-1">
-        Create users and assign roles (Super Admin only).
-      </p>
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+          <Users className="h-7 w-7 text-primary" />
+          User management
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Create users and assign roles (Super Admin only).
+        </p>
+      </div>
 
-      <div className="mt-8 grid lg:grid-cols-2 gap-8">
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Create user</h2>
-          <CreateUserForm />
-        </div>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Create user</CardTitle>
+            <CardDescription>Add a new user and assign a role.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <CreateUserForm />
+          </CardContent>
+        </Card>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Users</h2>
-          {profiles && profiles.length > 0 ? (
-            <ul className="divide-y divide-gray-200">
-              {profiles.map((p) => (
-                <li key={p.id} className="py-3 first:pt-0">
-                  <div className="font-medium text-foreground">{p.full_name || p.email || "—"}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {p.email && <span>{p.email}</span>}
-                    <span> · {ROLES[(p.role as UserRole) ?? "teacher"]}</span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-muted-foreground text-sm">No users yet. Create one above.</p>
-          )}
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Users</CardTitle>
+            <CardDescription>All users. Create new above.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {profiles && profiles.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {profiles.map((p) => (
+                    <TableRow key={p.id}>
+                      <TableCell className="font-medium">{p.full_name || p.email || "—"}</TableCell>
+                      <TableCell className="text-muted-foreground">{p.email ?? "—"}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{ROLES[(p.role as UserRole) ?? "teacher"]}</Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-sm text-muted-foreground py-8 text-center">
+                No users yet. Create one above.
+              </p>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

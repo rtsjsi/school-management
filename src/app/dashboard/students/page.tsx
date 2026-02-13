@@ -3,6 +3,15 @@ import { getUser, isAdminOrAbove } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { GraduationCap } from "lucide-react";
 import StudentEntryForm from "@/components/StudentEntryForm";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export default async function StudentsPage() {
   const user = await getUser();
@@ -18,52 +27,72 @@ export default async function StudentsPage() {
   const canEdit = isAdminOrAbove(user);
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-        <GraduationCap className="h-7 w-7" />
-        Students
-      </h1>
-      <p className="text-muted-foreground mt-1">
-        {canEdit
-          ? "Add and manage students (Admin & Super Admin)."
-          : "View student list (read-only)."}
-      </p>
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+          <GraduationCap className="h-7 w-7 text-primary" />
+          Students
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          {canEdit
+            ? "Add and manage students (Admin & Super Admin)."
+            : "View student list (read-only)."}
+        </p>
+      </div>
 
-      <div className={`mt-8 grid gap-8 ${canEdit ? "lg:grid-cols-2" : ""}`}>
+      <div className={`grid gap-6 ${canEdit ? "lg:grid-cols-2" : ""}`}>
         {canEdit && (
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-foreground mb-4">Add student</h2>
-            <StudentEntryForm />
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Add student</CardTitle>
+              <CardDescription>Create a new student record.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <StudentEntryForm />
+            </CardContent>
+          </Card>
         )}
 
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-4">
-            {canEdit ? "Recent students" : "Students"}
-          </h2>
-          {students && students.length > 0 ? (
-            <ul className="divide-y divide-gray-200">
-              {students.map((s) => (
-                <li key={s.id} className="py-3 first:pt-0">
-                  <div className="font-medium text-foreground">{s.full_name}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {s.email && <span>{s.email}</span>}
-                    {(s.grade || s.section) && (
-                      <span> · {[s.grade, s.section].filter(Boolean).join(" ")}</span>
-                    )}
-                    {s.date_of_birth && (
-                      <span> · DOB: {new Date(s.date_of_birth).toLocaleDateString()}</span>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-muted-foreground text-sm">
-              {canEdit ? "No students yet. Add one using the form." : "No students yet."}
-            </p>
-          )}
-        </div>
+        <Card className={canEdit ? "" : "lg:col-span-1"}>
+          <CardHeader>
+            <CardTitle>{canEdit ? "Students" : "Student list"}</CardTitle>
+            <CardDescription>
+              {canEdit ? "All students. Add new via the form." : "Read-only view."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {students && students.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Grade</TableHead>
+                    <TableHead>Section</TableHead>
+                    <TableHead>DOB</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {students.map((s) => (
+                    <TableRow key={s.id}>
+                      <TableCell className="font-medium">{s.full_name}</TableCell>
+                      <TableCell className="text-muted-foreground">{s.email ?? "—"}</TableCell>
+                      <TableCell>{s.grade ?? "—"}</TableCell>
+                      <TableCell>{s.section ?? "—"}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {s.date_of_birth ? new Date(s.date_of_birth).toLocaleDateString() : "—"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-sm text-muted-foreground py-8 text-center">
+                {canEdit ? "No students yet. Add one using the form." : "No students yet."}
+              </p>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
