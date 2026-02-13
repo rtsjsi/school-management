@@ -66,6 +66,7 @@ Use the **same Supabase project** for both so data and auth are shared.
 - `npm run build` – Production build
 - `npm run start` – Run production build
 - `npm run lint` – Run ESLint
+- `npm run db:push` – Apply migrations in `supabase/migrations/` to the linked Supabase project (run after adding new migrations)
 
 ## Deploy on Vercel
 
