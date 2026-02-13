@@ -1,6 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/types/auth";
 
+const VALID_ROLES: UserRole[] = ["super_admin", "admin", "teacher"];
+
+function normalizeRole(value: unknown): UserRole {
+  const s = typeof value === "string" ? value.trim().toLowerCase() : "";
+  if (VALID_ROLES.includes(s as UserRole)) return s as UserRole;
+  return "teacher";
+}
+
 export type AuthUser = {
   id: string;
   email: string | null;
@@ -16,13 +24,17 @@ export async function getUser(): Promise<AuthUser | null> {
 
   if (!user) return null;
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("role, full_name")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
-  const role = (profile?.role as UserRole) ?? "teacher";
+  if (profileError) {
+    console.error("[auth] profiles fetch error:", profileError.message);
+  }
+
+  const role = normalizeRole(profile?.role);
   const fullName = profile?.full_name ?? null;
 
   return {
