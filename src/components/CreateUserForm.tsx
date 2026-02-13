@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createUser } from "@/app/dashboard/users/actions";
 import { ROLES } from "@/types/auth";
 import type { UserRole } from "@/types/auth";
-import { SubmitButton } from "@/components/ui/Button";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 export default function CreateUserForm() {
   const router = useRouter();
