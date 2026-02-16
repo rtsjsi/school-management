@@ -10,7 +10,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "db:push": "supabase db push"
+    "db:push": "supabase db push",
+    "seed": "npx tsx scripts/seed.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
