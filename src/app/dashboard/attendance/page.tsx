@@ -6,7 +6,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ShiftForm from "@/components/ShiftForm";
 import HolidayForm from "@/components/HolidayForm";
 import AttendanceManualForm from "@/components/AttendanceManualForm";
-import AttendancePunchForm from "@/components/AttendancePunchForm";
 import { createClient } from "@/lib/supabase/server";
 import { ShiftList } from "@/components/ShiftList";
 import { HolidayList } from "@/components/HolidayList";
@@ -38,7 +37,7 @@ export default async function AttendancePage() {
           Shift & Attendance
         </h1>
         <p className="text-muted-foreground mt-1">
-          Shifts, holidays, manual attendance, punches, and reports.
+          Shifts, holidays, attendance (biometric data), and reports.
         </p>
       </div>
 
@@ -67,8 +66,7 @@ export default async function AttendancePage() {
         </TabsContent>
 
         <TabsContent value="attendance" className="space-y-6">
-          <div className="grid gap-6 lg:grid-cols-2">
-            <AttendancePunchForm employees={empList} />
+          <div className="grid gap-6 lg:grid-cols-1">
             <AttendanceManualForm employees={empList} />
           </div>
           <Suspense fallback={<TableSkeleton rows={5} columns={6} />}>

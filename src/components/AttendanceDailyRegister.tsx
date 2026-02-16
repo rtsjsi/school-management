@@ -81,7 +81,7 @@ export async function AttendanceDailyRegister() {
     <Card>
       <CardHeader>
         <CardTitle>Daily Register - {today}</CardTitle>
-        <CardDescription>Today&apos;s attendance (manual + punches).</CardDescription>
+        <CardDescription>Today&apos;s attendance (biometric + manual overrides).</CardDescription>
       </CardHeader>
       <CardContent>
         {rows.length > 0 ? (

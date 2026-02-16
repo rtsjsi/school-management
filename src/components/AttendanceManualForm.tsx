@@ -60,7 +60,8 @@ export default function AttendanceManualForm({ employees }: { employees: Employe
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Manual Attendance</CardTitle>
+        <CardTitle>Attendance Override</CardTitle>
+        <p className="text-sm text-muted-foreground">Override or correct status when biometric data is missing or incorrect.</p>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
