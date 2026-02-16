@@ -12,6 +12,8 @@ import { ShiftList } from "@/components/ShiftList";
 import { HolidayList } from "@/components/HolidayList";
 import { AttendanceDailyRegister } from "@/components/AttendanceDailyRegister";
 import AttendanceReports from "@/components/AttendanceReports";
+import AttendanceReviewAndApprove from "@/components/AttendanceReviewAndApprove";
+import NEFTGeneration from "@/components/NEFTGeneration";
 import { TableSkeleton } from "@/components/skeletons/TableSkeleton";
 
 export default async function AttendancePage() {
@@ -45,6 +47,8 @@ export default async function AttendancePage() {
           <TabsTrigger value="shifts">Shifts</TabsTrigger>
           <TabsTrigger value="holidays">Holidays</TabsTrigger>
           <TabsTrigger value="attendance">Attendance</TabsTrigger>
+          <TabsTrigger value="review">Review & Approve</TabsTrigger>
+          <TabsTrigger value="neft">NEFT File</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
         </TabsList>
 
@@ -70,6 +74,14 @@ export default async function AttendancePage() {
           <Suspense fallback={<TableSkeleton rows={5} columns={6} />}>
             <AttendanceDailyRegister />
           </Suspense>
+        </TabsContent>
+
+        <TabsContent value="review" className="space-y-6">
+          <AttendanceReviewAndApprove />
+        </TabsContent>
+
+        <TabsContent value="neft" className="space-y-6">
+          <NEFTGeneration />
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-6">

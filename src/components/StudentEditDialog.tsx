@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -48,6 +49,7 @@ interface StudentEditDialogProps {
     guardian_name?: string;
     guardian_contact?: string;
     notes?: string;
+    is_rte_quota?: boolean;
   };
 }
 
@@ -78,6 +80,7 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
     guardian_name: student.guardian_name || "",
     guardian_contact: student.guardian_contact || "",
     notes: student.notes || "",
+    is_rte_quota: student.is_rte_quota ?? false,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -114,6 +117,7 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
           guardian_name: form.guardian_name.trim() || null,
           guardian_contact: form.guardian_contact.trim() || null,
           notes: form.notes.trim() || null,
+          is_rte_quota: form.is_rte_quota,
         })
         .eq("id", student.id);
 
@@ -210,6 +214,17 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="is_rte_quota"
+              checked={form.is_rte_quota}
+              onCheckedChange={(checked) => setForm((p) => ({ ...p, is_rte_quota: !!checked }))}
+            />
+            <Label htmlFor="is_rte_quota" className="text-sm font-normal cursor-pointer">
+              RTE (Right to Education) Quota – No fees
+            </Label>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

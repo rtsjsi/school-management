@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const FEE_TYPES = ["tuition", "transport", "library", "lab", "sports", "other"] as const;
 
-type StudentOption = { id: string; full_name: string };
+type StudentOption = { id: string; full_name: string; is_rte_quota?: boolean };
 
 export default function FeeDueForm({ students }: { students: StudentOption[] }) {
   const router = useRouter();
@@ -23,6 +23,8 @@ export default function FeeDueForm({ students }: { students: StudentOption[] }) 
     quarter: "1",
     academic_year: new Date().getFullYear() + "-" + (new Date().getFullYear() + 1).toString().slice(-2),
     due_date: "",
+    discount_percent: "",
+    discount_amount: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,6 +34,11 @@ export default function FeeDueForm({ students }: { students: StudentOption[] }) 
       setError("Select a student.");
       return;
     }
+    const selectedStudent = students.find((s) => s.id === form.student_id);
+    if (selectedStudent?.is_rte_quota) {
+      setError("RTE quota students have no fees. Cannot add fee due.");
+      return;
+    }
     const amount = parseFloat(form.amount);
     if (isNaN(amount) || amount <= 0) {
       setError("Enter valid amount.");
@@ -39,6 +46,13 @@ export default function FeeDueForm({ students }: { students: StudentOption[] }) 
     }
     if (!form.due_date) {
       setError("Due date required.");
+      return;
+    }
+
+    const discountPct = form.discount_percent ? parseFloat(form.discount_percent) : 0;
+    const discountAmt = form.discount_amount ? parseFloat(form.discount_amount) : 0;
+    if ((discountPct > 0 || discountAmt > 0) && (discountPct < 0 || discountPct > 100)) {
+      setError("Discount percent must be 0-100.");
       return;
     }
 
@@ -53,12 +67,14 @@ export default function FeeDueForm({ students }: { students: StudentOption[] }) 
         academic_year: form.academic_year,
         due_date: form.due_date,
         status: "pending",
+        discount_percent: discountPct || 0,
+        discount_amount: discountAmt || 0,
       });
       if (err) {
         setError(err.message);
         return;
       }
-      setForm({ ...form, student_id: "", amount: "", due_date: "" });
+      setForm({ ...form, student_id: "", amount: "", due_date: "", discount_percent: "", discount_amount: "" });
       router.refresh();
     } catch {
       setError("Something went wrong.");
@@ -117,6 +133,14 @@ export default function FeeDueForm({ students }: { students: StudentOption[] }) 
         <div className="space-y-2">
           <Label>Due Date</Label>
           <Input type="date" value={form.due_date} onChange={(e) => setForm((p) => ({ ...p, due_date: e.target.value }))} />
+        </div>
+        <div className="space-y-2">
+          <Label>Discount % (optional)</Label>
+          <Input type="number" min={0} max={100} step={0.01} value={form.discount_percent} onChange={(e) => setForm((p) => ({ ...p, discount_percent: e.target.value }))} placeholder="0" />
+        </div>
+        <div className="space-y-2">
+          <Label>Discount Amount (optional)</Label>
+          <Input type="number" min={0} step={0.01} value={form.discount_amount} onChange={(e) => setForm((p) => ({ ...p, discount_amount: e.target.value }))} placeholder="0" />
         </div>
       </div>
       <SubmitButton loading={loading} loadingLabel="Adding…">Add Due</SubmitButton>

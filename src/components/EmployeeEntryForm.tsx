@@ -45,6 +45,7 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
     account_number: "",
     ifsc_code: "",
     account_holder_name: "",
+    monthly_salary: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -76,6 +77,7 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
           joining_date: form.joining_date || null,
           shift_id: form.shift_id || null,
           employee_id: empId,
+          monthly_salary: form.monthly_salary ? parseFloat(form.monthly_salary) : null,
         })
         .select("id")
         .single();
@@ -109,6 +111,7 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
         role: "staff", department: "", designation: "", employee_type: "full_time",
         joining_date: "", shift_id: "", degree: "", institution: "", year_passed: "",
         bank_name: "", account_number: "", ifsc_code: "", account_holder_name: "",
+        monthly_salary: "",
       });
       setExpanded(false);
       router.refresh();
@@ -188,6 +191,10 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Monthly Salary (₹)</Label>
+              <Input type="number" min={0} step={0.01} value={form.monthly_salary} onChange={(e) => setForm((p) => ({ ...p, monthly_salary: e.target.value }))} placeholder="For NEFT/payroll" />
+            </div>
             <div className="space-y-2">
               <Label>Joining Date</Label>
               <Input type="date" value={form.joining_date} onChange={(e) => setForm((p) => ({ ...p, joining_date: e.target.value }))} />

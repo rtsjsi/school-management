@@ -31,6 +31,7 @@ interface EmployeeEditDialogProps {
     joining_date?: string;
     shift_id?: string;
     status?: string;
+    monthly_salary?: number | null;
   };
   shifts: { id: string; name: string }[];
 }
@@ -54,6 +55,7 @@ export function EmployeeEditDialog({ employee, shifts }: EmployeeEditDialogProps
     joining_date: employee.joining_date || "",
     shift_id: employee.shift_id || "",
     status: employee.status || "active",
+    monthly_salary: employee.monthly_salary?.toString() || "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -82,6 +84,7 @@ export function EmployeeEditDialog({ employee, shifts }: EmployeeEditDialogProps
           joining_date: form.joining_date || null,
           shift_id: form.shift_id || null,
           status: form.status,
+          monthly_salary: form.monthly_salary ? parseFloat(form.monthly_salary) : null,
         })
         .eq("id", employee.id);
       if (err) {
@@ -173,6 +176,10 @@ export function EmployeeEditDialog({ employee, shifts }: EmployeeEditDialogProps
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Monthly Salary (₹)</Label>
+              <Input type="number" min={0} step={0.01} value={form.monthly_salary} onChange={(e) => setForm((p) => ({ ...p, monthly_salary: e.target.value }))} placeholder="For NEFT" />
+            </div>
             <div className="space-y-2">
               <Label>Joining Date</Label>
               <Input type="date" value={form.joining_date} onChange={(e) => setForm((p) => ({ ...p, joining_date: e.target.value }))} />

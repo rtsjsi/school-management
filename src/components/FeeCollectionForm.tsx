@@ -65,7 +65,7 @@ export default function FeeCollectionForm({ students }: { students: StudentOptio
 
       const { data: existingFee } = await supabase
         .from("fees")
-        .select("id, amount, paid_amount")
+        .select("id, amount, paid_amount, discount_percent, discount_amount")
         .eq("student_id", form.student_id)
         .eq("quarter", parseInt(form.quarter))
         .eq("academic_year", form.academic_year)
@@ -103,7 +103,10 @@ export default function FeeCollectionForm({ students }: { students: StudentOptio
       if (existingFee) {
         const prevPaid = Number((existingFee as { paid_amount?: number }).paid_amount ?? 0);
         const newPaid = prevPaid + amount;
-        const total = Number(existingFee.amount);
+        const baseAmount = Number(existingFee.amount);
+        const discountPct = Number((existingFee as { discount_percent?: number }).discount_percent ?? 0);
+        const discountAmt = Number((existingFee as { discount_amount?: number }).discount_amount ?? 0);
+        const total = Math.max(0, baseAmount - baseAmount * (discountPct / 100) - discountAmt);
         const status = newPaid >= total ? "paid" : "partial";
         await supabase
           .from("fees")

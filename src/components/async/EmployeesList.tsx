@@ -21,7 +21,7 @@ export async function EmployeesList() {
   const supabase = await createClient();
   const { data: employees } = await supabase
     .from("employees")
-    .select("id, employee_id, full_name, email, phone_number, role, department, designation, employee_type, joining_date, status, shifts(name)")
+    .select("id, employee_id, full_name, email, phone_number, role, department, designation, employee_type, joining_date, status, monthly_salary, shifts(name)")
     .order("created_at", { ascending: false })
     .limit(50);
 

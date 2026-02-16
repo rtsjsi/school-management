@@ -18,10 +18,12 @@ export default async function FeesPage() {
   if (!user) redirect("/login");
 
   const supabase = await createClient();
-  const { data: students } = await supabase
+  const { data: allStudents } = await supabase
     .from("students")
-    .select("id, full_name, grade")
+    .select("id, full_name, grade, is_rte_quota")
+    .eq("status", "active")
     .order("full_name");
+  const students = (allStudents ?? []).filter((s) => !(s as { is_rte_quota?: boolean }).is_rte_quota);
 
   const canEdit = isAdminOrAbove(user);
 

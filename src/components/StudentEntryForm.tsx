@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function StudentEntryForm() {
   const router = useRouter();
@@ -40,6 +41,7 @@ export default function StudentEntryForm() {
     guardian_name: "",
     guardian_contact: "",
     notes: "",
+    is_rte_quota: false,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -81,6 +83,7 @@ export default function StudentEntryForm() {
         guardian_name: form.guardian_name.trim() || null,
         guardian_contact: form.guardian_contact.trim() || null,
         notes: form.notes.trim() || null,
+        is_rte_quota: form.is_rte_quota,
       });
 
       if (err) {
@@ -109,6 +112,7 @@ export default function StudentEntryForm() {
         guardian_name: "",
         guardian_contact: "",
         notes: "",
+        is_rte_quota: false,
       });
       setExpandedForm(false);
       router.refresh();
@@ -184,6 +188,17 @@ export default function StudentEntryForm() {
             </SelectContent>
           </Select>
         </div>
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="is_rte_quota"
+          checked={form.is_rte_quota}
+          onCheckedChange={(checked) => setForm((p) => ({ ...p, is_rte_quota: !!checked }))}
+        />
+        <Label htmlFor="is_rte_quota" className="text-sm font-normal cursor-pointer">
+          RTE (Right to Education) Quota – No fees
+        </Label>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
