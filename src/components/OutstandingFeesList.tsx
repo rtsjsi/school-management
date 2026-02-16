@@ -8,46 +8,80 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { isGradeInRange } from "@/lib/grade-utils";
 
 export async function OutstandingFeesList() {
   const supabase = await createClient();
-  const today = new Date().toISOString().split("T")[0];
+  const ay = `${new Date().getFullYear()}-${(new Date().getFullYear() + 1).toString().slice(-2)}`;
 
-  const { data: fees } = await supabase
-    .from("fees")
-    .select("id, amount, paid_amount, fee_type, status, due_date, discount_percent, discount_amount, students(full_name, grade, section, is_rte_quota)")
-    .or(`status.eq.pending,status.eq.overdue,status.eq.partial`)
-    .order("due_date", { ascending: true })
-    .limit(50);
+  const { data: students } = await supabase
+    .from("students")
+    .select("id, full_name, grade, section, is_rte_quota")
+    .eq("status", "active");
 
-  const defaulters = (fees ?? []).map((f) => {
-    const student = Array.isArray(f.students) ? f.students[0] : f.students;
-    const isRte = (student as { is_rte_quota?: boolean } | null)?.is_rte_quota ?? false;
-    const paid = Number((f as { paid_amount?: number }).paid_amount ?? 0);
-    const baseAmount = Number(f.amount);
-    const discountPct = Number((f as { discount_percent?: number }).discount_percent ?? 0);
-    const discountAmt = Number((f as { discount_amount?: number }).discount_amount ?? 0);
-    const discountValue = Math.min(baseAmount * (discountPct / 100) + discountAmt, baseAmount);
-    const total = baseAmount - discountValue;
-    const outstanding = total - paid;
-    const isOverdue = f.due_date && f.due_date < today;
-    return {
-      ...f,
-      student,
-      outstanding,
-      isOverdue,
-      isRte,
-      total,
-    };
-  }).filter((d) => !d.isRte && d.outstanding > 0);
+  const { data: structures } = await supabase
+    .from("fee_structures")
+    .select(`
+      id,
+      grade_from,
+      grade_to,
+      fee_structure_items(fee_type, quarter, amount)
+    `)
+    .eq("academic_year", ay);
+
+  const { data: collections } = await supabase
+    .from("fee_collections")
+    .select("student_id, quarter, fee_type, amount")
+    .eq("academic_year", ay);
+
+  const paidMap = new Map<string, number>();
+  (collections ?? []).forEach((c) => {
+    const key = `${c.student_id}-${c.quarter}-${c.fee_type}`;
+    paidMap.set(key, (paidMap.get(key) ?? 0) + Number(c.amount));
+  });
+
+  const defaulters: { student_id: string; full_name: string; grade: string; section: string; quarter: number; fee_type: string; total: number; paid: number; outstanding: number }[] = [];
+
+  for (const s of students ?? []) {
+    if ((s as { is_rte_quota?: boolean }).is_rte_quota) continue;
+    const grade = s.grade ?? "";
+    const structure = (structures ?? []).find(
+      (st) => isGradeInRange(grade, st.grade_from, st.grade_to)
+    );
+    if (!structure) continue;
+
+    const items = (structure.fee_structure_items as { fee_type: string; quarter: number; amount: number }[]) ?? [];
+    for (const item of items) {
+      const total = Number(item.amount);
+      const key = `${s.id}-${item.quarter}-${item.fee_type}`;
+      const paid = paidMap.get(key) ?? 0;
+      const outstanding = total - paid;
+      if (outstanding > 0) {
+        defaulters.push({
+          student_id: s.id,
+          full_name: s.full_name,
+          grade: s.grade ?? "—",
+          section: s.section ?? "",
+          quarter: item.quarter,
+          fee_type: item.fee_type,
+          total,
+          paid,
+          outstanding,
+        });
+      }
+    }
+  }
+
+  defaulters.sort((a, b) => a.full_name.localeCompare(b.full_name) || a.quarter - b.quarter);
 
   if (!defaulters.length) {
     return (
       <Card>
         <CardHeader>
           <CardTitle>Outstanding / Defaulter List</CardTitle>
-          <CardDescription>No outstanding fees.</CardDescription>
+          <CardDescription>
+            Outstanding fees derived from fee structure ({ay}). No outstanding fees.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">All fees are up to date.</p>
@@ -61,47 +95,44 @@ export async function OutstandingFeesList() {
       <CardHeader>
         <CardTitle>Outstanding / Defaulter List</CardTitle>
         <CardDescription>
-          Students with pending or overdue fees ({defaulters.length} records).
+          Students with pending fees by quarter ({ay}). Derived from fee structure.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Student</TableHead>
-              <TableHead>Grade</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Due Date</TableHead>
-              <TableHead>Total</TableHead>
-              <TableHead>Paid</TableHead>
-              <TableHead>Outstanding</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {defaulters.map((d) => {
-              const s = d.student as { full_name?: string; grade?: string; section?: string } | null;
-              const total = d.total ?? Number(d.amount);
-              const paid = Number((d as { paid_amount?: number }).paid_amount ?? 0);
-              return (
-                <TableRow key={d.id}>
-                  <TableCell className="font-medium">{s?.full_name ?? "—"}</TableCell>
-                  <TableCell>{s?.grade ?? "—"} {s?.section ?? ""}</TableCell>
-                  <TableCell className="capitalize">{d.fee_type}</TableCell>
-                  <TableCell>{d.due_date ? new Date(d.due_date).toLocaleDateString() : "—"}</TableCell>
-                  <TableCell>{total.toLocaleString()}</TableCell>
-                  <TableCell>{paid.toLocaleString()}</TableCell>
-                  <TableCell className="font-medium">{d.outstanding.toLocaleString()}</TableCell>
-                  <TableCell>
-                    <Badge variant={d.isOverdue ? "destructive" : "secondary"}>
-                      {d.isOverdue ? "Overdue" : "Pending"}
-                    </Badge>
-                  </TableCell>
+        <div className="flex flex-col min-w-0" style={{ maxHeight: 400 }}>
+          <div className="flex-1 min-h-0 overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="sticky left-0 bg-background z-10">Student</TableHead>
+                  <TableHead>Grade</TableHead>
+                  <TableHead>Section</TableHead>
+                  <TableHead>Quarter</TableHead>
+                  <TableHead>Fee Type</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead>Paid</TableHead>
+                  <TableHead>Outstanding</TableHead>
                 </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+              </TableHeader>
+              <TableBody>
+                {defaulters.map((d, i) => (
+                  <TableRow key={`${d.student_id}-${d.quarter}-${d.fee_type}-${i}`}>
+                    <TableCell className="sticky left-0 bg-background z-10 font-medium">
+                      {d.full_name}
+                    </TableCell>
+                    <TableCell>{d.grade}</TableCell>
+                    <TableCell>{d.section}</TableCell>
+                    <TableCell>Q{d.quarter}</TableCell>
+                    <TableCell className="capitalize">{d.fee_type}</TableCell>
+                    <TableCell>{d.total.toLocaleString()}</TableCell>
+                    <TableCell>{d.paid.toLocaleString()}</TableCell>
+                    <TableCell className="font-medium">{d.outstanding.toLocaleString()}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

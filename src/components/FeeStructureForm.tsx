@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const FEE_TYPES = ["tuition", "transport", "library", "lab", "sports", "other"] as const;
@@ -21,6 +22,11 @@ export default function FeeStructureForm() {
     academic_year: "",
   });
   const [quarterAmounts, setQuarterAmounts] = useState<Record<string, Record<number, string>>>({});
+  const [classes, setClasses] = useState<{ id: string; name: string; sort_order: number }[]>([]);
+
+  useEffect(() => {
+    createClient().from("classes").select("id, name, sort_order").order("sort_order").then(({ data }) => setClasses(data ?? []));
+  }, []);
 
   const handleQuarterChange = (feeType: string, quarter: number, value: string) => {
     setQuarterAmounts((prev) => ({
@@ -134,23 +140,41 @@ export default function FeeStructureForm() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="grade_from">Grade From *</Label>
-              <Input
-                id="grade_from"
-                value={form.grade_from}
-                onChange={(e) => setForm((p) => ({ ...p, grade_from: e.target.value }))}
-                placeholder="e.g. 1"
-                required
-              />
+              {classes.length > 0 ? (
+                <Select value={form.grade_from} onValueChange={(v) => setForm((p) => ({ ...p, grade_from: v }))} required>
+                  <SelectTrigger id="grade_from"><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>
+                    {classes.map((c) => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  id="grade_from"
+                  value={form.grade_from}
+                  onChange={(e) => setForm((p) => ({ ...p, grade_from: e.target.value }))}
+                  placeholder="e.g. 1"
+                  required
+                />
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="grade_to">Grade To *</Label>
-              <Input
-                id="grade_to"
-                value={form.grade_to}
-                onChange={(e) => setForm((p) => ({ ...p, grade_to: e.target.value }))}
-                placeholder="e.g. 6"
-                required
-              />
+              {classes.length > 0 ? (
+                <Select value={form.grade_to} onValueChange={(v) => setForm((p) => ({ ...p, grade_to: v }))} required>
+                  <SelectTrigger id="grade_to"><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>
+                    {classes.map((c) => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  id="grade_to"
+                  value={form.grade_to}
+                  onChange={(e) => setForm((p) => ({ ...p, grade_to: e.target.value }))}
+                  placeholder="e.g. 6"
+                  required
+                />
+              )}
             </div>
           </div>
 

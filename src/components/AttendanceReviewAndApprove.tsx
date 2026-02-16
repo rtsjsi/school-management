@@ -184,7 +184,8 @@ export default function AttendanceReviewAndApprove() {
             <p className="text-sm text-muted-foreground">
               Working days: {data.workingDays} | Employees: {data.employees.length}
             </p>
-            <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
+            <div className="flex flex-col min-w-0" style={{ maxHeight: 400 }}>
+              <div className="flex-1 min-h-0 overflow-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -234,6 +235,7 @@ export default function AttendanceReviewAndApprove() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </div>
           </div>
         )}

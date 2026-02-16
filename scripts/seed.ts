@@ -38,7 +38,7 @@ const LAST_NAMES = [
   "Iyer", "Pillai", "Menon", "Nambiar", "Desai", "Shah", "Kapoor", "Agarwal", "Malhotra", "Verma",
 ];
 
-const GRADES = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
+const GRADES = ["Jr KG", "Sr KG", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
 const SECTIONS = ["A", "B", "C", "D"];
 const GENDERS = ["male", "female"] as const;
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"] as const;
@@ -69,7 +69,7 @@ async function deleteAllData() {
     "fee_collections", "fees", "exam_results", "attendance_approved", "attendance_month_approvals",
     "attendance_manual", "attendance_punches", "employee_salaries", "employee_bank_accounts",
     "employee_qualifications", "fee_structure_items", "students", "employees",
-    "fee_structures", "exams", "expenses", "holidays", "shifts",
+    "fee_structures", "exams", "expenses", "holidays", "shifts", "classes",
   ];
   for (const t of tables) {
     const { error } = await supabase.from(t as "fee_collections").delete().neq("id", "00000000-0000-0000-0000-000000000000");
@@ -81,18 +81,32 @@ async function main() {
   console.log("Starting seed...");
   await deleteAllData();
 
+  await seedClasses();
   await seedShifts();
   await seedHolidays();
   await seedFeeStructures();
   await seedEmployees();
   await seedStudents();
-  await seedFees();
-  await seedFeeCollections();
+  await seedFeeCollectionsFromStructure();
   await seedExams();
   await seedExpenses();
   await seedAttendance();
 
   console.log("Seed completed successfully!");
+}
+
+async function seedClasses() {
+  console.log("Seeding classes...");
+  const classes = [
+    { name: "Jr KG", section: "pre_primary", sort_order: 0 },
+    { name: "Sr KG", section: "pre_primary", sort_order: 1 },
+    ...Array.from({ length: 8 }, (_, i) => ({ name: String(i + 1), section: "primary", sort_order: i + 2 })),
+    { name: "9", section: "secondary", sort_order: 10 },
+    { name: "10", section: "secondary", sort_order: 11 },
+    { name: "11", section: "higher_secondary", sort_order: 12 },
+    { name: "12", section: "higher_secondary", sort_order: 13 },
+  ];
+  await supabase.from("classes").insert(classes);
 }
 
 async function seedShifts() {
@@ -220,78 +234,45 @@ async function seedStudents() {
   console.log(`Inserted ${students.length} students (${rteCount} RTE)`);
 }
 
-async function seedFees() {
-  console.log("Seeding fees...");
-  const { data: students } = await supabase.from("students").select("id, is_rte_quota").eq("status", "active");
-  const nonRte = (students ?? []).filter((s) => !(s as { is_rte_quota?: boolean }).is_rte_quota);
+async function seedFeeCollectionsFromStructure() {
+  console.log("Seeding fee collections (from structure)...");
   const ay = `${new Date().getFullYear()}-${(new Date().getFullYear() + 1).toString().slice(-2)}`;
-  const fees: { student_id: string; amount: number; fee_type: string; quarter: number; academic_year: string; due_date: string; status: string; paid_amount?: number; discount_percent?: number; discount_amount?: number }[] = [];
-  for (let i = 0; i < Math.min(nonRte.length, 400); i++) {
-    const s = nonRte[i];
-    const amt = 2000 + randomInt(0, 5000);
-    const hasDiscount = Math.random() < 0.2;
-    const discountPct = hasDiscount ? randomInt(5, 25) : 0;
-    const discountAmt = hasDiscount && Math.random() < 0.5 ? randomInt(100, 500) : 0;
-    const total = Math.max(0, amt - amt * (discountPct / 100) - discountAmt);
-    const statusRoll = Math.random();
-    let status: string;
-    let paidAmount: number;
-    if (statusRoll < 0.3) {
-      status = "paid";
-      paidAmount = total;
-    } else if (statusRoll < 0.5) {
-      status = "partial";
-      paidAmount = Math.floor(total * (0.2 + Math.random() * 0.6));
-    } else {
-      status = "pending";
-      paidAmount = 0;
-    }
-    fees.push({
-      student_id: s.id,
-      amount: amt,
-      fee_type: pick(FEE_TYPES),
-      quarter: randomInt(1, 4),
-      academic_year: ay,
-      due_date: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 15).toISOString().slice(0, 10),
-      status,
-      paid_amount: paidAmount,
-      discount_percent: discountPct,
-      discount_amount: discountAmt,
-    });
-  }
-  const batchSize = 50;
-  for (let i = 0; i < fees.length; i += batchSize) {
-    await supabase.from("fees").insert(fees.slice(i, i + batchSize));
-  }
-  console.log(`Inserted ${fees.length} fee records`);
-}
+  const { data: structures } = await supabase.from("fee_structures").select("id, grade_from, grade_to, fee_structure_items(fee_type, quarter, amount)").eq("academic_year", ay);
+  const { data: students } = await supabase.from("students").select("id, grade, is_rte_quota").eq("status", "active");
+  const nonRte = (students ?? []).filter((s) => !(s as { is_rte_quota?: boolean }).is_rte_quota);
 
-async function seedFeeCollections() {
-  console.log("Seeding fee collections...");
-  const { data: fees } = await supabase.from("fees").select("id, student_id, amount, paid_amount, fee_type, quarter, academic_year, discount_percent, discount_amount").in("status", ["paid", "partial"]);
+  const GRADE_ORDER: Record<string, number> = { "Jr KG": 0, "Sr KG": 1, "1": 2, "2": 3, "3": 4, "4": 5, "5": 6, "6": 7, "7": 8, "8": 9, "9": 10, "10": 11, "11": 12, "12": 13 };
+  const inRange = (g: string, f: string, t: string) => (GRADE_ORDER[g] ?? -1) >= (GRADE_ORDER[f] ?? -1) && (GRADE_ORDER[g] ?? -1) <= (GRADE_ORDER[t] ?? -1);
+
   let receiptNum = 1000;
-  const collections: { student_id: string; fee_id: string; amount: number; quarter: number; academic_year: string; fee_type: string; payment_mode: string; receipt_number: string }[] = [];
-  for (const f of fees ?? []) {
-    const paid = Number((f as { paid_amount?: number }).paid_amount ?? 0);
-    if (paid <= 0) continue;
-    const base = Number(f.amount);
-    const disc = base * (Number((f as { discount_percent?: number }).discount_percent ?? 0) / 100) + Number((f as { discount_amount?: number }).discount_amount ?? 0);
-    const total = Math.max(0, base - disc);
-    collections.push({
-      student_id: f.student_id,
-      fee_id: f.id,
-      amount: Math.min(paid, total),
-      quarter: f.quarter,
-      academic_year: f.academic_year,
-      fee_type: f.fee_type,
-      payment_mode: pick(["cash", "cheque", "online"] as const),
-      receipt_number: `RCP-${receiptNum++}`,
-    });
+  const collections: { student_id: string; amount: number; quarter: number; academic_year: string; fee_type: string; payment_mode: string; receipt_number: string }[] = [];
+
+  for (const s of nonRte.slice(0, 150)) {
+    const structure = (structures ?? []).find((st) => inRange(s.grade ?? "", st.grade_from, st.grade_to));
+    if (!structure) continue;
+    const items = (structure.fee_structure_items as { fee_type: string; quarter: number; amount: number }[]) ?? [];
+    for (const item of items.slice(0, 3)) {
+      if (Math.random() < 0.4) {
+        const amt = Math.floor(Number(item.amount) * (0.2 + Math.random() * 0.8));
+        collections.push({
+          student_id: s.id,
+          amount: amt,
+          quarter: item.quarter,
+          academic_year: ay,
+          fee_type: item.fee_type,
+          payment_mode: pick(["cash", "cheque", "online"] as const),
+          receipt_number: `RCP-${receiptNum++}`,
+        });
+      }
+    }
   }
   if (collections.length > 0) {
-    await supabase.from("fee_collections").insert(collections.slice(0, 200));
+    const batchSize = 50;
+    for (let i = 0; i < collections.length; i += batchSize) {
+      await supabase.from("fee_collections").insert(collections.slice(i, i + batchSize));
+    }
   }
-  console.log(`Inserted ${Math.min(collections.length, 200)} fee collections`);
+  console.log(`Inserted ${collections.length} fee collections`);
 }
 
 async function seedExams() {

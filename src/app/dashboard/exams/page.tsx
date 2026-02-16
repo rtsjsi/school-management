@@ -3,7 +3,9 @@ import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth";
 import { FileQuestion } from "lucide-react";
 import { ExamsList } from "@/components/async/ExamsList";
+import ExamMarksForm from "@/components/ExamMarksForm";
 import { TableSkeleton } from "@/components/skeletons/TableSkeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default async function ExamsPage() {
   const user = await getUser();
@@ -17,15 +19,26 @@ export default async function ExamsPage() {
           Exam management
         </h1>
         <p className="text-muted-foreground mt-1">
-          Create and manage exams.
+          Create exams and record marks/grades.
         </p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Suspense fallback={<TableSkeleton rows={3} columns={3} />}>
-          <ExamsList />
-        </Suspense>
-      </div>
+      <Tabs defaultValue="exams" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="exams">Exams</TabsTrigger>
+          <TabsTrigger value="marks">Record Marks</TabsTrigger>
+        </TabsList>
+        <TabsContent value="exams" className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Suspense fallback={<TableSkeleton rows={3} columns={3} />}>
+              <ExamsList />
+            </Suspense>
+          </div>
+        </TabsContent>
+        <TabsContent value="marks" className="space-y-6">
+          <ExamMarksForm />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
