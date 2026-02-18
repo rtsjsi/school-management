@@ -24,9 +24,9 @@ interface SearchFilterStudentsProps {
 
 export function SearchFilterStudents({ onSearch }: SearchFilterStudentsProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [grade, setGrade] = useState("");
-  const [section, setSection] = useState("");
-  const [status, setStatus] = useState("");
+  const [grade, setGrade] = useState("all");
+  const [section, setSection] = useState("all");
+  const [status, setStatus] = useState("all");
   const [isOpen, setIsOpen] = useState(false);
 
   const handleSearch = useCallback(() => {
@@ -40,18 +40,18 @@ export function SearchFilterStudents({ onSearch }: SearchFilterStudentsProps) {
 
   const handleClearFilters = () => {
     setSearchTerm("");
-    setGrade("");
-    setSection("");
-    setStatus("");
+    setGrade("all");
+    setSection("all");
+    setStatus("all");
     onSearch({
       searchTerm: "",
-      grade: "",
-      section: "",
-      status: "",
+      grade: "all",
+      section: "all",
+      status: "all",
     });
   };
 
-  const hasActiveFilters = searchTerm || grade || section || status;
+  const hasActiveFilters = searchTerm || (grade && grade !== "all") || (section && section !== "all") || (status && status !== "all");
 
   return (
     <div className="space-y-4">
@@ -87,7 +87,7 @@ export function SearchFilterStudents({ onSearch }: SearchFilterStudentsProps) {
                   <SelectValue placeholder="All grades" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All grades</SelectItem>
+                  <SelectItem value="all">All grades</SelectItem>
                   <SelectItem value="1">Grade 1</SelectItem>
                   <SelectItem value="2">Grade 2</SelectItem>
                   <SelectItem value="3">Grade 3</SelectItem>
@@ -112,7 +112,7 @@ export function SearchFilterStudents({ onSearch }: SearchFilterStudentsProps) {
                   <SelectValue placeholder="All sections" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All sections</SelectItem>
+                  <SelectItem value="all">All sections</SelectItem>
                   <SelectItem value="A">Section A</SelectItem>
                   <SelectItem value="B">Section B</SelectItem>
                   <SelectItem value="C">Section C</SelectItem>
@@ -129,7 +129,7 @@ export function SearchFilterStudents({ onSearch }: SearchFilterStudentsProps) {
                   <SelectValue placeholder="All statuses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All statuses</SelectItem>
+                  <SelectItem value="all">All statuses</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="inactive">Inactive</SelectItem>
                   <SelectItem value="transferred">Transferred</SelectItem>

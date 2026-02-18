@@ -17,6 +17,8 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { StudentDocumentsPhotos } from "@/components/StudentDocumentsPhotos";
+import { Button } from "@/components/ui/button";
 
 const CATEGORIES = ["general", "obc", "sc", "st", "other"] as const;
 const ADMISSION_TYPES = ["regular", "transfer", "re-admission"] as const;
@@ -104,6 +106,7 @@ export default function StudentEntryForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState(defaultForm());
+  const [createdStudentId, setCreatedStudentId] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -198,14 +201,22 @@ export default function StudentEntryForm() {
         is_rte_quota: form.is_rte_quota,
       };
 
-      const { error: err } = await supabase.from("students").insert(payload);
+      const { data: inserted, error: err } = await supabase
+        .from("students")
+        .insert(payload)
+        .select("id")
+        .single();
 
       if (err) {
         setError(err.message);
         return;
       }
 
-      setForm(defaultForm());
+      if (inserted?.id) {
+        setCreatedStudentId(inserted.id);
+      } else {
+        setForm(defaultForm());
+      }
       router.refresh();
     } catch {
       setError("Something went wrong.");
@@ -216,6 +227,27 @@ export default function StudentEntryForm() {
 
   const set = (key: keyof ReturnType<typeof defaultForm>, value: string | number | boolean) =>
     setForm((p) => ({ ...p, [key]: value }));
+
+  if (createdStudentId) {
+    return (
+      <div className="space-y-6">
+        <p className="text-sm text-green-600 dark:text-green-400 bg-green-500/10 p-3 rounded-md">
+          Student added successfully. You can now upload documents and photos below.
+        </p>
+        <StudentDocumentsPhotos studentId={createdStudentId} />
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            setCreatedStudentId(null);
+            setForm(defaultForm());
+          }}
+        >
+          Add another student
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">

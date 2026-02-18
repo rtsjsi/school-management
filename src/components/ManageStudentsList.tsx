@@ -53,9 +53,9 @@ export function ManageStudentsList() {
   const [students, setStudents] = useState<StudentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [gradeFilter, setGradeFilter] = useState("");
-  const [sectionFilter, setSectionFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [gradeFilter, setGradeFilter] = useState("all");
+  const [sectionFilter, setSectionFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const supabase = createClient();
 
@@ -65,9 +65,9 @@ export function ManageStudentsList() {
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (gradeFilter) q = q.eq("grade", gradeFilter);
-    if (sectionFilter) q = q.eq("section", sectionFilter);
-    if (statusFilter) q = q.eq("status", statusFilter);
+    if (gradeFilter && gradeFilter !== "all") q = q.eq("grade", gradeFilter);
+    if (sectionFilter && sectionFilter !== "all") q = q.eq("section", sectionFilter);
+    if (statusFilter && statusFilter !== "all") q = q.eq("status", statusFilter);
     if (search.trim()) {
       q = q.or(`full_name.ilike.%${search.trim()}%,student_id.ilike.%${search.trim()}%,email.ilike.%${search.trim()}%`);
     }
@@ -111,7 +111,7 @@ export function ManageStudentsList() {
             <Select value={gradeFilter} onValueChange={setGradeFilter}>
               <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All</SelectItem>
+                <SelectItem value="all">All</SelectItem>
                 {Array.from({ length: 12 }, (_, i) => i + 1).map((g) => (
                   <SelectItem key={g} value={String(g)}>{g}</SelectItem>
                 ))}
@@ -123,7 +123,7 @@ export function ManageStudentsList() {
             <Select value={sectionFilter} onValueChange={setSectionFilter}>
               <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All</SelectItem>
+                <SelectItem value="all">All</SelectItem>
                 {["A", "B", "C", "D"].map((s) => (
                   <SelectItem key={s} value={s}>{s}</SelectItem>
                 ))}
@@ -135,7 +135,7 @@ export function ManageStudentsList() {
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All</SelectItem>
+                <SelectItem value="all">All</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="inactive">Inactive</SelectItem>
                 <SelectItem value="transferred">Transferred</SelectItem>

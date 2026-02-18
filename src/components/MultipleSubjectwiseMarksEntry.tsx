@@ -29,8 +29,8 @@ export default function MultipleSubjectwiseMarksEntry() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedExamId, setSelectedExamId] = useState("");
-  const [gradeFilter, setGradeFilter] = useState<string>("");
-  const [sectionFilter, setSectionFilter] = useState<string>("");
+  const [gradeFilter, setGradeFilter] = useState<string>("all");
+  const [sectionFilter, setSectionFilter] = useState<string>("all");
   const [marks, setMarks] = useState<Record<string, Record<string, CellState>>>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -62,9 +62,9 @@ export default function MultipleSubjectwiseMarksEntry() {
         .select("id, full_name, grade, section")
         .eq("status", "active")
         .order("full_name");
-      if (gradeFilter) query = query.eq("grade", gradeFilter);
-      if (sectionFilter) query = query.eq("section", sectionFilter);
-      if (exam?.grade && exam.grade !== "All" && !gradeFilter) query = query.eq("grade", exam.grade);
+      if (gradeFilter && gradeFilter !== "all") query = query.eq("grade", gradeFilter);
+      if (sectionFilter && sectionFilter !== "all") query = query.eq("section", sectionFilter);
+      if (exam?.grade && exam.grade !== "All" && (!gradeFilter || gradeFilter === "all")) query = query.eq("grade", exam.grade);
       const { data: st } = await query;
       const studentList = (st ?? []) as Student[];
       setStudents(studentList);
@@ -216,7 +216,7 @@ export default function MultipleSubjectwiseMarksEntry() {
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
                   {grades.map((g) => (
                     <SelectItem key={g} value={g}>{g}</SelectItem>
                   ))}
@@ -230,7 +230,7 @@ export default function MultipleSubjectwiseMarksEntry() {
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
                   {sections.map((s) => (
                     <SelectItem key={s} value={s}>{s}</SelectItem>
                   ))}

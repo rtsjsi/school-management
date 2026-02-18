@@ -128,7 +128,7 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
       payload.father_name = form.father_name.trim() || null;
       payload.mother_name = form.mother_name.trim() || null;
       payload.mother_contact = form.mother_contact.trim() || null;
-      payload.category = form.category || null;
+      payload.category = (form.category && form.category !== "none") ? form.category : null;
       payload.religion = form.religion.trim() || null;
       payload.aadhar_no = form.aadhar_no.trim() || null;
       payload.district = form.district.trim() || null;
@@ -450,10 +450,10 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
                   </div>
                   <div className="space-y-2">
                     <Label>Category</Label>
-                    <Select value={form.category} onValueChange={(v) => setForm((p) => ({ ...p, category: v }))}>
+                    <Select value={form.category || "none"} onValueChange={(v) => setForm((p) => ({ ...p, category: v === "none" ? "" : v }))}>
                       <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">—</SelectItem>
+                        <SelectItem value="none">—</SelectItem>
                         <SelectItem value="general">General</SelectItem>
                         <SelectItem value="obc">OBC</SelectItem>
                         <SelectItem value="sc">SC</SelectItem>
