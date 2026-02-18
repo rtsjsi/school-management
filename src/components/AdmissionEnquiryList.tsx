@@ -39,13 +39,28 @@ type Enquiry = {
   created_at: string;
 };
 
+function normalizeEnquiry(row: Record<string, unknown>): Enquiry {
+  return {
+    id: String(row.id ?? ""),
+    name: String(row.name ?? ""),
+    contact_phone: row.contact_phone != null ? String(row.contact_phone) : null,
+    contact_email: row.contact_email != null ? String(row.contact_email) : null,
+    class_of_interest: row.class_of_interest != null ? String(row.class_of_interest) : null,
+    enquiry_date: row.enquiry_date != null ? String(row.enquiry_date) : "",
+    status: String(row.status ?? "new"),
+    notes: row.notes != null ? String(row.notes) : null,
+    created_at: String(row.created_at ?? ""),
+  };
+}
+
 export function AdmissionEnquiryList() {
   const router = useRouter();
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
-  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Enquiry>>({});
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const supabase = createClient();
 
@@ -55,12 +70,19 @@ export function AdmissionEnquiryList() {
       .select("id, name, contact_phone, contact_email, class_of_interest, enquiry_date, status, notes, created_at")
       .order("enquiry_date", { ascending: false });
 
-    if (statusFilter) q = q.eq("status", statusFilter);
+    if (statusFilter && statusFilter !== "all") q = q.eq("status", statusFilter);
     if (search.trim()) {
       q = q.or(`name.ilike.%${search.trim()}%,contact_phone.ilike.%${search.trim()}%,contact_email.ilike.%${search.trim()}%`);
     }
 
-    q.then(({ data }) => setEnquiries((data ?? []) as Enquiry[]));
+    q.then(({ data, error }) => {
+      setFetchError(error ? error.message : null);
+      const rows = Array.isArray(data) ? data.map(normalizeEnquiry) : [];
+      setEnquiries(rows);
+    }).catch((err) => {
+      setFetchError(err instanceof Error ? err.message : "Failed to load enquiries");
+      setEnquiries([]);
+    });
   }, [statusFilter, search]);
 
   const handleUpdate = async (id: string) => {
@@ -101,8 +123,8 @@ export function AdmissionEnquiryList() {
       contact_phone: e.contact_phone ?? "",
       contact_email: e.contact_email ?? "",
       class_of_interest: e.class_of_interest ?? "",
-      enquiry_date: e.enquiry_date,
-      status: e.status,
+      enquiry_date: e.enquiry_date ?? "",
+      status: e.status || "new",
       notes: e.notes ?? "",
     });
   };
@@ -114,6 +136,9 @@ export function AdmissionEnquiryList() {
         <CardDescription>View and update enquiries. Filter by status or search by name/contact.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {fetchError && (
+          <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{fetchError}</p>
+        )}
         <div className="flex flex-wrap gap-4 items-end">
           <div className="space-y-2">
             <Label>Status</Label>
@@ -122,7 +147,7 @@ export function AdmissionEnquiryList() {
                 <SelectValue placeholder="All" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All</SelectItem>
+                <SelectItem value="all">All</SelectItem>
                 {STATUSES.map((s) => (
                   <SelectItem key={s} value={s}>
                     {s.replace(/_/g, " ")}
@@ -191,7 +216,7 @@ export function AdmissionEnquiryList() {
                       </TableCell>
                       <TableCell>
                         <Select
-                          value={editForm.status ?? ""}
+                          value={editForm.status ?? "new"}
                           onValueChange={(v) => setEditForm((p) => ({ ...p, status: v }))}
                         >
                           <SelectTrigger className="h-8 w-32">
@@ -228,7 +253,7 @@ export function AdmissionEnquiryList() {
                           : "—"}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary">{e.status.replace(/_/g, " ")}</Badge>
+                        <Badge variant="secondary">{(e.status || "new").replace(/_/g, " ")}</Badge>
                       </TableCell>
                       <TableCell>
                         <Button size="sm" variant="ghost" onClick={() => startEdit(e)}>
