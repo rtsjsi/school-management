@@ -406,6 +406,10 @@ export default function StudentEntryForm() {
               placeholder="Any additional notes or remarks"
             />
           </div>
+
+          <p className="text-xs text-muted-foreground pt-2">
+            You can add documents and photos (student, mother, father) after saving the student via Edit.
+          </p>
         </div>
       )}
 

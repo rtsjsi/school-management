@@ -52,6 +52,9 @@ Use the **same Supabase project** for both so data and auth are shared.
    **Option B – Supabase CLI (link project and push migrations)**  
    See [Supabase CLI: link and push](#supabase-cli-link-and-push) below.
 
+   **Optional – Student documents & photos (Storage)**  
+   The migration may create the `student-uploads` bucket. If uploads fail, in Supabase Dashboard → **Storage** create a private bucket with id `student-uploads`, allow MIME types for images and PDF, and add policies so **authenticated** users can SELECT, INSERT, UPDATE, and DELETE objects in that bucket.
+
 4. Run dev server:
 
    ```bash

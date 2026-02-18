@@ -55,7 +55,7 @@ export default async function FeesPage() {
 
         <TabsContent value="collection" className="space-y-6">
           {canEdit && students && students.length > 0 && (
-            <FeeCollectionForm students={students} />
+            <FeeCollectionForm students={students} receivedBy={user.fullName ?? user.email ?? "Staff"} />
           )}
           {canEdit && students && students.length === 0 && (
             <p className="text-sm text-muted-foreground">Add students first to collect fees.</p>

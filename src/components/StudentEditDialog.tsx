@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
+import { StudentDocumentsPhotos } from "@/components/StudentDocumentsPhotos";
 
 interface StudentEditDialogProps {
   student: {
@@ -431,6 +432,8 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
               </div>
             </div>
           )}
+
+          <StudentDocumentsPhotos studentId={student.id} />
 
           <div className="flex gap-2 justify-end pt-4">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>

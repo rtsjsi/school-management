@@ -8,14 +8,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { generateReceiptPDF } from "@/lib/receipt-pdf";
+import { generateReceiptPDF, amountInWords } from "@/lib/receipt-pdf";
 
 const FEE_TYPES = ["tuition", "transport", "library", "lab", "sports", "other"] as const;
 const PAYMENT_MODES = ["cash", "cheque", "online"] as const;
+const DEFAULT_POLICY_NOTES = [
+  "(1) Fees will not be refunded in any case.",
+  "(2) Fees are not transferable.",
+  "(3) Cheque payment subject to realisation.",
+];
 
 type StudentOption = { id: string; full_name: string; grade?: string };
 
-export default function FeeCollectionForm({ students }: { students: StudentOption[] }) {
+export default function FeeCollectionForm({
+  students,
+  receivedBy,
+}: {
+  students: StudentOption[];
+  receivedBy?: string;
+}) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,6 +38,8 @@ export default function FeeCollectionForm({ students }: { students: StudentOptio
     quarter: "1",
     academic_year: new Date().getFullYear() + "-" + (new Date().getFullYear() + 1).toString().slice(-2),
     payment_mode: "cash" as string,
+    concession_amount: "",
+    period_label: "",
     cheque_number: "",
     cheque_bank: "",
     cheque_date: "",
@@ -50,8 +63,13 @@ export default function FeeCollectionForm({ students }: { students: StudentOptio
       return;
     }
     const amount = parseFloat(form.amount);
-    if (isNaN(amount) || amount <= 0) {
+    if (isNaN(amount) || amount < 0) {
       setError("Enter a valid amount.");
+      return;
+    }
+    const concessionAmount = form.concession_amount.trim() ? parseFloat(form.concession_amount) : 0;
+    if (isNaN(concessionAmount) || concessionAmount < 0) {
+      setError("Concession must be a non-negative number.");
       return;
     }
     if (form.payment_mode === "cheque" && !form.cheque_number?.trim()) {
@@ -83,6 +101,8 @@ export default function FeeCollectionForm({ students }: { students: StudentOptio
           quarter: parseInt(form.quarter),
           academic_year: form.academic_year,
           payment_mode: form.payment_mode,
+          concession_amount: concessionAmount,
+          period_label: form.period_label.trim() || null,
           cheque_number: form.payment_mode === "cheque" ? form.cheque_number.trim() : null,
           cheque_bank: form.payment_mode === "cheque" ? form.cheque_bank.trim() || null : null,
           cheque_date: form.payment_mode === "cheque" && form.cheque_date ? form.cheque_date : null,
@@ -102,7 +122,7 @@ export default function FeeCollectionForm({ students }: { students: StudentOptio
 
       if (existingFee) {
         const prevPaid = Number((existingFee as { paid_amount?: number }).paid_amount ?? 0);
-        const newPaid = prevPaid + amount;
+        const newPaid = prevPaid + amount + concessionAmount;
         const baseAmount = Number(existingFee.amount);
         const discountPct = Number((existingFee as { discount_percent?: number }).discount_percent ?? 0);
         const discountAmt = Number((existingFee as { discount_amount?: number }).discount_amount ?? 0);
@@ -127,6 +147,11 @@ export default function FeeCollectionForm({ students }: { students: StudentOptio
         academicYear: form.academic_year,
         feeType: form.fee_type,
         collectedAt: new Date((collection as { collected_at?: string })?.collected_at ?? Date.now()).toLocaleString(),
+        concessionAmount: concessionAmount > 0 ? concessionAmount : undefined,
+        periodLabel: form.period_label.trim() || undefined,
+        amountInWords: amountInWords(amount + concessionAmount),
+        receivedBy,
+        policyNotes: DEFAULT_POLICY_NOTES,
         chequeNumber: form.payment_mode === "cheque" ? form.cheque_number : undefined,
         chequeBank: form.payment_mode === "cheque" ? form.cheque_bank : undefined,
         chequeDate: form.payment_mode === "cheque" && form.cheque_date ? form.cheque_date : undefined,
@@ -148,6 +173,8 @@ export default function FeeCollectionForm({ students }: { students: StudentOptio
         quarter: "1",
         academic_year: form.academic_year,
         payment_mode: "cash",
+        concession_amount: "",
+        period_label: "",
         cheque_number: "",
         cheque_bank: "",
         cheque_date: "",
@@ -251,6 +278,30 @@ export default function FeeCollectionForm({ students }: { students: StudentOptio
                 value={form.academic_year}
                 onChange={(e) => setForm((p) => ({ ...p, academic_year: e.target.value }))}
                 placeholder="2024-2025"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="period_label">Period label (e.g. Dec – Feb)</Label>
+              <Input
+                id="period_label"
+                value={form.period_label}
+                onChange={(e) => setForm((p) => ({ ...p, period_label: e.target.value }))}
+                placeholder="Optional"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="concession_amount">Fee concession (Rs.)</Label>
+              <Input
+                id="concession_amount"
+                type="number"
+                min={0}
+                step={0.01}
+                value={form.concession_amount}
+                onChange={(e) => setForm((p) => ({ ...p, concession_amount: e.target.value }))}
+                placeholder="0"
               />
             </div>
           </div>

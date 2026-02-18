@@ -4,6 +4,7 @@ import { getUser } from "@/lib/auth";
 import { FileQuestion } from "lucide-react";
 import { ExamsList } from "@/components/async/ExamsList";
 import ExamMarksForm from "@/components/ExamMarksForm";
+import MultipleSubjectwiseMarksEntry from "@/components/MultipleSubjectwiseMarksEntry";
 import { TableSkeleton } from "@/components/skeletons/TableSkeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -27,6 +28,7 @@ export default async function ExamsPage() {
         <TabsList>
           <TabsTrigger value="exams">Exams</TabsTrigger>
           <TabsTrigger value="marks">Record Marks</TabsTrigger>
+          <TabsTrigger value="subjectwise">Subject-wise Marks</TabsTrigger>
         </TabsList>
         <TabsContent value="exams" className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-2">
@@ -37,6 +39,9 @@ export default async function ExamsPage() {
         </TabsContent>
         <TabsContent value="marks" className="space-y-6">
           <ExamMarksForm />
+        </TabsContent>
+        <TabsContent value="subjectwise" className="space-y-6">
+          <MultipleSubjectwiseMarksEntry />
         </TabsContent>
       </Tabs>
     </div>
