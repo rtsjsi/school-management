@@ -132,12 +132,28 @@ export default function StudentEntryForm() {
   const [pendingPhotos, setPendingPhotos] = useState<PendingPhotos>({});
   const [pendingDocuments, setPendingDocuments] = useState<PendingDocuments>({});
 
+  const requiredFields: { key: keyof ReturnType<typeof defaultForm>; label: string }[] = [
+    { key: "full_name", label: "Full name" },
+    { key: "date_of_birth", label: "Date of birth" },
+    { key: "address", label: "Address" },
+    { key: "father_name", label: "Father name" },
+    { key: "mother_name", label: "Mother name" },
+    { key: "parent_contact", label: "Parent contact" },
+    { key: "grade", label: "Grade" },
+    { key: "section", label: "Section" },
+    { key: "admission_date", label: "Admission date" },
+  ];
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!form.full_name.trim()) {
-      setError("Full name is required.");
-      return;
+    for (const { key, label } of requiredFields) {
+      const val = form[key];
+      const str = typeof val === "string" ? val.trim() : "";
+      if (!str) {
+        setError(`${label} is required.`);
+        return;
+      }
     }
 
     setLoading(true);
@@ -328,8 +344,8 @@ export default function StudentEntryForm() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Date of birth</Label>
-                  <Input type="date" value={form.date_of_birth} onChange={(e) => set("date_of_birth", e.target.value)} />
+                  <Label htmlFor="date_of_birth">Date of birth *</Label>
+                  <Input id="date_of_birth" type="date" value={form.date_of_birth} onChange={(e) => set("date_of_birth", e.target.value)} required />
                 </div>
                 <div className="space-y-2">
                   <Label>Blood group</Label>
@@ -362,8 +378,8 @@ export default function StudentEntryForm() {
                   <Input value={form.caste} onChange={(e) => set("caste", e.target.value)} />
                 </div>
                 <div className="space-y-2 sm:col-span-2">
-                  <Label>Address</Label>
-                  <Input value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="Full address" />
+                  <Label htmlFor="address">Address *</Label>
+                  <Input id="address" value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="Full address" required />
                 </div>
                 <div className="space-y-2">
                   <Label>Society</Label>
@@ -415,16 +431,16 @@ export default function StudentEntryForm() {
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Father name</Label>
-                  <Input value={form.father_name} onChange={(e) => set("father_name", e.target.value)} />
+                  <Label htmlFor="father_name">Father name *</Label>
+                  <Input id="father_name" value={form.father_name} onChange={(e) => set("father_name", e.target.value)} required />
                 </div>
                 <div className="space-y-2">
-                  <Label>Mother name</Label>
-                  <Input value={form.mother_name} onChange={(e) => set("mother_name", e.target.value)} />
+                  <Label htmlFor="mother_name">Mother name *</Label>
+                  <Input id="mother_name" value={form.mother_name} onChange={(e) => set("mother_name", e.target.value)} required />
                 </div>
                 <div className="space-y-2">
-                  <Label>Father / Parent contact</Label>
-                  <Input type="tel" value={form.parent_contact} onChange={(e) => set("parent_contact", e.target.value)} />
+                  <Label htmlFor="parent_contact">Father / Parent contact *</Label>
+                  <Input id="parent_contact" type="tel" value={form.parent_contact} onChange={(e) => set("parent_contact", e.target.value)} required />
                 </div>
                 <div className="space-y-2">
                   <Label>Mother contact</Label>
@@ -549,8 +565,8 @@ export default function StudentEntryForm() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Admission date</Label>
-                  <Input type="date" value={form.admission_date} onChange={(e) => set("admission_date", e.target.value)} />
+                  <Label htmlFor="admission_date">Admission date *</Label>
+                  <Input id="admission_date" type="date" value={form.admission_date} onChange={(e) => set("admission_date", e.target.value)} required />
                 </div>
                 <div className="space-y-2">
                   <Label>Grade *</Label>
