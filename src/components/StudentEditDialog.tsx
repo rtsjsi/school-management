@@ -27,7 +27,7 @@ import { Pencil } from "lucide-react";
 import { StudentDocumentsPhotos } from "@/components/StudentDocumentsPhotos";
 
 interface StudentEditDialogProps {
-  student: {
+  student: Record<string, unknown> & {
     id: string;
     student_id?: string;
     full_name: string;
@@ -82,6 +82,13 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
     guardian_contact: student.guardian_contact || "",
     notes: student.notes || "",
     is_rte_quota: student.is_rte_quota ?? false,
+    father_name: (student.father_name as string) || "",
+    mother_name: (student.mother_name as string) || "",
+    mother_contact: (student.mother_contact as string) || "",
+    category: (student.category as string) || "",
+    religion: (student.religion as string) || "",
+    aadhar_no: (student.aadhar_no as string) || "",
+    district: (student.district as string) || "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -95,31 +102,40 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
     setLoading(true);
     try {
       const supabase = createClient();
+      const payload: Record<string, unknown> = {
+        full_name: form.full_name.trim(),
+        email: form.email.trim() || null,
+        phone_number: form.phone_number.trim() || null,
+        date_of_birth: form.date_of_birth || null,
+        gender: form.gender || null,
+        blood_group: form.blood_group || null,
+        address: form.address.trim() || null,
+        grade: form.grade.trim() || null,
+        section: form.section.trim() || null,
+        roll_number: form.roll_number ? parseInt(form.roll_number) : null,
+        admission_date: form.admission_date || null,
+        academic_year: form.academic_year || null,
+        status: form.status,
+        parent_name: form.parent_name.trim() || form.father_name.trim() || form.mother_name.trim() || null,
+        parent_contact: form.parent_contact.trim() || null,
+        parent_email: form.parent_email.trim() || null,
+        parent_relationship: form.parent_relationship,
+        guardian_name: form.guardian_name.trim() || null,
+        guardian_contact: form.guardian_contact.trim() || null,
+        notes: form.notes.trim() || null,
+        is_rte_quota: form.is_rte_quota,
+      };
+      payload.father_name = form.father_name.trim() || null;
+      payload.mother_name = form.mother_name.trim() || null;
+      payload.mother_contact = form.mother_contact.trim() || null;
+      payload.category = form.category || null;
+      payload.religion = form.religion.trim() || null;
+      payload.aadhar_no = form.aadhar_no.trim() || null;
+      payload.district = form.district.trim() || null;
+
       const { error: err } = await supabase
         .from("students")
-        .update({
-          full_name: form.full_name.trim(),
-          email: form.email.trim() || null,
-          phone_number: form.phone_number.trim() || null,
-          date_of_birth: form.date_of_birth || null,
-          gender: form.gender || null,
-          blood_group: form.blood_group || null,
-          address: form.address.trim() || null,
-          grade: form.grade.trim() || null,
-          section: form.section.trim() || null,
-          roll_number: form.roll_number ? parseInt(form.roll_number) : null,
-          admission_date: form.admission_date || null,
-          academic_year: form.academic_year || null,
-          status: form.status,
-          parent_name: form.parent_name.trim() || null,
-          parent_contact: form.parent_contact.trim() || null,
-          parent_email: form.parent_email.trim() || null,
-          parent_relationship: form.parent_relationship,
-          guardian_name: form.guardian_name.trim() || null,
-          guardian_contact: form.guardian_contact.trim() || null,
-          notes: form.notes.trim() || null,
-          is_rte_quota: form.is_rte_quota,
-        })
+        .update(payload)
         .eq("id", student.id);
 
       if (err) {
@@ -417,6 +433,47 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
                     onChange={(e) => setForm((p) => ({ ...p, guardian_contact: e.target.value }))}
                     placeholder="Guardian phone number"
                   />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div className="space-y-2">
+                    <Label>Father name</Label>
+                    <Input value={form.father_name} onChange={(e) => setForm((p) => ({ ...p, father_name: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Mother name</Label>
+                    <Input value={form.mother_name} onChange={(e) => setForm((p) => ({ ...p, mother_name: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Mother contact</Label>
+                    <Input type="tel" value={form.mother_contact} onChange={(e) => setForm((p) => ({ ...p, mother_contact: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Category</Label>
+                    <Select value={form.category} onValueChange={(v) => setForm((p) => ({ ...p, category: v }))}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">—</SelectItem>
+                        <SelectItem value="general">General</SelectItem>
+                        <SelectItem value="obc">OBC</SelectItem>
+                        <SelectItem value="sc">SC</SelectItem>
+                        <SelectItem value="st">ST</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Religion</Label>
+                    <Input value={form.religion} onChange={(e) => setForm((p) => ({ ...p, religion: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Aadhar No</Label>
+                    <Input value={form.aadhar_no} onChange={(e) => setForm((p) => ({ ...p, aadhar_no: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>District</Label>
+                    <Input value={form.district} onChange={(e) => setForm((p) => ({ ...p, district: e.target.value }))} />
+                  </div>
                 </div>
               </div>
 
