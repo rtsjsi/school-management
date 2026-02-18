@@ -256,13 +256,14 @@ export default function StudentEntryForm() {
       )}
 
       <Tabs defaultValue="basic" className="w-full">
-        <TabsList className="grid w-full grid-cols-5 lg:grid-cols-6">
+        <TabsList className="grid w-full grid-cols-6 lg:grid-cols-7">
           <TabsTrigger value="basic">Basic</TabsTrigger>
           <TabsTrigger value="parents">Parents</TabsTrigger>
           <TabsTrigger value="academic">Academic</TabsTrigger>
           <TabsTrigger value="other">Other</TabsTrigger>
           <TabsTrigger value="fee">Fee & Bank</TabsTrigger>
           <TabsTrigger value="transport">Transport</TabsTrigger>
+          <TabsTrigger value="documents">Documents</TabsTrigger>
         </TabsList>
 
         <TabsContent value="basic" className="space-y-4 mt-4">
@@ -675,6 +676,22 @@ export default function StudentEntryForm() {
                   <Input value={form.transport_pickup_point} onChange={(e) => set("transport_pickup_point", e.target.value)} />
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="documents" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Documents & Photos</CardTitle>
+              <CardDescription>
+                Save the student first to upload documents (Aadhar, birth certificate, etc.) and photos.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Click &quot;Add student&quot; below to create the record. After saving, you can upload Aadhar card, photographs, and other documents.
+              </p>
             </CardContent>
           </Card>
         </TabsContent>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { StudentEditDialog } from "@/components/StudentEditDialog";
+import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -22,6 +22,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Pencil } from "lucide-react";
 
 type StudentRow = {
   id: string;
@@ -155,6 +157,7 @@ export function ManageStudentsList() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-16"></TableHead>
                   <TableHead>Student ID</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>RTE</TableHead>
@@ -163,12 +166,19 @@ export function ManageStudentsList() {
                   <TableHead>Roll #</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Admission</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {students.map((s) => (
                   <TableRow key={s.id}>
+                    <TableCell>
+                      <Button size="sm" variant="outline" className="gap-1" asChild>
+                        <Link href={`/dashboard/students/${s.id}/edit`}>
+                          <Pencil className="h-3 w-3" />
+                          Edit
+                        </Link>
+                      </Button>
+                    </TableCell>
                     <TableCell className="font-mono text-xs text-muted-foreground">
                       {s.student_id || "—"}
                     </TableCell>
@@ -188,9 +198,6 @@ export function ManageStudentsList() {
                       {s.admission_date
                         ? new Date(s.admission_date).toLocaleDateString()
                         : "—"}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <StudentEditDialog student={s} />
                     </TableCell>
                   </TableRow>
                 ))}
