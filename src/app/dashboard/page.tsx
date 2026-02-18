@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getUser, isSuperAdmin, isAdminOrAbove } from "@/lib/auth";
+import { getUser, isAdminOrAbove } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { ROLES } from "@/types/auth";
 import {
@@ -7,46 +7,115 @@ import {
   GraduationCap,
   UserPlus,
   ArrowRight,
+  IndianRupee,
+  AlertCircle,
+  UserCheck,
+  TrendingUp,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+
+function formatCurrency(n: number) {
+  return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
+}
 
 export default async function DashboardPage() {
   const user = await getUser();
   if (!user) return null;
 
   const supabase = await createClient();
-  const [{ count: studentsCount }, { count: employeesCount }] = await Promise.all([
+
+  const now = new Date();
+  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10) + "T00:00:00";
+  const thisMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+
+  const monthStart = thisMonthStart.slice(0, 10);
+  const monthEnd = thisMonthEnd.slice(0, 10);
+
+  const [
+    { count: studentsCount },
+    { count: activeStudentsCount },
+    { count: employeesCount },
+    { count: classesCount },
+    feeCollectedResult,
+    pendingFeesResult,
+    { count: admissionEnquiriesCount },
+    expensesResult,
+  ] = await Promise.all([
     supabase.from("students").select("*", { count: "exact", head: true }),
+    supabase.from("students").select("*", { count: "exact", head: true }).eq("status", "active"),
     supabase.from("employees").select("*", { count: "exact", head: true }),
+    supabase.from("classes").select("*", { count: "exact", head: true }),
+    supabase
+      .from("fee_collections")
+      .select("amount")
+      .gte("collected_at", thisMonthStart)
+      .lte("collected_at", thisMonthEnd),
+    supabase
+      .from("fees")
+      .select("amount, paid_amount")
+      .in("status", ["pending", "overdue"]),
+    supabase
+      .from("admission_enquiries")
+      .select("*", { count: "exact", head: true })
+      .gte("enquiry_date", monthStart)
+      .lte("enquiry_date", monthEnd),
+    supabase
+      .from("expenses")
+      .select("amount")
+      .gte("expense_date", monthStart)
+      .lte("expense_date", monthEnd),
   ]);
 
-  const { data: recentStudents } = await supabase
-    .from("students")
-    .select("id, full_name, email, grade, section")
-    .order("created_at", { ascending: false })
-    .limit(5);
+  const feeCollected = (feeCollectedResult.data ?? []).reduce((sum, r) => sum + Number(r.amount ?? 0), 0);
+  const pendingFees = (pendingFeesResult.data ?? []).reduce(
+    (sum, r) => sum + Math.max(0, Number(r.amount ?? 0) - Number(r.paid_amount ?? 0)),
+    0
+  );
+  const expensesThisMonth = (expensesResult.data ?? []).reduce((sum, r) => sum + Number(r.amount ?? 0), 0);
 
   const roleLabel = ROLES[user.role as keyof typeof ROLES] ?? user.role;
 
   const statCards = [
     ...(isAdminOrAbove(user)
-      ? [{
-          title: "Total students",
-          value: String(studentsCount ?? 0),
-          description: "Enrolled students",
-          icon: GraduationCap,
-          href: "/dashboard/students",
-        }]
+      ? [
+          {
+            title: "Active students",
+            value: String(activeStudentsCount ?? 0),
+            description: `${studentsCount ?? 0} total enrolled`,
+            icon: GraduationCap,
+            href: "/dashboard/students",
+          },
+          {
+            title: "Fee collected (this month)",
+            value: formatCurrency(feeCollected),
+            description: "Collections this month",
+            icon: IndianRupee,
+            href: "/dashboard/fees",
+          },
+          {
+            title: "Pending fees",
+            value: formatCurrency(pendingFees),
+            description: "Outstanding amount",
+            icon: AlertCircle,
+            href: "/dashboard/fees",
+          },
+          {
+            title: "Admission enquiries",
+            value: String(admissionEnquiriesCount ?? 0),
+            description: "This month",
+            icon: UserCheck,
+            href: "/dashboard/admission-enquiry",
+          },
+          {
+            title: "Expenses (this month)",
+            value: formatCurrency(expensesThisMonth),
+            description: "This month",
+            icon: TrendingUp,
+            href: "/dashboard/expenses",
+          },
+        ]
       : []),
     ...(isAdminOrAbove(user)
       ? [{
@@ -59,7 +128,7 @@ export default async function DashboardPage() {
       : []),
     {
       title: "Classes",
-      value: "—",
+      value: String(classesCount ?? 0),
       description: "View classes",
       icon: BookOpen,
       href: "/dashboard/classes",
@@ -77,8 +146,7 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {statCards.map((stat) => {
           const Icon = stat.icon;
           const card = (
@@ -111,51 +179,7 @@ export default async function DashboardPage() {
         })}
       </div>
 
-      {/* Recent students table (admin/super_admin) or placeholder */}
-      {isAdminOrAbove(user) ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Recent students</CardTitle>
-            <CardDescription>Latest student entries</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {recentStudents && recentStudents.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Grade</TableHead>
-                    <TableHead>Section</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentStudents.map((s) => (
-                    <TableRow key={s.id}>
-                      <TableCell className="font-medium">{s.full_name}</TableCell>
-                      <TableCell className="text-muted-foreground">{s.email ?? "—"}</TableCell>
-                      <TableCell>{s.grade ?? "—"}</TableCell>
-                      <TableCell>{s.section ?? "—"}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            ) : (
-              <p className="text-sm text-muted-foreground py-6 text-center">
-                No students yet.{" "}
-                <Link href="/dashboard/students" className="text-primary hover:underline">
-                  Add students
-                </Link>
-              </p>
-            )}
-            {recentStudents && recentStudents.length > 0 && (
-              <Button variant="outline" size="sm" className="mt-4" asChild>
-                <Link href="/dashboard/students">View all students</Link>
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      ) : (
+      {!isAdminOrAbove(user) && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Role permissions</CardTitle>
@@ -168,15 +192,6 @@ export default async function DashboardPage() {
               <li>• <strong className="text-foreground">Super Admin:</strong> Full access: all admin features plus role assignment and system settings.</li>
             </ul>
           </CardContent>
-        </Card>
-      )}
-
-      {isSuperAdmin(user) && (
-        <Card className="border-primary/25 bg-primary/5 shadow-card">
-          <CardHeader>
-            <CardTitle className="text-base text-primary">Super Admin</CardTitle>
-            <CardDescription>You have full access. Use the Users page to assign roles.</CardDescription>
-          </CardHeader>
         </Card>
       )}
     </div>
