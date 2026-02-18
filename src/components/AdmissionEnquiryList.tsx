@@ -75,14 +75,17 @@ export function AdmissionEnquiryList() {
       q = q.or(`name.ilike.%${search.trim()}%,contact_phone.ilike.%${search.trim()}%,contact_email.ilike.%${search.trim()}%`);
     }
 
-    q.then(({ data, error }) => {
-      setFetchError(error ? error.message : null);
-      const rows = Array.isArray(data) ? data.map(normalizeEnquiry) : [];
-      setEnquiries(rows);
-    }).catch((err) => {
-      setFetchError(err instanceof Error ? err.message : "Failed to load enquiries");
-      setEnquiries([]);
-    });
+    (async () => {
+      try {
+        const { data, error } = await q;
+        setFetchError(error ? error.message : null);
+        const rows = Array.isArray(data) ? data.map(normalizeEnquiry) : [];
+        setEnquiries(rows);
+      } catch (err) {
+        setFetchError(err instanceof Error ? err.message : "Failed to load enquiries");
+        setEnquiries([]);
+      }
+    })();
   }, [statusFilter, search]);
 
   const handleUpdate = async (id: string) => {
