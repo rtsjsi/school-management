@@ -34,10 +34,10 @@ function numberToWords(n: number): string {
 export function amountInWords(amount: number): string {
   const whole = Math.floor(amount);
   const words = numberToWords(whole);
-  return words + " Rupees Only";
+  return words.toUpperCase() + " RUPEES ONLY";
 }
 
-interface ReceiptData {
+export interface ReceiptData {
   receiptNumber: string;
   studentName: string;
   amount: number;
@@ -51,136 +51,145 @@ interface ReceiptData {
   chequeDate?: string;
   onlineTransactionId?: string;
   onlineTransactionRef?: string;
-  /** Concession/discount given */
   concessionAmount?: number;
-  /** e.g. Dec - Feb */
   periodLabel?: string;
-  /** Amount in words (e.g. "Nine Thousand Forty-Five Rupees Only") */
   amountInWords?: string;
-  /** Name of staff who received payment */
   receivedBy?: string;
-  /** Policy notes for receipt footer */
   policyNotes?: string[];
+  /** School name for header */
+  schoolName?: string;
+  /** School address */
+  schoolAddress?: string;
+  /** Student grade (e.g. "1") */
+  grade?: string;
+  /** Section (e.g. "A") */
+  section?: string;
+  /** Roll number */
+  rollNumber?: number | string;
+  /** GR No. / Student ID */
+  grNo?: string;
 }
 
 export function generateReceiptPDF(data: ReceiptData): Blob {
-  const doc = new jsPDF({ unit: "mm", format: "a5" });
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
   const w = doc.internal.pageSize.getWidth();
-  let y = 20;
+  const margin = 20;
+  let y = 25;
 
-  doc.setFontSize(18);
+  const schoolName = data.schoolName ?? "SCHOOL NAME";
+  const schoolAddress = data.schoolAddress ?? "Address";
+
+  doc.setFontSize(20);
   doc.setFont("helvetica", "bold");
-  doc.text("SCHOOL FEE RECEIPT", w / 2, y, { align: "center" });
+  doc.text(schoolName.toUpperCase(), w / 2, y, { align: "center" });
+  y += 8;
+
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "normal");
+  doc.text(schoolAddress.toUpperCase(), w / 2, y, { align: "center" });
   y += 12;
 
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  doc.text("Official Receipt", w / 2, y, { align: "center" });
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text("Fee Receipt", w / 2, y, { align: "center" });
   y += 15;
 
   doc.setDrawColor(0, 0, 0);
-  doc.line(15, y, w - 15, y);
+  doc.line(margin, y, w - margin, y);
+  y += 10;
+
+  const col1 = margin;
+  const col2 = w - margin;
+  const dateStr = data.collectedAt ? new Date(data.collectedAt).toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text("Receipt No.:", col1, y);
+  doc.text(data.receiptNumber, col1 + 45, y);
+  doc.text("Date:", col2 - 50, y);
+  doc.text(dateStr, col2 - 25, y);
+  y += 7;
+
+  doc.text("Name:", col1, y);
+  doc.text(data.studentName, col1 + 45, y);
+  const stdDiv = [data.grade, data.section].filter(Boolean).join(" ") || "—";
+  doc.text("Std:", col2 - 50, y);
+  doc.text(stdDiv, col2 - 25, y);
+  y += 7;
+
+  doc.text("Div.:", col1, y);
+  doc.text(data.section ?? "—", col1 + 45, y);
+  doc.text("GR No.:", col2 - 50, y);
+  doc.text(data.grNo ?? "—", col2 - 25, y);
+  y += 7;
+
+  doc.text("Period:", col1, y);
+  doc.text(data.periodLabel ?? `Q${data.quarter} (${data.academicYear})`, col1 + 45, y);
+  doc.text("Year:", col2 - 50, y);
+  doc.text(data.academicYear, col2 - 25, y);
+  y += 7;
+
+  doc.text("Pay Type:", col1, y);
+  doc.text(data.paymentMode.charAt(0).toUpperCase() + data.paymentMode.slice(1), col1 + 45, y);
+  y += 12;
+
+  doc.line(margin, y, w - margin, y);
   y += 10;
 
   doc.setFont("helvetica", "bold");
-  doc.text("Receipt No:", 20, y);
+  doc.text("Fees", w / 2, y, { align: "center" });
+  y += 8;
+
+  const feeLabel = data.feeType.charAt(0).toUpperCase() + data.feeType.slice(1).replace(/_/g, " ") + " Fee";
   doc.setFont("helvetica", "normal");
-  doc.text(data.receiptNumber, 80, y);
+  doc.text(`${feeLabel} :`, margin + 5, y);
+  doc.text(data.amount.toFixed(2), w - margin - 5, y, { align: "right" });
+  y += 10;
+
+  doc.line(margin, y, w - margin, y);
   y += 10;
 
   doc.setFont("helvetica", "bold");
-  doc.text("Date:", 20, y);
-  doc.setFont("helvetica", "normal");
-  doc.text(data.collectedAt, 80, y);
-  y += 10;
-
-  doc.setFont("helvetica", "bold");
-  doc.text("Student:", 20, y);
-  doc.setFont("helvetica", "normal");
-  doc.text(data.studentName, 80, y);
-  y += 10;
-
-  doc.setFont("helvetica", "bold");
-  doc.text("Fee Type:", 20, y);
-  doc.setFont("helvetica", "normal");
-  doc.text(data.feeType.charAt(0).toUpperCase() + data.feeType.slice(1), 80, y);
-  y += 10;
-
-  doc.setFont("helvetica", "bold");
-  doc.text("Period:", 20, y);
-  doc.setFont("helvetica", "normal");
-  doc.text(data.periodLabel ?? `Q${data.quarter} (${data.academicYear})`, 80, y);
-  y += 10;
-
-  doc.setFont("helvetica", "bold");
-  doc.text("Amount:", 20, y);
-  doc.setFont("helvetica", "normal");
-  doc.text(`Rs. ${data.amount.toLocaleString()}`, 80, y);
-  y += 10;
-
-  if (data.concessionAmount != null && data.concessionAmount > 0) {
-    doc.setFont("helvetica", "bold");
-    doc.text("Concession:", 20, y);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Rs. ${data.concessionAmount.toLocaleString()}`, 80, y);
-    y += 10;
-  }
+  doc.text("Total Fee:", margin + 5, y);
+  doc.text(data.amount.toFixed(2), w - margin - 5, y, { align: "right" });
+  y += 8;
 
   const amountWords = data.amountInWords ?? amountInWords(data.amount);
-  doc.setFont("helvetica", "bold");
-  doc.text("In words:", 20, y);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  doc.text(amountWords, 20, y + 5, { maxWidth: w - 40 });
-  y += 14;
+  doc.text(amountWords, margin + 5, y);
+  y += 15;
 
-  doc.setFontSize(10);
+  doc.line(margin, y, w - margin, y);
+  y += 10;
+
   doc.setFont("helvetica", "bold");
-  doc.text("Payment Mode:", 20, y);
+  doc.setFontSize(10);
+  doc.text("Note:", margin, y);
+  y += 6;
+
+  const notes = data.policyNotes && data.policyNotes.length > 0
+    ? data.policyNotes
+    : [
+        "(1) Fees will not be given back in any case.",
+        "(2) Fees are not transferable.",
+        "(3) Cheque payment subject to realization of cheque.",
+      ];
+
   doc.setFont("helvetica", "normal");
-  doc.text(data.paymentMode.charAt(0).toUpperCase() + data.paymentMode.slice(1), 80, y);
-  y += 10;
-
-  if (data.paymentMode === "cheque" && (data.chequeNumber || data.chequeBank || data.chequeDate)) {
-    doc.setFont("helvetica", "bold");
-    doc.text("Cheque Details:", 20, y);
-    y += 6;
-    doc.setFont("helvetica", "normal");
-    const chequeParts = [data.chequeNumber && `No: ${data.chequeNumber}`, data.chequeBank && `Bank: ${data.chequeBank}`, data.chequeDate && `Date: ${data.chequeDate}`].filter(Boolean);
-    doc.text(chequeParts.join(", "), 20, y);
-    y += 10;
-  }
-
-  if (data.paymentMode === "online" && (data.onlineTransactionId || data.onlineTransactionRef)) {
-    doc.setFont("helvetica", "bold");
-    doc.text("Transaction Details:", 20, y);
-    y += 6;
-    doc.setFont("helvetica", "normal");
-    const txnParts = [data.onlineTransactionId && `Txn ID: ${data.onlineTransactionId}`, data.onlineTransactionRef && `Ref: ${data.onlineTransactionRef}`].filter(Boolean);
-    doc.text(txnParts.join(", "), 20, y);
-    y += 10;
-  }
-
-  y += 10;
-  if (data.receivedBy) {
-    doc.setFont("helvetica", "bold");
-    doc.text("Received by:", 20, y);
-    doc.setFont("helvetica", "normal");
-    doc.text(data.receivedBy, 80, y);
-    y += 10;
-  }
-
-  y += 8;
-  doc.line(15, y, w - 15, y);
-  y += 8;
-  doc.setFont("helvetica", "italic");
-  doc.setFontSize(8);
-  const defaultNote = "This is a computer-generated receipt. Please retain for your records.";
-  const notes = data.policyNotes && data.policyNotes.length > 0 ? data.policyNotes : [defaultNote];
   notes.forEach((line) => {
-    doc.text(line, w / 2, y, { align: "center" });
+    doc.text(line, margin + 5, y);
     y += 5;
   });
+
+  y += 8;
+  doc.setFont("helvetica", "bold");
+  doc.text("Received By", w - margin - 45, y);
+  y += 2;
+  doc.line(w - margin - 50, y, w - margin, y);
+  y += 8;
+  doc.setFont("helvetica", "normal");
+  doc.text(data.receivedBy ?? "", w - margin - 45, y);
 
   return doc.output("blob");
 }

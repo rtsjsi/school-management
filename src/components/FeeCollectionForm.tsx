@@ -18,7 +18,7 @@ const DEFAULT_POLICY_NOTES = [
   "(3) Cheque payment subject to realisation.",
 ];
 
-type StudentOption = { id: string; full_name: string; grade?: string };
+type StudentOption = { id: string; full_name: string; grade?: string; section?: string; roll_number?: number; student_id?: string };
 
 export default function FeeCollectionForm({
   students,
@@ -138,6 +138,8 @@ export default function FeeCollectionForm({
         ? (collection?.students[0] as { full_name?: string })?.full_name ?? "—"
         : (collection?.students as { full_name?: string } | null)?.full_name ?? "—";
 
+      const selectedStudent = students.find((s) => s.id === form.student_id);
+
       const pdfBlob = generateReceiptPDF({
         receiptNumber,
         studentName,
@@ -146,7 +148,7 @@ export default function FeeCollectionForm({
         quarter: parseInt(form.quarter),
         academicYear: form.academic_year,
         feeType: form.fee_type,
-        collectedAt: new Date((collection as { collected_at?: string })?.collected_at ?? Date.now()).toLocaleString(),
+        collectedAt: new Date((collection as { collected_at?: string })?.collected_at ?? Date.now()).toISOString(),
         concessionAmount: concessionAmount > 0 ? concessionAmount : undefined,
         periodLabel: form.period_label.trim() || undefined,
         amountInWords: amountInWords(amount + concessionAmount),
@@ -157,6 +159,12 @@ export default function FeeCollectionForm({
         chequeDate: form.payment_mode === "cheque" && form.cheque_date ? form.cheque_date : undefined,
         onlineTransactionId: form.payment_mode === "online" ? form.online_transaction_id : undefined,
         onlineTransactionRef: form.payment_mode === "online" ? form.online_transaction_ref : undefined,
+        schoolName: process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "School",
+        schoolAddress: process.env.NEXT_PUBLIC_SCHOOL_ADDRESS ?? "",
+        grade: selectedStudent?.grade,
+        section: selectedStudent?.section,
+        rollNumber: selectedStudent?.roll_number,
+        grNo: selectedStudent?.student_id ?? selectedStudent?.id?.slice(0, 8),
       });
 
       const url = URL.createObjectURL(pdfBlob);
