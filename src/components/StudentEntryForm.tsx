@@ -19,6 +19,28 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StudentDocumentsPhotos } from "@/components/StudentDocumentsPhotos";
 import { Button } from "@/components/ui/button";
+import { Upload, FileText, ImageIcon } from "lucide-react";
+import {
+  uploadStudentFiles,
+  type PendingPhotos,
+  type PendingDocuments,
+} from "@/lib/student-uploads";
+
+const PHOTO_ROLES = ["student", "mother", "father"] as const;
+const PHOTO_LABELS: Record<(typeof PHOTO_ROLES)[number], string> = {
+  student: "Student",
+  mother: "Mother",
+  father: "Father",
+};
+const DOC_TYPES = ["admission_form", "leaving_cert", "birth_cert", "aadhar", "caste_cert", "other"] as const;
+const DOC_LABELS: Record<(typeof DOC_TYPES)[number], string> = {
+  admission_form: "Admission form",
+  leaving_cert: "Leaving certificate",
+  birth_cert: "Birth certificate",
+  aadhar: "Aadhar card",
+  caste_cert: "Caste certificate",
+  other: "Other document",
+};
 
 const CATEGORIES = ["general", "obc", "sc", "st", "other"] as const;
 const ADMISSION_TYPES = ["regular", "transfer", "re-admission"] as const;
@@ -107,6 +129,8 @@ export default function StudentEntryForm() {
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState(defaultForm());
   const [createdStudentId, setCreatedStudentId] = useState<string | null>(null);
+  const [pendingPhotos, setPendingPhotos] = useState<PendingPhotos>({});
+  const [pendingDocuments, setPendingDocuments] = useState<PendingDocuments>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -213,7 +237,21 @@ export default function StudentEntryForm() {
       }
 
       if (inserted?.id) {
+        const hasPending = Object.keys(pendingPhotos).length > 0 || Object.keys(pendingDocuments).length > 0;
+        if (hasPending) {
+          const { error: uploadErr } = await uploadStudentFiles(
+            supabase,
+            inserted.id,
+            pendingPhotos,
+            pendingDocuments
+          );
+          if (uploadErr) {
+            setError(`Student created but upload failed: ${uploadErr}`);
+          }
+        }
         setCreatedStudentId(inserted.id);
+        setPendingPhotos({});
+        setPendingDocuments({});
       } else {
         setForm(defaultForm());
       }
@@ -685,13 +723,121 @@ export default function StudentEntryForm() {
             <CardHeader>
               <CardTitle className="text-base">Documents & Photos</CardTitle>
               <CardDescription>
-                Save the student first to upload documents (Aadhar, birth certificate, etc.) and photos.
+                Select files now. They will be uploaded when you click &quot;Add student&quot;.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Click &quot;Add student&quot; below to create the record. After saving, you can upload Aadhar card, photographs, and other documents.
-              </p>
+            <CardContent className="space-y-6">
+              <div>
+                <Label className="text-sm font-medium mb-2 block">Photos</Label>
+                <p className="text-xs text-muted-foreground mb-3">Student, Mother, Father (image only)</p>
+                <div className="grid grid-cols-3 gap-4">
+                  {PHOTO_ROLES.map((role) => {
+                    const file = pendingPhotos[role];
+                    return (
+                      <div key={role} className="border rounded-lg p-3 flex flex-col items-center gap-2">
+                        <div className="w-20 h-20 rounded-md bg-muted flex items-center justify-center overflow-hidden">
+                          {file ? (
+                            <span className="text-xs text-center px-1 truncate w-full">{file.name}</span>
+                          ) : (
+                            <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                          )}
+                        </div>
+                        <span className="text-xs font-medium">{PHOTO_LABELS[role]}</span>
+                        <div className="flex gap-1">
+                          <label className="cursor-pointer">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const f = e.target.files?.[0];
+                                if (f) setPendingPhotos((p) => ({ ...p, [role]: f }));
+                                e.target.value = "";
+                              }}
+                            />
+                            <Button type="button" size="sm" variant="outline" className="gap-1" asChild>
+                              <span>
+                                <Upload className="h-3 w-3" />
+                                {file ? "Replace" : "Upload"}
+                              </span>
+                            </Button>
+                          </label>
+                          {file && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => setPendingPhotos((p) => {
+                                const next = { ...p };
+                                delete next[role];
+                                return next;
+                              })}
+                            >
+                              Remove
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <Label className="text-sm font-medium mb-2 block">Documents</Label>
+                <p className="text-xs text-muted-foreground mb-3">PDF or image (Aadhar, birth cert, etc.)</p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {DOC_TYPES.map((docType) => {
+                    const file = pendingDocuments[docType];
+                    return (
+                      <div
+                        key={docType}
+                        className="flex items-center justify-between rounded-md border p-2 gap-2"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          <span className="text-sm truncate">{DOC_LABELS[docType]}</span>
+                        </div>
+                        <div className="flex gap-1 shrink-0">
+                          <label className="cursor-pointer">
+                            <input
+                              type="file"
+                              accept=".pdf,image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const f = e.target.files?.[0];
+                                if (f) setPendingDocuments((p) => ({ ...p, [docType]: f }));
+                                e.target.value = "";
+                              }}
+                            />
+                            <Button type="button" size="sm" variant="outline" className="gap-1" asChild>
+                              <span>
+                                <Upload className="h-3 w-3" />
+                                {file ? "Replace" : "Upload"}
+                              </span>
+                            </Button>
+                          </label>
+                          {file && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => setPendingDocuments((p) => {
+                                const next = { ...p };
+                                delete next[docType];
+                                return next;
+                              })}
+                            >
+                              Remove
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
