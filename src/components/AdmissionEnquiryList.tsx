@@ -78,7 +78,19 @@ export function AdmissionEnquiryList() {
     setEditForm({});
     router.refresh();
     setEnquiries((prev) =>
-      prev.map((e): Enquiry => (e.id === id ? { ...e, ...payload } : e))
+      prev.map((e): Enquiry => {
+        if (e.id !== id) return e;
+        return {
+          ...e,
+          name: payload.name,
+          contact_phone: payload.contact_phone,
+          contact_email: payload.contact_email,
+          class_of_interest: payload.class_of_interest,
+          enquiry_date: payload.enquiry_date ?? e.enquiry_date,
+          status: payload.status,
+          notes: payload.notes,
+        };
+      })
     );
   };
 
