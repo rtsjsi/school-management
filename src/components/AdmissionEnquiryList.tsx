@@ -65,21 +65,20 @@ export function AdmissionEnquiryList() {
 
   const handleUpdate = async (id: string) => {
     const payload = {
-      name: editForm.name,
+      name: editForm.name ?? "",
       contact_phone: editForm.contact_phone ?? null,
       contact_email: editForm.contact_email ?? null,
       class_of_interest: editForm.class_of_interest ?? null,
       enquiry_date: editForm.enquiry_date ?? null,
-      status: editForm.status,
+      status: editForm.status ?? "new",
       notes: editForm.notes ?? null,
-      updated_at: new Date().toISOString(),
     };
     await supabase.from("admission_enquiries").update(payload).eq("id", id);
     setEditingId(null);
     setEditForm({});
     router.refresh();
     setEnquiries((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, ...payload } : e))
+      prev.map((e): Enquiry => (e.id === id ? { ...e, ...payload } : e))
     );
   };
 
