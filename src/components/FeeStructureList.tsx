@@ -8,8 +8,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { FeeStructureRowActions } from "@/components/FeeStructureRowActions";
 
-export async function FeeStructureList() {
+export async function FeeStructureList({ canEdit = false }: { canEdit?: boolean }) {
   const supabase = await createClient();
   const { data: structures } = await supabase
     .from("fee_structures")
@@ -44,6 +45,7 @@ export async function FeeStructureList() {
               <TableHead>Grade Range</TableHead>
               <TableHead>Academic Year</TableHead>
               <TableHead>Items</TableHead>
+              {canEdit && <TableHead className="w-24"></TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -58,6 +60,19 @@ export async function FeeStructureList() {
                   <TableCell className="text-muted-foreground text-sm">
                     {itemCount} items
                   </TableCell>
+                  {canEdit && (
+                    <TableCell>
+                      <FeeStructureRowActions
+                        structure={{
+                          id: s.id,
+                          name: s.name,
+                          grade_from: s.grade_from,
+                          grade_to: s.grade_to,
+                          academic_year: s.academic_year,
+                        }}
+                      />
+                    </TableCell>
+                  )}
                 </TableRow>
               );
             })}

@@ -50,7 +50,7 @@ export default async function FeesPage() {
         <TabsContent value="structure" className="space-y-6">
           {canEdit && <FeeStructureForm />}
           <Suspense fallback={<TableSkeleton rows={3} columns={4} />}>
-            <FeeStructureList />
+            <FeeStructureList canEdit={canEdit} />
           </Suspense>
         </TabsContent>
 

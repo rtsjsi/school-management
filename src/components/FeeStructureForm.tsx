@@ -3,18 +3,27 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { updateFeeStructure } from "@/app/dashboard/fees/actions";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { AcademicYearSelect } from "@/components/AcademicYearSelect";
+import { Button } from "@/components/ui/button";
 
 const FEE_TYPES = ["tuition"] as const; // Education fees only
 
-export default function FeeStructureForm() {
+type FeeStructureFormProps = {
+  structureId?: string;
+  onSuccess?: () => void;
+  onCancel?: () => void;
+};
+
+export default function FeeStructureForm({ structureId, onSuccess, onCancel }: FeeStructureFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(!!structureId);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "",
@@ -28,6 +37,42 @@ export default function FeeStructureForm() {
   useEffect(() => {
     createClient().from("classes").select("id, name, sort_order").order("sort_order").then(({ data }) => setClasses(data ?? []));
   }, []);
+
+  useEffect(() => {
+    if (!structureId) return;
+    const load = async () => {
+      setLoadingData(true);
+      const supabase = createClient();
+      const { data: structure, error: structErr } = await supabase
+        .from("fee_structures")
+        .select("id, name, grade_from, grade_to, academic_year")
+        .eq("id", structureId)
+        .single();
+      if (structErr || !structure) {
+        setError(structErr?.message ?? "Structure not found");
+        setLoadingData(false);
+        return;
+      }
+      const { data: items } = await supabase
+        .from("fee_structure_items")
+        .select("fee_type, quarter, amount")
+        .eq("fee_structure_id", structureId);
+      setForm({
+        name: structure.name,
+        grade_from: structure.grade_from,
+        grade_to: structure.grade_to,
+        academic_year: structure.academic_year,
+      });
+      const amounts: Record<string, Record<number, string>> = {};
+      for (const item of items ?? []) {
+        if (!amounts[item.fee_type]) amounts[item.fee_type] = {};
+        amounts[item.fee_type][item.quarter] = String(item.amount);
+      }
+      setQuarterAmounts(amounts);
+      setLoadingData(false);
+    };
+    load();
+  }, [structureId]);
 
   const handleQuarterChange = (feeType: string, quarter: number, value: string) => {
     setQuarterAmounts((prev) => ({
@@ -49,8 +94,35 @@ export default function FeeStructureForm() {
       return;
     }
 
+    const items: { fee_type: string; quarter: number; amount: number }[] = [];
+    for (const feeType of FEE_TYPES) {
+      for (let q = 1; q <= 4; q++) {
+        const val = getAmount(feeType, q);
+        if (val && !isNaN(parseFloat(val)) && parseFloat(val) > 0) {
+          items.push({ fee_type: feeType, quarter: q, amount: parseFloat(val) });
+        }
+      }
+    }
+
     setLoading(true);
     try {
+      if (structureId) {
+        const result = await updateFeeStructure(structureId, {
+          name: form.name.trim(),
+          grade_from: form.grade_from.trim(),
+          grade_to: form.grade_to.trim(),
+          academic_year: form.academic_year.trim(),
+          items,
+        });
+        if (result.ok) {
+          onSuccess?.();
+          router.refresh();
+        } else {
+          setError(result.error);
+        }
+        return;
+      }
+
       const supabase = createClient();
       const { data: structure, error: structErr } = await supabase
         .from("fee_structures")
@@ -68,23 +140,15 @@ export default function FeeStructureForm() {
         return;
       }
 
-      const items: { fee_structure_id: string; fee_type: string; quarter: number; amount: number }[] = [];
-      for (const feeType of FEE_TYPES) {
-        for (let q = 1; q <= 4; q++) {
-          const val = getAmount(feeType, q);
-          if (val && !isNaN(parseFloat(val)) && parseFloat(val) > 0) {
-            items.push({
-              fee_structure_id: structure.id,
-              fee_type: feeType,
-              quarter: q,
-              amount: parseFloat(val),
-            });
-          }
-        }
-      }
+      const insertItems = items.map((i) => ({
+        fee_structure_id: structure.id,
+        fee_type: i.fee_type,
+        quarter: i.quarter,
+        amount: i.amount,
+      }));
 
-      if (items.length > 0) {
-        const { error: itemsErr } = await supabase.from("fee_structure_items").insert(items);
+      if (insertItems.length > 0) {
+        const { error: itemsErr } = await supabase.from("fee_structure_items").insert(insertItems);
         if (itemsErr) {
           setError(itemsErr.message);
           return;
@@ -101,10 +165,18 @@ export default function FeeStructureForm() {
     }
   };
 
-  return (
-    <Card>
-      <CardContent className="pt-6">
-        <form onSubmit={handleSubmit} className="space-y-4">
+  const isEdit = !!structureId;
+
+  if (loadingData) {
+    return (
+      <div className="py-4">
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      </div>
+    );
+  }
+
+  const formContent = (
+    <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
             <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>
           )}
@@ -206,10 +278,31 @@ export default function FeeStructureForm() {
             </div>
           </div>
 
-          <SubmitButton loading={loading} loadingLabel="Adding…" className="w-full">
-            Add Fee Structure
-          </SubmitButton>
+          <div className="flex gap-2">
+            {onCancel && (
+              <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
+                Cancel
+              </Button>
+            )}
+            <SubmitButton
+              loading={loading}
+              loadingLabel={structureId ? "Saving…" : "Adding…"}
+              className={onCancel ? "" : "w-full"}
+            >
+              {structureId ? "Update Fee Structure" : "Add Fee Structure"}
+            </SubmitButton>
+          </div>
         </form>
+  );
+
+  if (isEdit) {
+    return <div>{formContent}</div>;
+  }
+
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        {formContent}
       </CardContent>
     </Card>
   );
