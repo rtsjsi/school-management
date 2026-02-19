@@ -1,16 +1,18 @@
 ---
-description: Always push changes to git and Supabase after making edits
+description: Always push to git and Supabase after every change
 alwaysApply: true
 ---
 
-# Deploy After Changes
+# Deploy After Every Change
 
-After making any code or schema changes to this project:
+After making any changes to this project, always:
 
-1. **Supabase**: Run `npx supabase db push` if migrations were added or modified.
-2. **Git**: Stage, commit, and push all changes:
+1. **Git**: Stage, commit, and push:
    - `git add -A`
    - `git commit -m "descriptive message"`
-   - `git push origin main`
+   - `git push`
 
-Do not leave changes uncommitted or unpushed. Include this step as part of completing any task that modifies the codebase.
+2. **Supabase**: If there are new or modified migrations in `supabase/migrations/`, run:
+   - `npx supabase db push`
+
+Do this as the final step of every task that modifies the codebase. Do not leave changes uncommitted or unpushed.
