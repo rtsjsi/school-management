@@ -257,7 +257,7 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="section">Section *</Label>
+              <Label htmlFor="section">Division *</Label>
               <Input
                 id="section"
                 type="text"

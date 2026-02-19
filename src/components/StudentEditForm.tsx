@@ -223,14 +223,14 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
                 <Input value={form.mother_name} onChange={(e) => set("mother_name", e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Father / Parent contact</Label>
+                <Label>Father contact</Label>
                 <Input type="tel" value={form.parent_contact} onChange={(e) => set("parent_contact", e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Mother contact</Label>
                 <Input type="tel" value={form.mother_contact} onChange={(e) => set("mother_contact", e.target.value)} />
               </div>
-              <div className="space-y-2 sm:col-span-2">
+              <div className="space-y-2">
                 <Label>Parent email</Label>
                 <Input type="email" value={form.parent_email} onChange={(e) => set("parent_email", e.target.value)} />
               </div>
@@ -281,14 +281,10 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Admission & Academic Details</CardTitle>
-            <CardDescription>Grade, section, admission type, and previous school.</CardDescription>
+            <CardDescription>Grade, division, admission type, and previous school.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Admission form no</Label>
-                <Input value={form.admission_form_no} onChange={(e) => set("admission_form_no", e.target.value)} />
-              </div>
               <div className="space-y-2">
                 <Label>Admission type</Label>
                 <Select value={form.admission_type} onValueChange={(v) => set("admission_type", v)}>
@@ -301,16 +297,6 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Student type</Label>
-                <Select value={form.student_type} onValueChange={(v) => set("student_type", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="new">New</SelectItem>
-                    <SelectItem value="continuing">Continuing</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
                 <Label>Admission date</Label>
                 <Input type="date" value={form.admission_date} onChange={(e) => set("admission_date", e.target.value)} />
               </div>
@@ -319,7 +305,7 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
                 <Input value={form.grade} onChange={(e) => set("grade", e.target.value)} placeholder="e.g. 10" required />
               </div>
               <div className="space-y-2">
-                <Label>Section *</Label>
+                <Label>Division *</Label>
                 <Input value={form.section} onChange={(e) => set("section", e.target.value)} placeholder="e.g. A" required />
               </div>
               <div className="space-y-2">

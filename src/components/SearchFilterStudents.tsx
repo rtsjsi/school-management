@@ -106,13 +106,13 @@ export function SearchFilterStudents({ onSearch }: SearchFilterStudentsProps) {
 
             {/* Section Filter */}
             <div className="space-y-2">
-              <Label htmlFor="section-filter">Section</Label>
+              <Label htmlFor="section-filter">Division</Label>
               <Select value={section} onValueChange={setSection}>
                 <SelectTrigger id="section-filter">
-                  <SelectValue placeholder="All sections" />
+                  <SelectValue placeholder="All divisions" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All sections</SelectItem>
+                  <SelectItem value="all">All divisions</SelectItem>
                   <SelectItem value="A">Section A</SelectItem>
                   <SelectItem value="B">Section B</SelectItem>
                   <SelectItem value="C">Section C</SelectItem>
