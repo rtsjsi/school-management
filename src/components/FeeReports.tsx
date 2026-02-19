@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { getFeeTypeLabel } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -143,7 +144,7 @@ export default function FeeReports() {
                         <TableCell className="font-mono text-xs">{String(row.receipt_number ?? "—")}</TableCell>
                         <TableCell>{String(row.student_name ?? "—")}</TableCell>
                         <TableCell>{Number(row.amount ?? 0).toLocaleString()}</TableCell>
-                        <TableCell className="capitalize">{String(row.fee_type ?? "—")}</TableCell>
+                        <TableCell>{getFeeTypeLabel(String(row.fee_type ?? "—"))}</TableCell>
                         <TableCell className="capitalize">{String(row.payment_mode ?? "—")}</TableCell>
                         <TableCell>{row.collected_at ? new Date(row.collected_at as string).toLocaleDateString() : "—"}</TableCell>
                       </TableRow>

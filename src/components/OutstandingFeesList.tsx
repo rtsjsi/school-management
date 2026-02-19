@@ -9,6 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { isGradeInRange } from "@/lib/grade-utils";
+import { getFeeTypeLabel } from "@/lib/utils";
 
 export async function OutstandingFeesList() {
   const supabase = await createClient();
@@ -111,7 +112,7 @@ export async function OutstandingFeesList() {
                     <TableCell>{d.grade}</TableCell>
                     <TableCell>{d.section}</TableCell>
                     <TableCell>Q{d.quarter}</TableCell>
-                    <TableCell className="capitalize">{d.fee_type}</TableCell>
+                    <TableCell>{getFeeTypeLabel(d.fee_type)}</TableCell>
                     <TableCell>{d.total.toLocaleString()}</TableCell>
                     <TableCell>{d.paid.toLocaleString()}</TableCell>
                     <TableCell className="font-medium">{d.outstanding.toLocaleString()}</TableCell>

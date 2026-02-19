@@ -1,4 +1,5 @@
 import { jsPDF } from "jspdf";
+import { getFeeTypeLabel } from "@/lib/utils";
 
 const ONES = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
 const TENS = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
@@ -140,7 +141,7 @@ export function generateReceiptPDF(data: ReceiptData): Blob {
   doc.text("Fees", w / 2, y, { align: "center" });
   y += 8;
 
-  const feeLabel = data.feeType.charAt(0).toUpperCase() + data.feeType.slice(1).replace(/_/g, " ") + " Fee";
+  const feeLabel = getFeeTypeLabel(data.feeType);
   doc.setFont("helvetica", "normal");
   doc.text(`${feeLabel} :`, margin + 5, y);
   doc.text(data.amount.toFixed(2), w - margin - 5, y, { align: "right" });

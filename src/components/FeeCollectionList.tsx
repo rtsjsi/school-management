@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getFeeTypeLabel } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -50,7 +51,7 @@ export async function FeeCollectionList() {
                   {Array.isArray(c.students) ? (c.students[0] as { full_name?: string })?.full_name ?? "—" : (c.students as { full_name?: string } | null)?.full_name ?? "—"}
                 </TableCell>
                 <TableCell>{Number(c.amount).toLocaleString()}</TableCell>
-                <TableCell className="capitalize">{c.fee_type}</TableCell>
+                <TableCell>{getFeeTypeLabel(c.fee_type)}</TableCell>
                 <TableCell>Q{c.quarter}</TableCell>
                 <TableCell className="capitalize">{c.payment_mode}</TableCell>
                 <TableCell className="text-muted-foreground text-sm">

@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { AcademicYearSelect } from "@/components/AcademicYearSelect";
 import { Button } from "@/components/ui/button";
+import { getFeeTypeLabel } from "@/lib/utils";
 
 const FEE_TYPES = ["tuition"] as const; // Education fees only
 
@@ -257,7 +258,7 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
                 <tbody>
                   {FEE_TYPES.map((ft) => (
                     <tr key={ft} className="border-b">
-                      <td className="py-2 pr-4 capitalize">{ft}</td>
+                      <td className="py-2 pr-4">{getFeeTypeLabel(ft)}</td>
                       {[1, 2, 3, 4].map((q) => (
                         <td key={q} className="py-1 px-2">
                           <Input

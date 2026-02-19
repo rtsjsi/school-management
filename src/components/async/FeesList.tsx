@@ -1,4 +1,5 @@
 import { getUser, isAdminOrAbove } from "@/lib/auth";
+import { getFeeTypeLabel } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
 import FeeEntryForm from "@/components/FeeEntryForm";
 import { Card, CardContent } from "@/components/ui/card";
@@ -76,7 +77,7 @@ export async function FeesList() {
                           ? (f.students[0] as { full_name?: string })?.full_name ?? "—"
                           : (f.students as { full_name?: string } | null)?.full_name ?? "—"}
                       </TableCell>
-                      <TableCell className="capitalize">{f.fee_type}</TableCell>
+                      <TableCell>{getFeeTypeLabel(f.fee_type)}</TableCell>
                       <TableCell>{Number(f.amount).toLocaleString()}</TableCell>
                       <TableCell>
                         {f.due_date ? new Date(f.due_date).toLocaleDateString() : "—"}
