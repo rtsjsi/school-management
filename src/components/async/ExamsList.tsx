@@ -1,6 +1,7 @@
 import { getUser, isAdminOrAbove } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import ExamEntryForm from "@/components/ExamEntryForm";
+import { ExamSubjectsConfig } from "@/components/ExamSubjectsConfig";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -55,6 +56,7 @@ export async function ExamsList() {
                     <TableHead>Name</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Date</TableHead>
+                    {canEdit && <TableHead className="w-32">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -65,6 +67,11 @@ export async function ExamsList() {
                         <Badge variant="secondary">{exam.exam_type}</Badge>
                       </TableCell>
                       <TableCell>{exam.held_at ? new Date(exam.held_at).toLocaleDateString() : "—"}</TableCell>
+                      {canEdit && (
+                        <TableCell>
+                          <ExamSubjectsConfig exam={{ id: exam.id, name: exam.name, grade: exam.grade }} />
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>

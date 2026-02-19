@@ -67,12 +67,21 @@ export default function ReportCardGenerator() {
         if (classRow?.id) {
           const { data: subData } = await supabase
             .from("subjects")
-            .select("id, name, evaluation_type, max_marks")
+            .select("id, name, evaluation_type")
             .eq("class_id", classRow.id)
             .order("sort_order");
           subjectList = (subData ?? []) as Subject[];
         }
       }
+
+      const { data: examSubs } = await supabase
+        .from("exam_subjects")
+        .select("subject_id, max_marks")
+        .eq("exam_id", selectedExamId);
+      const examMaxMap: Record<string, number> = {};
+      (examSubs ?? []).forEach((r: { subject_id: string; max_marks: number }) => {
+        examMaxMap[r.subject_id] = Number(r.max_marks);
+      });
 
       const { data: marks } = await supabase
         .from("exam_result_subjects")
@@ -85,7 +94,7 @@ export default function ReportCardGenerator() {
       const reportSubjects = subjectList.map((sub) => {
         const row = rows.find((r) => r.subject_id === sub.id);
         const isGradeBased = sub.evaluation_type === "grade";
-        const maxScore = isGradeBased ? 0 : (row?.max_score ?? sub.max_marks ?? 100);
+        const maxScore = isGradeBased ? 0 : (row?.max_score ?? examMaxMap[sub.id] ?? 100);
         return {
           subjectName: sub.name,
           maxScore: Number(maxScore),

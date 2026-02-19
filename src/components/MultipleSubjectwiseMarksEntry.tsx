@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 
 type Exam = { id: string; name: string; exam_type: string; grade: string | null; held_at: string };
 type Student = { id: string; full_name: string; grade: string | null; section: string | null };
-type Subject = { id: string; name: string; code: string | null; evaluation_type: string; max_marks: number | null };
+type Subject = { id: string; name: string; code: string | null; evaluation_type: string };
 type CellState = { score: string; max_score: string; grade: string; is_absent: boolean };
 
 export default function MultipleSubjectwiseMarksEntry() {
@@ -36,6 +36,7 @@ export default function MultipleSubjectwiseMarksEntry() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [classNames, setClassNames] = useState<string[]>([]);
+  const [examSubjectMaxMarks, setExamSubjectMaxMarks] = useState<Record<string, number>>({});
 
   const supabase = createClient();
 
@@ -75,14 +76,32 @@ export default function MultipleSubjectwiseMarksEntry() {
         setSubjects([]);
         return;
       }
-      supabase
+      const { data: subData } = await supabase
         .from("subjects")
-        .select("id, name, code, evaluation_type, max_marks")
+        .select("id, name, code, evaluation_type")
         .eq("class_id", classRow.id)
-        .order("sort_order")
-        .then(({ data }) => setSubjects((data ?? []) as Subject[]));
+        .order("sort_order");
+      setSubjects((subData ?? []) as Subject[]);
     })();
   }, [effectiveGrade]);
+
+  useEffect(() => {
+    if (!selectedExamId || subjects.length === 0) {
+      setExamSubjectMaxMarks({});
+      return;
+    }
+    supabase
+      .from("exam_subjects")
+      .select("subject_id, max_marks")
+      .eq("exam_id", selectedExamId)
+      .then(({ data }) => {
+        const map: Record<string, number> = {};
+        (data ?? []).forEach((r: { subject_id: string; max_marks: number }) => {
+          map[r.subject_id] = Number(r.max_marks);
+        });
+        setExamSubjectMaxMarks(map);
+      });
+  }, [selectedExamId, subjects]);
 
   const loadStudentsAndMarks = useCallback(() => {
     if (!selectedExamId) return;
@@ -290,7 +309,7 @@ export default function MultipleSubjectwiseMarksEntry() {
                     <TableHead className="sticky left-0 z-10 bg-background min-w-[140px]">Student</TableHead>
                     <TableHead className="sticky left-0 z-10 bg-background min-w-[80px]">Gr / Div</TableHead>
                     {subjects.map((sub) => (
-                      <TableHead key={sub.id} className="text-center min-w-[90px] whitespace-nowrap" title={sub.evaluation_type === "grade" ? "Grade" : `Out of ${sub.max_marks ?? "?"}`}>
+                      <TableHead key={sub.id} className="text-center min-w-[90px] whitespace-nowrap" title={sub.evaluation_type === "grade" ? "Grade" : `Out of ${examSubjectMaxMarks[sub.id] ?? "?"}`}>
                         {sub.code ?? sub.name}
                       </TableHead>
                     ))}
@@ -308,7 +327,7 @@ export default function MultipleSubjectwiseMarksEntry() {
                       {subjects.map((sub) => {
                         const cell = marks[s.id]?.[sub.id] ?? { score: "", max_score: "", grade: "", is_absent: false };
                         const isGradeBased = sub.evaluation_type === "grade";
-                        const maxMarks = sub.max_marks ?? 100;
+                        const maxMarks = examSubjectMaxMarks[sub.id] ?? 100;
                         return (
                           <TableCell key={sub.id} className="p-1">
                             <div

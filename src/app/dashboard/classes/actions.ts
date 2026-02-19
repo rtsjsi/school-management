@@ -7,21 +7,16 @@ export type SubjectActionResult = { ok: true } | { ok: false; error: string };
 export async function createSubject(
   classId: string,
   name: string,
-  evaluationType: "grade" | "mark",
-  maxMarks: number | null
+  evaluationType: "grade" | "mark"
 ): Promise<SubjectActionResult> {
   const supabase = await createClient();
   const trimmed = name.trim();
   if (!trimmed) return { ok: false, error: "Subject name is required." };
-  if (evaluationType === "mark" && (maxMarks == null || maxMarks <= 0)) {
-    return { ok: false, error: "Max marks is required for mark-based evaluation." };
-  }
 
   const { error } = await supabase.from("subjects").insert({
     class_id: classId,
     name: trimmed,
     evaluation_type: evaluationType,
-    max_marks: evaluationType === "mark" ? maxMarks : null,
     sort_order: 999,
   });
 
@@ -32,25 +27,58 @@ export async function createSubject(
 export async function updateSubject(
   id: string,
   name: string,
-  evaluationType: "grade" | "mark",
-  maxMarks: number | null
+  evaluationType: "grade" | "mark"
 ): Promise<SubjectActionResult> {
   const supabase = await createClient();
   const trimmed = name.trim();
   if (!trimmed) return { ok: false, error: "Subject name is required." };
-  if (evaluationType === "mark" && (maxMarks == null || maxMarks <= 0)) {
-    return { ok: false, error: "Max marks is required for mark-based evaluation." };
-  }
 
   const { error } = await supabase
     .from("subjects")
-    .update({
-      name: trimmed,
-      evaluation_type: evaluationType,
-      max_marks: evaluationType === "mark" ? maxMarks : null,
-    })
+    .update({ name: trimmed, evaluation_type: evaluationType })
     .eq("id", id);
 
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export type ClassActionResult = { ok: true } | { ok: false; error: string };
+
+export async function createClass(name: string, section: string): Promise<ClassActionResult> {
+  const supabase = await createClient();
+  const trimmed = name.trim();
+  if (!trimmed) return { ok: false, error: "Class name is required." };
+  const validSections = ["pre_primary", "primary", "secondary", "higher_secondary"];
+  if (!validSections.includes(section)) return { ok: false, error: "Invalid section." };
+
+  const { data: classes } = await supabase.from("classes").select("sort_order").order("sort_order", { ascending: false }).limit(1);
+  const nextOrder = classes?.[0]?.sort_order != null ? classes[0].sort_order + 1 : 0;
+
+  const { error } = await supabase.from("classes").insert({
+    name: trimmed,
+    section,
+    sort_order: nextOrder,
+  });
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function updateClass(id: string, name: string, section: string): Promise<ClassActionResult> {
+  const supabase = await createClient();
+  const trimmed = name.trim();
+  if (!trimmed) return { ok: false, error: "Class name is required." };
+  const validSections = ["pre_primary", "primary", "secondary", "higher_secondary"];
+  if (!validSections.includes(section)) return { ok: false, error: "Invalid section." };
+
+  const { error } = await supabase.from("classes").update({ name: trimmed, section }).eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function deleteClass(id: string): Promise<ClassActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("classes").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }

@@ -142,12 +142,12 @@ async function seedSubjects() {
   if (!classes?.length) return;
 
   const subjectDefs = [
-    { name: "English", code: "EN", eval: "mark" as const, max: 100 },
-    { name: "Mathematics", code: "MATH", eval: "mark" as const, max: 100 },
-    { name: "Science", code: "SCI", eval: "mark" as const, max: 100 },
-    { name: "Hindi", code: "HIN", eval: "mark" as const, max: 100 },
-    { name: "Art", code: "ART", eval: "grade" as const, max: null },
-    { name: "Physical Education", code: "PE", eval: "grade" as const, max: null },
+    { name: "English", code: "EN", eval: "mark" as const },
+    { name: "Mathematics", code: "MATH", eval: "mark" as const },
+    { name: "Science", code: "SCI", eval: "mark" as const },
+    { name: "Hindi", code: "HIN", eval: "mark" as const },
+    { name: "Art", code: "ART", eval: "grade" as const },
+    { name: "Physical Education", code: "PE", eval: "grade" as const },
   ];
 
   for (const c of classes) {
@@ -159,7 +159,6 @@ async function seedSubjects() {
         code: s.code,
         sort_order: ++so,
         evaluation_type: s.eval,
-        max_marks: s.max,
       });
     }
   }
@@ -202,10 +201,25 @@ async function seedFeeStructures() {
 async function seedExams() {
   console.log("Seeding exams...");
   const exams = [
-    { name: "Mid-Term 1", exam_type: "midterm", subject: "All", grade: "All", held_at: new Date().toISOString().slice(0, 10), description: "First mid-term" },
+    { name: "Mid-Term 1", exam_type: "midterm", subject: "All", grade: "5", held_at: new Date().toISOString().slice(0, 10), description: "First mid-term" },
     { name: "Final Exam", exam_type: "final", subject: "All", grade: "All", held_at: new Date(new Date().getFullYear(), 2, 15).toISOString().slice(0, 10), description: "Annual final" },
   ];
-  await supabase.from("exams").insert(exams);
+  const { data: inserted } = await supabase.from("exams").insert(exams).select("id, grade");
+  if (inserted?.length) {
+    const examWithGrade = inserted.find((e) => e.grade && e.grade !== "All");
+    if (examWithGrade) {
+      const { data: classRow } = await supabase.from("classes").select("id").eq("name", examWithGrade.grade).maybeSingle();
+      if (classRow?.id) {
+        const { data: subs } = await supabase.from("subjects").select("id, evaluation_type").eq("class_id", classRow.id);
+        for (const sub of subs ?? []) {
+          if (sub.evaluation_type === "mark") {
+            await supabase.from("exam_subjects").insert({ exam_id: examWithGrade.id, subject_id: sub.id, max_marks: 100 });
+          }
+        }
+        console.log(`  Added exam_subjects for ${examWithGrade.grade}`);
+      }
+    }
+  }
 }
 
 // 10 employees with full variety: roles, departments, types, statuses

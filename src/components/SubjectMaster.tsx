@@ -35,7 +35,7 @@ import {
 import { Plus, Pencil, Trash2 } from "lucide-react";
 
 type ClassRow = { id: string; name: string; section: string };
-type SubjectRow = { id: string; name: string; evaluation_type: string; max_marks: number | null };
+type SubjectRow = { id: string; name: string; evaluation_type: string };
 
 export function SubjectMaster() {
   const router = useRouter();
@@ -45,7 +45,6 @@ export function SubjectMaster() {
   const [addOpen, setAddOpen] = useState(false);
   const [addName, setAddName] = useState("");
   const [addEvalType, setAddEvalType] = useState<"grade" | "mark">("mark");
-  const [addMaxMarks, setAddMaxMarks] = useState("100");
   const [addError, setAddError] = useState<string | null>(null);
   const [addLoading, setAddLoading] = useState(false);
 
@@ -63,7 +62,7 @@ export function SubjectMaster() {
     if (!selectedClassId) return;
     supabase
       .from("subjects")
-      .select("id, name, evaluation_type, max_marks")
+      .select("id, name, evaluation_type")
       .eq("class_id", selectedClassId)
       .order("sort_order")
       .then(({ data }) => setSubjects((data ?? []) as SubjectRow[]));
@@ -82,17 +81,11 @@ export function SubjectMaster() {
     setAddError(null);
     setAddLoading(true);
     try {
-      const result = await createSubject(
-        selectedClassId,
-        addName,
-        addEvalType,
-        addEvalType === "mark" ? parseFloat(addMaxMarks) || null : null
-      );
+      const result = await createSubject(selectedClassId, addName, addEvalType);
       if (result.ok) {
         setAddOpen(false);
         setAddName("");
         setAddEvalType("mark");
-        setAddMaxMarks("100");
         loadSubjects();
         router.refresh();
       } else {
@@ -124,7 +117,7 @@ export function SubjectMaster() {
       <CardHeader>
         <CardTitle>Subject Master</CardTitle>
         <CardDescription>
-          Add subjects for each class. Choose grade-based (enter A/B/C) or mark-based (enter marks out of max).
+          Add subjects for each class. Choose grade-based (enter A/B/C) or mark-based. Max marks are set per exam.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -184,19 +177,6 @@ export function SubjectMaster() {
                       </SelectContent>
                     </Select>
                   </div>
-                  {addEvalType === "mark" && (
-                    <div className="space-y-2">
-                      <Label>Maximum marks</Label>
-                      <Input
-                        type="number"
-                        min={1}
-                        step={1}
-                        value={addMaxMarks}
-                        onChange={(e) => setAddMaxMarks(e.target.value)}
-                        placeholder="100"
-                      />
-                    </div>
-                  )}
                   <DialogFooter>
                     <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>
                       Cancel
@@ -219,7 +199,6 @@ export function SubjectMaster() {
                   <TableRow>
                     <TableHead>Subject</TableHead>
                     <TableHead>Evaluation type</TableHead>
-                    <TableHead>Max marks</TableHead>
                     <TableHead className="w-20"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -259,18 +238,12 @@ function SubjectRow({
   const [evalType, setEvalType] = useState<"grade" | "mark">(
     (subject.evaluation_type as "grade" | "mark") || "mark"
   );
-  const [maxMarks, setMaxMarks] = useState(String(subject.max_marks ?? 100));
   const [loading, setLoading] = useState(false);
 
   const handleSave = async () => {
     setLoading(true);
     const { updateSubject } = await import("@/app/dashboard/classes/actions");
-    const result = await updateSubject(
-      subject.id,
-      name,
-      evalType,
-      evalType === "mark" ? parseFloat(maxMarks) || null : null
-    );
+    const result = await updateSubject(subject.id, name, evalType);
     setLoading(false);
     if (result.ok) {
       setEditing(false);
@@ -298,19 +271,6 @@ function SubjectRow({
           </Select>
         </TableCell>
         <TableCell>
-          {evalType === "mark" ? (
-            <Input
-              type="number"
-              min={1}
-              className="h-8 w-20"
-              value={maxMarks}
-              onChange={(e) => setMaxMarks(e.target.value)}
-            />
-          ) : (
-            "—"
-          )}
-        </TableCell>
-        <TableCell>
           <div className="flex gap-1">
             <Button size="sm" variant="outline" onClick={handleSave} disabled={loading}>
               Save
@@ -329,9 +289,6 @@ function SubjectRow({
       <TableCell className="font-medium">{subject.name}</TableCell>
       <TableCell>
         <span className="text-sm">{subject.evaluation_type === "grade" ? "Grade based" : "Mark based"}</span>
-      </TableCell>
-      <TableCell className="text-muted-foreground">
-        {subject.evaluation_type === "mark" ? subject.max_marks ?? "—" : "—"}
       </TableCell>
       <TableCell>
         <div className="flex gap-1">
