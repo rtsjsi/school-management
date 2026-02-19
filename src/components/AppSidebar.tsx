@@ -30,13 +30,13 @@ import { Separator } from "@/components/ui/separator";
 const navItems: { href: string; label: string; icon: React.ComponentType<{ className?: string }>; roles?: ("super_admin" | "admin" | "teacher")[] }[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/users", label: "Users", icon: Users, roles: ["super_admin"] },
-  { href: "/dashboard/students", label: "Students", icon: GraduationCap },
-  { href: "/dashboard/admission-enquiry", label: "Admission Enquiry", icon: ClipboardList },
+  { href: "/dashboard/students", label: "Students", icon: GraduationCap, roles: ["super_admin", "admin"] },
+  { href: "/dashboard/admission-enquiry", label: "Admission Enquiry", icon: ClipboardList, roles: ["super_admin", "admin"] },
   { href: "/dashboard/employees", label: "Employees", icon: UserPlus, roles: ["super_admin", "admin"] },
   { href: "/dashboard/classes", label: "Classes", icon: BookOpen },
-  { href: "/dashboard/fees", label: "Fees management", icon: DollarSign },
+  { href: "/dashboard/fees", label: "Fees management", icon: DollarSign, roles: ["super_admin", "admin"] },
   { href: "/dashboard/exams", label: "Exam management", icon: FileQuestion },
-  { href: "/dashboard/expenses", label: "Expense management", icon: Receipt },
+  { href: "/dashboard/expenses", label: "Expense management", icon: Receipt, roles: ["super_admin", "admin"] },
   { href: "/dashboard/attendance", label: "Shift & Attendance", icon: Clock, roles: ["super_admin", "admin"] },
   { href: "/dashboard/class-strength", label: "Class strength report", icon: BarChart3 },
 ];

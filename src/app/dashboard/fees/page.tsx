@@ -15,6 +15,7 @@ import { createClient } from "@/lib/supabase/server";
 export default async function FeesPage() {
   const user = await getUser();
   if (!user) redirect("/login");
+  if (!isAdminOrAbove(user)) redirect("/dashboard");
 
   const supabase = await createClient();
   const { data: allStudents } = await supabase
