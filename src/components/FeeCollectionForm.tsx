@@ -197,6 +197,27 @@ export default function FeeCollectionForm({
 
       const selectedStudent = students.find((s) => s.id === form.student_id);
 
+      let outstandingAfterPayment: number | undefined;
+      const { data: structures } = await supabase
+        .from("fee_structures")
+        .select("id, grade_from, grade_to, fee_structure_items(quarter, amount)")
+        .eq("academic_year", form.academic_year);
+      const structure = (structures ?? []).find((st) =>
+        isGradeInRange(selectedStudent?.grade ?? "", st.grade_from, st.grade_to)
+      );
+      if (structure) {
+        const items = (structure.fee_structure_items as { quarter: number; amount: number }[]) ?? [];
+        const totalDues = items.reduce((s, i) => s + Number(i.amount), 0);
+        const { data: paidRows } = await supabase
+          .from("fee_collections")
+          .select("amount")
+          .eq("student_id", form.student_id)
+          .eq("academic_year", form.academic_year);
+        const totalPaid = (paidRows ?? []).reduce((s, r) => s + Number(r.amount), 0);
+        const outstanding = Math.max(0, totalDues - totalPaid);
+        if (outstanding > 0) outstandingAfterPayment = outstanding;
+      }
+
       const pdfBlob = generateReceiptPDF({
         receiptNumber,
         studentName,
@@ -220,6 +241,7 @@ export default function FeeCollectionForm({
         section: selectedStudent?.section,
         rollNumber: selectedStudent?.roll_number,
         grNo: selectedStudent?.student_id ?? selectedStudent?.id?.slice(0, 8),
+        outstandingAfterPayment,
       });
 
       const url = URL.createObjectURL(pdfBlob);
@@ -258,6 +280,7 @@ export default function FeeCollectionForm({
         .then((d) => d.receiptNumber && setReceiptNumber(d.receiptNumber))
         .catch(() => {});
 
+      window.dispatchEvent(new CustomEvent("fee-collection-added"));
       router.refresh();
     } catch {
       setError("Something went wrong.");

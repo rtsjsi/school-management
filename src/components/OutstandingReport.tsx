@@ -33,6 +33,7 @@ type OutstandingRow = {
   roll_number?: number;
   student_id_display?: string;
   quarter: number;
+  quarter_label?: string;
   fee_type: string;
   total: number;
   paid: number;
@@ -249,7 +250,7 @@ export default function OutstandingReport() {
                         <TableCell className="font-mono text-xs">{row.student_id_display ?? "—"}</TableCell>
                         <TableCell>{row.grade}</TableCell>
                         <TableCell>{row.section || "—"}</TableCell>
-                        <TableCell>Q{row.quarter}</TableCell>
+                        <TableCell>{row.quarter_label ?? `Q${row.quarter}`}</TableCell>
                         <TableCell>{getFeeTypeLabel(row.fee_type)}</TableCell>
                         <TableCell>{row.total.toLocaleString()}</TableCell>
                         <TableCell>{row.paid.toLocaleString()}</TableCell>

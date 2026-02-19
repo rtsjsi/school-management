@@ -56,6 +56,7 @@ export async function GET(request: NextRequest) {
       roll_number?: number;
       student_id_display?: string;
       quarter: number;
+      quarter_label?: string;
       fee_type: string;
       total: number;
       paid: number;
@@ -77,27 +78,65 @@ export async function GET(request: NextRequest) {
       if (!structure) continue;
 
       const items = (structure.fee_structure_items as { fee_type: string; quarter: number; amount: number }[]) ?? [];
-      for (const item of items) {
-        if (quarter && item.quarter !== parseInt(quarter)) continue;
+      const quarterFilter = quarter ? parseInt(quarter) : null;
 
-        const total = Number(item.amount);
-        const key = `${s.id}-${item.quarter}-${item.fee_type}`;
-        const paid = paidMap.get(key) ?? 0;
-        const outstanding = total - paid;
-        if (outstanding > 0) {
-          defaulters.push({
-            student_id: s.id,
-            full_name: s.full_name ?? "—",
-            grade: studentGrade || "—",
-            section: s.section ?? "",
-            roll_number: s.roll_number,
-            student_id_display: (s as { student_id?: string }).student_id,
-            quarter: item.quarter,
-            fee_type: item.fee_type,
-            total,
-            paid,
-            outstanding,
-          });
+      if (quarterFilter) {
+        // Till-quarter: cumulative outstanding from Q1 through selected quarter, per fee_type
+        const byFeeType: Record<string, { total: number; paid: number }> = {};
+        for (let q = 1; q <= quarterFilter; q++) {
+          for (const item of items) {
+            if (item.quarter !== q) continue;
+            const ft = item.fee_type;
+            if (!byFeeType[ft]) byFeeType[ft] = { total: 0, paid: 0 };
+            const total = Number(item.amount);
+            const key = `${s.id}-${q}-${ft}`;
+            const paid = paidMap.get(key) ?? 0;
+            byFeeType[ft].total += total;
+            byFeeType[ft].paid += paid;
+          }
+        }
+        for (const [ft, v] of Object.entries(byFeeType)) {
+          const outstandingTill = v.total - v.paid;
+          if (outstandingTill > 0) {
+            defaulters.push({
+              student_id: s.id,
+              full_name: s.full_name ?? "—",
+              grade: studentGrade || "—",
+              section: s.section ?? "",
+              roll_number: s.roll_number,
+              student_id_display: (s as { student_id?: string }).student_id,
+              quarter: quarterFilter,
+              quarter_label: `Till Q${quarterFilter}`,
+              fee_type: ft,
+              total: v.total,
+              paid: v.paid,
+              outstanding: outstandingTill,
+            });
+          }
+        }
+      } else {
+        // No quarter filter: show each quarter separately
+        for (const item of items) {
+          const total = Number(item.amount);
+          const key = `${s.id}-${item.quarter}-${item.fee_type}`;
+          const paid = paidMap.get(key) ?? 0;
+          const outstanding = total - paid;
+          if (outstanding > 0) {
+            defaulters.push({
+              student_id: s.id,
+              full_name: s.full_name ?? "—",
+              grade: studentGrade || "—",
+              section: s.section ?? "",
+              roll_number: s.roll_number,
+              student_id_display: (s as { student_id?: string }).student_id,
+              quarter: item.quarter,
+              quarter_label: `Q${item.quarter}`,
+              fee_type: item.fee_type,
+              total,
+              paid,
+              outstanding,
+            });
+          }
         }
       }
     }

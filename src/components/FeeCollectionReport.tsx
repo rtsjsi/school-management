@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getFeeTypeLabel } from "@/lib/utils";
+import { generateReceiptPDF, amountInWords } from "@/lib/receipt-pdf";
 import { updateFeeCollection } from "@/app/dashboard/fees/actions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -30,7 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { FileText, Pencil } from "lucide-react";
+import { FileText, Pencil, Download, Printer } from "lucide-react";
 import { fetchClasses, fetchAcademicYears } from "@/lib/lov";
 
 const PAYMENT_MODES = ["cash", "cheque", "online"] as const;
@@ -39,9 +40,11 @@ const QUARTERS = [1, 2, 3, 4] as const;
 type ReportRow = {
   id: string;
   receipt_number: string;
-  student_name: string;
+  student_name?: string;
   student_grade?: string;
   student_section?: string;
+  student_roll_number?: number;
+  student_gr_no?: string;
   amount: number;
   fee_type: string;
   quarter: number;
@@ -49,7 +52,18 @@ type ReportRow = {
   payment_mode: string;
   collected_at: string;
   collected_by?: string;
+  cheque_number?: string;
+  cheque_bank?: string;
+  cheque_date?: string;
+  online_transaction_id?: string;
+  online_transaction_ref?: string;
 };
+
+const DEFAULT_POLICY_NOTES = [
+  "(1) Fees will not be refunded in any case.",
+  "(2) Fees are not transferable.",
+  "(3) Cheque payment subject to realisation.",
+];
 
 type Summary = {
   totalCount: number;
@@ -136,6 +150,70 @@ export default function FeeCollectionReport() {
     setEditPaymentMode("");
     setEditRemarks("");
     setEditError(null);
+  };
+
+  const printReceipt = (row: ReportRow) => {
+    const pdfBlob = generateReceiptPDF({
+      receiptNumber: row.receipt_number,
+      studentName: row.student_name ?? "—",
+      amount: Number(row.amount),
+      paymentMode: row.payment_mode,
+      quarter: row.quarter,
+      academicYear: row.academic_year,
+      feeType: row.fee_type,
+      collectedAt: row.collected_at,
+      amountInWords: amountInWords(Number(row.amount)),
+      receivedBy: row.collected_by,
+      policyNotes: DEFAULT_POLICY_NOTES,
+      chequeNumber: row.cheque_number,
+      chequeBank: row.cheque_bank,
+      chequeDate: row.cheque_date,
+      onlineTransactionId: row.online_transaction_id,
+      onlineTransactionRef: row.online_transaction_ref,
+      schoolName: process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "School",
+      schoolAddress: process.env.NEXT_PUBLIC_SCHOOL_ADDRESS ?? "",
+      grade: row.student_grade,
+      section: row.student_section,
+      rollNumber: row.student_roll_number,
+      grNo: row.student_gr_no,
+    });
+    const url = URL.createObjectURL(pdfBlob);
+    const w = window.open(url, "_blank");
+    if (w) w.onload = () => w.print();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  };
+
+  const downloadReceipt = (row: ReportRow) => {
+    const pdfBlob = generateReceiptPDF({
+      receiptNumber: row.receipt_number,
+      studentName: row.student_name ?? "—",
+      amount: Number(row.amount),
+      paymentMode: row.payment_mode,
+      quarter: row.quarter,
+      academicYear: row.academic_year,
+      feeType: row.fee_type,
+      collectedAt: row.collected_at,
+      amountInWords: amountInWords(Number(row.amount)),
+      receivedBy: row.collected_by,
+      policyNotes: DEFAULT_POLICY_NOTES,
+      chequeNumber: row.cheque_number,
+      chequeBank: row.cheque_bank,
+      chequeDate: row.cheque_date,
+      onlineTransactionId: row.online_transaction_id,
+      onlineTransactionRef: row.online_transaction_ref,
+      schoolName: process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "School",
+      schoolAddress: process.env.NEXT_PUBLIC_SCHOOL_ADDRESS ?? "",
+      grade: row.student_grade,
+      section: row.student_section,
+      rollNumber: row.student_roll_number,
+      grNo: row.student_gr_no,
+    });
+    const url = URL.createObjectURL(pdfBlob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `receipt-${row.receipt_number}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleEditSave = async () => {
@@ -323,7 +401,7 @@ export default function FeeCollectionReport() {
                       <TableHead>Mode</TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead>Collected By</TableHead>
-                      <TableHead className="w-12"></TableHead>
+                      <TableHead className="w-28"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -343,14 +421,17 @@ export default function FeeCollectionReport() {
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{row.collected_by ?? "—"}</TableCell>
                         <TableCell>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => openEdit(row)}
-                            aria-label="Edit"
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </Button>
+                          <div className="flex gap-1">
+                            <Button size="sm" variant="ghost" onClick={() => downloadReceipt(row)} aria-label="Download">
+                              <Download className="h-3 w-3" />
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => printReceipt(row)} aria-label="Print">
+                              <Printer className="h-3 w-3" />
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => openEdit(row)} aria-label="Edit">
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

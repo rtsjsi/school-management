@@ -7,6 +7,7 @@ import { TableSkeleton } from "@/components/skeletons/TableSkeleton";
 import FeeStructureForm from "@/components/FeeStructureForm";
 import { FeeStructureList } from "@/components/FeeStructureList";
 import FeeCollectionForm from "@/components/FeeCollectionForm";
+import FeeCollectionList from "@/components/FeeCollectionList";
 import OutstandingReport from "@/components/OutstandingReport";
 import FeeCollectionReport from "@/components/FeeCollectionReport";
 import { createClient } from "@/lib/supabase/server";
@@ -60,6 +61,7 @@ export default async function FeesPage() {
           {canEdit && students && students.length === 0 && (
             <p className="text-sm text-muted-foreground">Add students first to collect fees.</p>
           )}
+          <FeeCollectionList />
         </TabsContent>
 
         <TabsContent value="outstanding" className="space-y-6">

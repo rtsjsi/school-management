@@ -69,6 +69,8 @@ export interface ReceiptData {
   rollNumber?: number | string;
   /** GR No. / Student ID */
   grNo?: string;
+  /** Outstanding amount after this payment (optional) */
+  outstandingAfterPayment?: number;
 }
 
 export function generateReceiptPDF(data: ReceiptData): Blob {
@@ -154,6 +156,15 @@ export function generateReceiptPDF(data: ReceiptData): Blob {
   doc.text("Total Fee:", margin + 5, y);
   doc.text(data.amount.toFixed(2), w - margin - 5, y, { align: "right" });
   y += 8;
+
+  if (data.outstandingAfterPayment != null && data.outstandingAfterPayment > 0) {
+    doc.setFont("helvetica", "normal");
+    doc.text("Outstanding after this payment:", margin + 5, y);
+    doc.setFont("helvetica", "bold");
+    doc.text(`₹${data.outstandingAfterPayment.toFixed(2)}`, w - margin - 5, y, { align: "right" });
+    doc.setFont("helvetica", "normal");
+    y += 8;
+  }
 
   const amountWords = data.amountInWords ?? amountInWords(data.amount);
   doc.setFont("helvetica", "normal");
