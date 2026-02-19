@@ -20,8 +20,8 @@ import { Button } from "@/components/ui/button";
 
 type Exam = { id: string; name: string; exam_type: string; grade: string | null; held_at: string };
 type Student = { id: string; full_name: string; grade: string | null; section: string | null };
-type Subject = { id: string; name: string; code: string | null };
-type CellState = { score: string; max_score: string; is_absent: boolean };
+type Subject = { id: string; name: string; code: string | null; evaluation_type: string; max_marks: number | null };
+type CellState = { score: string; max_score: string; grade: string; is_absent: boolean };
 
 export default function MultipleSubjectwiseMarksEntry() {
   const router = useRouter();
@@ -35,6 +35,7 @@ export default function MultipleSubjectwiseMarksEntry() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [classNames, setClassNames] = useState<string[]>([]);
 
   const supabase = createClient();
 
@@ -45,11 +46,43 @@ export default function MultipleSubjectwiseMarksEntry() {
       .order("held_at", { ascending: false })
       .then(({ data }) => setExams(data ?? []));
     supabase
-      .from("subjects")
-      .select("id, name, code")
+      .from("classes")
+      .select("name")
       .order("sort_order")
-      .then(({ data }) => setSubjects(data ?? []));
+      .then(({ data }) => setClassNames((data ?? []).map((c) => c.name)));
   }, []);
+
+  const exam = exams.find((e) => e.id === selectedExamId);
+  const effectiveGrade =
+    gradeFilter && gradeFilter !== "all"
+      ? gradeFilter
+      : exam?.grade && exam.grade !== "All"
+        ? exam.grade
+        : null;
+
+  useEffect(() => {
+    if (!effectiveGrade) {
+      setSubjects([]);
+      return;
+    }
+    (async () => {
+      const { data: classRow } = await supabase
+        .from("classes")
+        .select("id")
+        .eq("name", effectiveGrade)
+        .maybeSingle();
+      if (!classRow?.id) {
+        setSubjects([]);
+        return;
+      }
+      supabase
+        .from("subjects")
+        .select("id, name, code, evaluation_type, max_marks")
+        .eq("class_id", classRow.id)
+        .order("sort_order")
+        .then(({ data }) => setSubjects((data ?? []) as Subject[]));
+    })();
+  }, [effectiveGrade]);
 
   const loadStudentsAndMarks = useCallback(() => {
     if (!selectedExamId) return;
@@ -73,20 +106,21 @@ export default function MultipleSubjectwiseMarksEntry() {
       studentList.forEach((s) => {
         initial[s.id] = {};
         subjects.forEach((sub) => {
-          initial[s.id][sub.id] = { score: "", max_score: "", is_absent: false };
+          initial[s.id][sub.id] = { score: "", max_score: "", grade: "", is_absent: false };
         });
       });
 
       const { data: rows } = await supabase
         .from("exam_result_subjects")
-        .select("student_id, subject_id, score, max_score, is_absent")
+        .select("student_id, subject_id, score, max_score, grade, is_absent")
         .eq("exam_id", selectedExamId);
       if (rows?.length) {
-        rows.forEach((r: { student_id: string; subject_id: string; score: number | null; max_score: number | null; is_absent: boolean }) => {
+        rows.forEach((r: { student_id: string; subject_id: string; score: number | null; max_score: number | null; grade: string | null; is_absent: boolean }) => {
           if (initial[r.student_id] && initial[r.student_id][r.subject_id]) {
             initial[r.student_id][r.subject_id] = {
               score: r.score != null ? String(r.score) : "",
               max_score: r.max_score != null ? String(r.max_score) : "",
+              grade: r.grade ?? "",
               is_absent: r.is_absent ?? false,
             };
           }
@@ -118,7 +152,7 @@ export default function MultipleSubjectwiseMarksEntry() {
     setMarks((prev) => {
       const next = { ...prev };
       if (!next[studentId]) next[studentId] = {};
-      const cur = next[studentId][subjectId] ?? { score: "", max_score: "", is_absent: false };
+      const cur = next[studentId][subjectId] ?? { score: "", max_score: "", grade: "", is_absent: false };
       next[studentId] = { ...next[studentId], [subjectId]: { ...cur, is_absent: !cur.is_absent } };
       return next;
     });
@@ -144,17 +178,21 @@ export default function MultipleSubjectwiseMarksEntry() {
     setSaving(true);
     setError(null);
     try {
-      const rows: { exam_id: string; student_id: string; subject_id: string; score: number | null; max_score: number | null; is_absent: boolean }[] = [];
+      const rows: { exam_id: string; student_id: string; subject_id: string; score: number | null; max_score: number | null; grade: string | null; is_absent: boolean }[] = [];
       for (const [studentId, subMap] of Object.entries(marks)) {
         for (const [subjectId, cell] of Object.entries(subMap)) {
+          const sub = subjects.find((s) => s.id === subjectId);
+          const isGradeBased = sub?.evaluation_type === "grade";
           const score = cell.score.trim() ? parseFloat(cell.score) : null;
           const maxScore = cell.max_score.trim() ? parseFloat(cell.max_score) : null;
+          const grade = cell.grade.trim() || null;
           rows.push({
             exam_id: selectedExamId,
             student_id: studentId,
             subject_id: subjectId,
-            score: cell.is_absent ? null : score,
-            max_score: cell.is_absent ? null : maxScore,
+            score: cell.is_absent ? null : (isGradeBased ? null : score),
+            max_score: cell.is_absent ? null : (isGradeBased ? null : maxScore),
+            grade: cell.is_absent ? null : (isGradeBased ? grade : null),
             is_absent: cell.is_absent,
           });
         }
@@ -176,7 +214,7 @@ export default function MultipleSubjectwiseMarksEntry() {
     }
   };
 
-  const grades = Array.from(new Set(students.map((s) => s.grade).filter(Boolean))) as string[];
+  const grades = classNames.length > 0 ? classNames : Array.from(new Set(students.map((s) => s.grade).filter(Boolean))) as string[];
   const sections = Array.from(new Set(students.map((s) => s.section).filter(Boolean))) as string[];
 
   return (
@@ -252,7 +290,7 @@ export default function MultipleSubjectwiseMarksEntry() {
                     <TableHead className="sticky left-0 z-10 bg-background min-w-[140px]">Student</TableHead>
                     <TableHead className="sticky left-0 z-10 bg-background min-w-[80px]">Gr / Div</TableHead>
                     {subjects.map((sub) => (
-                      <TableHead key={sub.id} className="text-center min-w-[90px] whitespace-nowrap">
+                      <TableHead key={sub.id} className="text-center min-w-[90px] whitespace-nowrap" title={sub.evaluation_type === "grade" ? "Grade" : `Out of ${sub.max_marks ?? "?"}`}>
                         {sub.code ?? sub.name}
                       </TableHead>
                     ))}
@@ -268,7 +306,9 @@ export default function MultipleSubjectwiseMarksEntry() {
                         {s.grade ?? "—"} / {s.section ?? "—"}
                       </TableCell>
                       {subjects.map((sub) => {
-                        const cell = marks[s.id]?.[sub.id] ?? { score: "", max_score: "", is_absent: false };
+                        const cell = marks[s.id]?.[sub.id] ?? { score: "", max_score: "", grade: "", is_absent: false };
+                        const isGradeBased = sub.evaluation_type === "grade";
+                        const maxMarks = sub.max_marks ?? 100;
                         return (
                           <TableCell key={sub.id} className="p-1">
                             <div
@@ -280,12 +320,22 @@ export default function MultipleSubjectwiseMarksEntry() {
                             >
                               {cell.is_absent ? (
                                 <span className="text-destructive font-medium text-sm">A</span>
+                              ) : isGradeBased ? (
+                                <Input
+                                  type="text"
+                                  className="w-12 h-8 text-center text-sm"
+                                  value={cell.grade}
+                                  onChange={(e) => setCell(s.id, sub.id, { grade: e.target.value })}
+                                  onKeyDown={(ev) => handleKeyDown(ev, s.id, sub.id)}
+                                  placeholder="A/B/C"
+                                />
                               ) : (
                                 <>
                                   <Input
                                     type="number"
                                     step={0.01}
                                     min={0}
+                                    max={maxMarks}
                                     className="w-14 h-8 text-center text-sm"
                                     value={cell.score}
                                     onChange={(e) => setCell(s.id, sub.id, { score: e.target.value })}
@@ -293,16 +343,7 @@ export default function MultipleSubjectwiseMarksEntry() {
                                     placeholder="—"
                                   />
                                   <span className="text-muted-foreground text-xs">/</span>
-                                  <Input
-                                    type="number"
-                                    step={0.01}
-                                    min={0}
-                                    className="w-12 h-8 text-center text-sm"
-                                    value={cell.max_score}
-                                    onChange={(e) => setCell(s.id, sub.id, { max_score: e.target.value })}
-                                    onKeyDown={(ev) => handleKeyDown(ev, s.id, sub.id)}
-                                    placeholder="—"
-                                  />
+                                  <span className="w-8 text-center text-xs text-muted-foreground">{maxMarks}</span>
                                 </>
                               )}
                             </div>
@@ -321,7 +362,9 @@ export default function MultipleSubjectwiseMarksEntry() {
           )}
 
           {selectedExamId && subjects.length === 0 && !loading && (
-            <p className="text-sm text-muted-foreground">No subjects found. Add subjects in the database.</p>
+            <p className="text-sm text-muted-foreground">
+              {effectiveGrade ? "No subjects found for this class. Add subjects in Class management → Subject Master." : "Select a grade to load subjects."}
+            </p>
           )}
 
           {selectedExamId && students.length > 0 && subjects.length > 0 && (

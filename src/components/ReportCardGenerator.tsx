@@ -11,13 +11,12 @@ import { FileDown } from "lucide-react";
 
 type Exam = { id: string; name: string; exam_type: string; grade: string | null; held_at: string };
 type Student = { id: string; full_name: string; grade: string | null; section: string | null; roll_number?: number; student_id?: string; academic_year?: string };
-type Subject = { id: string; name: string };
-type ExamResultSubject = { student_id: string; subject_id: string; score: number | null; max_score: number | null; is_absent: boolean };
+type Subject = { id: string; name: string; evaluation_type?: string; max_marks?: number | null };
+type ExamResultSubject = { student_id: string; subject_id: string; score: number | null; max_score: number | null; grade: string | null; is_absent: boolean };
 
 export default function ReportCardGenerator() {
   const [exams, setExams] = useState<Exam[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [selectedExamId, setSelectedExamId] = useState("");
   const [selectedStudentId, setSelectedStudentId] = useState("");
   const [loading, setLoading] = useState(false);
@@ -31,11 +30,6 @@ export default function ReportCardGenerator() {
       .select("id, name, exam_type, grade, held_at")
       .order("held_at", { ascending: false })
       .then(({ data }) => setExams(data ?? []));
-    supabase
-      .from("subjects")
-      .select("id, name")
-      .order("sort_order")
-      .then(({ data }) => setSubjects(data ?? []));
   }, [supabase]);
 
   useEffect(() => {
@@ -62,21 +56,41 @@ export default function ReportCardGenerator() {
         return;
       }
 
+      const studentGrade = student.grade;
+      let subjectList: Subject[] = [];
+      if (studentGrade) {
+        const { data: classRow } = await supabase
+          .from("classes")
+          .select("id")
+          .eq("name", studentGrade)
+          .maybeSingle();
+        if (classRow?.id) {
+          const { data: subData } = await supabase
+            .from("subjects")
+            .select("id, name, evaluation_type, max_marks")
+            .eq("class_id", classRow.id)
+            .order("sort_order");
+          subjectList = (subData ?? []) as Subject[];
+        }
+      }
+
       const { data: marks } = await supabase
         .from("exam_result_subjects")
-        .select("student_id, subject_id, score, max_score, is_absent")
+        .select("student_id, subject_id, score, max_score, grade, is_absent")
         .eq("exam_id", selectedExamId)
         .eq("student_id", selectedStudentId);
 
       const rows = (marks ?? []) as ExamResultSubject[];
 
-      const reportSubjects = subjects.map((sub) => {
+      const reportSubjects = subjectList.map((sub) => {
         const row = rows.find((r) => r.subject_id === sub.id);
-        const maxScore = row?.max_score ?? 100;
+        const isGradeBased = sub.evaluation_type === "grade";
+        const maxScore = isGradeBased ? 0 : (row?.max_score ?? sub.max_marks ?? 100);
         return {
           subjectName: sub.name,
           maxScore: Number(maxScore),
-          score: row?.is_absent ? null : (row?.score ?? null),
+          score: row?.is_absent ? null : (isGradeBased ? null : (row?.score ?? null)),
+          grade: row?.is_absent ? null : (isGradeBased ? (row?.grade ?? null) : null),
           isAbsent: row?.is_absent ?? false,
         };
       });

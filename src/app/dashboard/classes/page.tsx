@@ -2,7 +2,9 @@ import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { BookOpen } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { SubjectMaster } from "@/components/SubjectMaster";
 import {
   Table,
   TableBody,
@@ -42,6 +44,12 @@ export default async function ClassesPage() {
         </p>
       </div>
 
+      <Tabs defaultValue="classes" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="classes">Classes</TabsTrigger>
+          <TabsTrigger value="subjects">Subject Master</TabsTrigger>
+        </TabsList>
+        <TabsContent value="classes">
       <Card>
         <CardHeader>
           <CardTitle>Class list</CardTitle>
@@ -74,6 +82,11 @@ export default async function ClassesPage() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+        <TabsContent value="subjects">
+          <SubjectMaster />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

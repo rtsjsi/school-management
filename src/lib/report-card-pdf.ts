@@ -4,6 +4,7 @@ export interface ReportCardSubject {
   subjectName: string;
   maxScore: number;
   score: number | null;
+  grade?: string | null;
   isAbsent: boolean;
 }
 
@@ -102,10 +103,16 @@ export function generateReportCardPDF(data: ReportCardData): Blob {
     totalMax += sub.maxScore;
     const obtained = sub.isAbsent ? 0 : (sub.score ?? 0);
     totalObtained += obtained;
-    const displayMarks = sub.isAbsent ? "Absent" : (sub.score != null ? String(sub.score) : "—");
+    const displayMarks = sub.isAbsent
+      ? "Absent"
+      : sub.grade != null
+        ? sub.grade
+        : sub.score != null
+          ? String(sub.score)
+          : "—";
 
     doc.text(sub.subjectName, colSubject, y);
-    doc.text(String(sub.maxScore), colMax, y, { align: "right" });
+    doc.text(sub.maxScore > 0 ? String(sub.maxScore) : "—", colMax, y, { align: "right" });
     doc.text(displayMarks, colMarks, y, { align: "right" });
     y += 7;
   }
