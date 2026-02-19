@@ -42,7 +42,51 @@ const DEFAULT_POLICY_NOTES = [
   "(3) Cheque payment subject to realisation.",
 ];
 
+async function getReceiptData(row: CollectionRow) {
+  const res = await fetch(`/api/receipt-data?id=${row.id}`);
+  if (!res.ok) return null;
+  return res.json();
+}
+
 function printReceipt(row: CollectionRow) {
+  getReceiptData(row).then((data) => {
+    if (!data) {
+      generateAndPrintFallback(row);
+      return;
+    }
+    const pdfBlob = generateReceiptPDF({
+      receiptNumber: data.receiptNumber,
+      studentName: data.studentName,
+      amount: data.amount,
+      paymentMode: data.paymentMode,
+      quarter: data.quarter,
+      academicYear: data.academicYear,
+      feeType: data.feeType,
+      collectedAt: data.collectedAt,
+      amountInWords: amountInWords(data.amount),
+      receivedBy: data.collectedBy,
+      policyNotes: DEFAULT_POLICY_NOTES,
+      chequeNumber: data.chequeNumber,
+      chequeBank: data.chequeBank,
+      chequeDate: data.chequeDate,
+      onlineTransactionId: data.onlineTransactionId,
+      onlineTransactionRef: data.onlineTransactionRef,
+      schoolName: process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "School",
+      schoolAddress: process.env.NEXT_PUBLIC_SCHOOL_ADDRESS ?? "",
+      grade: data.grade,
+      section: data.section,
+      rollNumber: data.rollNumber,
+      grNo: data.grNo,
+      outstandingAfterPayment: data.outstandingAfterPayment,
+    });
+    const url = URL.createObjectURL(pdfBlob);
+    const w = window.open(url, "_blank");
+    if (w) w.onload = () => w.print();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  });
+}
+
+function generateAndPrintFallback(row: CollectionRow) {
   const pdfBlob = generateReceiptPDF({
     receiptNumber: row.receipt_number,
     studentName: row.student_name ?? "—",
@@ -74,6 +118,46 @@ function printReceipt(row: CollectionRow) {
 }
 
 function downloadReceipt(row: CollectionRow) {
+  getReceiptData(row).then((data) => {
+    if (!data) {
+      downloadFallback(row);
+      return;
+    }
+    const pdfBlob = generateReceiptPDF({
+      receiptNumber: data.receiptNumber,
+      studentName: data.studentName,
+      amount: data.amount,
+      paymentMode: data.paymentMode,
+      quarter: data.quarter,
+      academicYear: data.academicYear,
+      feeType: data.feeType,
+      collectedAt: data.collectedAt,
+      amountInWords: amountInWords(data.amount),
+      receivedBy: data.collectedBy,
+      policyNotes: DEFAULT_POLICY_NOTES,
+      chequeNumber: data.chequeNumber,
+      chequeBank: data.chequeBank,
+      chequeDate: data.chequeDate,
+      onlineTransactionId: data.onlineTransactionId,
+      onlineTransactionRef: data.onlineTransactionRef,
+      schoolName: process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "School",
+      schoolAddress: process.env.NEXT_PUBLIC_SCHOOL_ADDRESS ?? "",
+      grade: data.grade,
+      section: data.section,
+      rollNumber: data.rollNumber,
+      grNo: data.grNo,
+      outstandingAfterPayment: data.outstandingAfterPayment,
+    });
+    const url = URL.createObjectURL(pdfBlob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `receipt-${data.receiptNumber}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+}
+
+function downloadFallback(row: CollectionRow) {
   const pdfBlob = generateReceiptPDF({
     receiptNumber: row.receipt_number,
     studentName: row.student_name ?? "—",
@@ -105,6 +189,7 @@ function downloadReceipt(row: CollectionRow) {
   a.click();
   URL.revokeObjectURL(url);
 }
+
 
 export default function FeeCollectionList() {
   const [collections, setCollections] = useState<CollectionRow[]>([]);

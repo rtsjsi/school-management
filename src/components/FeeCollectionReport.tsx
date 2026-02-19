@@ -152,68 +152,119 @@ export default function FeeCollectionReport() {
     setEditError(null);
   };
 
+  const getReceiptData = async (row: ReportRow) => {
+    const res = await fetch(`/api/receipt-data?id=${row.id}`);
+    return res.ok ? res.json() : null;
+  };
+
   const printReceipt = (row: ReportRow) => {
-    const pdfBlob = generateReceiptPDF({
-      receiptNumber: row.receipt_number,
-      studentName: row.student_name ?? "—",
-      amount: Number(row.amount),
-      paymentMode: row.payment_mode,
-      quarter: row.quarter,
-      academicYear: row.academic_year,
-      feeType: row.fee_type,
-      collectedAt: row.collected_at,
-      amountInWords: amountInWords(Number(row.amount)),
-      receivedBy: row.collected_by,
-      policyNotes: DEFAULT_POLICY_NOTES,
-      chequeNumber: row.cheque_number,
-      chequeBank: row.cheque_bank,
-      chequeDate: row.cheque_date,
-      onlineTransactionId: row.online_transaction_id,
-      onlineTransactionRef: row.online_transaction_ref,
-      schoolName: process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "School",
-      schoolAddress: process.env.NEXT_PUBLIC_SCHOOL_ADDRESS ?? "",
-      grade: row.student_grade,
-      section: row.student_section,
-      rollNumber: row.student_roll_number,
-      grNo: row.student_gr_no,
+    getReceiptData(row).then((data) => {
+      const d = data ?? {
+        receiptNumber: row.receipt_number,
+        studentName: row.student_name ?? "—",
+        amount: Number(row.amount),
+        paymentMode: row.payment_mode,
+        quarter: row.quarter,
+        academicYear: row.academic_year,
+        feeType: row.fee_type,
+        collectedAt: row.collected_at,
+        collectedBy: row.collected_by,
+        chequeNumber: row.cheque_number,
+        chequeBank: row.cheque_bank,
+        chequeDate: row.cheque_date,
+        onlineTransactionId: row.online_transaction_id,
+        onlineTransactionRef: row.online_transaction_ref,
+        grade: row.student_grade,
+        section: row.student_section,
+        rollNumber: row.student_roll_number,
+        grNo: row.student_gr_no,
+      };
+      const pdfBlob = generateReceiptPDF({
+        receiptNumber: d.receiptNumber,
+        studentName: d.studentName,
+        amount: d.amount,
+        paymentMode: d.paymentMode,
+        quarter: d.quarter,
+        academicYear: d.academicYear,
+        feeType: d.feeType,
+        collectedAt: d.collectedAt,
+        amountInWords: amountInWords(d.amount),
+        receivedBy: d.collectedBy,
+        policyNotes: DEFAULT_POLICY_NOTES,
+        chequeNumber: d.chequeNumber,
+        chequeBank: d.chequeBank,
+        chequeDate: d.chequeDate,
+        onlineTransactionId: d.onlineTransactionId,
+        onlineTransactionRef: d.onlineTransactionRef,
+        schoolName: process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "School",
+        schoolAddress: process.env.NEXT_PUBLIC_SCHOOL_ADDRESS ?? "",
+        grade: d.grade,
+        section: d.section,
+        rollNumber: d.rollNumber,
+        grNo: d.grNo,
+        outstandingAfterPayment: d.outstandingAfterPayment,
+      });
+      const url = URL.createObjectURL(pdfBlob);
+      const w = window.open(url, "_blank");
+      if (w) w.onload = () => w.print();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
     });
-    const url = URL.createObjectURL(pdfBlob);
-    const w = window.open(url, "_blank");
-    if (w) w.onload = () => w.print();
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
   };
 
   const downloadReceipt = (row: ReportRow) => {
-    const pdfBlob = generateReceiptPDF({
-      receiptNumber: row.receipt_number,
-      studentName: row.student_name ?? "—",
-      amount: Number(row.amount),
-      paymentMode: row.payment_mode,
-      quarter: row.quarter,
-      academicYear: row.academic_year,
-      feeType: row.fee_type,
-      collectedAt: row.collected_at,
-      amountInWords: amountInWords(Number(row.amount)),
-      receivedBy: row.collected_by,
-      policyNotes: DEFAULT_POLICY_NOTES,
-      chequeNumber: row.cheque_number,
-      chequeBank: row.cheque_bank,
-      chequeDate: row.cheque_date,
-      onlineTransactionId: row.online_transaction_id,
-      onlineTransactionRef: row.online_transaction_ref,
-      schoolName: process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "School",
-      schoolAddress: process.env.NEXT_PUBLIC_SCHOOL_ADDRESS ?? "",
-      grade: row.student_grade,
-      section: row.student_section,
-      rollNumber: row.student_roll_number,
-      grNo: row.student_gr_no,
+    getReceiptData(row).then((data) => {
+      const d = data ?? {
+        receiptNumber: row.receipt_number,
+        studentName: row.student_name ?? "—",
+        amount: Number(row.amount),
+        paymentMode: row.payment_mode,
+        quarter: row.quarter,
+        academicYear: row.academic_year,
+        feeType: row.fee_type,
+        collectedAt: row.collected_at,
+        collectedBy: row.collected_by,
+        chequeNumber: row.cheque_number,
+        chequeBank: row.cheque_bank,
+        chequeDate: row.cheque_date,
+        onlineTransactionId: row.online_transaction_id,
+        onlineTransactionRef: row.online_transaction_ref,
+        grade: row.student_grade,
+        section: row.student_section,
+        rollNumber: row.student_roll_number,
+        grNo: row.student_gr_no,
+      };
+      const pdfBlob = generateReceiptPDF({
+        receiptNumber: d.receiptNumber,
+        studentName: d.studentName,
+        amount: d.amount,
+        paymentMode: d.paymentMode,
+        quarter: d.quarter,
+        academicYear: d.academicYear,
+        feeType: d.feeType,
+        collectedAt: d.collectedAt,
+        amountInWords: amountInWords(d.amount),
+        receivedBy: d.collectedBy,
+        policyNotes: DEFAULT_POLICY_NOTES,
+        chequeNumber: d.chequeNumber,
+        chequeBank: d.chequeBank,
+        chequeDate: d.chequeDate,
+        onlineTransactionId: d.onlineTransactionId,
+        onlineTransactionRef: d.onlineTransactionRef,
+        schoolName: process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "School",
+        schoolAddress: process.env.NEXT_PUBLIC_SCHOOL_ADDRESS ?? "",
+        grade: d.grade,
+        section: d.section,
+        rollNumber: d.rollNumber,
+        grNo: d.grNo,
+        outstandingAfterPayment: d.outstandingAfterPayment,
+      });
+      const url = URL.createObjectURL(pdfBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `receipt-${d.receiptNumber}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
     });
-    const url = URL.createObjectURL(pdfBlob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `receipt-${row.receipt_number}.pdf`;
-    a.click();
-    URL.revokeObjectURL(url);
   };
 
   const handleEditSave = async () => {

@@ -157,8 +157,9 @@ export function generateReceiptPDF(data: ReceiptData): Blob {
   doc.text(data.amount.toFixed(2), w - margin - 5, y, { align: "right" });
   y += 8;
 
-  if (data.outstandingAfterPayment != null && data.outstandingAfterPayment > 0) {
+  if (data.outstandingAfterPayment != null) {
     doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
     doc.text("Outstanding after this payment:", margin + 5, y);
     doc.setFont("helvetica", "bold");
     doc.text(`₹${data.outstandingAfterPayment.toFixed(2)}`, w - margin - 5, y, { align: "right" });

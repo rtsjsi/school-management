@@ -38,7 +38,7 @@ export default function FeeCollectionForm({
     student_id: "",
     amount: "",
     quarter: "1",
-    academic_year: new Date().getFullYear() + "-" + (new Date().getFullYear() + 1).toString().slice(-2),
+    academic_year: new Date().getFullYear() + "-" + (new Date().getFullYear() + 1),
     payment_mode: "cash" as string,
     cheque_number: "",
     cheque_bank: "",
