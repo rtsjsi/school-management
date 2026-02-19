@@ -17,7 +17,7 @@ export default function ExpensesManager({ canEdit = true }: { canEdit?: boolean 
   useEffect(() => {
     (async () => {
       const [headsRes, employeesRes] = await Promise.all([
-        supabase.from("expense_heads").select("id, name").order("sort_order"),
+        supabase.from("expense_heads").select("id, name, budget").order("sort_order"),
         supabase.from("employees").select("id, full_name").order("full_name"),
       ]);
       setExpenseHeads((headsRes.data ?? []) as ExpenseHead[]);

@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import { getUser, isAdminOrAbove } from "@/lib/auth";
 import { Receipt } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ExpensesManager from "@/components/ExpensesManager";
+import { ExpenseHeadsManager } from "@/components/ExpenseHeadsManager";
 
 export default async function ExpensesPage() {
   const user = await getUser();
@@ -22,7 +24,18 @@ export default async function ExpensesPage() {
         </p>
       </div>
 
-      <ExpensesManager canEdit={canEdit} />
+      <Tabs defaultValue="entry" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="entry">Add Expense</TabsTrigger>
+          <TabsTrigger value="heads">Expense Heads</TabsTrigger>
+        </TabsList>
+        <TabsContent value="entry" className="space-y-6">
+          <ExpensesManager canEdit={canEdit} />
+        </TabsContent>
+        <TabsContent value="heads" className="space-y-6">
+          <ExpenseHeadsManager />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

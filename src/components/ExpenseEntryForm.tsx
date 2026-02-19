@@ -14,11 +14,47 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+
+function RemainingBudget({ expenseHeadId }: { expenseHeadId: string }) {
+  const [remaining, setRemaining] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const supabase = createClient();
+    (async () => {
+      const { data: head } = await supabase
+        .from("expense_heads")
+        .select("budget")
+        .eq("id", expenseHeadId)
+        .single();
+      const budget = head?.budget != null ? Number(head.budget) : null;
+      if (budget == null) {
+        setRemaining(null);
+        setLoading(false);
+        return;
+      }
+      const { data: rows } = await supabase
+        .from("expenses")
+        .select("amount")
+        .eq("expense_head_id", expenseHeadId);
+      const spent = (rows ?? []).reduce((s, r) => s + Number(r.amount ?? 0), 0);
+      setRemaining(Math.max(0, budget - spent));
+      setLoading(false);
+    })();
+  }, [expenseHeadId]);
+
+  if (loading) return <p className="text-xs text-muted-foreground">Loading budget…</p>;
+  if (remaining === null) return null;
+  return (
+    <p className="text-xs text-muted-foreground">
+      Remaining budget: <span className="font-medium text-foreground">{remaining.toLocaleString()}</span>
+    </p>
+  );
+}
 
 const ACCOUNTS = ["CASH", "BANK", "OTHER"] as const;
 
-type ExpenseHead = { id: string; name: string };
+type ExpenseHead = { id: string; name: string; budget?: number | null };
 
 export default function ExpenseEntryForm({
   expenseHeads,
@@ -45,8 +81,6 @@ export default function ExpenseEntryForm({
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [heads, setHeads] = useState<ExpenseHead[]>(expenseHeads);
-  const [newHeadName, setNewHeadName] = useState("");
   const [form, setForm] = useState({
     voucher: initialValues?.voucher ?? "",
     expense_head_id: initialValues?.expense_head_id ?? "",
@@ -72,21 +106,6 @@ export default function ExpenseEntryForm({
       });
     }
   }, [initialValues, editingId]);
-
-  const handleAddHead = async () => {
-    if (!newHeadName.trim()) return;
-    const supabase = createClient();
-    const { data, error: err } = await supabase
-      .from("expense_heads")
-      .insert({ name: newHeadName.trim() })
-      .select("id, name")
-      .single();
-    if (!err && data) {
-      setHeads((p) => [...p, data as ExpenseHead]);
-      setForm((f) => ({ ...f, expense_head_id: (data as ExpenseHead).id }));
-      setNewHeadName("");
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,32 +195,22 @@ export default function ExpenseEntryForm({
       </div>
       <div className="space-y-2">
         <Label>Expense Head</Label>
-        <div className="flex gap-2">
-          <Select
-            value={form.expense_head_id}
-            onValueChange={(v) => setForm((p) => ({ ...p, expense_head_id: v }))}
-          >
-            <SelectTrigger className="flex-1">
-              <SelectValue placeholder="Select head" />
-            </SelectTrigger>
-            <SelectContent>
-              {heads.map((h) => (
-                <SelectItem key={h.id} value={h.id}>{h.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <div className="flex gap-1">
-            <Input
-              placeholder="New head"
-              value={newHeadName}
-              onChange={(e) => setNewHeadName(e.target.value)}
-              className="w-24"
-            />
-            <Button type="button" size="icon" variant="outline" onClick={handleAddHead}>
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+        <Select
+          value={form.expense_head_id}
+          onValueChange={(v) => setForm((p) => ({ ...p, expense_head_id: v }))}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select head" />
+          </SelectTrigger>
+          <SelectContent>
+            {expenseHeads.map((h) => (
+              <SelectItem key={h.id} value={h.id}>{h.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {form.expense_head_id && (
+          <RemainingBudget expenseHeadId={form.expense_head_id} />
+        )}
       </div>
       <div className="space-y-2">
         <Label htmlFor="expense-party">Party</Label>
