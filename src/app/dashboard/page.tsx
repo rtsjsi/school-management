@@ -178,22 +178,6 @@ export default async function DashboardPage() {
           return stat.href ? <Link key={stat.title} href={stat.href} className="block group">{card}</Link> : <div key={stat.title}>{card}</div>;
         })}
       </div>
-
-      {!isAdminOrAbove(user) && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Role permissions</CardTitle>
-            <CardDescription>Your access level</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>• <strong className="text-foreground">Teacher:</strong> View dashboard, manage own classes, view students.</li>
-              <li>• <strong className="text-foreground">Admin:</strong> Everything teachers can do, plus user management and school settings.</li>
-              <li>• <strong className="text-foreground">Super Admin:</strong> Full access: all admin features plus role assignment and system settings.</li>
-            </ul>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
