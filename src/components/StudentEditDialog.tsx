@@ -46,7 +46,6 @@ interface StudentEditDialogProps {
     parent_name?: string;
     parent_contact?: string;
     parent_email?: string;
-    parent_relationship?: string;
     guardian_name?: string;
     guardian_contact?: string;
     notes?: string;
@@ -77,7 +76,6 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
     parent_name: student.parent_name || "",
     parent_contact: student.parent_contact || "",
     parent_email: student.parent_email || "",
-    parent_relationship: student.parent_relationship || "father",
     guardian_name: student.guardian_name || "",
     guardian_contact: student.guardian_contact || "",
     notes: student.notes || "",
@@ -119,7 +117,6 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
         parent_name: form.parent_name.trim() || form.father_name.trim() || form.mother_name.trim() || null,
         parent_contact: form.parent_contact.trim() || null,
         parent_email: form.parent_email.trim() || null,
-        parent_relationship: form.parent_relationship,
         guardian_name: form.guardian_name.trim() || null,
         guardian_contact: form.guardian_contact.trim() || null,
         notes: form.notes.trim() || null,
@@ -363,31 +360,15 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
               <div className="pt-4 border-t border-border/50">
                 <h3 className="text-sm font-semibold mb-3">Parent/Guardian Information</h3>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="parent_name">Parent Name</Label>
-                    <Input
-                      id="parent_name"
-                      type="text"
-                      value={form.parent_name}
-                      onChange={(e) => setForm((p) => ({ ...p, parent_name: e.target.value }))}
-                      placeholder="Parent/Guardian name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="parent_relationship">Relationship</Label>
-                    <Select value={form.parent_relationship} onValueChange={(value) => setForm((p) => ({ ...p, parent_relationship: value }))}>
-                      <SelectTrigger id="parent_relationship">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="father">Father</SelectItem>
-                        <SelectItem value="mother">Mother</SelectItem>
-                        <SelectItem value="guardian">Guardian</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="parent_name">Parent Name</Label>
+                  <Input
+                    id="parent_name"
+                    type="text"
+                    value={form.parent_name}
+                    onChange={(e) => setForm((p) => ({ ...p, parent_name: e.target.value }))}
+                    placeholder="Parent/Guardian name"
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mt-4">

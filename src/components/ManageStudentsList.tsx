@@ -44,7 +44,6 @@ type StudentRow = {
   parent_contact?: string;
   mother_contact?: string;
   parent_email?: string;
-  parent_relationship?: string;
   guardian_name?: string;
   guardian_contact?: string;
   notes?: string;
