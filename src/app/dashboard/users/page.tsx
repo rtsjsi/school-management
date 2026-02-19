@@ -5,6 +5,7 @@ import { Users } from "lucide-react";
 import { ROLES } from "@/types/auth";
 import type { UserRole } from "@/types/auth";
 import CreateUserForm from "@/components/CreateUserForm";
+import { UserResetPasswordDialog } from "@/components/UserResetPasswordDialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -62,6 +63,7 @@ export default async function UsersPage() {
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -71,6 +73,9 @@ export default async function UsersPage() {
                       <TableCell className="text-muted-foreground">{p.email ?? "—"}</TableCell>
                       <TableCell>
                         <Badge variant="secondary">{ROLES[(p.role as UserRole) ?? "teacher"]}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <UserResetPasswordDialog userId={p.id} userEmail={p.email ?? "—"} />
                       </TableCell>
                     </TableRow>
                   ))}

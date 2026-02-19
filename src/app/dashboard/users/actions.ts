@@ -48,3 +48,24 @@ export async function createUser(
 
   return { ok: true };
 }
+
+export type ResetPasswordResult = { ok: true } | { ok: false; error: string };
+
+export async function resetUserPassword(userId: string, newPassword: string): Promise<ResetPasswordResult> {
+  const admin = createAdminClient();
+  if (!admin) {
+    return { ok: false, error: "Server configuration error (missing service role key)." };
+  }
+
+  if (!newPassword || newPassword.length < 6) {
+    return { ok: false, error: "Password must be at least 6 characters." };
+  }
+
+  const { error } = await admin.auth.admin.updateUserById(userId, { password: newPassword });
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  return { ok: true };
+}
