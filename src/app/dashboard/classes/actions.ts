@@ -89,3 +89,36 @@ export async function deleteSubject(id: string): Promise<SubjectActionResult> {
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }
+
+export type DivisionActionResult = { ok: true } | { ok: false; error: string };
+
+export async function createDivision(classId: string, name: string): Promise<DivisionActionResult> {
+  const supabase = await createClient();
+  const trimmed = name.trim();
+  if (!trimmed) return { ok: false, error: "Division name is required." };
+
+  const { data: existing } = await supabase
+    .from("class_divisions")
+    .select("sort_order")
+    .eq("class_id", classId)
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const nextOrder = existing?.sort_order != null ? existing.sort_order + 1 : 0;
+
+  const { error } = await supabase.from("class_divisions").insert({
+    class_id: classId,
+    name: trimmed,
+    sort_order: nextOrder,
+  });
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function deleteDivision(id: string): Promise<DivisionActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("class_divisions").delete().eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
