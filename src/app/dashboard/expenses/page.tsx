@@ -1,13 +1,13 @@
-import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { getUser } from "@/lib/auth";
+import { getUser, isAdminOrAbove } from "@/lib/auth";
 import { Receipt } from "lucide-react";
-import { ExpensesList } from "@/components/async/ExpensesList";
-import { TableSkeleton } from "@/components/skeletons/TableSkeleton";
+import ExpensesManager from "@/components/ExpensesManager";
 
 export default async function ExpensesPage() {
   const user = await getUser();
   if (!user) redirect("/login");
+
+  const canEdit = isAdminOrAbove(user);
 
   return (
     <div className="space-y-8">
@@ -21,11 +21,7 @@ export default async function ExpensesPage() {
         </p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Suspense fallback={<TableSkeleton rows={3} columns={3} />}>
-          <ExpensesList />
-        </Suspense>
-      </div>
+      <ExpensesManager canEdit={canEdit} />
     </div>
   );
 }
