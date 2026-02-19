@@ -61,3 +61,33 @@ export async function updateFeeStructure(
 
   return { ok: true };
 }
+
+export type FeeCollectionActionResult = { ok: true } | { ok: false; error: string };
+
+export async function updateFeeCollection(
+  id: string,
+  paymentMode: string,
+  modificationRemarks: string
+): Promise<FeeCollectionActionResult> {
+  const remarks = modificationRemarks?.trim();
+  if (!remarks) {
+    return { ok: false, error: "Remarks are compulsory when modifying a fee collection entry." };
+  }
+  const validModes = ["cash", "cheque", "online"];
+  if (!validModes.includes(paymentMode)) {
+    return { ok: false, error: "Invalid payment mode." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("fee_collections")
+    .update({
+      payment_mode: paymentMode,
+      modification_remarks: remarks,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}

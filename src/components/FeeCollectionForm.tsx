@@ -40,8 +40,6 @@ export default function FeeCollectionForm({
     quarter: "1",
     academic_year: new Date().getFullYear() + "-" + (new Date().getFullYear() + 1).toString().slice(-2),
     payment_mode: "cash" as string,
-    concession_amount: "",
-    period_label: "",
     cheque_number: "",
     cheque_bank: "",
     cheque_date: "",
@@ -125,11 +123,6 @@ export default function FeeCollectionForm({
       setError("Amount is required. Ensure fee structure exists for this student's grade and quarter.");
       return;
     }
-    const concessionAmount = form.concession_amount.trim() ? parseFloat(form.concession_amount) : 0;
-    if (isNaN(concessionAmount) || concessionAmount < 0) {
-      setError("Concession must be a non-negative number.");
-      return;
-    }
     if (form.payment_mode === "cheque" && !form.cheque_number?.trim()) {
       setError("Cheque number is required for cheque payment.");
       return;
@@ -163,8 +156,8 @@ export default function FeeCollectionForm({
           quarter: parseInt(form.quarter),
           academic_year: form.academic_year,
           payment_mode: form.payment_mode,
-          concession_amount: concessionAmount,
-          period_label: form.period_label.trim() || null,
+          concession_amount: 0,
+          period_label: null,
           cheque_number: form.payment_mode === "cheque" ? form.cheque_number.trim() : null,
           cheque_bank: form.payment_mode === "cheque" ? form.cheque_bank.trim() || null : null,
           cheque_date: form.payment_mode === "cheque" && form.cheque_date ? form.cheque_date : null,
@@ -186,7 +179,7 @@ export default function FeeCollectionForm({
 
       if (existingFee) {
         const prevPaid = Number((existingFee as { paid_amount?: number }).paid_amount ?? 0);
-        const newPaid = prevPaid + amount + concessionAmount;
+        const newPaid = prevPaid + amount;
         const baseAmount = Number(existingFee.amount);
         const discountPct = Number((existingFee as { discount_percent?: number }).discount_percent ?? 0);
         const discountAmt = Number((existingFee as { discount_amount?: number }).discount_amount ?? 0);
@@ -213,9 +206,7 @@ export default function FeeCollectionForm({
         academicYear: form.academic_year,
         feeType: FEE_TYPE,
         collectedAt: new Date((collection as { collected_at?: string })?.collected_at ?? Date.now()).toISOString(),
-        concessionAmount: concessionAmount > 0 ? concessionAmount : undefined,
-        periodLabel: form.period_label.trim() || undefined,
-        amountInWords: amountInWords(amount + concessionAmount),
+        amountInWords: amountInWords(amount),
         receivedBy,
         policyNotes: DEFAULT_POLICY_NOTES,
         chequeNumber: form.payment_mode === "cheque" ? form.cheque_number : undefined,
@@ -254,8 +245,6 @@ export default function FeeCollectionForm({
         quarter: "1",
         academic_year: form.academic_year,
         payment_mode: "cash",
-        concession_amount: "",
-        period_label: "",
         cheque_number: "",
         cheque_bank: "",
         cheque_date: "",
@@ -388,30 +377,6 @@ export default function FeeCollectionForm({
               className="bg-muted"
               placeholder={structureAmount === null && selectedStudent ? "No structure for this grade" : "0.00"}
             />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="period_label">Period label (e.g. Dec – Feb)</Label>
-              <Input
-                id="period_label"
-                value={form.period_label}
-                onChange={(e) => setForm((p) => ({ ...p, period_label: e.target.value }))}
-                placeholder="Optional"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="concession_amount">Fee concession (Rs.)</Label>
-              <Input
-                id="concession_amount"
-                type="number"
-                min={0}
-                step={0.01}
-                value={form.concession_amount}
-                onChange={(e) => setForm((p) => ({ ...p, concession_amount: e.target.value }))}
-                placeholder="0"
-              />
-            </div>
           </div>
 
           <div className="space-y-2">
