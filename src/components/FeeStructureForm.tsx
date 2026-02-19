@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { AcademicYearSelect } from "@/components/AcademicYearSelect";
 
-const FEE_TYPES = ["tuition", "transport", "library", "lab", "sports", "other"] as const;
+const FEE_TYPES = ["tuition"] as const; // Education fees only
 
 export default function FeeStructureForm() {
   const router = useRouter();

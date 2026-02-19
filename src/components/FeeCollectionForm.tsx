@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { SubmitButton } from "@/components/ui/SubmitButton";
@@ -10,9 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { generateReceiptPDF, amountInWords } from "@/lib/receipt-pdf";
 import { AcademicYearSelect } from "@/components/AcademicYearSelect";
+import { isGradeInRange } from "@/lib/grade-utils";
 
-const FEE_TYPES = ["tuition", "transport", "library", "lab", "sports", "other"] as const;
 const PAYMENT_MODES = ["cash", "cheque", "online"] as const;
+const FEE_TYPE = "tuition";
 const DEFAULT_POLICY_NOTES = [
   "(1) Fees will not be refunded in any case.",
   "(2) Fees are not transferable.",
@@ -32,10 +33,10 @@ export default function FeeCollectionForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [receiptNumber, setReceiptNumber] = useState<string>("");
+  const [structureAmount, setStructureAmount] = useState<number | null>(null);
   const [form, setForm] = useState({
     student_id: "",
     amount: "",
-    fee_type: "tuition" as string,
     quarter: "1",
     academic_year: new Date().getFullYear() + "-" + (new Date().getFullYear() + 1).toString().slice(-2),
     payment_mode: "cash" as string,
@@ -47,7 +48,29 @@ export default function FeeCollectionForm({
     online_transaction_id: "",
     online_transaction_ref: "",
     notes: "",
+    collection_date: new Date().toISOString().slice(0, 10),
   });
+
+  const classes = useMemo(() => {
+    const grades = Array.from(new Set(students.map((s) => s.grade).filter(Boolean))) as string[];
+    return grades.sort((a, b) => a.localeCompare(b));
+  }, [students]);
+
+  const divisions = useMemo(() => {
+    const secs = Array.from(new Set(students.map((s) => s.section).filter(Boolean))) as string[];
+    return secs.sort((a, b) => a.localeCompare(b));
+  }, [students]);
+
+  const [classFilter, setClassFilter] = useState("all");
+  const [divisionFilter, setDivisionFilter] = useState("all");
+
+  const filteredStudents = useMemo(() => {
+    return students.filter((s) => {
+      if (classFilter !== "all" && s.grade !== classFilter) return false;
+      if (divisionFilter !== "all" && s.section !== divisionFilter) return false;
+      return true;
+    });
+  }, [students, classFilter, divisionFilter]);
 
   useEffect(() => {
     fetch("/api/receipt-number")
@@ -55,6 +78,40 @@ export default function FeeCollectionForm({
       .then((d) => d.receiptNumber && setReceiptNumber(d.receiptNumber))
       .catch(() => {});
   }, []);
+
+  const selectedStudent = students.find((s) => s.id === form.student_id);
+
+  useEffect(() => {
+    if (!selectedStudent?.grade || !form.academic_year) {
+      setStructureAmount(null);
+      return;
+    }
+    const supabase = createClient();
+    (async () => {
+      const { data: structures } = await supabase
+        .from("fee_structures")
+        .select("id, grade_from, grade_to, fee_structure_items(fee_type, quarter, amount)")
+        .eq("academic_year", form.academic_year);
+      const structure = (structures ?? []).find((st) =>
+        isGradeInRange(selectedStudent.grade ?? "", st.grade_from, st.grade_to)
+      );
+      if (!structure) {
+        setStructureAmount(null);
+        return;
+      }
+      const items = (structure.fee_structure_items as { fee_type: string; quarter: number; amount: number }[]) ?? [];
+      const item = items.find((i) => i.fee_type === FEE_TYPE && i.quarter === parseInt(form.quarter));
+      setStructureAmount(item ? Number(item.amount) : null);
+    })();
+  }, [selectedStudent?.grade, form.quarter, form.academic_year]);
+
+  useEffect(() => {
+    if (structureAmount != null) {
+      setForm((p) => ({ ...p, amount: String(structureAmount) }));
+    } else {
+      setForm((p) => ({ ...p, amount: "" }));
+    }
+  }, [structureAmount]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,7 +122,7 @@ export default function FeeCollectionForm({
     }
     const amount = parseFloat(form.amount);
     if (isNaN(amount) || amount < 0) {
-      setError("Enter a valid amount.");
+      setError("Amount is required. Ensure fee structure exists for this student's grade and quarter.");
       return;
     }
     const concessionAmount = form.concession_amount.trim() ? parseFloat(form.concession_amount) : 0;
@@ -88,17 +145,21 @@ export default function FeeCollectionForm({
         .eq("student_id", form.student_id)
         .eq("quarter", parseInt(form.quarter))
         .eq("academic_year", form.academic_year)
-        .eq("fee_type", form.fee_type)
+        .eq("fee_type", FEE_TYPE)
         .or("status.eq.pending,status.eq.partial,status.eq.overdue")
         .limit(1)
         .maybeSingle();
+
+      const collectedAt = form.collection_date
+        ? new Date(form.collection_date + "T12:00:00").toISOString()
+        : new Date().toISOString();
 
       const { data: collection, error: err } = await supabase
         .from("fee_collections")
         .insert({
           student_id: form.student_id,
           amount,
-          fee_type: form.fee_type,
+          fee_type: FEE_TYPE,
           quarter: parseInt(form.quarter),
           academic_year: form.academic_year,
           payment_mode: form.payment_mode,
@@ -112,6 +173,8 @@ export default function FeeCollectionForm({
           receipt_number: receiptNumber,
           notes: form.notes.trim() || null,
           fee_id: existingFee?.id ?? null,
+          collected_at: collectedAt,
+          collected_by: receivedBy ?? null,
         })
         .select("id, students(full_name), collected_at")
         .single();
@@ -148,7 +211,7 @@ export default function FeeCollectionForm({
         paymentMode: form.payment_mode,
         quarter: parseInt(form.quarter),
         academicYear: form.academic_year,
-        feeType: form.fee_type,
+        feeType: FEE_TYPE,
         collectedAt: new Date((collection as { collected_at?: string })?.collected_at ?? Date.now()).toISOString(),
         concessionAmount: concessionAmount > 0 ? concessionAmount : undefined,
         periodLabel: form.period_label.trim() || undefined,
@@ -169,16 +232,25 @@ export default function FeeCollectionForm({
       });
 
       const url = URL.createObjectURL(pdfBlob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `receipt_${receiptNumber}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const iframe = document.createElement("iframe");
+      iframe.style.display = "none";
+      iframe.src = url;
+      document.body.appendChild(iframe);
+      iframe.onload = () => {
+        try {
+          iframe.contentWindow?.print();
+        } catch {
+          window.open(url, "_blank");
+        }
+        setTimeout(() => {
+          URL.revokeObjectURL(url);
+          document.body.removeChild(iframe);
+        }, 1000);
+      };
 
       setForm({
         student_id: "",
         amount: "",
-        fee_type: "tuition",
         quarter: "1",
         academic_year: form.academic_year,
         payment_mode: "cash",
@@ -190,6 +262,7 @@ export default function FeeCollectionForm({
         online_transaction_id: "",
         online_transaction_ref: "",
         notes: "",
+        collection_date: new Date().toISOString().slice(0, 10),
       });
       fetch("/api/receipt-number")
         .then((r) => r.json())
@@ -212,9 +285,56 @@ export default function FeeCollectionForm({
             <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>
           )}
 
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Collected By</Label>
+              <Input value={receivedBy ?? "—"} readOnly className="bg-muted" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="collection_date">Collection Date *</Label>
+              <Input
+                id="collection_date"
+                type="date"
+                value={form.collection_date}
+                onChange={(e) => setForm((p) => ({ ...p, collection_date: e.target.value }))}
+              />
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label>Receipt No.</Label>
             <Input value={receiptNumber} readOnly className="bg-muted font-mono" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Class</Label>
+              <Select value={classFilter} onValueChange={setClassFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  {classes.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Division</Label>
+              <Select value={divisionFilter} onValueChange={setDivisionFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  {divisions.map((d) => (
+                    <SelectItem key={d} value={d}>{d}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -224,39 +344,13 @@ export default function FeeCollectionForm({
                 <SelectValue placeholder="Select student" />
               </SelectTrigger>
               <SelectContent>
-                {students.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>{s.full_name}</SelectItem>
+                {filteredStudents.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.full_name} {s.grade ? `(${s.grade}${s.section ? "-" + s.section : ""})` : ""}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="amount">Amount *</Label>
-              <Input
-                id="amount"
-                type="number"
-                min={0}
-                step={0.01}
-                value={form.amount}
-                onChange={(e) => setForm((p) => ({ ...p, amount: e.target.value }))}
-                placeholder="0.00"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="fee_type">Fee Type</Label>
-              <Select value={form.fee_type} onValueChange={(v) => setForm((p) => ({ ...p, fee_type: v }))}>
-                <SelectTrigger id="fee_type">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {FEE_TYPES.map((t) => (
-                    <SelectItem key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -279,6 +373,20 @@ export default function FeeCollectionForm({
               onChange={(v) => setForm((p) => ({ ...p, academic_year: v }))}
               id="academic_year"
               label="Academic Year *"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="amount">Amount (from fee structure) *</Label>
+            <Input
+              id="amount"
+              type="number"
+              min={0}
+              step={0.01}
+              value={form.amount}
+              readOnly
+              className="bg-muted"
+              placeholder={structureAmount === null && selectedStudent ? "No structure for this grade" : "0.00"}
             />
           </div>
 
@@ -391,8 +499,8 @@ export default function FeeCollectionForm({
             />
           </div>
 
-          <SubmitButton loading={loading} loadingLabel="Saving & generating receipt…" className="w-full">
-            Collect Fee & Download Receipt
+          <SubmitButton loading={loading} loadingLabel="Saving & printing receipt…" className="w-full">
+            Collect Fee & Print Receipt
           </SubmitButton>
         </form>
       </CardContent>
