@@ -45,11 +45,17 @@ export function GradeDivisionYearSelects({
 
   useEffect(() => {
     if (grade) {
-      fetchDivisionsByGrade(grade).then(setDivisions);
+      fetchDivisionsByGrade(grade).then((data) => {
+        const list = [...data];
+        if (division && !list.some((d) => d.name === division)) {
+          list.push({ id: `existing-${division}`, name: division });
+        }
+        setDivisions(list);
+      });
     } else {
       setDivisions([]);
     }
-  }, [grade]);
+  }, [grade, division]);
 
   return (
     <>

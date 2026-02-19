@@ -226,9 +226,8 @@ function ClassRow({
   };
 
   useEffect(() => {
-    if (expanded) loadDivisions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expanded, cls.id]);
+    loadDivisions();
+  }, [cls.id]);
 
   const handleSave = async () => {
     setLoading(true);
