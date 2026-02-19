@@ -25,6 +25,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
 import { StudentDocumentsPhotos } from "@/components/StudentDocumentsPhotos";
+import { GradeDivisionYearSelects } from "@/components/GradeDivisionYearSelects";
+import { AcademicYearSelect } from "@/components/AcademicYearSelect";
 
 interface StudentEditDialogProps {
   student: Record<string, unknown> & {
@@ -242,28 +244,15 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="grade">Grade *</Label>
-              <Input
-                id="grade"
-                type="text"
-                value={form.grade}
-                onChange={(e) => setForm((p) => ({ ...p, grade: e.target.value }))}
-                placeholder="e.g. 10"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="section">Division *</Label>
-              <Input
-                id="section"
-                type="text"
-                value={form.section}
-                onChange={(e) => setForm((p) => ({ ...p, section: e.target.value }))}
-                placeholder="e.g. A"
-                required
-              />
-            </div>
+            <GradeDivisionYearSelects
+              grade={form.grade}
+              division={form.section}
+              onGradeChange={(v) => setForm((p) => ({ ...p, grade: v, section: "" }))}
+              onDivisionChange={(v) => setForm((p) => ({ ...p, section: v }))}
+              showAcademicYear={false}
+              gradeRequired
+              divisionRequired
+            />
           </div>
 
           <button
@@ -329,16 +318,10 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
                     onChange={(e) => setForm((p) => ({ ...p, admission_date: e.target.value }))}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="academic_year">Academic Year</Label>
-                  <Input
-                    id="academic_year"
-                    type="text"
-                    value={form.academic_year}
-                    onChange={(e) => setForm((p) => ({ ...p, academic_year: e.target.value }))}
-                    placeholder="e.g. 2024-2025"
-                  />
-                </div>
+                <AcademicYearSelect
+                  value={form.academic_year}
+                  onChange={(v) => setForm((p) => ({ ...p, academic_year: v }))}
+                />
               </div>
 
               <div className="space-y-2">

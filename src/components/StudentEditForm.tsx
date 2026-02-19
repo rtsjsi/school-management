@@ -27,6 +27,7 @@ import {
   type StudentFormState,
 } from "@/lib/student-form";
 import { StudentDocumentsPhotos } from "@/components/StudentDocumentsPhotos";
+import { GradeDivisionYearSelects } from "@/components/GradeDivisionYearSelects";
 
 interface StudentEditFormProps {
   student: Record<string, unknown> & { id: string; full_name: string };
@@ -300,21 +301,22 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
                 <Label>Admission date</Label>
                 <Input type="date" value={form.admission_date} onChange={(e) => set("admission_date", e.target.value)} />
               </div>
-              <div className="space-y-2">
-                <Label>Grade *</Label>
-                <Input value={form.grade} onChange={(e) => set("grade", e.target.value)} placeholder="e.g. 10" required />
-              </div>
-              <div className="space-y-2">
-                <Label>Division *</Label>
-                <Input value={form.section} onChange={(e) => set("section", e.target.value)} placeholder="e.g. A" required />
-              </div>
+              <GradeDivisionYearSelects
+                grade={form.grade}
+                division={form.section}
+                academicYear={form.academic_year}
+                onGradeChange={(v) => {
+                  set("grade", v);
+                  set("section", "");
+                }}
+                onDivisionChange={(v) => set("section", v)}
+                onAcademicYearChange={(v) => set("academic_year", v)}
+                gradeRequired
+                divisionRequired
+              />
               <div className="space-y-2">
                 <Label>Roll number</Label>
                 <Input type="number" value={form.roll_number} onChange={(e) => set("roll_number", e.target.value)} min={0} />
-              </div>
-              <div className="space-y-2">
-                <Label>Academic year</Label>
-                <Input value={form.academic_year} onChange={(e) => set("academic_year", e.target.value)} placeholder="2024-2025" />
               </div>
               <div className="space-y-2">
                 <Label>Last school</Label>

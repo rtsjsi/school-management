@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Input } from "@/components/ui/input";
+import { fetchClasses, fetchAllDivisions } from "@/lib/lov";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -28,6 +29,13 @@ export function SearchFilterStudents({ onSearch }: SearchFilterStudentsProps) {
   const [section, setSection] = useState("all");
   const [status, setStatus] = useState("all");
   const [isOpen, setIsOpen] = useState(false);
+  const [grades, setGrades] = useState<{ id: string; name: string }[]>([]);
+  const [divisions, setDivisions] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    fetchClasses().then(setGrades);
+    fetchAllDivisions().then(setDivisions);
+  }, []);
 
   const handleSearch = useCallback(() => {
     onSearch({
@@ -88,18 +96,9 @@ export function SearchFilterStudents({ onSearch }: SearchFilterStudentsProps) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All grades</SelectItem>
-                  <SelectItem value="1">Grade 1</SelectItem>
-                  <SelectItem value="2">Grade 2</SelectItem>
-                  <SelectItem value="3">Grade 3</SelectItem>
-                  <SelectItem value="4">Grade 4</SelectItem>
-                  <SelectItem value="5">Grade 5</SelectItem>
-                  <SelectItem value="6">Grade 6</SelectItem>
-                  <SelectItem value="7">Grade 7</SelectItem>
-                  <SelectItem value="8">Grade 8</SelectItem>
-                  <SelectItem value="9">Grade 9</SelectItem>
-                  <SelectItem value="10">Grade 10</SelectItem>
-                  <SelectItem value="11">Grade 11</SelectItem>
-                  <SelectItem value="12">Grade 12</SelectItem>
+                  {grades.map((g) => (
+                    <SelectItem key={g.id} value={g.name}>{g.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -113,10 +112,9 @@ export function SearchFilterStudents({ onSearch }: SearchFilterStudentsProps) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All divisions</SelectItem>
-                  <SelectItem value="A">Section A</SelectItem>
-                  <SelectItem value="B">Section B</SelectItem>
-                  <SelectItem value="C">Section C</SelectItem>
-                  <SelectItem value="D">Section D</SelectItem>
+                  {divisions.map((d) => (
+                    <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

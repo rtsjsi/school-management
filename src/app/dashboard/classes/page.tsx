@@ -4,6 +4,7 @@ import { BookOpen } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClassManagement } from "@/components/ClassManagement";
 import { SubjectMaster } from "@/components/SubjectMaster";
+import { FinancialYearsManager } from "@/components/FinancialYearsManager";
 export default async function ClassesPage({
   searchParams,
 }: {
@@ -12,7 +13,7 @@ export default async function ClassesPage({
   const user = await getUser();
   if (!user) redirect("/login");
   const { tab } = await searchParams;
-  const defaultTab = tab === "subjects" ? "subjects" : "classes";
+  const defaultTab = tab === "subjects" ? "subjects" : tab === "years" ? "years" : "classes";
 
   return (
     <div className="space-y-8">
@@ -30,12 +31,16 @@ export default async function ClassesPage({
         <TabsList>
           <TabsTrigger value="classes">Class</TabsTrigger>
           <TabsTrigger value="subjects">Subject</TabsTrigger>
+          <TabsTrigger value="years">Financial Year</TabsTrigger>
         </TabsList>
         <TabsContent value="classes">
           <ClassManagement />
         </TabsContent>
         <TabsContent value="subjects">
           <SubjectMaster />
+        </TabsContent>
+        <TabsContent value="years">
+          <FinancialYearsManager />
         </TabsContent>
       </Tabs>
     </div>

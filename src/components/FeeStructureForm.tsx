@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AcademicYearSelect } from "@/components/AcademicYearSelect";
 
 const FEE_TYPES = ["tuition", "transport", "library", "lab", "sports", "other"] as const;
 
@@ -125,16 +126,12 @@ export default function FeeStructureForm() {
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="academic_year">Academic Year *</Label>
-              <Input
-                id="academic_year"
-                value={form.academic_year}
-                onChange={(e) => setForm((p) => ({ ...p, academic_year: e.target.value }))}
-                placeholder="e.g. 2024-2025"
-                required
-              />
-            </div>
+            <AcademicYearSelect
+              value={form.academic_year}
+              onChange={(v) => setForm((p) => ({ ...p, academic_year: v }))}
+              id="academic_year"
+              label="Academic Year *"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">

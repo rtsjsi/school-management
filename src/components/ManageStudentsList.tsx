@@ -24,6 +24,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
+import { fetchClasses, fetchAllDivisions } from "@/lib/lov";
 
 type StudentRow = {
   id: string;
@@ -57,8 +58,15 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
   const [gradeFilter, setGradeFilter] = useState("all");
   const [sectionFilter, setSectionFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [grades, setGrades] = useState<{ id: string; name: string }[]>([]);
+  const [divisions, setDivisions] = useState<{ id: string; name: string }[]>([]);
 
   const supabase = createClient();
+
+  useEffect(() => {
+    fetchClasses().then(setGrades);
+    fetchAllDivisions().then(setDivisions);
+  }, []);
 
   useEffect(() => {
     let q = supabase
@@ -115,8 +123,8 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
               <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
-                {Array.from({ length: 12 }, (_, i) => i + 1).map((g) => (
-                  <SelectItem key={g} value={String(g)}>{g}</SelectItem>
+                {grades.map((g) => (
+                  <SelectItem key={g.id} value={g.name}>{g.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -127,8 +135,8 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
               <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
-                {["A", "B", "C", "D"].map((s) => (
-                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                {divisions.map((d) => (
+                  <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
