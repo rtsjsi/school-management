@@ -7,7 +7,7 @@ import { TableSkeleton } from "@/components/skeletons/TableSkeleton";
 import FeeStructureForm from "@/components/FeeStructureForm";
 import { FeeStructureList } from "@/components/FeeStructureList";
 import FeeCollectionForm from "@/components/FeeCollectionForm";
-import { OutstandingFeesList } from "@/components/OutstandingFeesList";
+import OutstandingReport from "@/components/OutstandingReport";
 import FeeCollectionReport from "@/components/FeeCollectionReport";
 import { createClient } from "@/lib/supabase/server";
 
@@ -63,9 +63,7 @@ export default async function FeesPage() {
         </TabsContent>
 
         <TabsContent value="outstanding" className="space-y-6">
-          <Suspense fallback={<TableSkeleton rows={5} columns={6} />}>
-            <OutstandingFeesList />
-          </Suspense>
+          <OutstandingReport />
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-6">
