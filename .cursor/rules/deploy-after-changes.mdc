@@ -12,7 +12,7 @@ After making any changes to this project, always:
    - `git commit -m "descriptive message"`
    - `git push`
 
-2. **Supabase**: If there are new or modified migrations in `supabase/migrations/`, run:
+2. **Supabase**: Always run:
    - `npx supabase db push`
 
 Do this as the final step of every task that modifies the codebase. Do not leave changes uncommitted or unpushed.
