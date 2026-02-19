@@ -7,9 +7,8 @@ import { TableSkeleton } from "@/components/skeletons/TableSkeleton";
 import FeeStructureForm from "@/components/FeeStructureForm";
 import { FeeStructureList } from "@/components/FeeStructureList";
 import FeeCollectionForm from "@/components/FeeCollectionForm";
-import { FeeCollectionList } from "@/components/FeeCollectionList";
 import { OutstandingFeesList } from "@/components/OutstandingFeesList";
-import FeeReports from "@/components/FeeReports";
+import FeeCollectionReport from "@/components/FeeCollectionReport";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function FeesPage() {
@@ -61,9 +60,6 @@ export default async function FeesPage() {
           {canEdit && students && students.length === 0 && (
             <p className="text-sm text-muted-foreground">Add students first to collect fees.</p>
           )}
-          <Suspense fallback={<TableSkeleton rows={5} columns={6} />}>
-            <FeeCollectionList />
-          </Suspense>
         </TabsContent>
 
         <TabsContent value="outstanding" className="space-y-6">
@@ -73,7 +69,7 @@ export default async function FeesPage() {
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-6">
-          <FeeReports />
+          <FeeCollectionReport />
         </TabsContent>
       </Tabs>
     </div>
