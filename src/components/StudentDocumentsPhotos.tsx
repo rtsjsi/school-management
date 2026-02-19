@@ -6,14 +6,13 @@ import { createClient } from "@/lib/supabase/client";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CameraCaptureButton } from "@/components/CameraCapture";
 import { Upload, X, FileText, ImageIcon } from "lucide-react";
 
 const BUCKET = "student-uploads";
-const PHOTO_ROLES = ["student", "mother", "father"] as const;
+const PHOTO_ROLES = ["student"] as const;
 const PHOTO_LABELS: Record<(typeof PHOTO_ROLES)[number], string> = {
   student: "Student",
-  mother: "Mother",
-  father: "Father",
 };
 
 const DOC_TYPES = [
@@ -195,8 +194,8 @@ export function StudentDocumentsPhotos({ studentId }: { studentId: string }) {
 
         <div>
           <Label className="text-sm font-medium mb-2 block">Photos</Label>
-          <p className="text-xs text-muted-foreground mb-3">Student, Mother, Father (image only)</p>
-          <div className="grid grid-cols-3 gap-4">
+          <p className="text-xs text-muted-foreground mb-3">Student photo (image only)</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {PHOTO_ROLES.map((role) => {
               const rec = photos.find((p) => p.role === role);
               const url = rec ? signedUrls[rec.file_path] : null;
@@ -211,7 +210,7 @@ export function StudentDocumentsPhotos({ studentId }: { studentId: string }) {
                     )}
                   </div>
                   <span className="text-xs font-medium">{PHOTO_LABELS[role]}</span>
-                  <div className="flex gap-1">
+                  <div className="flex flex-wrap gap-1">
                     <label className="cursor-pointer">
                       <input
                         type="file"
@@ -231,6 +230,9 @@ export function StudentDocumentsPhotos({ studentId }: { studentId: string }) {
                         </span>
                       </Button>
                     </label>
+                    {role === "student" && (
+                      <CameraCaptureButton onCapture={(file) => uploadPhoto("student", file)} disabled={!!isUploading} />
+                    )}
                     {rec && (
                       <Button
                         type="button"

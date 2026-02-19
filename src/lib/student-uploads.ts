@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 const BUCKET = "student-uploads";
 
-const PHOTO_ROLES = ["student", "mother", "father"] as const;
+const PHOTO_ROLES = ["student"] as const;
 const DOC_TYPES = [
   "admission_form",
   "leaving_cert",

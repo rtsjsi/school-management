@@ -182,8 +182,26 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
                 <Input value={form.pen_no} onChange={(e) => set("pen_no", e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Apaar ID</Label>
+                <Label>APAR ID</Label>
                 <Input value={form.apaar_id} onChange={(e) => set("apaar_id", e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>UDISE ID</Label>
+                <Input value={form.udise_id} onChange={(e) => set("udise_id", e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>GR Number</Label>
+                <Input value={form.gr_number} onChange={(e) => set("gr_number", e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Second Language</Label>
+                <Select value={form.second_language} onValueChange={(v) => set("second_language", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="English">English</SelectItem>
+                    <SelectItem value="Hindi">Hindi</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </CardContent>
@@ -221,30 +239,6 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
                 <Input type="tel" value={form.whatsapp_no} onChange={(e) => set("whatsapp_no", e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Parent relationship</Label>
-                <Select value={form.parent_relationship} onValueChange={(v) => set("parent_relationship", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="father">Father</SelectItem>
-                    <SelectItem value="mother">Mother</SelectItem>
-                    <SelectItem value="guardian">Guardian</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Father birth date</Label>
-                <Input type="date" value={form.father_birth_date} onChange={(e) => set("father_birth_date", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Mother birth date</Label>
-                <Input type="date" value={form.mother_birth_date} onChange={(e) => set("mother_birth_date", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Parents anniversary</Label>
-                <Input type="date" value={form.parents_anniversary} onChange={(e) => set("parents_anniversary", e.target.value)} />
-              </div>
-              <div className="space-y-2">
                 <Label>Father education</Label>
                 <Input value={form.father_education} onChange={(e) => set("father_education", e.target.value)} />
               </div>
@@ -253,24 +247,12 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
                 <Input value={form.father_occupation} onChange={(e) => set("father_occupation", e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Father designation</Label>
-                <Input value={form.father_designation} onChange={(e) => set("father_designation", e.target.value)} />
-              </div>
-              <div className="space-y-2">
                 <Label>Mother education</Label>
                 <Input value={form.mother_education} onChange={(e) => set("mother_education", e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Mother occupation</Label>
                 <Input value={form.mother_occupation} onChange={(e) => set("mother_occupation", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Mother designation</Label>
-                <Input value={form.mother_designation} onChange={(e) => set("mother_designation", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Yearly income (Rs)</Label>
-                <Input type="number" value={form.yearly_income} onChange={(e) => set("yearly_income", e.target.value)} placeholder="0" />
               </div>
               <div className="space-y-2 sm:col-span-2">
                 <Label>Guardian name (if different)</Label>
@@ -291,10 +273,6 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
               <div className="space-y-2">
                 <Label>Guardian occupation</Label>
                 <Input value={form.guardian_occupation} onChange={(e) => set("guardian_occupation", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Guardian designation</Label>
-                <Input value={form.guardian_designation} onChange={(e) => set("guardian_designation", e.target.value)} />
               </div>
             </div>
           </CardContent>
@@ -428,7 +406,7 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Fee Concession & Bank Details</CardTitle>
-            <CardDescription>Fee mafi, fees due date, and bank account for refunds.</CardDescription>
+            <CardDescription>Fee mafi and bank account for refunds.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -439,10 +417,6 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
               <div className="space-y-2">
                 <Label>Fee mafi reason</Label>
                 <Input value={form.fee_mafi_reason} onChange={(e) => set("fee_mafi_reason", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Fees due date</Label>
-                <Input type="date" value={form.fees_due_date} onChange={(e) => set("fees_due_date", e.target.value)} />
               </div>
               <div className="flex items-center space-x-2">
                 <Checkbox id="all_mafi" checked={form.all_fee_mafi} onCheckedChange={(c) => set("all_fee_mafi", !!c)} />
@@ -467,29 +441,6 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
               <div className="space-y-2">
                 <Label>Account no</Label>
                 <Input value={form.account_no} onChange={(e) => set("account_no", e.target.value)} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Transport Details</CardTitle>
-            <CardDescription>School transport and pickup information.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox id="transport" checked={form.transport_required} onCheckedChange={(c) => set("transport_required", !!c)} />
-                <Label htmlFor="transport" className="font-normal">Transport required</Label>
-              </div>
-              <div className="space-y-2">
-                <Label>Transport route</Label>
-                <Input value={form.transport_route} onChange={(e) => set("transport_route", e.target.value)} />
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label>Pickup / drop point</Label>
-                <Input value={form.transport_pickup_point} onChange={(e) => set("transport_pickup_point", e.target.value)} />
               </div>
             </div>
           </CardContent>

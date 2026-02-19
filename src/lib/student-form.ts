@@ -34,7 +34,6 @@ export type StudentFormState = {
   parent_contact: string;
   mother_contact: string;
   parent_email: string;
-  parent_relationship: string;
   guardian_name: string;
   guardian_contact: string;
   guardian_email: string;
@@ -52,18 +51,11 @@ export type StudentFormState = {
   hobby: string;
   sign_of_identity: string;
   refer_name: string;
-  father_birth_date: string;
-  mother_birth_date: string;
   father_education: string;
   father_occupation: string;
-  father_designation: string;
   mother_education: string;
   mother_occupation: string;
-  mother_designation: string;
-  parents_anniversary: string;
   whatsapp_no: string;
-  yearly_income: string;
-  fees_due_date: string;
   account_holder_name: string;
   bank_name: string;
   bank_branch: string;
@@ -71,10 +63,9 @@ export type StudentFormState = {
   account_no: string;
   guardian_education: string;
   guardian_occupation: string;
-  guardian_designation: string;
-  transport_required: boolean;
-  transport_route: string;
-  transport_pickup_point: string;
+  udise_id: string;
+  gr_number: string;
+  second_language: string;
   notes: string;
   is_rte_quota: boolean;
 };
@@ -113,7 +104,6 @@ export function studentFormFromRecord(r: Record<string, unknown>): StudentFormSt
     parent_contact: (r.parent_contact as string) || "",
     mother_contact: (r.mother_contact as string) || "",
     parent_email: (r.parent_email as string) || "",
-    parent_relationship: (r.parent_relationship as string) || "father",
     guardian_name: (r.guardian_name as string) || "",
     guardian_contact: (r.guardian_contact as string) || "",
     guardian_email: (r.guardian_email as string) || "",
@@ -131,18 +121,11 @@ export function studentFormFromRecord(r: Record<string, unknown>): StudentFormSt
     hobby: (r.hobby as string) || "",
     sign_of_identity: (r.sign_of_identity as string) || "",
     refer_name: (r.refer_name as string) || "",
-    father_birth_date: (r.father_birth_date as string) || "",
-    mother_birth_date: (r.mother_birth_date as string) || "",
     father_education: (r.father_education as string) || "",
     father_occupation: (r.father_occupation as string) || "",
-    father_designation: (r.father_designation as string) || "",
     mother_education: (r.mother_education as string) || "",
     mother_occupation: (r.mother_occupation as string) || "",
-    mother_designation: (r.mother_designation as string) || "",
-    parents_anniversary: (r.parents_anniversary as string) || "",
     whatsapp_no: (r.whatsapp_no as string) || "",
-    yearly_income: r.yearly_income != null ? String(r.yearly_income) : "",
-    fees_due_date: (r.fees_due_date as string) || "",
     account_holder_name: (r.account_holder_name as string) || "",
     bank_name: (r.bank_name as string) || "",
     bank_branch: (r.bank_branch as string) || "",
@@ -150,10 +133,9 @@ export function studentFormFromRecord(r: Record<string, unknown>): StudentFormSt
     account_no: (r.account_no as string) || "",
     guardian_education: (r.guardian_education as string) || "",
     guardian_occupation: (r.guardian_occupation as string) || "",
-    guardian_designation: (r.guardian_designation as string) || "",
-    transport_required: (r.transport_required as boolean) ?? false,
-    transport_route: (r.transport_route as string) || "",
-    transport_pickup_point: (r.transport_pickup_point as string) || "",
+    udise_id: (r.udise_id as string) || "",
+    gr_number: (r.gr_number as string) || "",
+    second_language: (r.second_language as string) || "",
     notes: (r.notes as string) || "",
     is_rte_quota: (r.is_rte_quota as boolean) ?? false,
   };
@@ -194,7 +176,6 @@ export function formToPayload(form: StudentFormState): Record<string, unknown> {
     parent_contact: form.parent_contact.trim() || null,
     mother_contact: form.mother_contact.trim() || null,
     parent_email: form.parent_email.trim() || null,
-    parent_relationship: form.parent_relationship,
     guardian_name: form.guardian_name.trim() || null,
     guardian_contact: form.guardian_contact.trim() || null,
     guardian_email: form.guardian_email.trim() || null,
@@ -212,18 +193,11 @@ export function formToPayload(form: StudentFormState): Record<string, unknown> {
     hobby: form.hobby.trim() || null,
     sign_of_identity: form.sign_of_identity.trim() || null,
     refer_name: form.refer_name.trim() || null,
-    father_birth_date: form.father_birth_date || null,
-    mother_birth_date: form.mother_birth_date || null,
     father_education: form.father_education.trim() || null,
     father_occupation: form.father_occupation.trim() || null,
-    father_designation: form.father_designation.trim() || null,
     mother_education: form.mother_education.trim() || null,
     mother_occupation: form.mother_occupation.trim() || null,
-    mother_designation: form.mother_designation.trim() || null,
-    parents_anniversary: form.parents_anniversary || null,
     whatsapp_no: form.whatsapp_no.trim() || null,
-    yearly_income: form.yearly_income ? parseFloat(form.yearly_income) : null,
-    fees_due_date: form.fees_due_date || null,
     account_holder_name: form.account_holder_name.trim() || null,
     bank_name: form.bank_name.trim() || null,
     bank_branch: form.bank_branch.trim() || null,
@@ -231,10 +205,9 @@ export function formToPayload(form: StudentFormState): Record<string, unknown> {
     account_no: form.account_no.trim() || null,
     guardian_education: form.guardian_education.trim() || null,
     guardian_occupation: form.guardian_occupation.trim() || null,
-    guardian_designation: form.guardian_designation.trim() || null,
-    transport_required: form.transport_required,
-    transport_route: form.transport_route.trim() || null,
-    transport_pickup_point: form.transport_pickup_point.trim() || null,
+    udise_id: form.udise_id.trim() || null,
+    gr_number: form.gr_number.trim() || null,
+    second_language: form.second_language || null,
     notes: form.notes.trim() || null,
     is_rte_quota: form.is_rte_quota,
   };

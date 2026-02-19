@@ -18,6 +18,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StudentDocumentsPhotos } from "@/components/StudentDocumentsPhotos";
+import { CameraCaptureButton } from "@/components/CameraCapture";
 import { Button } from "@/components/ui/button";
 import { Upload, FileText, ImageIcon } from "lucide-react";
 import {
@@ -26,11 +27,9 @@ import {
   type PendingDocuments,
 } from "@/lib/student-uploads";
 
-const PHOTO_ROLES = ["student", "mother", "father"] as const;
+const PHOTO_ROLES = ["student"] as const;
 const PHOTO_LABELS: Record<(typeof PHOTO_ROLES)[number], string> = {
   student: "Student",
-  mother: "Mother",
-  father: "Father",
 };
 const DOC_TYPES = ["admission_form", "leaving_cert", "birth_cert", "aadhar", "caste_cert", "other"] as const;
 const DOC_LABELS: Record<(typeof DOC_TYPES)[number], string> = {
@@ -78,7 +77,6 @@ const defaultForm = () => ({
   parent_contact: "",
   mother_contact: "",
   parent_email: "",
-  parent_relationship: "father",
   guardian_name: "",
   guardian_contact: "",
   guardian_email: "",
@@ -96,18 +94,11 @@ const defaultForm = () => ({
   hobby: "",
   sign_of_identity: "",
   refer_name: "",
-  father_birth_date: "",
-  mother_birth_date: "",
   father_education: "",
   father_occupation: "",
-  father_designation: "",
   mother_education: "",
   mother_occupation: "",
-  mother_designation: "",
-  parents_anniversary: "",
   whatsapp_no: "",
-  yearly_income: "",
-  fees_due_date: "",
   account_holder_name: "",
   bank_name: "",
   bank_branch: "",
@@ -115,10 +106,9 @@ const defaultForm = () => ({
   account_no: "",
   guardian_education: "",
   guardian_occupation: "",
-  guardian_designation: "",
-  transport_required: false,
-  transport_route: "",
-  transport_pickup_point: "",
+  udise_id: "",
+  gr_number: "",
+  second_language: "",
   notes: "",
   is_rte_quota: false,
 });
@@ -196,7 +186,6 @@ export default function StudentEntryForm() {
         parent_contact: form.parent_contact.trim() || null,
         mother_contact: form.mother_contact.trim() || null,
         parent_email: form.parent_email.trim() || null,
-        parent_relationship: form.parent_relationship,
         guardian_name: form.guardian_name.trim() || null,
         guardian_contact: form.guardian_contact.trim() || null,
         guardian_email: form.guardian_email.trim() || null,
@@ -214,18 +203,11 @@ export default function StudentEntryForm() {
         hobby: form.hobby.trim() || null,
         sign_of_identity: form.sign_of_identity.trim() || null,
         refer_name: form.refer_name.trim() || null,
-        father_birth_date: form.father_birth_date || null,
-        mother_birth_date: form.mother_birth_date || null,
         father_education: form.father_education.trim() || null,
         father_occupation: form.father_occupation.trim() || null,
-        father_designation: form.father_designation.trim() || null,
         mother_education: form.mother_education.trim() || null,
         mother_occupation: form.mother_occupation.trim() || null,
-        mother_designation: form.mother_designation.trim() || null,
-        parents_anniversary: form.parents_anniversary || null,
         whatsapp_no: form.whatsapp_no.trim() || null,
-        yearly_income: form.yearly_income ? parseFloat(form.yearly_income) : null,
-        fees_due_date: form.fees_due_date || null,
         account_holder_name: form.account_holder_name.trim() || null,
         bank_name: form.bank_name.trim() || null,
         bank_branch: form.bank_branch.trim() || null,
@@ -233,10 +215,9 @@ export default function StudentEntryForm() {
         account_no: form.account_no.trim() || null,
         guardian_education: form.guardian_education.trim() || null,
         guardian_occupation: form.guardian_occupation.trim() || null,
-        guardian_designation: form.guardian_designation.trim() || null,
-        transport_required: form.transport_required,
-        transport_route: form.transport_route.trim() || null,
-        transport_pickup_point: form.transport_pickup_point.trim() || null,
+        udise_id: form.udise_id.trim() || null,
+        gr_number: form.gr_number.trim() || null,
+        second_language: form.second_language || null,
         notes: form.notes.trim() || null,
         is_rte_quota: form.is_rte_quota,
       };
@@ -310,13 +291,12 @@ export default function StudentEntryForm() {
       )}
 
       <Tabs defaultValue="basic" className="w-full">
-        <TabsList className="grid w-full grid-cols-6 lg:grid-cols-7">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="basic">Basic</TabsTrigger>
           <TabsTrigger value="parents">Parents</TabsTrigger>
           <TabsTrigger value="academic">Academic</TabsTrigger>
           <TabsTrigger value="other">Other</TabsTrigger>
           <TabsTrigger value="fee">Fee & Bank</TabsTrigger>
-          <TabsTrigger value="transport">Transport</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
         </TabsList>
 
@@ -414,8 +394,26 @@ export default function StudentEntryForm() {
                   <Input value={form.pen_no} onChange={(e) => set("pen_no", e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Apaar ID</Label>
+                  <Label>APAR ID</Label>
                   <Input value={form.apaar_id} onChange={(e) => set("apaar_id", e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>UDISE ID</Label>
+                  <Input value={form.udise_id} onChange={(e) => set("udise_id", e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>GR Number</Label>
+                  <Input value={form.gr_number} onChange={(e) => set("gr_number", e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Second Language</Label>
+                  <Select value={form.second_language} onValueChange={(v) => set("second_language", v)}>
+                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="English">English</SelectItem>
+                      <SelectItem value="Hindi">Hindi</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </CardContent>
@@ -455,30 +453,6 @@ export default function StudentEntryForm() {
                   <Input type="tel" value={form.whatsapp_no} onChange={(e) => set("whatsapp_no", e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Parent relationship</Label>
-                  <Select value={form.parent_relationship} onValueChange={(v) => set("parent_relationship", v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="father">Father</SelectItem>
-                      <SelectItem value="mother">Mother</SelectItem>
-                      <SelectItem value="guardian">Guardian</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Father birth date</Label>
-                  <Input type="date" value={form.father_birth_date} onChange={(e) => set("father_birth_date", e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Mother birth date</Label>
-                  <Input type="date" value={form.mother_birth_date} onChange={(e) => set("mother_birth_date", e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Parents anniversary</Label>
-                  <Input type="date" value={form.parents_anniversary} onChange={(e) => set("parents_anniversary", e.target.value)} />
-                </div>
-                <div className="space-y-2">
                   <Label>Father education</Label>
                   <Input value={form.father_education} onChange={(e) => set("father_education", e.target.value)} />
                 </div>
@@ -487,24 +461,12 @@ export default function StudentEntryForm() {
                   <Input value={form.father_occupation} onChange={(e) => set("father_occupation", e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Father designation</Label>
-                  <Input value={form.father_designation} onChange={(e) => set("father_designation", e.target.value)} />
-                </div>
-                <div className="space-y-2">
                   <Label>Mother education</Label>
                   <Input value={form.mother_education} onChange={(e) => set("mother_education", e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label>Mother occupation</Label>
                   <Input value={form.mother_occupation} onChange={(e) => set("mother_occupation", e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Mother designation</Label>
-                  <Input value={form.mother_designation} onChange={(e) => set("mother_designation", e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Yearly income (Rs)</Label>
-                  <Input type="number" value={form.yearly_income} onChange={(e) => set("yearly_income", e.target.value)} placeholder="0" />
                 </div>
                 <div className="space-y-2 sm:col-span-2">
                   <Label>Guardian name (if different)</Label>
@@ -521,10 +483,6 @@ export default function StudentEntryForm() {
                 <div className="space-y-2">
                   <Label>Guardian occupation</Label>
                   <Input value={form.guardian_occupation} onChange={(e) => set("guardian_occupation", e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Guardian designation</Label>
-                  <Input value={form.guardian_designation} onChange={(e) => set("guardian_designation", e.target.value)} />
                 </div>
               </div>
             </CardContent>
@@ -664,7 +622,7 @@ export default function StudentEntryForm() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Fee Concession & Bank Details</CardTitle>
-              <CardDescription>Fee mafi, fees due date, and bank account for refunds.</CardDescription>
+              <CardDescription>Fee mafi and bank account for refunds.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
@@ -675,10 +633,6 @@ export default function StudentEntryForm() {
                 <div className="space-y-2">
                   <Label>Fee mafi reason</Label>
                   <Input value={form.fee_mafi_reason} onChange={(e) => set("fee_mafi_reason", e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Fees due date</Label>
-                  <Input type="date" value={form.fees_due_date} onChange={(e) => set("fees_due_date", e.target.value)} />
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox id="all_mafi" checked={form.all_fee_mafi} onCheckedChange={(c) => set("all_fee_mafi", !!c)} />
@@ -709,31 +663,6 @@ export default function StudentEntryForm() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="transport" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Transport Details</CardTitle>
-              <CardDescription>School transport and pickup information.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox id="transport" checked={form.transport_required} onCheckedChange={(c) => set("transport_required", !!c)} />
-                  <Label htmlFor="transport" className="font-normal">Transport required</Label>
-                </div>
-                <div className="space-y-2">
-                  <Label>Transport route</Label>
-                  <Input value={form.transport_route} onChange={(e) => set("transport_route", e.target.value)} />
-                </div>
-                <div className="space-y-2 sm:col-span-2">
-                  <Label>Pickup / drop point</Label>
-                  <Input value={form.transport_pickup_point} onChange={(e) => set("transport_pickup_point", e.target.value)} />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
         <TabsContent value="documents" className="space-y-4 mt-4">
           <Card>
             <CardHeader>
@@ -745,8 +674,8 @@ export default function StudentEntryForm() {
             <CardContent className="space-y-6">
               <div>
                 <Label className="text-sm font-medium mb-2 block">Photos</Label>
-                <p className="text-xs text-muted-foreground mb-3">Student, Mother, Father (image only)</p>
-                <div className="grid grid-cols-3 gap-4">
+                <p className="text-xs text-muted-foreground mb-3">Student photo (image only)</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {PHOTO_ROLES.map((role) => {
                     const file = pendingPhotos[role];
                     return (
@@ -759,7 +688,7 @@ export default function StudentEntryForm() {
                           )}
                         </div>
                         <span className="text-xs font-medium">{PHOTO_LABELS[role]}</span>
-                        <div className="flex gap-1">
+                        <div className="flex flex-wrap gap-1">
                           <label className="cursor-pointer">
                             <input
                               type="file"
@@ -778,6 +707,11 @@ export default function StudentEntryForm() {
                               </span>
                             </Button>
                           </label>
+                          {role === "student" && (
+                            <CameraCaptureButton
+                              onCapture={(f) => setPendingPhotos((p) => ({ ...p, student: f }))}
+                            />
+                          )}
                           {file && (
                             <Button
                               type="button"
