@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { createClass, updateClass, deleteClass, createDivision, deleteDivision } from "@/app/dashboard/classes/actions";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -105,11 +105,7 @@ export function ClassManagement() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Class list</CardTitle>
-        <CardDescription>Classes by section. Add or edit classes; add divisions (A, B, C) under each.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 pt-6">
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogTrigger asChild>
             <Button size="sm" className="gap-1">
