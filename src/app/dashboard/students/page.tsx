@@ -11,7 +11,6 @@ import { TableSkeleton } from "@/components/skeletons/TableSkeleton";
 export default async function StudentsPage() {
   const user = await getUser();
   if (!user) redirect("/login");
-  if (!isAdminOrAbove(user)) redirect("/dashboard");
 
   const canEdit = isAdminOrAbove(user);
 
@@ -23,7 +22,7 @@ export default async function StudentsPage() {
           Student Master
         </h1>
         <p className="text-muted-foreground mt-1">
-          Add new students or manage existing records.
+          {canEdit ? "Add new students or manage existing records." : "View student records (read-only)."}
         </p>
       </div>
 
@@ -32,7 +31,7 @@ export default async function StudentsPage() {
           {canEdit && (
             <TabsTrigger value="add">Add Student</TabsTrigger>
           )}
-          <TabsTrigger value="manage">Manage Students</TabsTrigger>
+          <TabsTrigger value="manage">{canEdit ? "Manage Students" : "Students"}</TabsTrigger>
         </TabsList>
 
         {canEdit && (

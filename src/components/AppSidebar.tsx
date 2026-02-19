@@ -30,7 +30,7 @@ import { Separator } from "@/components/ui/separator";
 const navItems: { href: string; label: string; icon: React.ComponentType<{ className?: string }>; roles?: ("super_admin" | "admin" | "teacher")[] }[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/users", label: "Users", icon: Users, roles: ["super_admin"] },
-  { href: "/dashboard/students", label: "Students", icon: GraduationCap, roles: ["super_admin", "admin"] },
+  { href: "/dashboard/students", label: "Students management", icon: GraduationCap },
   { href: "/dashboard/admission-enquiry", label: "Admission Enquiry", icon: ClipboardList, roles: ["super_admin", "admin"] },
   { href: "/dashboard/employees", label: "Employees", icon: UserPlus, roles: ["super_admin", "admin"] },
   { href: "/dashboard/classes", label: "Classes", icon: BookOpen },

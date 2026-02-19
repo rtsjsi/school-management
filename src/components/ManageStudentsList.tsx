@@ -95,7 +95,7 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Manage Students</CardTitle>
+        <CardTitle>{canEdit ? "Manage Students" : "Students"}</CardTitle>
         <CardDescription>
           {canEdit ? "View, search, and edit existing student records." : "View and search student records (read-only)."}
         </CardDescription>
