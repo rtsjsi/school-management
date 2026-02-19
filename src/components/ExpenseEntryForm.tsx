@@ -52,7 +52,7 @@ function RemainingBudget({ expenseHeadId }: { expenseHeadId: string }) {
   );
 }
 
-const ACCOUNTS = ["CASH", "BANK", "OTHER"] as const;
+const PAYMENT_MODES = ["cash", "cheque", "online"] as const;
 
 type ExpenseHead = { id: string; name: string; budget?: number | null };
 
@@ -73,7 +73,7 @@ export default function ExpenseEntryForm({
     party?: string;
     amount?: number;
     expense_by?: string;
-    account?: string;
+    account?: string; // payment_mode: cash, cheque, online
     description?: string;
     expense_date?: string;
   };
@@ -87,7 +87,7 @@ export default function ExpenseEntryForm({
     party: initialValues?.party ?? "NIL",
     amount: initialValues?.amount?.toString() ?? "",
     expense_by: initialValues?.expense_by ?? "",
-    account: (initialValues?.account as string) ?? "CASH",
+    account: (initialValues?.account as string) ?? "cash",
     description: initialValues?.description ?? "",
     expense_date: initialValues?.expense_date ?? new Date().toISOString().slice(0, 10),
   });
@@ -100,7 +100,7 @@ export default function ExpenseEntryForm({
         party: initialValues.party ?? "NIL",
         amount: initialValues.amount?.toString() ?? "",
         expense_by: initialValues.expense_by ?? "",
-        account: initialValues.account ?? "CASH",
+        account: initialValues.account ?? "cash",
         description: initialValues.description ?? "",
         expense_date: initialValues.expense_date ?? new Date().toISOString().slice(0, 10),
       });
@@ -144,7 +144,7 @@ export default function ExpenseEntryForm({
         party: "NIL",
         amount: "",
         expense_by: "",
-        account: "CASH",
+        account: "cash",
         description: "",
         expense_date: new Date().toISOString().slice(0, 10),
       });
@@ -164,7 +164,7 @@ export default function ExpenseEntryForm({
       party: "NIL",
       amount: "",
       expense_by: "",
-      account: "CASH",
+      account: "cash",
       description: "",
       expense_date: new Date().toISOString().slice(0, 10),
     });
@@ -262,14 +262,14 @@ export default function ExpenseEntryForm({
         </div>
       </div>
       <div className="space-y-2">
-        <Label>Account</Label>
+        <Label>Payment Mode</Label>
         <Select value={form.account} onValueChange={(v) => setForm((p) => ({ ...p, account: v }))}>
           <SelectTrigger>
-            <SelectValue />
+            <SelectValue placeholder="Select mode" />
           </SelectTrigger>
           <SelectContent>
-            {ACCOUNTS.map((a) => (
-              <SelectItem key={a} value={a}>{a}</SelectItem>
+            {PAYMENT_MODES.map((m) => (
+              <SelectItem key={m} value={m} className="capitalize">{m}</SelectItem>
             ))}
           </SelectContent>
         </Select>
