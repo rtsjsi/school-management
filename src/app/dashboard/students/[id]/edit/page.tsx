@@ -1,6 +1,6 @@
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getUser } from "@/lib/auth";
+import { getUser, isAdminOrAbove } from "@/lib/auth";
 import { GraduationCap } from "lucide-react";
 import { StudentEditForm } from "@/components/StudentEditForm";
 
@@ -11,6 +11,7 @@ export default async function StudentEditPage({
 }) {
   const user = await getUser();
   if (!user) redirect("/login");
+  if (!isAdminOrAbove(user)) redirect("/dashboard/students");
 
   const { id } = await params;
   const supabase = await createClient();

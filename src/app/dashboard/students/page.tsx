@@ -22,7 +22,7 @@ export default async function StudentsPage() {
           Student Master
         </h1>
         <p className="text-muted-foreground mt-1">
-          Add new students or manage existing records.
+          {canEdit ? "Add new students or manage existing records." : "View student records (read-only)."}
         </p>
       </div>
 
@@ -52,7 +52,7 @@ export default async function StudentsPage() {
 
         <TabsContent value="manage" className="space-y-6">
           <Suspense fallback={<TableSkeleton rows={8} columns={8} />}>
-            <ManageStudentsList />
+            <ManageStudentsList canEdit={canEdit} />
           </Suspense>
         </TabsContent>
       </Tabs>

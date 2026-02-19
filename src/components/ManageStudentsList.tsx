@@ -51,7 +51,7 @@ type StudentRow = {
   created_at?: string;
 };
 
-export function ManageStudentsList() {
+export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
   const [students, setStudents] = useState<StudentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -96,7 +96,9 @@ export function ManageStudentsList() {
     <Card>
       <CardHeader>
         <CardTitle>Manage Students</CardTitle>
-        <CardDescription>View, search, and edit existing student records.</CardDescription>
+        <CardDescription>
+          {canEdit ? "View, search, and edit existing student records." : "View and search student records (read-only)."}
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-wrap gap-4 items-end">
@@ -157,7 +159,7 @@ export function ManageStudentsList() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-16"></TableHead>
+                  {canEdit && <TableHead className="w-16"></TableHead>}
                   <TableHead>Student ID</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>RTE</TableHead>
@@ -171,14 +173,16 @@ export function ManageStudentsList() {
               <TableBody>
                 {students.map((s) => (
                   <TableRow key={s.id}>
-                    <TableCell>
-                      <Button size="sm" variant="outline" className="gap-1" asChild>
-                        <Link href={`/dashboard/students/${s.id}/edit`}>
-                          <Pencil className="h-3 w-3" />
-                          Edit
-                        </Link>
-                      </Button>
-                    </TableCell>
+                    {canEdit && (
+                      <TableCell>
+                        <Button size="sm" variant="outline" className="gap-1" asChild>
+                          <Link href={`/dashboard/students/${s.id}/edit`}>
+                            <Pencil className="h-3 w-3" />
+                            Edit
+                          </Link>
+                        </Button>
+                      </TableCell>
+                    )}
                     <TableCell className="font-mono text-xs text-muted-foreground">
                       {s.student_id || "—"}
                     </TableCell>
