@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth";
-import { BookOpen } from "lucide-react";
-import { ClassManagement } from "@/components/ClassManagement";
+import { CalendarRange } from "lucide-react";
+import { FinancialYearsManager } from "@/components/FinancialYearsManager";
 
-export default async function ClassesPage() {
+export default async function FinancialYearsPage() {
   const user = await getUser();
   if (!user) redirect("/login");
 
@@ -11,14 +11,14 @@ export default async function ClassesPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-          <BookOpen className="h-7 w-7 text-primary" />
-          Class management
+          <CalendarRange className="h-7 w-7 text-primary" />
+          Financial Year
         </h1>
         <p className="text-muted-foreground mt-1">
-          Manage classes and divisions. Add or edit classes; add divisions (A, B, C) under each.
+          Manage financial/academic years for dropdowns (e.g. 2024-2025).
         </p>
       </div>
-      <ClassManagement />
+      <FinancialYearsManager />
     </div>
   );
 }

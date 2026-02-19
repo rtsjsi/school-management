@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import {
   LayoutDashboard,
@@ -32,9 +32,9 @@ import { Separator } from "@/components/ui/separator";
 const navItems: { href: string; label: string; icon: React.ComponentType<{ className?: string }>; roles?: ("super_admin" | "admin" | "teacher")[] }[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/users", label: "Users", icon: Users, roles: ["super_admin"] },
-  { href: "/dashboard/classes", label: "Class", icon: BookOpen },
-  { href: "/dashboard/classes?tab=subjects", label: "Subject", icon: BookMarked },
-  { href: "/dashboard/classes?tab=years", label: "Financial Year", icon: CalendarRange },
+  { href: "/dashboard/classes", label: "Class management", icon: BookOpen },
+  { href: "/dashboard/subjects", label: "Subject management", icon: BookMarked },
+  { href: "/dashboard/financial-years", label: "Financial Year", icon: CalendarRange },
   { href: "/dashboard/students", label: "Students management", icon: GraduationCap },
   { href: "/dashboard/admission-enquiry", label: "Admission Enquiry", icon: ClipboardList, roles: ["super_admin", "admin"] },
   { href: "/dashboard/employees", label: "Employees", icon: UserPlus, roles: ["super_admin", "admin"] },
@@ -47,7 +47,6 @@ const navItems: { href: string; label: string; icon: React.ComponentType<{ class
 
 export function AppSidebar({ user }: { user: AuthUser }) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -81,12 +80,7 @@ export function AppSidebar({ user }: { user: AuthUser }) {
       </div>
       <nav className="flex-1 space-y-0.5 p-3 overflow-y-auto">
         {filteredNav.map((item) => {
-          const [basePath, query] = item.href.split("?");
-          const itemTab = query?.startsWith("tab=") ? query.slice(5) : null;
-          const currentTab = searchParams.get("tab");
-          const isActive =
-            pathname === basePath &&
-            (itemTab ? currentTab === itemTab : !currentTab);
+          const isActive = pathname === item.href;
           const Icon = item.icon;
           return (
             <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}>
