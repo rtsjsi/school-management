@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/client";
 
 export type ClassOption = { id: string; name: string };
 export type DivisionOption = { id: string; name: string };
-export type FinancialYearOption = { id: string; name: string };
+export type AcademicYearOption = { id: string; name: string };
 
 export async function fetchClasses(): Promise<ClassOption[]> {
   const supabase = createClient();
@@ -50,11 +50,11 @@ export async function fetchAllDivisions(): Promise<DivisionOption[]> {
   });
 }
 
-export async function fetchFinancialYears(): Promise<FinancialYearOption[]> {
+export async function fetchAcademicYears(): Promise<AcademicYearOption[]> {
   const supabase = createClient();
   const { data } = await supabase
-    .from("financial_years")
+    .from("academic_years")
     .select("id, name")
     .order("sort_order");
-  return (data ?? []) as FinancialYearOption[];
+  return (data ?? []) as AcademicYearOption[];
 }

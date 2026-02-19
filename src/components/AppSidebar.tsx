@@ -34,7 +34,7 @@ const navItems: { href: string; label: string; icon: React.ComponentType<{ class
   { href: "/dashboard/users", label: "Users", icon: Users, roles: ["super_admin"] },
   { href: "/dashboard/classes", label: "Class management", icon: BookOpen },
   { href: "/dashboard/subjects", label: "Subject management", icon: BookMarked },
-  { href: "/dashboard/financial-years", label: "Financial Year", icon: CalendarRange },
+  { href: "/dashboard/academic-years", label: "Academic Year", icon: CalendarRange },
   { href: "/dashboard/students", label: "Students management", icon: GraduationCap },
   { href: "/dashboard/admission-enquiry", label: "Admission Enquiry", icon: ClipboardList, roles: ["super_admin", "admin"] },
   { href: "/dashboard/employees", label: "Employees", icon: UserPlus, roles: ["super_admin", "admin"] },

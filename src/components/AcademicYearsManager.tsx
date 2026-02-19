@@ -28,7 +28,7 @@ import { Plus, Trash2 } from "lucide-react";
 
 type YearRow = { id: string; name: string; sort_order: number };
 
-export function FinancialYearsManager() {
+export function AcademicYearsManager() {
   const router = useRouter();
   const [years, setYears] = useState<YearRow[]>([]);
   const [addOpen, setAddOpen] = useState(false);
@@ -40,7 +40,7 @@ export function FinancialYearsManager() {
 
   const loadYears = () => {
     supabase
-      .from("financial_years")
+      .from("academic_years")
       .select("id, name, sort_order")
       .order("sort_order")
       .then(({ data }) => setYears((data ?? []) as YearRow[]));
@@ -60,13 +60,13 @@ export function FinancialYearsManager() {
     }
     setAddLoading(true);
     const { data: max } = await supabase
-      .from("financial_years")
+      .from("academic_years")
       .select("sort_order")
       .order("sort_order", { ascending: false })
       .limit(1)
       .maybeSingle();
     const nextOrder = (max?.sort_order ?? 0) + 1;
-    const { error } = await supabase.from("financial_years").insert({
+    const { error } = await supabase.from("academic_years").insert({
       name: trimmed,
       sort_order: nextOrder,
     });
@@ -82,8 +82,8 @@ export function FinancialYearsManager() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this financial year?")) return;
-    await supabase.from("financial_years").delete().eq("id", id);
+    if (!confirm("Delete this academic year?")) return;
+    await supabase.from("academic_years").delete().eq("id", id);
     loadYears();
     router.refresh();
   };
@@ -100,7 +100,7 @@ export function FinancialYearsManager() {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add financial year</DialogTitle>
+              <DialogTitle>Add academic year</DialogTitle>
               <DialogDescription>e.g. 2024-2025, 2025-2026</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleAdd} className="space-y-4">
@@ -157,7 +157,7 @@ export function FinancialYearsManager() {
             </Table>
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground py-6 text-center">No financial years. Add one above.</p>
+          <p className="text-sm text-muted-foreground py-6 text-center">No academic years. Add one above.</p>
         )}
       </CardContent>
     </Card>

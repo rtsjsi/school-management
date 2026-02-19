@@ -31,7 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { FileText, Pencil } from "lucide-react";
-import { fetchClasses, fetchFinancialYears } from "@/lib/lov";
+import { fetchClasses, fetchAcademicYears } from "@/lib/lov";
 
 const PAYMENT_MODES = ["cash", "cheque", "online"] as const;
 const QUARTERS = [1, 2, 3, 4] as const;
@@ -93,7 +93,7 @@ export default function FeeCollectionReport() {
   }, []);
 
   useEffect(() => {
-    fetchFinancialYears().then((y) => setYears(y.map(({ id, name }) => ({ id, name })))).catch(() => setYears([]));
+    fetchAcademicYears().then((y) => setYears(y.map(({ id, name }) => ({ id, name })))).catch(() => setYears([]));
   }, []);
 
   const fetchReport = () => {

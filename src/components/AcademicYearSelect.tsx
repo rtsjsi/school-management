@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { fetchFinancialYears } from "@/lib/lov";
+import { fetchAcademicYears } from "@/lib/lov";
 
 interface AcademicYearSelectProps {
   value: string;
@@ -22,7 +22,7 @@ export function AcademicYearSelect({ value, onChange, id = "academic_year", labe
   const [years, setYears] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
-    fetchFinancialYears().then(setYears);
+    fetchAcademicYears().then(setYears);
   }, []);
 
   return (

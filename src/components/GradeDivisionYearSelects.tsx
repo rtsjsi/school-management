@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { fetchClasses, fetchDivisionsByGrade, fetchFinancialYears } from "@/lib/lov";
+import { fetchClasses, fetchDivisionsByGrade, fetchAcademicYears } from "@/lib/lov";
 
 interface GradeDivisionYearSelectsProps {
   grade: string;
@@ -40,7 +40,7 @@ export function GradeDivisionYearSelects({
 
   useEffect(() => {
     fetchClasses().then(setClasses);
-    fetchFinancialYears().then(setYears);
+    fetchAcademicYears().then(setYears);
   }, []);
 
   useEffect(() => {

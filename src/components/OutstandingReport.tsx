@@ -21,7 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AlertCircle } from "lucide-react";
-import { fetchClasses, fetchFinancialYears } from "@/lib/lov";
+import { fetchClasses, fetchAcademicYears } from "@/lib/lov";
 
 const QUARTERS = [1, 2, 3, 4] as const;
 
@@ -74,7 +74,7 @@ export default function OutstandingReport() {
   }, []);
 
   useEffect(() => {
-    fetchFinancialYears()
+    fetchAcademicYears()
       .then((y) => {
         const list = y.map(({ id, name }) => ({ id, name }));
         if (list.length === 0) list.push({ id: "current", name: defaultAy });
