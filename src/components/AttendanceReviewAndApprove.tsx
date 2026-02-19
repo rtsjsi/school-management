@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ShieldCheck } from "lucide-react";
 
 const STATUSES = ["present", "absent", "half_day", "leave", "holiday", "week_off"] as const;
 
@@ -137,16 +136,7 @@ export default function AttendanceReviewAndApprove() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <ShieldCheck className="h-5 w-5" />
-          Review & Approve Attendance
-        </CardTitle>
-        <CardDescription>
-          Review biometric and manual attendance, make corrections, then approve before generating NEFT file.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <div className="flex flex-wrap gap-4 items-end mb-4">
           <div className="space-y-2">
             <Label>Month</Label>

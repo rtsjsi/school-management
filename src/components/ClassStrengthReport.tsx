@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 
 type Row = { grade: string; section: string; count: number };
 
@@ -27,13 +27,7 @@ export function ClassStrengthReport({ rows, total }: { rows: Row[]; total: numbe
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Strength by class and section</CardTitle>
-        <CardDescription>
-          Total active students: {total}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <Table>
           <TableHeader>
             <TableRow>

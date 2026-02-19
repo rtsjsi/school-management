@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function ShiftForm() {
   const router = useRouter();
@@ -54,10 +54,7 @@ export default function ShiftForm() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Add Shift</CardTitle>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>}
           <div className="space-y-2">

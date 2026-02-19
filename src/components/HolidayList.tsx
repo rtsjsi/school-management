@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -20,21 +20,16 @@ export async function HolidayList() {
   if (!holidays || holidays.length === 0) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Holidays</CardTitle>
-          <CardDescription>No holidays added.</CardDescription>
-        </CardHeader>
+        <CardContent className="pt-6">
+          <p className="text-sm text-muted-foreground">No holidays added.</p>
+        </CardContent>
       </Card>
     );
   }
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Holiday Calendar</CardTitle>
-        <CardDescription>Upcoming and past holidays.</CardDescription>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <Table>
           <TableHeader>
             <TableRow>

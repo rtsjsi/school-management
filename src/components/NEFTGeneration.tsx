@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -54,16 +54,7 @@ export default function NEFTGeneration() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileDown className="h-5 w-5" />
-          NEFT File Generation
-        </CardTitle>
-        <CardDescription>
-          Generate NEFT file for bank transfer. Attendance must be approved for the selected month.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <div className="flex flex-wrap gap-4 items-end mb-4">
           <div className="space-y-2">
             <Label>Month</Label>

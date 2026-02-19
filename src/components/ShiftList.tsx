@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -19,10 +19,9 @@ export async function ShiftList() {
   if (!shifts || shifts.length === 0) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Shifts</CardTitle>
-          <CardDescription>No shifts defined.</CardDescription>
-        </CardHeader>
+        <CardContent className="pt-6">
+          <p className="text-sm text-muted-foreground">No shifts defined.</p>
+        </CardContent>
       </Card>
     );
   }
@@ -35,11 +34,7 @@ export async function ShiftList() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Shifts</CardTitle>
-        <CardDescription>Defined shifts with timings and thresholds.</CardDescription>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <Table>
           <TableHeader>
             <TableRow>

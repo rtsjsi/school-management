@@ -7,7 +7,7 @@ import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -238,13 +238,7 @@ export default function MultipleSubjectwiseMarksEntry() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Multiple Subject-wise Marks Entry</CardTitle>
-        <CardDescription>
-          Enter marks per subject per student. Right-click a cell or press &quot;A&quot; to mark absent.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
             <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>

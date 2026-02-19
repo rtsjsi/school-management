@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -34,11 +34,7 @@ export async function EmployeeDepartmentReport() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Department-wise Report</CardTitle>
-        <CardDescription>Employees grouped by department.</CardDescription>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         {depts.length > 0 ? (
           <Table>
             <TableHeader>

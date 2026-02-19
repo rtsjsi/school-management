@@ -7,7 +7,7 @@ import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { AcademicYearSelect } from "@/components/AcademicYearSelect";
 
 const FEE_TYPES = ["tuition", "transport", "library", "lab", "sports", "other"] as const;
@@ -103,13 +103,7 @@ export default function FeeStructureForm() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Add Fee Structure</CardTitle>
-        <CardDescription>
-          Define fee structure by standard (e.g., 1-6, 7-9). Fees are per quarter.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
             <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>

@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -79,11 +79,7 @@ export async function AttendanceDailyRegister() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Daily Register - {today}</CardTitle>
-        <CardDescription>Today&apos;s attendance (biometric + manual overrides).</CardDescription>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         {rows.length > 0 ? (
           <Table>
             <TableHeader>

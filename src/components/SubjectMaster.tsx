@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { createSubject } from "@/app/dashboard/classes/actions";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -114,13 +114,7 @@ export function SubjectMaster() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Subject Master</CardTitle>
-        <CardDescription>
-          Add subjects for each class. Choose grade-based (enter A/B/C) or mark-based. Max marks are set per exam.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 pt-6">
         <div className="flex flex-wrap gap-4 items-end">
           <div className="space-y-2 min-w-[200px]">
             <Label>Class</Label>

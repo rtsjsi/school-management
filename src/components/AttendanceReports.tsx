@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -37,13 +37,7 @@ export default function AttendanceReports() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Attendance Reports</CardTitle>
-        <CardDescription>
-          Monthly summary, late arrivals, early departures, absentee list.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <div className="flex flex-wrap gap-4 items-end mb-4">
           <div className="space-y-2">
             <Label>Report Type</Label>

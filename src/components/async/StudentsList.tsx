@@ -2,7 +2,7 @@ import { getUser, isAdminOrAbove } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import StudentEntryForm from "@/components/StudentEntryForm";
 import { StudentEditDialog } from "@/components/StudentEditDialog";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -42,26 +42,14 @@ export async function StudentsList() {
     <>
       {canEdit && (
         <Card>
-          <CardHeader>
-            <CardTitle>Add student</CardTitle>
-            <CardDescription>Create a new student record with complete information.</CardDescription>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <StudentEntryForm />
           </CardContent>
         </Card>
       )}
 
       <Card className={canEdit ? "" : "lg:col-span-1"}>
-        <CardHeader>
-          <CardTitle>{canEdit ? "Students" : "Student list"}</CardTitle>
-          <CardDescription>
-            {canEdit 
-              ? "Latest students. Add new via the form." 
-              : "Read-only view of student records."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           {students && students.length > 0 ? (
             <>
               <div className="overflow-x-auto">

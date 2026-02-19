@@ -2,7 +2,7 @@ import { getUser, isAdminOrAbove } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import EmployeeEntryForm from "@/components/EmployeeEntryForm";
 import { EmployeeEditDialog } from "@/components/EmployeeEditDialog";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -40,11 +40,7 @@ export async function EmployeesList() {
       )}
 
       <Card>
-        <CardHeader>
-          <CardTitle>Employee Directory</CardTitle>
-          <CardDescription>All employees with key details.</CardDescription>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           {employees && employees.length > 0 ? (
             <>
               <div className="overflow-x-auto">

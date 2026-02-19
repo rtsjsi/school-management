@@ -2,7 +2,7 @@ import { getUser, isAdminOrAbove } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import ExamEntryForm from "@/components/ExamEntryForm";
 import { ExamSubjectsConfig } from "@/components/ExamSubjectsConfig";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -30,24 +30,14 @@ export async function ExamsList() {
     <>
       {canEdit && (
         <Card>
-          <CardHeader>
-            <CardTitle>Add exam</CardTitle>
-            <CardDescription>Create exam.</CardDescription>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <ExamEntryForm />
           </CardContent>
         </Card>
       )}
 
       <Card>
-        <CardHeader>
-          <CardTitle>Exams</CardTitle>
-          <CardDescription>
-            {canEdit ? "Latest exams. Add new via form." : "Read-only view."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           {exams && exams.length > 0 ? (
             <>
               <Table>

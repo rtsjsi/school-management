@@ -7,7 +7,7 @@ import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 
 const STATUSES = ["present", "absent", "half_day", "leave", "holiday", "week_off"] as const;
 
@@ -59,11 +59,7 @@ export default function AttendanceManualForm({ employees }: { employees: Employe
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Attendance Override</CardTitle>
-        <p className="text-sm text-muted-foreground">Override or correct status when biometric data is missing or incorrect.</p>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>}
           <div className="grid grid-cols-2 gap-4">

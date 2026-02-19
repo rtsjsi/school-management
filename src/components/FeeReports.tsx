@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -54,13 +54,7 @@ export default function FeeReports() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Fee Collection Reports</CardTitle>
-        <CardDescription>
-          Daily, monthly, student-wise, or payment method-wise reports.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <div className="space-y-4">
           <div className="flex flex-wrap gap-4 items-end">
             <div className="space-y-2">

@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -134,11 +134,7 @@ export function AdmissionEnquiryList() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Enquiry List</CardTitle>
-        <CardDescription>View and update enquiries. Filter by status or search by name/contact.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 pt-6">
         {fetchError && (
           <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{fetchError}</p>
         )}

@@ -5,9 +5,8 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { generateReportCardPDF } from "@/lib/report-card-pdf";
-import { FileDown } from "lucide-react";
 
 type Exam = { id: string; name: string; exam_type: string; grade: string | null; held_at: string };
 type Student = { id: string; full_name: string; grade: string | null; section: string | null; roll_number?: number; student_id?: string; academic_year?: string };
@@ -134,16 +133,7 @@ export default function ReportCardGenerator() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileDown className="h-5 w-5" />
-          Report Card
-        </CardTitle>
-        <CardDescription>
-          Generate and download report card PDF for a student based on exam marks.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 pt-6">
         {error && (
           <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>
         )}

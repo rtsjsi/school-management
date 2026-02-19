@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -20,11 +20,7 @@ export async function FeeCollectionList() {
   if (!collections || collections.length === 0) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Fee Collections</CardTitle>
-          <CardDescription>No fee collections yet.</CardDescription>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <p className="text-sm text-muted-foreground">Record a payment above.</p>
         </CardContent>
       </Card>
@@ -33,11 +29,7 @@ export async function FeeCollectionList() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Recent Collections</CardTitle>
-        <CardDescription>Latest fee payments with receipt numbers.</CardDescription>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <Table>
           <TableHeader>
             <TableRow>

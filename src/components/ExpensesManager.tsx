@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -126,13 +126,7 @@ export default function ExpensesManager({ canEdit = true }: { canEdit?: boolean 
       {canEdit && (
       <div className="lg:col-span-4">
         <Card>
-          <CardHeader>
-            <CardTitle>Expense Information</CardTitle>
-            <CardDescription>
-              {editingId ? "Edit expense" : "Add new expense"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <ExpenseEntryForm
               expenseHeads={expenseHeads}
               employees={employees}
@@ -160,11 +154,7 @@ export default function ExpensesManager({ canEdit = true }: { canEdit?: boolean 
 
       <div className={canEdit ? "lg:col-span-5" : "lg:col-span-9"}>
         <Card>
-          <CardHeader>
-            <CardTitle>Expenses</CardTitle>
-            <CardDescription>Recorded expenses</CardDescription>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             {loading ? (
               <p className="text-sm text-muted-foreground py-8">Loading…</p>
             ) : displayExpenses.length === 0 ? (
@@ -238,11 +228,7 @@ export default function ExpensesManager({ canEdit = true }: { canEdit?: boolean 
 
       <div className="lg:col-span-3">
         <Card>
-          <CardHeader>
-            <CardTitle>Search / Filter</CardTitle>
-            <CardDescription>Filter expense list</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pt-6">
             <div className="space-y-2">
               <Label>Search</Label>
               <Input

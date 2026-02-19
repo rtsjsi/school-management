@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getUser, isAdminOrAbove } from "@/lib/auth";
 import { GraduationCap } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import StudentEntryForm from "@/components/StudentEntryForm";
 import { ManageStudentsList } from "@/components/ManageStudentsList";
 import { TableSkeleton } from "@/components/skeletons/TableSkeleton";
@@ -37,13 +37,7 @@ export default async function StudentsPage() {
         {canEdit && (
           <TabsContent value="add" className="space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle>New Student Admission</CardTitle>
-                <CardDescription>
-                  Enter student details. Fields are grouped by context. Add documents and photos after saving via Manage Students.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+              <CardContent className="pt-6">
                 <StudentEntryForm />
               </CardContent>
             </Card>

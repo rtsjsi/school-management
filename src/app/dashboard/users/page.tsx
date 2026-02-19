@@ -6,7 +6,7 @@ import { ROLES } from "@/types/auth";
 import type { UserRole } from "@/types/auth";
 import CreateUserForm from "@/components/CreateUserForm";
 import { UserResetPasswordDialog } from "@/components/UserResetPasswordDialog";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -41,21 +41,13 @@ export default async function UsersPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
-          <CardHeader>
-            <CardTitle>Create user</CardTitle>
-            <CardDescription>Add a new user and assign a role.</CardDescription>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <CreateUserForm />
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Users</CardTitle>
-            <CardDescription>All users. Create new above.</CardDescription>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             {profiles && profiles.length > 0 ? (
               <Table>
                 <TableHeader>

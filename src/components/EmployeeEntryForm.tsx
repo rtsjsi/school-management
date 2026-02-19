@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 
 const ROLES = ["teacher", "staff", "admin", "other"] as const;
 const EMPLOYEE_TYPES = ["full_time", "part_time", "contract", "temporary"] as const;
@@ -124,10 +124,7 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Add Employee</CardTitle>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>}
 

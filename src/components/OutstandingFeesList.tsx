@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -77,13 +77,7 @@ export async function OutstandingFeesList() {
   if (!defaulters.length) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Outstanding / Defaulter List</CardTitle>
-          <CardDescription>
-            Outstanding fees derived from fee structure ({ay}). No outstanding fees.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <p className="text-sm text-muted-foreground">All fees are up to date.</p>
         </CardContent>
       </Card>
@@ -92,13 +86,7 @@ export async function OutstandingFeesList() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Outstanding / Defaulter List</CardTitle>
-        <CardDescription>
-          Students with pending fees by quarter ({ay}). Derived from fee structure.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <div className="flex flex-col min-w-0" style={{ maxHeight: 400 }}>
           <div className="flex-1 min-h-0 overflow-auto">
             <Table>

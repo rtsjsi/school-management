@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { CameraCaptureButton } from "@/components/CameraCapture";
 import { Upload, X, FileText, ImageIcon } from "lucide-react";
 
@@ -172,10 +172,7 @@ export function StudentDocumentsPhotos({ studentId }: { studentId: string }) {
   if (loading) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Documents &amp; Photos</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <p className="text-sm text-muted-foreground">Loading…</p>
         </CardContent>
       </Card>
@@ -184,10 +181,7 @@ export function StudentDocumentsPhotos({ studentId }: { studentId: string }) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Documents &amp; Photos</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6 pt-6">
         {error && (
           <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>
         )}

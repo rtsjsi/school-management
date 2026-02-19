@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -27,11 +27,7 @@ export async function FeeStructureList() {
   if (!structures || structures.length === 0) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Fee Structures</CardTitle>
-          <CardDescription>No fee structures defined yet.</CardDescription>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <p className="text-sm text-muted-foreground">Add a fee structure above.</p>
         </CardContent>
       </Card>
@@ -40,11 +36,7 @@ export async function FeeStructureList() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Fee Structures</CardTitle>
-        <CardDescription>Defined structures by standard and quarter.</CardDescription>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <Table>
           <TableHeader>
             <TableRow>

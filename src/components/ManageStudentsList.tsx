@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -101,13 +101,7 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>{canEdit ? "Manage Students" : "Students"}</CardTitle>
-        <CardDescription>
-          {canEdit ? "View, search, and edit existing student records." : "View and search student records (read-only)."}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 pt-6">
         <div className="flex flex-wrap gap-4 items-end">
           <div className="space-y-2 flex-1 min-w-[180px]">
             <Label>Search</Label>

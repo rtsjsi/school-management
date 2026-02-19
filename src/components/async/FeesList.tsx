@@ -1,7 +1,7 @@
 import { getUser, isAdminOrAbove } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import FeeEntryForm from "@/components/FeeEntryForm";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -41,11 +41,7 @@ export async function FeesList() {
     <>
       {canEdit && students && students.length > 0 && (
         <Card>
-          <CardHeader>
-            <CardTitle>Add fee</CardTitle>
-            <CardDescription>Record a new fee for a student.</CardDescription>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <FeeEntryForm students={students} />
           </CardContent>
         </Card>
@@ -59,13 +55,7 @@ export async function FeesList() {
       )}
 
       <Card className={canEdit ? "" : "lg:col-span-1"}>
-        <CardHeader>
-          <CardTitle>Fees</CardTitle>
-          <CardDescription>
-            {canEdit ? "Latest fee records. Add new via the form." : "Read-only view."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           {fees && fees.length > 0 ? (
             <>
               <Table>
