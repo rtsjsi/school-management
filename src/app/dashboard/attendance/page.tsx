@@ -13,6 +13,8 @@ import { AttendanceDailyRegister } from "@/components/AttendanceDailyRegister";
 import AttendanceReports from "@/components/AttendanceReports";
 import AttendanceReviewAndApprove from "@/components/AttendanceReviewAndApprove";
 import NEFTGeneration from "@/components/NEFTGeneration";
+import PayslipGenerator from "@/components/PayslipGenerator";
+import SalaryDeductionsManager from "@/components/SalaryDeductionsManager";
 import { TableSkeleton } from "@/components/skeletons/TableSkeleton";
 
 export default async function AttendancePage() {
@@ -48,6 +50,7 @@ export default async function AttendancePage() {
           <TabsTrigger value="attendance">Attendance</TabsTrigger>
           <TabsTrigger value="review">Review & Approve</TabsTrigger>
           <TabsTrigger value="neft">NEFT File</TabsTrigger>
+          <TabsTrigger value="payslips">Payslips</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
         </TabsList>
 
@@ -80,6 +83,11 @@ export default async function AttendancePage() {
 
         <TabsContent value="neft" className="space-y-6">
           <NEFTGeneration />
+        </TabsContent>
+
+        <TabsContent value="payslips" className="space-y-6">
+          <PayslipGenerator />
+          <SalaryDeductionsManager />
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-6">

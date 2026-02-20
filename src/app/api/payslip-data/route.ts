@@ -3,11 +3,34 @@ import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
+export interface PayslipRow {
+  employee_id: string;
+  employee_code: string;
+  full_name: string;
+  designation: string | null;
+  department: string | null;
+  joining_date: string | null;
+  month_year: string;
+  working_days: number;
+  present_days: number;
+  gross_amount: number;
+  allowances: number;
+  deduction_items: { type: string; amount: number; label: string }[];
+  deductions: number;
+  net_amount: number;
+  bank?: {
+    bank_name: string;
+    account_number: string;
+    ifsc_code: string;
+    account_holder_name: string;
+  };
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const monthYear = searchParams.get("monthYear");
-    const format = searchParams.get("format") ?? "json";
+    const employeeId = searchParams.get("employeeId");
 
     if (!monthYear) {
       return NextResponse.json({ error: "monthYear required" }, { status: 400 });
@@ -22,7 +45,10 @@ export async function GET(request: NextRequest) {
       .maybeSingle();
 
     if (!approval) {
-      return NextResponse.json({ error: "Attendance for this month must be approved before generating NEFT file." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Attendance for this month must be approved before generating payslips." },
+        { status: 400 }
+      );
     }
 
     const [y, m] = monthYear.split("-");
@@ -30,10 +56,16 @@ export async function GET(request: NextRequest) {
     const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate();
     const end = `${y}-${m}-${String(lastDay).padStart(2, "0")}`;
 
-    const { data: employees } = await supabase
+    let employeesQuery = supabase
       .from("employees")
-      .select("id, full_name, monthly_salary")
+      .select("id, full_name, employee_id, designation, department, joining_date, monthly_salary")
       .eq("status", "active");
+
+    if (employeeId) {
+      employeesQuery = employeesQuery.eq("id", employeeId);
+    }
+
+    const { data: employees } = await employeesQuery;
 
     const { data: bankAccounts } = await supabase
       .from("employee_bank_accounts")
@@ -65,7 +97,9 @@ export async function GET(request: NextRequest) {
       .eq("month_year", monthYear);
 
     const approvedMap = new Map<string, string>();
-    (approved ?? []).forEach((a) => approvedMap.set(`${a.employee_id}-${a.attendance_date}`, a.status));
+    (approved ?? []).forEach((a) =>
+      approvedMap.set(`${a.employee_id}-${a.attendance_date}`, a.status)
+    );
 
     const workingDays = (() => {
       let count = 0;
@@ -77,7 +111,10 @@ export async function GET(request: NextRequest) {
       return count;
     })();
 
-    const bankMap = new Map<string, { account_number: string; ifsc_code: string; account_holder_name: string; bank_name: string }>();
+    const bankMap = new Map<
+      string,
+      { account_number: string; ifsc_code: string; account_holder_name: string; bank_name: string }
+    >();
     (bankAccounts ?? []).forEach((b) => {
       bankMap.set(b.employee_id, {
         account_number: b.account_number,
@@ -89,25 +126,37 @@ export async function GET(request: NextRequest) {
 
     const { data: deductionItems } = await supabase
       .from("salary_deduction_items")
-      .select("employee_id, amount")
+      .select("employee_id, deduction_type, amount")
       .eq("month_year", monthYear);
 
     const { data: allowanceItems } = await supabase
       .from("salary_allowance_items")
-      .select("employee_id, amount")
+      .select("employee_id, allowance_type, amount")
       .eq("month_year", monthYear);
 
-    const deductionMap = new Map<string, number>();
+    const deductionMap = new Map<string, { type: string; amount: number; label: string }[]>();
     (deductionItems ?? []).forEach((d) => {
-      deductionMap.set(d.employee_id, (deductionMap.get(d.employee_id) ?? 0) + Number(d.amount));
+      const key = d.employee_id;
+      const list = deductionMap.get(key) ?? [];
+      const label =
+        d.deduction_type === "pf"
+          ? "Provident Fund"
+          : d.deduction_type === "tds"
+            ? "TDS"
+            : d.deduction_type === "advance"
+              ? "Advance"
+              : "Other";
+      list.push({ type: d.deduction_type, amount: Number(d.amount), label });
+      deductionMap.set(key, list);
     });
 
     const allowanceMap = new Map<string, number>();
     (allowanceItems ?? []).forEach((a) => {
-      allowanceMap.set(a.employee_id, (allowanceMap.get(a.employee_id) ?? 0) + Number(a.amount));
+      const key = a.employee_id;
+      allowanceMap.set(key, (allowanceMap.get(key) ?? 0) + Number(a.amount));
     });
 
-    const rows: { employee_id: string; full_name: string; present_days: number; salary: number; gross_amount: number; deductions: number; net_amount: number; bank?: typeof bankMap extends Map<string, infer V> ? V : never }[] = [];
+    const rows: PayslipRow[] = [];
 
     for (const emp of employees ?? []) {
       let presentDays = 0;
@@ -124,82 +173,63 @@ export async function GET(request: NextRequest) {
           presentDays++;
           continue;
         }
-        const manEntry = (manual ?? []).find((m) => m.employee_id === emp.id && m.attendance_date === dStr);
+        const manEntry = (manual ?? []).find(
+          (m) => m.employee_id === emp.id && m.attendance_date === dStr
+        );
         if (manEntry && (manEntry.status === "present" || manEntry.status === "half_day")) {
           presentDays++;
           continue;
         }
-        const punchIn = (punches ?? []).find((p) => p.employee_id === emp.id && p.punch_date === dStr && p.punch_type === "IN");
+        const punchIn = (punches ?? []).find(
+          (p) =>
+            p.employee_id === emp.id && p.punch_date === dStr && p.punch_type === "IN"
+        );
         if (punchIn) presentDays++;
       }
 
       const baseSalary = Number(emp.monthly_salary ?? 0);
-      const proratedBasic = workingDays > 0 ? (baseSalary / workingDays) * presentDays : 0;
+      const proratedBasic =
+        workingDays > 0 ? (baseSalary / workingDays) * presentDays : 0;
       const allowances = allowanceMap.get(emp.id) ?? 0;
       const grossAmount = Math.round((proratedBasic + allowances) * 100) / 100;
-      const deductions = deductionMap.get(emp.id) ?? 0;
-      const netAmount = Math.round((grossAmount - deductions) * 100) / 100;
+      const deductionList = deductionMap.get(emp.id) ?? [];
+      const totalDeductions = deductionList.reduce((s, d) => s + d.amount, 0);
+      const netAmount = Math.round((grossAmount - totalDeductions) * 100) / 100;
       const bank = bankMap.get(emp.id);
 
       rows.push({
         employee_id: emp.id,
+        employee_code: emp.employee_id ?? "—",
         full_name: emp.full_name,
+        designation: emp.designation ?? null,
+        department: emp.department ?? null,
+        joining_date: emp.joining_date ?? null,
+        month_year: monthYear,
+        working_days: workingDays,
         present_days: presentDays,
-        salary: baseSalary,
-        gross_amount: grossAmount,
-        deductions,
+        gross_amount: proratedBasic,
+        allowances,
+        deduction_items: deductionList,
+        deductions: totalDeductions,
         net_amount: netAmount,
-        bank,
-      });
-    }
-
-    const payableRows = rows.filter((r) => r.net_amount > 0 && r.bank);
-
-    if (format === "neft") {
-      // Persist to employee_salaries when generating NEFT
-      const now = new Date().toISOString();
-      for (const r of rows) {
-        await supabase.from("employee_salaries").upsert(
-          {
-            employee_id: r.employee_id,
-            month_year: monthYear,
-            gross_amount: r.gross_amount,
-            deductions: r.deductions,
-            net_amount: r.net_amount,
-            status: r.net_amount > 0 && r.bank ? "approved" : "pending",
-            neft_generated_at: r.net_amount > 0 && r.bank ? now : null,
-            updated_at: now,
-          },
-          { onConflict: "employee_id,month_year" }
-        );
-      }
-
-      const lines: string[] = [];
-      lines.push("NEFT Payment File");
-      lines.push(`Generated: ${new Date().toISOString()}`);
-      lines.push(`Month: ${monthYear}`);
-      lines.push("");
-      lines.push("Account Number|IFSC|Account Holder|Amount|Remarks");
-      payableRows.forEach((r) => {
-        const b = r.bank!;
-        lines.push(`${b.account_number}|${b.ifsc_code}|${b.account_holder_name}|${r.net_amount.toFixed(2)}|Salary ${monthYear} - ${r.full_name}`);
-      });
-      return new NextResponse(lines.join("\n"), {
-        headers: {
-          "Content-Type": "text/plain",
-          "Content-Disposition": `attachment; filename="neft_${monthYear}.txt"`,
-        },
+        bank: bank
+          ? {
+              bank_name: bank.bank_name,
+              account_number: bank.account_number,
+              ifsc_code: bank.ifsc_code,
+              account_holder_name: bank.account_holder_name,
+            }
+          : undefined,
       });
     }
 
     return NextResponse.json({
       monthYear,
       workingDays,
-      rows: payableRows,
-      skipped: rows.filter((r) => r.net_amount <= 0 || !r.bank),
+      rows,
     });
   } catch (e) {
     console.error(e);
-    return NextResponse.json({ error: "Failed to generate NEFT" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch payslip data" }, { status: 500 });
   }
 }
