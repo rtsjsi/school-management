@@ -1,4 +1,5 @@
 import { jsPDF } from "jspdf";
+import { PDF_LAYOUT } from "./pdf-utils";
 
 export interface ReportCardSubject {
   subjectName: string;
@@ -26,75 +27,92 @@ export interface ReportCardData {
 export function generateReportCardPDF(data: ReportCardData): Blob {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const w = doc.internal.pageSize.getWidth();
-  const margin = 20;
-  let y = 25;
+  const margin = PDF_LAYOUT.margin;
+  const lh = PDF_LAYOUT.lineHeight;
+  const blockGap = PDF_LAYOUT.blockGap;
+  let y = 22;
 
   const schoolName = data.schoolName ?? "SCHOOL NAME";
   const schoolAddress = data.schoolAddress ?? "Address";
 
-  doc.setFontSize(20);
+  doc.setFontSize(PDF_LAYOUT.fontSizeTitle);
   doc.setFont("helvetica", "bold");
   doc.text(schoolName.toUpperCase(), w / 2, y, { align: "center" });
-  y += 8;
+  y += lh + 2;
 
-  doc.setFontSize(11);
+  doc.setFontSize(PDF_LAYOUT.fontSizeSubtitle);
   doc.setFont("helvetica", "normal");
-  doc.text(schoolAddress.toUpperCase(), w / 2, y, { align: "center" });
-  y += 12;
+  const addrLines = doc.splitTextToSize(schoolAddress.toUpperCase(), PDF_LAYOUT.contentWidth);
+  addrLines.forEach((line: string) => {
+    doc.text(line, w / 2, y, { align: "center" });
+    y += lh;
+  });
+  y += blockGap;
 
-  doc.setFontSize(16);
+  doc.setFontSize(PDF_LAYOUT.fontSizeHeading);
   doc.setFont("helvetica", "bold");
   doc.text("REPORT CARD", w / 2, y, { align: "center" });
-  y += 15;
+  y += lh + blockGap;
 
   doc.setDrawColor(0, 0, 0);
   doc.line(margin, y, w - margin, y);
-  y += 10;
+  y += blockGap;
+
+  const colLeft = margin;
+  const colRight = w / 2 + 10;
+  const labelW = PDF_LAYOUT.labelWidth;
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
+  doc.setFontSize(PDF_LAYOUT.fontSizeBody);
 
-  doc.text("Name:", margin, y);
-  doc.text(data.studentName, margin + 45, y);
-  doc.text("Grade:", margin + 100, y);
-  doc.text(data.grade ?? "—", margin + 125, y);
-  y += 7;
+  doc.text("Name:", colLeft, y);
+  const nameLines = doc.splitTextToSize(data.studentName, PDF_LAYOUT.valueMaxWidth);
+  nameLines.forEach((line: string, i: number) => {
+    doc.text(line, colLeft + labelW, y + i * lh);
+  });
+  doc.text("Grade:", colRight, y);
+  doc.text(data.grade ?? "—", colRight + labelW, y);
+  y += Math.max(lh * nameLines.length, lh);
 
-  doc.text("Section:", margin, y);
-  doc.text(data.section ?? "—", margin + 45, y);
-  doc.text("Roll No.:", margin + 100, y);
-  doc.text(String(data.rollNumber ?? "—"), margin + 125, y);
-  y += 7;
+  doc.text("Section:", colLeft, y);
+  doc.text(data.section ?? "—", colLeft + labelW, y);
+  doc.text("Roll No.:", colRight, y);
+  doc.text(String(data.rollNumber ?? "—"), colRight + labelW, y);
+  y += lh;
 
-  doc.text("GR No.:", margin, y);
-  doc.text(data.studentId ?? "—", margin + 45, y);
-  doc.text("Academic Year:", margin + 100, y);
-  doc.text(data.academicYear ?? "—", margin + 125, y);
-  y += 10;
+  doc.text("GR No.:", colLeft, y);
+  doc.text(data.studentId ?? "—", colLeft + labelW, y);
+  doc.text("Academic Year:", colRight, y);
+  doc.text(data.academicYear ?? "—", colRight + labelW, y);
+  y += lh + blockGap;
 
   doc.setFont("helvetica", "bold");
-  doc.text("Exam:", margin, y);
+  doc.text("Exam:", colLeft, y);
   doc.setFont("helvetica", "normal");
   const examInfo = [data.examName, data.examType, data.heldAt ? new Date(data.heldAt).toLocaleDateString("en-IN") : ""].filter(Boolean).join(" – ");
-  doc.text(examInfo, margin + 45, y);
-  y += 12;
+  const examLines = doc.splitTextToSize(examInfo, PDF_LAYOUT.contentWidth - labelW);
+  examLines.forEach((line: string, i: number) => {
+    doc.text(line, colLeft + labelW, y + i * lh);
+  });
+  y += Math.max(lh * examLines.length, lh) + blockGap;
 
   doc.line(margin, y, w - margin, y);
-  y += 8;
+  y += blockGap;
 
   const colSubject = margin + 5;
   const colMax = w - margin - 50;
   const colMarks = w - margin - 25;
+  const subjectMaxWidth = colMax - colSubject - 15;
 
   doc.setFont("helvetica", "bold");
   doc.text("Subject", colSubject, y);
   doc.text("Max", colMax, y, { align: "right" });
   doc.text("Marks", colMarks, y, { align: "right" });
-  y += 8;
+  y += lh + 2;
 
   doc.setFont("helvetica", "normal");
   doc.line(margin, y, w - margin, y);
-  y += 6;
+  y += lh;
 
   let totalMax = 0;
   let totalObtained = 0;
@@ -111,34 +129,37 @@ export function generateReportCardPDF(data: ReportCardData): Blob {
           ? String(sub.score)
           : "—";
 
-    doc.text(sub.subjectName, colSubject, y);
+    const subLines = doc.splitTextToSize(sub.subjectName, subjectMaxWidth);
+    subLines.forEach((line: string, i: number) => {
+      doc.text(line, colSubject, y + i * lh);
+    });
     doc.text(sub.maxScore > 0 ? String(sub.maxScore) : "—", colMax, y, { align: "right" });
     doc.text(displayMarks, colMarks, y, { align: "right" });
-    y += 7;
+    y += Math.max(lh * subLines.length, lh);
   }
 
   doc.line(margin, y, w - margin, y);
-  y += 7;
+  y += lh;
 
   doc.setFont("helvetica", "bold");
   doc.text("Total", colSubject, y);
   doc.text(String(totalMax), colMax, y, { align: "right" });
   doc.text(String(totalObtained), colMarks, y, { align: "right" });
-  y += 10;
+  y += lh + blockGap;
 
   const percentage = totalMax > 0 ? ((totalObtained / totalMax) * 100).toFixed(2) : "—";
   doc.setFont("helvetica", "normal");
   doc.text(`Percentage: ${percentage}%`, margin, y);
-  y += 15;
+  y += lh + blockGap;
 
   doc.line(margin, y, w - margin, y);
-  y += 15;
+  y += blockGap;
 
-  doc.text("Class Teacher", margin + 30, y);
-  doc.text("Principal", w - margin - 40, y);
-  y += 5;
-  doc.line(margin, y, margin + 50, y);
-  doc.line(w - margin - 50, y, w - margin, y);
+  doc.text("Class Teacher", margin + 35, y);
+  doc.text("Principal", w - margin - 45, y);
+  y += 6;
+  doc.line(margin, y, margin + 55, y);
+  doc.line(w - margin - 55, y, w - margin, y);
 
   return doc.output("blob");
 }

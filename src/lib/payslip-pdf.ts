@@ -1,5 +1,6 @@
 import { jsPDF } from "jspdf";
 import { amountInWords } from "./receipt-pdf";
+import { PDF_LAYOUT, drawWrappedText } from "./pdf-utils";
 
 export interface PayslipData {
   employee_code: string;
@@ -45,57 +46,65 @@ function maskAccountNumber(acc: string): string {
 export function generatePayslipPDF(data: PayslipData): Blob {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const w = doc.internal.pageSize.getWidth();
-  const margin = 20;
-  let y = 25;
+  const margin = PDF_LAYOUT.margin;
+  const lh = PDF_LAYOUT.lineHeight;
+  const blockGap = PDF_LAYOUT.blockGap;
+  let y = 22;
 
   const schoolName = data.schoolName ?? process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "SCHOOL NAME";
   const schoolAddress = data.schoolAddress ?? "Address";
 
-  doc.setFontSize(20);
+  doc.setFontSize(PDF_LAYOUT.fontSizeTitle);
   doc.setFont("helvetica", "bold");
   doc.text(schoolName.toUpperCase(), w / 2, y, { align: "center" });
-  y += 8;
+  y += lh + 2;
 
-  doc.setFontSize(11);
+  doc.setFontSize(PDF_LAYOUT.fontSizeSubtitle);
   doc.setFont("helvetica", "normal");
-  doc.text(schoolAddress.toUpperCase(), w / 2, y, { align: "center" });
-  y += 14;
+  const addrLines = doc.splitTextToSize(schoolAddress.toUpperCase(), PDF_LAYOUT.contentWidth);
+  addrLines.forEach((line: string) => {
+    doc.text(line, w / 2, y, { align: "center" });
+    y += lh;
+  });
+  y += blockGap;
 
-  doc.setFontSize(16);
+  doc.setFontSize(PDF_LAYOUT.fontSizeHeading);
   doc.setFont("helvetica", "bold");
   doc.text("PAY SLIP", w / 2, y, { align: "center" });
-  y += 8;
+  y += lh + 2;
 
-  doc.setFontSize(10);
+  doc.setFontSize(PDF_LAYOUT.fontSizeBody);
   doc.setFont("helvetica", "normal");
-  doc.text(`For the month of ${formatMonthYear(data.month_year)}`, w / 2, y, {
-    align: "center",
-  });
-  y += 14;
+  doc.text(`For the month of ${formatMonthYear(data.month_year)}`, w / 2, y, { align: "center" });
+  y += lh + blockGap;
 
   doc.setDrawColor(0, 0, 0);
   doc.line(margin, y, w - margin, y);
-  y += 10;
+  y += blockGap;
 
-  const col1 = margin;
-  const col2Label = w / 2 - 10;
+  const colLeft = margin;
+  const colRight = w / 2 + 5;
+  const labelW = PDF_LAYOUT.labelWidth;
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
+  doc.setFontSize(PDF_LAYOUT.fontSizeBody);
 
-  doc.text("Employee:", col1, y);
-  doc.text(data.full_name, col1 + 35, y);
-  doc.text("Employee ID:", col2Label - 40, y);
-  doc.text(data.employee_code, col2Label, y);
-  y += 7;
+  doc.text("Employee:", colLeft, y);
+  const nameLines = doc.splitTextToSize(data.full_name, PDF_LAYOUT.valueMaxWidth);
+  nameLines.forEach((line: string, i: number) => {
+    doc.text(line, colLeft + labelW, y + i * lh);
+  });
+  doc.text("Employee ID:", colRight, y);
+  doc.text(data.employee_code, colRight + labelW, y);
+  y += Math.max(lh * nameLines.length, lh);
 
-  doc.text("Designation:", col1, y);
-  doc.text(data.designation ?? "—", col1 + 35, y);
-  doc.text("Department:", col2Label - 40, y);
-  doc.text(data.department ?? "—", col2Label, y);
-  y += 7;
+  doc.text("Designation:", colLeft, y);
+  doc.text(data.designation ?? "—", colLeft + labelW, y);
+  doc.text("Department:", colRight, y);
+  doc.text(data.department ?? "—", colRight + labelW, y);
+  y += lh;
 
-  doc.text("Joining Date:", col1, y);
+  doc.text("Joining Date:", colLeft, y);
   const joinDate = data.joining_date
     ? new Date(data.joining_date).toLocaleDateString("en-IN", {
         day: "2-digit",
@@ -103,102 +112,93 @@ export function generatePayslipPDF(data: PayslipData): Blob {
         year: "numeric",
       })
     : "—";
-  doc.text(joinDate, col1 + 35, y);
-  doc.text("Working Days:", col2Label - 40, y);
-  doc.text(`${data.present_days} / ${data.working_days}`, col2Label, y);
-  y += 14;
+  doc.text(joinDate, colLeft + labelW, y);
+  doc.text("Working Days:", colRight, y);
+  doc.text(`${data.present_days} / ${data.working_days}`, colRight + labelW, y);
+  y += lh + blockGap;
 
   doc.line(margin, y, w - margin, y);
-  y += 10;
+  y += blockGap;
 
   const grossTotal = data.gross_amount + (data.allowances ?? 0);
 
-  // Earnings
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.text("EARNINGS", col1, y);
-  doc.text("AMOUNT (₹)", w - margin - 5, y, { align: "right" });
-  y += 8;
+  doc.setFontSize(PDF_LAYOUT.fontSizeBody);
+  doc.text("EARNINGS", colLeft, y);
+  doc.text("AMOUNT (₹)", w - margin, y, { align: "right" });
+  y += lh + 2;
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.text("Basic Salary", col1 + 5, y);
-  doc.text(data.gross_amount.toFixed(2), w - margin - 5, y, { align: "right" });
-  y += 7;
+  doc.text("Basic Salary", colLeft + 5, y);
+  doc.text(data.gross_amount.toFixed(2), w - margin, y, { align: "right" });
+  y += lh;
 
   if ((data.allowances ?? 0) > 0) {
-    doc.text("Allowances (HRA, Transport, etc.)", col1 + 5, y);
-    doc.text((data.allowances ?? 0).toFixed(2), w - margin - 5, y, {
-      align: "right",
-    });
-    y += 7;
+    doc.text("Allowances (HRA, Transport, etc.)", colLeft + 5, y);
+    doc.text((data.allowances ?? 0).toFixed(2), w - margin, y, { align: "right" });
+    y += lh;
   }
 
   doc.line(margin, y, w - margin, y);
-  y += 6;
+  y += lh;
   doc.setFont("helvetica", "bold");
-  doc.text("Gross Earnings", col1 + 5, y);
-  doc.text(grossTotal.toFixed(2), w - margin - 5, y, { align: "right" });
-  y += 12;
+  doc.text("Gross Earnings", colLeft + 5, y);
+  doc.text(grossTotal.toFixed(2), w - margin, y, { align: "right" });
+  y += lh + blockGap;
 
-  // Deductions
   doc.setFont("helvetica", "bold");
-  doc.text("DEDUCTIONS", col1, y);
-  doc.text("AMOUNT (₹)", w - margin - 5, y, { align: "right" });
-  y += 8;
+  doc.text("DEDUCTIONS", colLeft, y);
+  doc.text("AMOUNT (₹)", w - margin, y, { align: "right" });
+  y += lh + 2;
 
   doc.setFont("helvetica", "normal");
   if (data.deduction_items && data.deduction_items.length > 0) {
     data.deduction_items.forEach((item) => {
-      doc.text(item.label, col1 + 5, y);
-      doc.text(item.amount.toFixed(2), w - margin - 5, y, { align: "right" });
-      y += 6;
+      doc.text(item.label, colLeft + 5, y);
+      doc.text(item.amount.toFixed(2), w - margin, y, { align: "right" });
+      y += lh;
     });
   } else if (data.deductions > 0) {
-    doc.text("Total Deductions", col1 + 5, y);
-    doc.text(data.deductions.toFixed(2), w - margin - 5, y, { align: "right" });
-    y += 6;
+    doc.text("Total Deductions", colLeft + 5, y);
+    doc.text(data.deductions.toFixed(2), w - margin, y, { align: "right" });
+    y += lh;
   } else {
-    doc.text("—", col1 + 5, y);
-    doc.text("0.00", w - margin - 5, y, { align: "right" });
-    y += 6;
+    doc.text("—", colLeft + 5, y);
+    doc.text("0.00", w - margin, y, { align: "right" });
+    y += lh;
   }
 
   doc.line(margin, y, w - margin, y);
-  y += 6;
+  y += lh;
   doc.setFont("helvetica", "bold");
-  doc.text("Total Deductions", col1 + 5, y);
-  doc.text(data.deductions.toFixed(2), w - margin - 5, y, { align: "right" });
-  y += 14;
+  doc.text("Total Deductions", colLeft + 5, y);
+  doc.text(data.deductions.toFixed(2), w - margin, y, { align: "right" });
+  y += lh + blockGap;
 
-  // Net Pay
   doc.setDrawColor(0, 0, 0);
   doc.setLineWidth(0.5);
   doc.line(margin, y, w - margin, y);
-  y += 10;
+  y += blockGap;
 
-  doc.setFontSize(12);
-  doc.text("NET PAY", col1 + 5, y);
-  doc.text(`₹ ${data.net_amount.toFixed(2)}`, w - margin - 5, y, { align: "right" });
-  y += 10;
+  doc.setFontSize(PDF_LAYOUT.fontSizeHeading);
+  doc.text("NET PAY", colLeft + 5, y);
+  doc.text(`₹ ${data.net_amount.toFixed(2)}`, w - margin, y, { align: "right" });
+  y += lh + 2;
 
   const amountWords = amountInWords(data.net_amount);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.text(`Amount in Words: ${amountWords}`, margin + 5, y);
-  y += 12;
+  doc.setFontSize(PDF_LAYOUT.fontSizeSmall);
+  y = drawWrappedText(doc, `Amount in Words: ${amountWords}`, margin + 5, y, PDF_LAYOUT.contentWidth, PDF_LAYOUT.lineHeightSmall);
+  y += blockGap;
 
   if (data.bank) {
-    doc.setFontSize(10);
-    doc.text(
-      `Bank: ${data.bank.bank_name} | A/c: ${maskAccountNumber(data.bank.account_number)} | IFSC: ${data.bank.ifsc_code}`,
-      margin + 5,
-      y
-    );
-    y += 8;
+    doc.setFontSize(PDF_LAYOUT.fontSizeBody);
+    const bankStr = `Bank: ${data.bank.bank_name} | A/c: ${maskAccountNumber(data.bank.account_number)} | IFSC: ${data.bank.ifsc_code}`;
+    y = drawWrappedText(doc, bankStr, margin + 5, y, PDF_LAYOUT.contentWidth);
+    y += lh;
   }
 
-  doc.setFontSize(9);
+  doc.setFontSize(PDF_LAYOUT.fontSizeSmall);
   doc.setFont("helvetica", "italic");
   doc.text(
     `Generated on ${new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}`,
