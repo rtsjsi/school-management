@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
@@ -18,6 +18,7 @@ import {
   LogOut,
   Loader2,
   Menu,
+  X,
   Clock,
   ClipboardList,
   BarChart3,
@@ -68,15 +69,37 @@ export function AppSidebar({ user }: { user: AuthUser }) {
     (item) => !item.roles || item.roles.includes(user.role)
   );
 
+  // Prevent body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
+
   const sidebar = (
     <div className="flex h-full w-64 flex-col bg-sidebar text-sidebar-foreground shadow-xl">
-      <div className="flex h-16 items-center gap-2 border-b border-sidebar-foreground/10 px-5">
+      <div className="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-sidebar-foreground/10 px-5">
         <Link
           href="/dashboard"
           className="font-semibold text-lg tracking-tight text-sidebar-foreground hover:opacity-90 transition-opacity"
+          onClick={() => setMobileOpen(false)}
         >
           School
         </Link>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setMobileOpen(false)}
+          aria-label="Close menu"
+          className="lg:hidden text-sidebar-foreground hover:bg-sidebar-foreground/10"
+        >
+          <X className="h-5 w-5" />
+        </Button>
       </div>
       <nav className="flex-1 space-y-0.5 p-3 overflow-y-auto">
         {filteredNav.map((item) => {
@@ -148,12 +171,11 @@ export function AppSidebar({ user }: { user: AuthUser }) {
           aria-hidden
         />
       )}
-      {/* Sidebar: fixed on desktop, drawer on mobile */}
+      {/* Sidebar: fixed on desktop, full-screen drawer on mobile */}
       <aside
         className={cn(
-          "fixed left-0 z-50 w-64 transform transition-transform duration-200 ease-in-out lg:translate-x-0",
-          "top-0 h-full lg:top-0",
-          "top-14 h-[calc(100vh-3.5rem)] lg:top-0 lg:h-full",
+          "fixed left-0 top-0 z-50 w-64 h-full transform transition-transform duration-200 ease-in-out lg:translate-x-0",
+          "h-screen lg:h-full",
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >

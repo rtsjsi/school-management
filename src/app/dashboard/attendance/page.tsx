@@ -44,15 +44,17 @@ export default async function AttendancePage() {
       </div>
 
       <Tabs defaultValue="shifts" className="space-y-6">
-        <TabsList className="flex flex-wrap gap-1 w-full overflow-x-auto">
-          <TabsTrigger value="shifts">Shifts</TabsTrigger>
+        <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+          <TabsList className="inline-flex w-max min-w-full justify-start gap-1">
+            <TabsTrigger value="shifts">Shifts</TabsTrigger>
           <TabsTrigger value="holidays">Holidays</TabsTrigger>
           <TabsTrigger value="attendance">Attendance</TabsTrigger>
           <TabsTrigger value="review">Review & Approve</TabsTrigger>
           <TabsTrigger value="neft">NEFT File</TabsTrigger>
           <TabsTrigger value="payslips">Payslips</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
-        </TabsList>
+          </TabsList>
+        </div>
 
         <TabsContent value="shifts" className="space-y-6">
           <ShiftForm />
