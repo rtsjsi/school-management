@@ -15,6 +15,7 @@ export interface PayslipRow {
   present_days: number;
   gross_amount: number;
   allowances: number;
+  allowance_items: { type: string; amount: number; label: string }[];
   deduction_items: { type: string; amount: number; label: string }[];
   deductions: number;
   net_amount: number;
@@ -151,9 +152,21 @@ export async function GET(request: NextRequest) {
     });
 
     const allowanceMap = new Map<string, number>();
+    const allowanceItemsMap = new Map<string, { type: string; amount: number; label: string }[]>();
     (allowanceItems ?? []).forEach((a) => {
       const key = a.employee_id;
       allowanceMap.set(key, (allowanceMap.get(key) ?? 0) + Number(a.amount));
+      const list = allowanceItemsMap.get(key) ?? [];
+      const label =
+        a.allowance_type === "hra"
+          ? "House Rent Allowance"
+          : a.allowance_type === "transport"
+            ? "Transport Allowance"
+            : a.allowance_type === "medical"
+              ? "Medical Allowance"
+              : "Other Allowance";
+      list.push({ type: a.allowance_type, amount: Number(a.amount), label });
+      allowanceItemsMap.set(key, list);
     });
 
     const rows: PayslipRow[] = [];
@@ -209,6 +222,7 @@ export async function GET(request: NextRequest) {
         present_days: presentDays,
         gross_amount: proratedBasic,
         allowances,
+        allowance_items: allowanceItemsMap.get(emp.id) ?? [],
         deduction_items: deductionList,
         deductions: totalDeductions,
         net_amount: netAmount,
