@@ -132,7 +132,7 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
             <Label>Full name *</Label>
             <Input value={form.full_name} onChange={(e) => setForm((p) => ({ ...p, full_name: e.target.value }))} placeholder="Full name" required />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Email</Label>
               <Input type="email" value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} placeholder="email@example.com" />
@@ -146,7 +146,7 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
             <Label>Address</Label>
             <Input value={form.address} onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))} placeholder="Address" />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Aadhaar</Label>
               <Input value={form.aadhaar} onChange={(e) => setForm((p) => ({ ...p, aadhaar: e.target.value }))} placeholder="Aadhaar number" maxLength={12} />
@@ -157,7 +157,7 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Role *</Label>
               <Select value={form.role} onValueChange={(v) => setForm((p) => ({ ...p, role: v }))}>
@@ -172,7 +172,7 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
               <Input value={form.department} onChange={(e) => setForm((p) => ({ ...p, department: e.target.value }))} placeholder="e.g. Mathematics" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Designation</Label>
               <Input value={form.designation} onChange={(e) => setForm((p) => ({ ...p, designation: e.target.value }))} placeholder="e.g. Senior Teacher" />
@@ -187,7 +187,7 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
               </Select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Monthly Salary (₹)</Label>
               <Input type="number" min={0} step={0.01} value={form.monthly_salary} onChange={(e) => setForm((p) => ({ ...p, monthly_salary: e.target.value }))} placeholder="For NEFT/payroll" />
@@ -214,7 +214,7 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
           {expanded && (
             <div className="space-y-4 pt-4 border-t">
               <h4 className="text-sm font-semibold">Qualification</h4>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>Degree</Label>
                   <Input value={form.degree} onChange={(e) => setForm((p) => ({ ...p, degree: e.target.value }))} placeholder="e.g. B.Ed" />
@@ -229,7 +229,7 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
                 </div>
               </div>
               <h4 className="text-sm font-semibold">Bank Account (Salary)</h4>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Bank Name</Label>
                   <Input value={form.bank_name} onChange={(e) => setForm((p) => ({ ...p, bank_name: e.target.value }))} placeholder="Bank name" />

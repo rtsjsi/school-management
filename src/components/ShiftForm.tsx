@@ -61,7 +61,7 @@ export default function ShiftForm() {
             <Label>Shift Name *</Label>
             <Input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="e.g. Morning Shift" required />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Start Time</Label>
               <Input type="time" value={form.start_time} onChange={(e) => setForm((p) => ({ ...p, start_time: e.target.value }))} />
@@ -71,7 +71,7 @@ export default function ShiftForm() {
               <Input type="time" value={form.end_time} onChange={(e) => setForm((p) => ({ ...p, end_time: e.target.value }))} />
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Grace Period (min)</Label>
               <Input type="number" min={0} value={form.grace_period_minutes} onChange={(e) => setForm((p) => ({ ...p, grace_period_minutes: e.target.value }))} />

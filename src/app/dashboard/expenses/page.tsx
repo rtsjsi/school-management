@@ -26,7 +26,7 @@ export default async function ExpensesPage() {
       </div>
 
       <Tabs defaultValue="entry" className="space-y-6">
-        <TabsList>
+        <TabsList className="flex flex-wrap gap-1 w-full overflow-x-auto">
           <TabsTrigger value="entry">Add Expense</TabsTrigger>
           <TabsTrigger value="heads">Expense Heads</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>

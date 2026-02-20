@@ -89,7 +89,7 @@ export default function ExamEntryForm() {
           placeholder="e.g. Math Midterm"
         />
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="exam-type">Type</Label>
           <Select
@@ -118,7 +118,7 @@ export default function ExamEntryForm() {
           />
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="exam-subject">Subject</Label>
           <Input

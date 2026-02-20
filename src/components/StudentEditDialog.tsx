@@ -159,7 +159,7 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
           Edit
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto max-w-2xl">
+      <DialogContent className="max-h-[90vh] overflow-y-auto max-w-[95vw] sm:max-w-2xl p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>Edit Student</DialogTitle>
           <DialogDescription>
@@ -184,7 +184,7 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -207,7 +207,7 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="date_of_birth">Date of birth</Label>
               <Input
@@ -243,7 +243,7 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
             </Label>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <GradeDivisionYearSelects
               grade={form.grade}
               division={form.section}
@@ -265,7 +265,7 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
 
           {expandedForm && (
             <div className="space-y-4 pt-4 border-t border-border/50">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="blood_group">Blood Group</Label>
                   <Select value={form.blood_group} onValueChange={(value) => setForm((p) => ({ ...p, blood_group: value }))}>
@@ -308,7 +308,7 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="admission_date">Admission Date</Label>
                   <Input
@@ -354,7 +354,7 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 mt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                   <div className="space-y-2">
                     <Label htmlFor="parent_contact">Contact Number</Label>
                     <Input
@@ -399,7 +399,7 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 mt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                   <div className="space-y-2">
                     <Label>Father name</Label>
                     <Input value={form.father_name} onChange={(e) => setForm((p) => ({ ...p, father_name: e.target.value }))} />

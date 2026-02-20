@@ -62,7 +62,7 @@ export function FeeStructureRowActions({ structure }: { structure: Structure }) 
         </Button>
       </div>
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>Edit Fee Structure</DialogTitle>
           </DialogHeader>

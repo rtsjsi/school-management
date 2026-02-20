@@ -297,7 +297,7 @@ export default function FeeCollectionForm({
             <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Collected By</Label>
               <Input value={receivedBy ?? "—"} readOnly className="bg-muted" />
@@ -318,7 +318,7 @@ export default function FeeCollectionForm({
             <Input value={receiptNumber} readOnly className="bg-muted font-mono" />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Class</Label>
               <Select value={classFilter} onValueChange={setClassFilter}>
@@ -365,7 +365,7 @@ export default function FeeCollectionForm({
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="quarter">Quarter *</Label>
               <Select value={form.quarter} onValueChange={(v) => setForm((p) => ({ ...p, quarter: v }))}>
@@ -419,7 +419,7 @@ export default function FeeCollectionForm({
           {form.payment_mode === "cheque" && (
             <div className="space-y-4 p-4 border rounded-lg">
               <h4 className="text-sm font-semibold">Cheque Details</h4>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="cheque_number">Cheque Number *</Label>
                   <Input
@@ -454,7 +454,7 @@ export default function FeeCollectionForm({
           {form.payment_mode === "online" && (
             <div className="space-y-4 p-4 border rounded-lg">
               <h4 className="text-sm font-semibold">Online Transaction Details</h4>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="online_txn_id">Transaction ID</Label>
                   <Input

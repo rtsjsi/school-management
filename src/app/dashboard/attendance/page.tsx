@@ -44,7 +44,7 @@ export default async function AttendancePage() {
       </div>
 
       <Tabs defaultValue="shifts" className="space-y-6">
-        <TabsList>
+        <TabsList className="flex flex-wrap gap-1 w-full overflow-x-auto">
           <TabsTrigger value="shifts">Shifts</TabsTrigger>
           <TabsTrigger value="holidays">Holidays</TabsTrigger>
           <TabsTrigger value="attendance">Attendance</TabsTrigger>

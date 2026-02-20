@@ -182,7 +182,7 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
             <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Structure Name *</Label>
               <Input
@@ -201,7 +201,7 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="grade_from">Grade From *</Label>
               {classes.length > 0 ? (
