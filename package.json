@@ -6,11 +6,12 @@
     "node": ">=18.17.0"
   },
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "node scripts/sync-env-by-branch.js && next dev",
+    "build": "node scripts/sync-env-by-branch.js && next build",
     "start": "next start",
     "lint": "next lint",
-    "db:push": "supabase db push",
+    "db:push": "node scripts/supabase-by-branch.js db push",
+    "supabase:link": "node scripts/supabase-by-branch.js",
     "seed": "npx tsx scripts/seed.ts"
   },
   "dependencies": {
