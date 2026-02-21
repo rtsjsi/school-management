@@ -138,10 +138,10 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+        <h1 className="page-title">
           Welcome, {user.fullName ?? user.email ?? "User"}
         </h1>
-        <p className="text-muted-foreground mt-1.5">
+        <p className="caption mt-1.5">
           Signed in as <Badge variant="secondary" className="font-medium">{roleLabel}</Badge>
         </p>
       </div>

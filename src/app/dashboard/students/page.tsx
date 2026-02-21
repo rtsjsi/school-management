@@ -17,11 +17,11 @@ export default async function StudentsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+        <h1 className="page-title flex items-center gap-2">
           <GraduationCap className="h-7 w-7 text-primary" />
           Student Master
         </h1>
-        <p className="text-muted-foreground mt-1">
+        <p className="caption mt-1">
           {canEdit ? "Add new students or manage existing records." : "View student records (read-only)."}
         </p>
       </div>

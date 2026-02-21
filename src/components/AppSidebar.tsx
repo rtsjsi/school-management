@@ -125,7 +125,7 @@ export function AppSidebar({ user }: { user: AuthUser }) {
         {groupsWithItems.map((group, groupIndex) => (
           <div key={group.label}>
             {groupIndex > 0 && <Separator className="my-2 bg-sidebar-foreground/10" />}
-            <p className="text-xs font-medium text-sidebar-foreground/60 uppercase tracking-wider px-3 py-2">
+            <p className="text-xs font-semibold text-sidebar-foreground/70 uppercase tracking-wider px-3 py-2">
               {group.label}
             </p>
             <div className="space-y-0.5">
@@ -138,8 +138,8 @@ export function AppSidebar({ user }: { user: AuthUser }) {
                       className={cn(
                         "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 border-l-2",
                         isActive
-                          ? "bg-sidebar-foreground/15 text-sidebar-foreground border-sidebar-foreground/50"
-                          : "border-transparent text-sidebar-foreground/85 hover:bg-sidebar-foreground/10 hover:text-sidebar-foreground"
+                          ? "bg-sidebar-foreground/20 text-sidebar-foreground border-sidebar-foreground/60"
+                          : "border-transparent text-sidebar-foreground/90 hover:bg-sidebar-foreground/15 hover:text-sidebar-foreground"
                       )}
                     >
                       <Icon className="h-4 w-4 shrink-0 opacity-90" />
@@ -157,8 +157,8 @@ export function AppSidebar({ user }: { user: AuthUser }) {
 
   return (
     <>
-      {/* Mobile header */}
-      <div className="sticky top-0 z-40 flex h-14 items-center gap-2 border-b border-border/80 bg-card shadow-card px-4 lg:hidden">
+      {/* Mobile header: full width on mobile, above main content */}
+      <div className="shrink-0 z-40 flex h-14 items-center gap-2 border-b border-border bg-background px-4 lg:hidden">
         <Button
           variant="ghost"
           size="icon"

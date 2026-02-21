@@ -30,7 +30,7 @@
     --secondary: 210 20% 95%;
     --secondary-foreground: 210 25% 11%;
     --muted: 210 18% 95%;
-    --muted-foreground: 210 12% 42%;
+    --muted-foreground: 210 14% 38%;
     --accent: 210 35% 94%;
     --accent-foreground: 210 59% 30%;
     --destructive: 0 84.2% 60.2%;
@@ -82,6 +82,22 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+@layer components {
+  /* Typography hierarchy */
+  .page-title {
+    @apply text-2xl font-bold tracking-tight text-foreground;
+  }
+  .section-title {
+    @apply text-lg font-semibold text-foreground;
+  }
+  .card-title {
+    @apply text-sm font-medium text-muted-foreground;
+  }
+  .caption {
+    @apply text-xs text-muted-foreground;
   }
 }
