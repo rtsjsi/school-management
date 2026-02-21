@@ -102,21 +102,36 @@ export function AppSidebar({ user }: { user: AuthUser }) {
 
   const sidebar = (
     <div className="flex h-full w-64 flex-col bg-sidebar text-sidebar-foreground shadow-xl">
-      <div className="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-sidebar-foreground/10 px-5">
+      <div className="flex min-h-[4.5rem] shrink-0 items-center gap-3 border-b border-sidebar-foreground/10 px-3 py-2">
         <Link
           href="/dashboard"
-          className="font-semibold text-lg tracking-tight text-sidebar-foreground hover:opacity-90 transition-opacity truncate max-w-[10rem]"
+          className="flex min-w-0 flex-1 items-center gap-3 hover:opacity-90 transition-opacity"
           onClick={() => setMobileOpen(false)}
           title={school.name}
         >
-          {school.name}
+          {school.logoUrl ? (
+            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md bg-sidebar-foreground/10 flex items-center justify-center">
+              <img
+                src={school.logoUrl}
+                alt=""
+                className="h-full w-full object-contain"
+              />
+            </div>
+          ) : (
+            <div className="h-10 w-10 shrink-0 rounded-md bg-sidebar-foreground/10 flex items-center justify-center">
+              <Building2 className="h-5 w-5 text-sidebar-foreground/70" />
+            </div>
+          )}
+          <span className="font-semibold text-sm leading-tight text-sidebar-foreground line-clamp-2 break-words">
+            {school.name}
+          </span>
         </Link>
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setMobileOpen(false)}
           aria-label="Close menu"
-          className="lg:hidden text-sidebar-foreground hover:bg-sidebar-foreground/10"
+          className="lg:hidden shrink-0 text-sidebar-foreground hover:bg-sidebar-foreground/10"
         >
           <X className="h-5 w-5" />
         </Button>
@@ -158,18 +173,29 @@ export function AppSidebar({ user }: { user: AuthUser }) {
   return (
     <>
       {/* Mobile header: full width on mobile, above main content */}
-      <div className="shrink-0 z-40 flex h-14 items-center gap-2 border-b border-border bg-background px-4 lg:hidden">
+      <div className="shrink-0 z-40 flex min-h-[3.5rem] items-center gap-2 border-b border-border bg-background px-3 py-2 lg:hidden">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setMobileOpen((o) => !o)}
           aria-label="Toggle menu"
-          className="rounded-lg"
+          className="rounded-lg shrink-0"
         >
           <Menu className="h-5 w-5" />
         </Button>
-        <Link href="/dashboard" className="font-semibold text-foreground truncate">
-          {school.name}
+        <Link href="/dashboard" className="flex min-w-0 flex-1 items-center gap-2">
+          {school.logoUrl ? (
+            <div className="h-8 w-8 shrink-0 overflow-hidden rounded bg-muted flex items-center justify-center">
+              <img src={school.logoUrl} alt="" className="h-full w-full object-contain" />
+            </div>
+          ) : (
+            <div className="h-8 w-8 shrink-0 rounded bg-muted flex items-center justify-center">
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+            </div>
+          )}
+          <span className="font-semibold text-sm text-foreground line-clamp-2 break-words">
+            {school.name}
+          </span>
         </Link>
       </div>
       {/* Mobile overlay */}
