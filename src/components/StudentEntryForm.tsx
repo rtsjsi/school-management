@@ -15,8 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StudentDocumentsPhotos } from "@/components/StudentDocumentsPhotos";
 import { CameraCaptureButton } from "@/components/CameraCapture";
 import { GradeDivisionYearSelects } from "@/components/GradeDivisionYearSelects";
@@ -288,30 +287,19 @@ export default function StudentEntryForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
         <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>
       )}
 
-      <Tabs defaultValue="basic" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
-          <TabsTrigger value="basic">Basic</TabsTrigger>
-          <TabsTrigger value="parents">Parents</TabsTrigger>
-          <TabsTrigger value="academic">Academic</TabsTrigger>
-          <TabsTrigger value="other">Other</TabsTrigger>
-          <TabsTrigger value="fee">Fee & Bank</TabsTrigger>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="basic" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Basic Information</CardTitle>
-              <CardDescription>Student name, contact, and identity details.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2 sm:col-span-2">
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader className="py-3">
+            <CardTitle className="text-sm font-medium">Basic information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 pt-0">
+              <div className="grid gap-3 grid-cols-2">
+                <div className="space-y-2 col-span-2">
                   <Label htmlFor="full_name">Full name *</Label>
                   <Input id="full_name" value={form.full_name} onChange={(e) => set("full_name", e.target.value)} placeholder="Student full name" required />
                 </div>
@@ -360,7 +348,7 @@ export default function StudentEntryForm() {
                   <Label>Caste</Label>
                   <Input value={form.caste} onChange={(e) => set("caste", e.target.value)} />
                 </div>
-                <div className="space-y-2 sm:col-span-2">
+                <div className="space-y-2 col-span-2">
                   <Label htmlFor="address">Address *</Label>
                   <Input id="address" value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="Full address" required />
                 </div>
@@ -419,18 +407,15 @@ export default function StudentEntryForm() {
                   </Select>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+          </CardContent>
+        </Card>
 
-        <TabsContent value="parents" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Parent & Guardian Details</CardTitle>
-              <CardDescription>Father, mother, and guardian information.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
+        <Card>
+          <CardHeader className="py-3">
+            <CardTitle className="text-sm font-medium">Parent & guardian</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 pt-0">
+              <div className="grid gap-3 grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="father_name">Father name *</Label>
                   <Input id="father_name" value={form.father_name} onChange={(e) => set("father_name", e.target.value)} required />
@@ -471,7 +456,7 @@ export default function StudentEntryForm() {
                   <Label>Mother occupation</Label>
                   <Input value={form.mother_occupation} onChange={(e) => set("mother_occupation", e.target.value)} />
                 </div>
-                <div className="space-y-2 sm:col-span-2">
+                <div className="space-y-2 col-span-2">
                   <Label>Guardian name (if different)</Label>
                   <Input value={form.guardian_name} onChange={(e) => set("guardian_name", e.target.value)} />
                 </div>
@@ -488,18 +473,16 @@ export default function StudentEntryForm() {
                   <Input value={form.guardian_occupation} onChange={(e) => set("guardian_occupation", e.target.value)} />
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+          </CardContent>
+        </Card>
+      </div>
 
-        <TabsContent value="academic" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Admission & Academic Details</CardTitle>
-              <CardDescription>Standard, division, admission type, and previous school.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
+      <Card>
+        <CardHeader className="py-3">
+          <CardTitle className="text-sm font-medium">Academic</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 pt-0">
+              <div className="grid gap-3 grid-cols-2 md:grid-cols-3">
                 <div className="space-y-2">
                   <Label>Admission type</Label>
                   <Select value={form.admission_type} onValueChange={(v) => set("admission_type", v)}>
@@ -545,18 +528,15 @@ export default function StudentEntryForm() {
                   <Label htmlFor="rte" className="font-normal">RTE (Right to Education) Quota</Label>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+        </CardContent>
+      </Card>
 
-        <TabsContent value="other" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Other Details</CardTitle>
-              <CardDescription>Physical, medical, and miscellaneous information.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
+      <Card>
+        <CardHeader className="py-3">
+          <CardTitle className="text-sm font-medium">Other details</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 pt-0">
+              <div className="grid gap-3 grid-cols-2 md:grid-cols-3">
                 <div className="space-y-2">
                   <Label>Height</Label>
                   <Input value={form.height} onChange={(e) => set("height", e.target.value)} placeholder="e.g. 160cm" />
@@ -599,23 +579,20 @@ export default function StudentEntryForm() {
                     <Label htmlFor="food" className="font-normal">Food provided</Label>
                   </div>
                 </div>
-                <div className="space-y-2 sm:col-span-2">
+                <div className="space-y-2 col-span-2">
                   <Label>Notes</Label>
                   <Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={2} />
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+        </CardContent>
+      </Card>
 
-        <TabsContent value="fee" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Fee Concession & Bank Details</CardTitle>
-              <CardDescription>Fee mafi and bank account for refunds.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
+      <Card>
+        <CardHeader className="py-3">
+          <CardTitle className="text-sm font-medium">Fee & bank</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 pt-0">
+              <div className="grid gap-3 grid-cols-2 md:grid-cols-3">
                 <div className="space-y-2">
                   <Label>Fee mafi amount (Rs)</Label>
                   <Input type="number" value={form.fee_mafi_amount} onChange={(e) => set("fee_mafi_amount", e.target.value)} placeholder="0" />
@@ -628,7 +605,7 @@ export default function StudentEntryForm() {
                   <Checkbox id="all_mafi" checked={form.all_fee_mafi} onCheckedChange={(c) => set("all_fee_mafi", !!c)} />
                   <Label htmlFor="all_mafi" className="font-normal">All fee mafi</Label>
                 </div>
-                <div className="space-y-2 sm:col-span-2">
+                <div className="space-y-2 col-span-2">
                   <Label>Account holder name</Label>
                   <Input value={form.account_holder_name} onChange={(e) => set("account_holder_name", e.target.value)} />
                 </div>
@@ -649,19 +626,14 @@ export default function StudentEntryForm() {
                   <Input value={form.account_no} onChange={(e) => set("account_no", e.target.value)} />
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+        </CardContent>
+      </Card>
 
-        <TabsContent value="documents" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Documents & Photos</CardTitle>
-              <CardDescription>
-                Select files now. They will be uploaded when you click &quot;Add student&quot;.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
+      <Card>
+        <CardHeader className="py-3">
+          <CardTitle className="text-sm font-medium">Documents & photos</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 pt-0">
               <div>
                 <Label className="text-sm font-medium mb-2 block">Photos</Label>
                 <p className="text-xs text-muted-foreground mb-3">Student photo (image only)</p>
@@ -778,10 +750,8 @@ export default function StudentEntryForm() {
                   })}
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        </CardContent>
+      </Card>
 
       <SubmitButton loading={loading} loadingLabel="Adding…" className="w-full">
         Add student

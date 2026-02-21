@@ -5,17 +5,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  Users,
   GraduationCap,
   BookOpen,
-  BookMarked,
-  CalendarRange,
   DollarSign,
   FileQuestion,
   Receipt,
   Menu,
   X,
-  ClipboardList,
   Wallet,
   Building2,
 } from "lucide-react";
@@ -23,7 +19,6 @@ import type { AuthUser } from "@/lib/auth";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 
 type NavItem = {
   href: string;
@@ -32,45 +27,15 @@ type NavItem = {
   roles?: ("principal" | "admin" | "teacher")[];
 };
 
-type NavGroup = { label: string; items: NavItem[] };
-
-const navGroups: NavGroup[] = [
-  {
-    label: "Overview",
-    items: [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }],
-  },
-  {
-    label: "Academic setup",
-    items: [
-      { href: "/dashboard/academic-years", label: "Academic Year", icon: CalendarRange, roles: ["principal"] },
-      { href: "/dashboard/promotion", label: "Year-end promotion", icon: GraduationCap, roles: ["principal", "admin"] },
-      { href: "/dashboard/classes", label: "Standard management", icon: BookOpen },
-      { href: "/dashboard/subjects", label: "Subject management", icon: BookMarked },
-      { href: "/dashboard/exams", label: "Exam management", icon: FileQuestion },
-    ],
-  },
-  {
-    label: "Students",
-    items: [
-      { href: "/dashboard/students", label: "Students management", icon: GraduationCap },
-      { href: "/dashboard/admission-enquiry", label: "Admission Enquiry", icon: ClipboardList, roles: ["principal", "admin"] },
-    ],
-  },
-  {
-    label: "Finance",
-    items: [
-      { href: "/dashboard/fees", label: "Fees management", icon: DollarSign, roles: ["principal", "admin"] },
-      { href: "/dashboard/expenses", label: "Expense management", icon: Receipt, roles: ["principal", "admin"] },
-      { href: "/dashboard/payroll", label: "Payroll", icon: Wallet, roles: ["principal", "admin"] },
-    ],
-  },
-  {
-    label: "Administration",
-    items: [
-      { href: "/dashboard/users", label: "Users", icon: Users, roles: ["principal"] },
-      { href: "/dashboard/school-settings", label: "School settings", icon: Building2, roles: ["principal"] },
-    ],
-  },
+const navItems: NavItem[] = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard/academic-setup", label: "Academic setup", icon: BookOpen },
+  { href: "/dashboard/students", label: "Students management", icon: GraduationCap },
+  { href: "/dashboard/fees", label: "Fees management", icon: DollarSign, roles: ["principal", "admin"] },
+  { href: "/dashboard/expenses", label: "Expense management", icon: Receipt, roles: ["principal", "admin"] },
+  { href: "/dashboard/payroll", label: "Payroll", icon: Wallet, roles: ["principal", "admin"] },
+  { href: "/dashboard/exams", label: "Exam management", icon: FileQuestion },
+  { href: "/dashboard/administration", label: "Administration", icon: Building2, roles: ["principal"] },
 ];
 
 export function AppSidebar({ user }: { user: AuthUser }) {
@@ -79,9 +44,7 @@ export function AppSidebar({ user }: { user: AuthUser }) {
   const school = useSchoolSettings();
 
   const filterByRole = (item: NavItem) => !item.roles || item.roles.includes(user.role);
-  const groupsWithItems = navGroups
-    .map((g) => ({ ...g, items: g.items.filter(filterByRole) }))
-    .filter((g) => g.items.length > 0);
+  const items = navItems.filter(filterByRole);
 
   // Prevent body scroll when mobile sidebar is open
   useEffect(() => {
@@ -132,35 +95,25 @@ export function AppSidebar({ user }: { user: AuthUser }) {
         </Button>
       </div>
       <nav className="flex-1 min-h-0 space-y-0.5 p-2.5 overflow-y-auto scrollbar-hide">
-        {groupsWithItems.map((group, groupIndex) => (
-          <div key={group.label}>
-            {groupIndex > 0 && <Separator className="my-1.5 bg-sidebar-foreground/10" />}
-            <p className="text-xs font-semibold text-sidebar-foreground/70 uppercase tracking-wider px-3 py-1.5">
-              {group.label}
-            </p>
-            <div className="space-y-0.5">
-              {group.items.map((item) => {
-                const isActive = pathname === item.href;
-                const Icon = item.icon;
-                return (
-                  <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}>
-                    <span
-                      className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 border-l-2",
-                        isActive
-                          ? "bg-sidebar-foreground/20 text-sidebar-foreground border-sidebar-foreground/60"
-                          : "border-transparent text-sidebar-foreground/90 hover:bg-sidebar-foreground/15 hover:text-sidebar-foreground"
-                      )}
-                    >
-                      <Icon className="h-4 w-4 shrink-0 opacity-90" />
-                      {item.label}
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        ))}
+        {items.map((item) => {
+          const isActive = pathname === item.href;
+          const Icon = item.icon;
+          return (
+            <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}>
+              <span
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 border-l-2",
+                  isActive
+                    ? "bg-sidebar-foreground/20 text-sidebar-foreground border-sidebar-foreground/60"
+                    : "border-transparent text-sidebar-foreground/90 hover:bg-sidebar-foreground/15 hover:text-sidebar-foreground"
+                )}
+              >
+                <Icon className="h-4 w-4 shrink-0 opacity-90" />
+                {item.label}
+              </span>
+            </Link>
+          );
+        })}
       </nav>
     </div>
   );
