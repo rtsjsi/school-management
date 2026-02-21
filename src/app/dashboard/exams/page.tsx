@@ -3,8 +3,7 @@ import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth";
 import { FileQuestion } from "lucide-react";
 import { ExamsList } from "@/components/async/ExamsList";
-import ExamMarksForm from "@/components/ExamMarksForm";
-import MultipleSubjectwiseMarksEntry from "@/components/MultipleSubjectwiseMarksEntry";
+import MarksEntry from "@/components/MarksEntry";
 import ReportCardGenerator from "@/components/ReportCardGenerator";
 import { TableSkeleton } from "@/components/skeletons/TableSkeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -36,7 +35,6 @@ export default async function ExamsPage({
         <TabsList className="flex flex-wrap gap-1 w-full overflow-x-auto">
           <TabsTrigger value="exams">Exams</TabsTrigger>
           <TabsTrigger value="marks">Record Marks</TabsTrigger>
-          <TabsTrigger value="subjectwise">Subject-wise Marks</TabsTrigger>
           <TabsTrigger value="reportcard">Report Card</TabsTrigger>
         </TabsList>
         <TabsContent value="exams" className="space-y-6">
@@ -47,10 +45,7 @@ export default async function ExamsPage({
           </div>
         </TabsContent>
         <TabsContent value="marks" className="space-y-6">
-          <ExamMarksForm />
-        </TabsContent>
-        <TabsContent value="subjectwise" className="space-y-6">
-          <MultipleSubjectwiseMarksEntry />
+          <MarksEntry />
         </TabsContent>
         <TabsContent value="reportcard" className="space-y-6">
           <ReportCardGenerator />
