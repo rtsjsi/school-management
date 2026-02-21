@@ -63,6 +63,8 @@ async function deleteAllData() {
     "fee_structure_items",
     "expenses",
     "student_enrollments",
+    "divisions",
+    "standards",
     "students",
     "employees",
     "subjects",
@@ -87,6 +89,7 @@ async function main() {
   await deleteAllData();
 
   await seedClasses();
+  await seedStandardsAndDivisions();
   await seedShifts();
   await seedHolidays();
   await seedSubjects();
@@ -113,6 +116,45 @@ async function seedClasses() {
     { name: "12", section: "higher_secondary", sort_order: 13 },
   ];
   await supabase.from("classes").insert(classes);
+}
+
+async function seedStandardsAndDivisions() {
+  console.log("Seeding standards and divisions from classes...");
+  const { data: classes } = await supabase.from("classes").select("id, name, sort_order").order("sort_order");
+  if (!classes?.length) return;
+
+  await supabase.from("standards").upsert(
+    classes.map((c) => ({ id: c.id, name: c.name, sort_order: c.sort_order })),
+    { onConflict: "id" }
+  );
+
+  const divisionNames = ["A", "B", "C"];
+  for (const c of classes) {
+    for (let i = 0; i < divisionNames.length; i++) {
+      await supabase.from("class_divisions").upsert(
+        { class_id: c.id, name: divisionNames[i], sort_order: i },
+        { onConflict: "class_id,name" }
+      );
+    }
+  }
+
+  const { data: classDivs } = await supabase
+    .from("class_divisions")
+    .select("id, name, class_id, sort_order")
+    .order("class_id")
+    .order("sort_order");
+  if (classDivs?.length) {
+    await supabase.from("divisions").upsert(
+      classDivs.map((cd) => ({
+        id: cd.id,
+        name: cd.name,
+        standard_id: cd.class_id,
+        sort_order: cd.sort_order,
+      })),
+      { onConflict: "id" }
+    );
+  }
+  console.log("  Standards and divisions ready");
 }
 
 async function seedShifts() {
