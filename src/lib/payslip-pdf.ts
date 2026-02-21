@@ -45,7 +45,7 @@ export function generatePayslipPDF(data: PayslipData): Blob {
   const blockGap = PDF_LAYOUT.blockGap;
   let y = 18;
 
-  const schoolName = data.schoolName ?? process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "SCHOOL NAME";
+  const schoolName = data.schoolName ?? "SCHOOL NAME";
   const schoolAddress = data.schoolAddress ?? "Address";
 
   // Title: Payslip

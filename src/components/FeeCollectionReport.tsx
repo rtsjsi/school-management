@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/table";
 import { FileText, Pencil, Download, Printer } from "lucide-react";
 import { fetchClasses, fetchAcademicYears } from "@/lib/lov";
+import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 
 const PAYMENT_MODES = ["cash", "cheque", "online"] as const;
 const QUARTERS = [1, 2, 3, 4] as const;
@@ -73,6 +74,7 @@ type Summary = {
 
 export default function FeeCollectionReport() {
   const router = useRouter();
+  const school = useSchoolSettings();
   const today = new Date().toISOString().split("T")[0];
   const [dateFrom, setDateFrom] = useState(today);
   const [dateTo, setDateTo] = useState(today);
@@ -196,8 +198,8 @@ export default function FeeCollectionReport() {
         chequeDate: d.chequeDate,
         onlineTransactionId: d.onlineTransactionId,
         onlineTransactionRef: d.onlineTransactionRef,
-        schoolName: process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "School",
-        schoolAddress: process.env.NEXT_PUBLIC_SCHOOL_ADDRESS ?? "",
+        schoolName: school.name,
+        schoolAddress: school.address,
         grade: d.grade,
         division: d.division,
         rollNumber: d.rollNumber,
@@ -250,8 +252,8 @@ export default function FeeCollectionReport() {
         chequeDate: d.chequeDate,
         onlineTransactionId: d.onlineTransactionId,
         onlineTransactionRef: d.onlineTransactionRef,
-        schoolName: process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "School",
-        schoolAddress: process.env.NEXT_PUBLIC_SCHOOL_ADDRESS ?? "",
+        schoolName: school.name,
+        schoolAddress: school.address,
         grade: d.grade,
         division: d.division,
         rollNumber: d.rollNumber,

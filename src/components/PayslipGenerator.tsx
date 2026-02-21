@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { generatePayslipPDF } from "@/lib/payslip-pdf";
+import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,10 +18,7 @@ import {
 import { FileDown, Printer, AlertCircle } from "lucide-react";
 import type { PayslipRow } from "@/app/api/payslip-data/route";
 
-const schoolName = process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "School";
-const schoolAddress = process.env.NEXT_PUBLIC_SCHOOL_ADDRESS ?? "";
-
-function downloadPayslip(row: PayslipRow) {
+function downloadPayslip(row: PayslipRow, schoolName: string, schoolAddress: string) {
   const pdfBlob = generatePayslipPDF({
     employee_code: row.employee_code,
     full_name: row.full_name,
@@ -48,7 +46,7 @@ function downloadPayslip(row: PayslipRow) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function printPayslip(row: PayslipRow) {
+function printPayslip(row: PayslipRow, schoolName: string, schoolAddress: string) {
   const pdfBlob = generatePayslipPDF({
     employee_code: row.employee_code,
     full_name: row.full_name,
@@ -75,6 +73,7 @@ function printPayslip(row: PayslipRow) {
 }
 
 export default function PayslipGenerator() {
+  const school = useSchoolSettings();
   const [monthYear, setMonthYear] = useState(new Date().toISOString().slice(0, 7));
   const [data, setData] = useState<{
     monthYear: string;
@@ -110,14 +109,14 @@ export default function PayslipGenerator() {
   const downloadAll = () => {
     if (!data?.rows?.length) return;
     data.rows.forEach((row, i) => {
-      setTimeout(() => downloadPayslip(row), i * 300);
+      setTimeout(() => downloadPayslip(row, school.name, school.address), i * 300);
     });
   };
 
   const printAll = () => {
     if (!data?.rows?.length) return;
     data.rows.forEach((row, i) => {
-      setTimeout(() => printPayslip(row), i * 800);
+      setTimeout(() => printPayslip(row, school.name, school.address), i * 800);
     });
   };
 
@@ -195,14 +194,14 @@ export default function PayslipGenerator() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => downloadPayslip(r)}
+                            onClick={() => downloadPayslip(r, school.name, school.address)}
                           >
                             <FileDown className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => printPayslip(r)}
+                            onClick={() => printPayslip(r, school.name, school.address)}
                           >
                             <Printer className="h-4 w-4" />
                           </Button>

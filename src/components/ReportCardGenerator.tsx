@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { generateReportCardPDF } from "@/lib/report-card-pdf";
+import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 
 type Exam = { id: string; name: string; exam_type: string; grade: string | null; held_at: string };
 type Student = { id: string; full_name: string; grade: string | null; division: string | null; roll_number?: number; student_id?: string; academic_year?: string };
@@ -22,6 +23,7 @@ export default function ReportCardGenerator() {
   const [error, setError] = useState<string | null>(null);
 
   const supabase = createClient();
+  const school = useSchoolSettings();
 
   useEffect(() => {
     supabase
@@ -104,8 +106,8 @@ export default function ReportCardGenerator() {
       });
 
       const pdfBlob = generateReportCardPDF({
-        schoolName: process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "School",
-        schoolAddress: process.env.NEXT_PUBLIC_SCHOOL_ADDRESS ?? "",
+        schoolName: school.name,
+        schoolAddress: school.address,
         studentName: student.full_name,
         grade: student.grade ?? undefined,
         division: student.division ?? undefined,

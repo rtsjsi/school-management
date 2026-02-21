@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { generateReceiptPDF, amountInWords } from "@/lib/receipt-pdf";
 import { AcademicYearSelect } from "@/components/AcademicYearSelect";
 import { isGradeInRange } from "@/lib/grade-utils";
+import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 
 const PAYMENT_MODES = ["cash", "cheque", "online"] as const;
 const FEE_TYPE = "tuition";
@@ -49,6 +50,7 @@ export default function FeeCollectionForm({
     collection_date: new Date().toISOString().slice(0, 10),
   });
 
+  const school = useSchoolSettings();
   const classes = useMemo(() => {
     const grades = Array.from(new Set(students.map((s) => s.grade).filter(Boolean))) as string[];
     return grades.sort((a, b) => a.localeCompare(b));
@@ -248,8 +250,8 @@ export default function FeeCollectionForm({
         chequeDate: form.payment_mode === "cheque" && form.cheque_date ? form.cheque_date : undefined,
         onlineTransactionId: form.payment_mode === "online" ? form.online_transaction_id : undefined,
         onlineTransactionRef: form.payment_mode === "online" ? form.online_transaction_ref : undefined,
-        schoolName: process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "School",
-        schoolAddress: process.env.NEXT_PUBLIC_SCHOOL_ADDRESS ?? "",
+        schoolName: school.name,
+        schoolAddress: school.address,
         grade: selectedStudent?.grade,
         division: selectedStudent?.division,
         rollNumber: selectedStudent?.roll_number,

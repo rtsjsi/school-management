@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { generateReceiptPDF, amountInWords } from "@/lib/receipt-pdf";
+import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -42,16 +43,18 @@ const DEFAULT_POLICY_NOTES = [
   "(3) Cheque payment subject to realisation.",
 ];
 
+type SchoolInfo = { name: string; address: string };
+
 async function getReceiptData(row: CollectionRow) {
   const res = await fetch(`/api/receipt-data?id=${row.id}`);
   if (!res.ok) return null;
   return res.json();
 }
 
-function printReceipt(row: CollectionRow) {
+function printReceipt(row: CollectionRow, school: SchoolInfo) {
   getReceiptData(row).then((data) => {
     if (!data) {
-      generateAndPrintFallback(row);
+      generateAndPrintFallback(row, school);
       return;
     }
     const pdfBlob = generateReceiptPDF({
@@ -71,8 +74,8 @@ function printReceipt(row: CollectionRow) {
       chequeDate: data.chequeDate,
       onlineTransactionId: data.onlineTransactionId,
       onlineTransactionRef: data.onlineTransactionRef,
-      schoolName: process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "School",
-      schoolAddress: process.env.NEXT_PUBLIC_SCHOOL_ADDRESS ?? "",
+      schoolName: school.name,
+      schoolAddress: school.address,
       grade: data.grade,
       division: data.division,
       rollNumber: data.rollNumber,
@@ -86,7 +89,7 @@ function printReceipt(row: CollectionRow) {
   });
 }
 
-function generateAndPrintFallback(row: CollectionRow) {
+function generateAndPrintFallback(row: CollectionRow, school: SchoolInfo) {
   const pdfBlob = generateReceiptPDF({
     receiptNumber: row.receipt_number,
     studentName: row.student_name ?? "—",
@@ -104,8 +107,8 @@ function generateAndPrintFallback(row: CollectionRow) {
     chequeDate: row.cheque_date,
     onlineTransactionId: row.online_transaction_id,
     onlineTransactionRef: row.online_transaction_ref,
-    schoolName: process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "School",
-    schoolAddress: process.env.NEXT_PUBLIC_SCHOOL_ADDRESS ?? "",
+    schoolName: school.name,
+    schoolAddress: school.address,
     grade: row.student_grade,
     division: row.student_division,
     rollNumber: row.student_roll_number,
@@ -117,10 +120,10 @@ function generateAndPrintFallback(row: CollectionRow) {
   setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
 
-function downloadReceipt(row: CollectionRow) {
+function downloadReceipt(row: CollectionRow, school: SchoolInfo) {
   getReceiptData(row).then((data) => {
     if (!data) {
-      downloadFallback(row);
+      downloadFallback(row, school);
       return;
     }
     const pdfBlob = generateReceiptPDF({
@@ -140,8 +143,8 @@ function downloadReceipt(row: CollectionRow) {
       chequeDate: data.chequeDate,
       onlineTransactionId: data.onlineTransactionId,
       onlineTransactionRef: data.onlineTransactionRef,
-      schoolName: process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "School",
-      schoolAddress: process.env.NEXT_PUBLIC_SCHOOL_ADDRESS ?? "",
+      schoolName: school.name,
+      schoolAddress: school.address,
       grade: data.grade,
       division: data.division,
       rollNumber: data.rollNumber,
@@ -157,7 +160,7 @@ function downloadReceipt(row: CollectionRow) {
   });
 }
 
-function downloadFallback(row: CollectionRow) {
+function downloadFallback(row: CollectionRow, school: SchoolInfo) {
   const pdfBlob = generateReceiptPDF({
     receiptNumber: row.receipt_number,
     studentName: row.student_name ?? "—",
@@ -175,8 +178,8 @@ function downloadFallback(row: CollectionRow) {
     chequeDate: row.cheque_date,
     onlineTransactionId: row.online_transaction_id,
     onlineTransactionRef: row.online_transaction_ref,
-    schoolName: process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "School",
-    schoolAddress: process.env.NEXT_PUBLIC_SCHOOL_ADDRESS ?? "",
+    schoolName: school.name,
+    schoolAddress: school.address,
     grade: row.student_grade,
     division: row.student_division,
     rollNumber: row.student_roll_number,
@@ -192,6 +195,7 @@ function downloadFallback(row: CollectionRow) {
 
 
 export default function FeeCollectionList() {
+  const school = useSchoolSettings();
   const [collections, setCollections] = useState<CollectionRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -247,7 +251,7 @@ export default function FeeCollectionList() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => downloadReceipt(row)}
+                        onClick={() => downloadReceipt(row, { name: school.name, address: school.address })}
                         aria-label="Download receipt"
                       >
                         <Download className="h-3 w-3" />
@@ -255,7 +259,7 @@ export default function FeeCollectionList() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => printReceipt(row)}
+                        onClick={() => printReceipt(row, { name: school.name, address: school.address })}
                         aria-label="Print receipt"
                       >
                         <Printer className="h-3 w-3" />

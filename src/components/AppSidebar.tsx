@@ -18,6 +18,7 @@ import {
   ClipboardList,
   BarChart3,
   Wallet,
+  Building2,
 } from "lucide-react";
 import type { AuthUser } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -69,7 +70,10 @@ const navGroups: NavGroup[] = [
   },
   {
     label: "Administration",
-    items: [{ href: "/dashboard/users", label: "Users", icon: Users, roles: ["principal"] }],
+    items: [
+      { href: "/dashboard/users", label: "Users", icon: Users, roles: ["principal"] },
+      { href: "/dashboard/school-settings", label: "School settings", icon: Building2, roles: ["principal"] },
+    ],
   },
 ];
 
