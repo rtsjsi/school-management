@@ -63,3 +63,28 @@ export async function createExamWithSubjects(
 
   return { ok: true, examId: exam.id };
 }
+
+export type UpdateExamResult = { ok: true } | { ok: false; error: string };
+
+export async function updateExam(
+  examId: string,
+  payload: { name: string; exam_type: string; grade: string | null; held_at: string }
+): Promise<UpdateExamResult> {
+  const supabase = await createClient();
+  if (!payload.name.trim()) return { ok: false, error: "Exam name is required." };
+  if (!payload.held_at) return { ok: false, error: "Start date is required." };
+
+  const { error } = await supabase
+    .from("exams")
+    .update({
+      name: payload.name.trim(),
+      exam_type: payload.exam_type,
+      grade: payload.grade?.trim() || null,
+      held_at: payload.held_at,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", examId);
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}

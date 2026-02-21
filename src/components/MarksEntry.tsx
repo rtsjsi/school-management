@@ -22,7 +22,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ClipboardList, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
+
+const GRADE_OPTIONS = ["A+", "A", "B", "C", "D"] as const;
 
 type Exam = {
   id: string;
@@ -33,10 +35,6 @@ type Exam = {
   academic_years: { id: string; name: string } | { id: string; name: string }[] | null;
 };
 
-function getAcademicYearName(ay: Exam["academic_years"]): string {
-  if (!ay) return "";
-  return Array.isArray(ay) ? ay[0]?.name ?? "" : ay.name ?? "";
-}
 type Student = { id: string; full_name: string; grade: string | null; division: string | null };
 type Subject = { id: string; name: string; code: string | null; evaluation_type: string };
 type CellState = { score: string; max_score: string; grade: string; is_absent: boolean };
@@ -66,13 +64,18 @@ export default function MarksEntry() {
         ? exam.grade
         : null;
 
-  // Load exams (with academic year) and class names
+  // Load current academic year exams and class names
   useEffect(() => {
-    supabase
-      .from("exams")
-      .select("id, name, exam_type, grade, held_at, academic_years(id, name)")
-      .order("held_at", { ascending: false })
-      .then(({ data }) => setExams((data ?? []) as unknown as Exam[]));
+    (async () => {
+      const { data: ay } = await supabase.from("academic_years").select("id").eq("is_active", true).limit(1).maybeSingle();
+      let query = supabase
+        .from("exams")
+        .select("id, name, exam_type, grade, held_at, academic_years(id, name)")
+        .order("held_at", { ascending: false });
+      if (ay?.id) query = query.eq("academic_year_id", ay.id);
+      const { data: examData } = await query;
+      setExams((examData ?? []) as unknown as Exam[]);
+    })();
     supabase
       .from("classes")
       .select("name")
@@ -277,8 +280,6 @@ export default function MarksEntry() {
 
   const grades = classNames.length > 0 ? classNames : Array.from(new Set(students.map((s) => s.grade).filter(Boolean))) as string[];
   const divisions = Array.from(new Set(students.map((s) => s.division).filter(Boolean))) as string[];
-  const academicYearName = getAcademicYearName(exam?.academic_years ?? null);
-
   return (
     <Card>
       <CardContent className="pt-6">
@@ -290,86 +291,60 @@ export default function MarksEntry() {
             </p>
           )}
 
-          {/* Step 1: Choose exam – one clear dropdown with full context */}
-          <div className="space-y-2">
-            <Label className="text-base font-medium">1. Choose exam</Label>
-            <Select value={selectedExamId} onValueChange={setSelectedExamId}>
-              <SelectTrigger className="w-full max-w-xl">
-                <SelectValue placeholder="Select exam (name, standard, date, year)" />
-              </SelectTrigger>
-              <SelectContent>
-                {exams.map((e) => {
-                  const ayName = getAcademicYearName(e.academic_years ?? null);
-                  const dateStr = e.held_at ? new Date(e.held_at).toLocaleDateString() : "";
-                  const label = [e.name, e.exam_type, e.grade ?? "All", dateStr, ayName].filter(Boolean).join(" · ");
-                  return (
-                    <SelectItem key={e.id} value={e.id}>
-                      {label}
+          {/* Filters: Exam, Standard, Division */}
+          <div className="flex flex-wrap gap-4 items-end">
+            <div className="space-y-2">
+              <Label>Exam</Label>
+              <Select value={selectedExamId} onValueChange={setSelectedExamId}>
+                <SelectTrigger className="w-[280px]">
+                  <SelectValue placeholder="Select exam" />
+                </SelectTrigger>
+                <SelectContent>
+                  {exams.map((e) => {
+                    const dateStr = e.held_at ? new Date(e.held_at).toLocaleDateString() : "";
+                    const label = [e.name, e.exam_type, e.grade ?? "All", dateStr].filter(Boolean).join(" · ");
+                    return (
+                      <SelectItem key={e.id} value={e.id}>
+                        {label}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Standard</Label>
+              <Select value={gradeFilter} onValueChange={setGradeFilter}>
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  {grades.map((g) => (
+                    <SelectItem key={g} value={g}>
+                      {g}
                     </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Division</Label>
+              <Select value={divisionFilter} onValueChange={setDivisionFilter}>
+                <SelectTrigger className="w-[100px]">
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  {divisions.map((d) => (
+                    <SelectItem key={d} value={d}>
+                      {d}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-
-          {/* Sticky context banner so teacher always knows which exam they're in */}
-          {exam && (
-            <div className="rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-1">
-              <ClipboardList className="h-5 w-5 text-primary shrink-0" />
-              <span className="font-medium text-foreground">Recording marks for:</span>
-              <span className="text-foreground">{exam.name}</span>
-              <span className="text-muted-foreground">|</span>
-              <span className="text-muted-foreground">Standard: {exam.grade ?? "All"}</span>
-              <span className="text-muted-foreground">|</span>
-              <span className="text-muted-foreground">
-                Start date: {exam.held_at ? new Date(exam.held_at).toLocaleDateString() : "—"}
-              </span>
-              {academicYearName && (
-                <>
-                  <span className="text-muted-foreground">|</span>
-                  <span className="text-muted-foreground">{academicYearName}</span>
-                </>
-              )}
-            </div>
-          )}
-
-          {/* Step 2: Optional filters – default to exam's standard */}
-          {exam && (
-            <div className="flex flex-wrap gap-4 items-end">
-              <div className="space-y-2">
-                <Label>Standard</Label>
-                <Select value={gradeFilter} onValueChange={setGradeFilter}>
-                  <SelectTrigger className="w-[120px]">
-                    <SelectValue placeholder="All" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    {grades.map((g) => (
-                      <SelectItem key={g} value={g}>
-                        {g}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Division</Label>
-                <Select value={divisionFilter} onValueChange={setDivisionFilter}>
-                  <SelectTrigger className="w-[100px]">
-                    <SelectValue placeholder="All" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    {divisions.map((d) => (
-                      <SelectItem key={d} value={d}>
-                        {d}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
 
           {loading && (
             <p className="text-sm text-muted-foreground">Loading students and existing marks…</p>
@@ -422,14 +397,22 @@ export default function MarksEntry() {
                                 {cell.is_absent ? (
                                   <span className="text-destructive font-medium text-sm" title="Absent (right-click to toggle)">A</span>
                                 ) : isGradeBased ? (
-                                  <Input
-                                    type="text"
-                                    className="w-12 h-8 text-center text-sm"
-                                    value={cell.grade}
-                                    onChange={(e) => setCell(s.id, sub.id, { grade: e.target.value })}
-                                    onKeyDown={(ev) => handleKeyDown(ev, s.id, sub.id)}
-                                    placeholder="A/B/C"
-                                  />
+                                  <Select
+                                    value={cell.grade || "_"}
+                                    onValueChange={(v) => setCell(s.id, sub.id, { grade: v === "_" ? "" : v })}
+                                  >
+                                    <SelectTrigger className="w-[72px] h-8 text-sm">
+                                      <SelectValue placeholder="Grade" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="_">—</SelectItem>
+                                      {GRADE_OPTIONS.map((g) => (
+                                        <SelectItem key={g} value={g}>
+                                          {g}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
                                 ) : (
                                   <>
                                     <Input
