@@ -1,0 +1,20 @@
+---
+description: Always push changes to git and Supabase DB after completing work
+alwaysApply: true
+---
+
+# Push to Git and DB
+
+After making changes to this project (code, migrations, or config), **always**:
+
+1. **Git**
+   - Stage all changes: `git add -A` (or stage specific files if preferred).
+   - Commit with a clear message describing what changed.
+   - Push to the remote: `git push`.
+
+2. **Database**
+   - Run: `npm run db:push`
+   - This applies any new Supabase migrations to the linked project (branch-specific).
+   - If there are no new migrations, the command will report "Remote database is up to date."
+
+Do both steps at the end of a task or session when you have made changes. Use PowerShell-compatible commands (e.g. `;` instead of `&&` for chaining if needed on Windows).

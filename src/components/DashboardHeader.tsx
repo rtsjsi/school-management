@@ -46,7 +46,7 @@ export function DashboardHeader({ user }: { user: AuthUser }) {
   return (
     <header className="shrink-0 z-20 flex h-14 items-center justify-between gap-4 border-b border-border bg-background px-4 sm:px-6 lg:px-8">
       <nav className="flex items-center gap-1.5 text-sm text-muted-foreground min-w-0">
-        <span className="font-medium text-foreground sm:hidden truncate">{currentLabel}</span>
+        <span className="sm:hidden truncate">{currentLabel}</span>
         <div className="hidden sm:flex items-center gap-1.5 min-w-0">
           {crumbs.length > 1 ? (
             <>
@@ -58,10 +58,10 @@ export function DashboardHeader({ user }: { user: AuthUser }) {
                   <ChevronRight className="h-4 w-4 shrink-0 opacity-60" />
                 </span>
               ))}
-              <span className="font-medium text-foreground truncate">{currentLabel}</span>
+              <span className="truncate">{currentLabel}</span>
             </>
           ) : (
-            <span className="font-medium text-foreground">{currentLabel}</span>
+            <span>{currentLabel}</span>
           )}
         </div>
       </nav>
