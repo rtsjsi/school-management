@@ -29,19 +29,52 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
-const navItems: { href: string; label: string; icon: React.ComponentType<{ className?: string }>; roles?: ("super_admin" | "admin" | "teacher")[] }[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/users", label: "Users", icon: Users, roles: ["super_admin"] },
-  { href: "/dashboard/classes", label: "Class management", icon: BookOpen },
-  { href: "/dashboard/subjects", label: "Subject management", icon: BookMarked },
-  { href: "/dashboard/academic-years", label: "Academic Year", icon: CalendarRange },
-  { href: "/dashboard/students", label: "Students management", icon: GraduationCap },
-  { href: "/dashboard/admission-enquiry", label: "Admission Enquiry", icon: ClipboardList, roles: ["super_admin", "admin"] },
-  { href: "/dashboard/payroll", label: "Payroll", icon: Wallet, roles: ["super_admin", "admin"] },
-  { href: "/dashboard/fees", label: "Fees management", icon: DollarSign, roles: ["super_admin", "admin"] },
-  { href: "/dashboard/exams", label: "Exam management", icon: FileQuestion },
-  { href: "/dashboard/expenses", label: "Expense management", icon: Receipt, roles: ["super_admin", "admin"] },
-  { href: "/dashboard/class-strength", label: "Class strength report", icon: BarChart3 },
+type NavItem = {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  roles?: ("super_admin" | "admin" | "teacher")[];
+};
+
+type NavGroup = { label: string; items: NavItem[] };
+
+const navGroups: NavGroup[] = [
+  {
+    label: "Overview",
+    items: [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }],
+  },
+  {
+    label: "Academic setup",
+    items: [
+      { href: "/dashboard/academic-years", label: "Academic Year", icon: CalendarRange },
+      { href: "/dashboard/classes", label: "Class management", icon: BookOpen },
+      { href: "/dashboard/subjects", label: "Subject management", icon: BookMarked },
+    ],
+  },
+  {
+    label: "Students",
+    items: [
+      { href: "/dashboard/students", label: "Students management", icon: GraduationCap },
+      { href: "/dashboard/admission-enquiry", label: "Admission Enquiry", icon: ClipboardList, roles: ["super_admin", "admin"] },
+      { href: "/dashboard/class-strength", label: "Class strength report", icon: BarChart3 },
+    ],
+  },
+  {
+    label: "Finance",
+    items: [
+      { href: "/dashboard/fees", label: "Fees management", icon: DollarSign, roles: ["super_admin", "admin"] },
+      { href: "/dashboard/expenses", label: "Expense management", icon: Receipt, roles: ["super_admin", "admin"] },
+      { href: "/dashboard/payroll", label: "Payroll", icon: Wallet, roles: ["super_admin", "admin"] },
+    ],
+  },
+  {
+    label: "Exams",
+    items: [{ href: "/dashboard/exams", label: "Exam management", icon: FileQuestion }],
+  },
+  {
+    label: "Administration",
+    items: [{ href: "/dashboard/users", label: "Users", icon: Users, roles: ["super_admin"] }],
+  },
 ];
 
 export function AppSidebar({ user }: { user: AuthUser }) {
@@ -63,9 +96,10 @@ export function AppSidebar({ user }: { user: AuthUser }) {
   };
 
   const roleLabel = ROLES[user.role as keyof typeof ROLES] ?? user.role;
-  const filteredNav = navItems.filter(
-    (item) => !item.roles || item.roles.includes(user.role)
-  );
+  const filterByRole = (item: NavItem) => !item.roles || item.roles.includes(user.role);
+  const groupsWithItems = navGroups
+    .map((g) => ({ ...g, items: g.items.filter(filterByRole) }))
+    .filter((g) => g.items.length > 0);
 
   // Prevent body scroll when mobile sidebar is open
   useEffect(() => {
@@ -100,25 +134,35 @@ export function AppSidebar({ user }: { user: AuthUser }) {
         </Button>
       </div>
       <nav className="flex-1 space-y-0.5 p-3 overflow-y-auto">
-        {filteredNav.map((item) => {
-          const isActive = pathname === item.href;
-          const Icon = item.icon;
-          return (
-            <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}>
-              <span
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 border-l-2",
-                  isActive
-                    ? "bg-sidebar-foreground/15 text-sidebar-foreground border-sidebar-foreground/50"
-                    : "border-transparent text-sidebar-foreground/85 hover:bg-sidebar-foreground/10 hover:text-sidebar-foreground"
-                )}
-              >
-                <Icon className="h-4 w-4 shrink-0 opacity-90" />
-                {item.label}
-              </span>
-            </Link>
-          );
-        })}
+        {groupsWithItems.map((group, groupIndex) => (
+          <div key={group.label}>
+            {groupIndex > 0 && <Separator className="my-2 bg-sidebar-foreground/10" />}
+            <p className="text-xs font-medium text-sidebar-foreground/60 uppercase tracking-wider px-3 py-2">
+              {group.label}
+            </p>
+            <div className="space-y-0.5">
+              {group.items.map((item) => {
+                const isActive = pathname === item.href;
+                const Icon = item.icon;
+                return (
+                  <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}>
+                    <span
+                      className={cn(
+                        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 border-l-2",
+                        isActive
+                          ? "bg-sidebar-foreground/15 text-sidebar-foreground border-sidebar-foreground/50"
+                          : "border-transparent text-sidebar-foreground/85 hover:bg-sidebar-foreground/10 hover:text-sidebar-foreground"
+                      )}
+                    >
+                      <Icon className="h-4 w-4 shrink-0 opacity-90" />
+                      {item.label}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
       <Separator className="bg-sidebar-foreground/10" />
       <div className="p-3">
