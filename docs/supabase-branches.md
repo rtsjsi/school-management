@@ -32,3 +32,16 @@ No manual linking or env switching is required; the current branch controls whic
 - **`npm run supabase:link`** — Link only (no command). Useful after cloning to set the correct project for your current branch.
 
 No manual linking or env switching is needed; branch name drives everything.
+
+## Syncing users from production to development
+
+To copy all application users (auth + profiles with role/full_name) from the main DB to the dev DB:
+
+1. **Use your existing env files** — The script reads **.env.main** for PROD and **.env.development** for DEV (same as the branch-based setup). Ensure both files exist with `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
+
+2. **Run the script:**
+   ```bash
+   npm run sync-users:prod-to-dev
+   ```
+   - New users are created in dev with a **temporary password**; existing dev users get their profile (role, full_name) updated from prod.
+   - New-user passwords are printed to the console only (no file is kept). Copy them before the script exits. Any existing `sync-users-passwords.csv` from a previous run is removed after a successful run.
