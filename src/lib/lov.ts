@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/client";
 export type ClassOption = { id: string; name: string };
 export type DivisionOption = { id: string; name: string };
 export type AcademicYearOption = { id: string; name: string };
+export type GradeOption = { id: string; name: string };
 
 export async function fetchClasses(): Promise<ClassOption[]> {
   const supabase = createClient();
@@ -11,6 +12,26 @@ export async function fetchClasses(): Promise<ClassOption[]> {
     .select("id, name")
     .order("sort_order");
   return (data ?? []) as ClassOption[];
+}
+
+export async function fetchGrades(): Promise<GradeOption[]> {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("grades")
+    .select("id, name")
+    .order("sort_order");
+  return (data ?? []) as GradeOption[];
+}
+
+export async function fetchDivisionsByGradeId(gradeId: string): Promise<DivisionOption[]> {
+  if (!gradeId) return [];
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("divisions")
+    .select("id, name")
+    .eq("grade_id", gradeId)
+    .order("sort_order");
+  return (data ?? []) as DivisionOption[];
 }
 
 export async function fetchDivisionsByClassId(classId: string): Promise<DivisionOption[]> {

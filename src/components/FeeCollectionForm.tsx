@@ -147,6 +147,18 @@ export default function FeeCollectionForm({
         ? new Date(form.collection_date + "T12:00:00").toISOString()
         : new Date().toISOString();
 
+      let enrollmentId: string | null = null;
+      const { data: ayRow } = await supabase.from("academic_years").select("id").eq("name", form.academic_year).maybeSingle();
+      if (ayRow?.id) {
+        const { data: enrollRow } = await supabase
+          .from("student_enrollments")
+          .select("id")
+          .eq("student_id", form.student_id)
+          .eq("academic_year_id", ayRow.id)
+          .maybeSingle();
+        enrollmentId = enrollRow?.id ?? null;
+      }
+
       const { data: collection, error: err } = await supabase
         .from("fee_collections")
         .insert({
@@ -168,6 +180,7 @@ export default function FeeCollectionForm({
           fee_id: existingFee?.id ?? null,
           collected_at: collectedAt,
           collected_by: receivedBy ?? null,
+          enrollment_id: enrollmentId,
         })
         .select("id, students(full_name), collected_at")
         .single();

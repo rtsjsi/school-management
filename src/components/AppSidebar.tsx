@@ -47,6 +47,7 @@ const navGroups: NavGroup[] = [
     label: "Academic setup",
     items: [
       { href: "/dashboard/academic-years", label: "Academic Year", icon: CalendarRange },
+      { href: "/dashboard/promotion", label: "Year-end promotion", icon: GraduationCap, roles: ["super_admin", "admin"] },
       { href: "/dashboard/classes", label: "Class management", icon: BookOpen },
       { href: "/dashboard/subjects", label: "Subject management", icon: BookMarked },
     ],

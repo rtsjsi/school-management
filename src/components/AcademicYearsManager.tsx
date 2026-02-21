@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Trash2 } from "lucide-react";
 
-type YearRow = { id: string; name: string; sort_order: number };
+type YearRow = { id: string; name: string; sort_order: number; is_active?: boolean };
 
 export function AcademicYearsManager() {
   const router = useRouter();
@@ -41,9 +41,15 @@ export function AcademicYearsManager() {
   const loadYears = () => {
     supabase
       .from("academic_years")
-      .select("id, name, sort_order")
+      .select("id, name, sort_order, is_active")
       .order("sort_order")
       .then(({ data }) => setYears((data ?? []) as YearRow[]));
+  };
+
+  const setActiveYear = async (id: string) => {
+    await supabase.from("academic_years").update({ is_active: true }).eq("id", id);
+    loadYears();
+    router.refresh();
   };
 
   useEffect(() => {
@@ -134,13 +140,23 @@ export function AcademicYearsManager() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Year</TableHead>
-                  <TableHead className="w-16"></TableHead>
+                  <TableHead>Current</TableHead>
+                  <TableHead className="w-24"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {years.map((y) => (
                   <TableRow key={y.id}>
                     <TableCell className="font-medium">{y.name}</TableCell>
+                    <TableCell>
+                      {y.is_active ? (
+                        <span className="text-sm text-muted-foreground">Active</span>
+                      ) : (
+                        <Button size="sm" variant="outline" onClick={() => setActiveYear(y.id)}>
+                          Set as current
+                        </Button>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Button
                         size="sm"

@@ -27,6 +27,7 @@ import { Pencil } from "lucide-react";
 import { StudentDocumentsPhotos } from "@/components/StudentDocumentsPhotos";
 import { GradeDivisionYearSelects } from "@/components/GradeDivisionYearSelects";
 import { AcademicYearSelect } from "@/components/AcademicYearSelect";
+import { upsertCurrentEnrollment } from "@/app/dashboard/students/actions";
 
 interface StudentEditDialogProps {
   student: Record<string, unknown> & {
@@ -139,6 +140,12 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
 
       if (err) {
         setError(err.message);
+        return;
+      }
+
+      const enrollResult = await upsertCurrentEnrollment(student.id, form.grade, form.section);
+      if (!enrollResult.ok) {
+        setError(`Student updated but enrollment failed: ${enrollResult.error}`);
         return;
       }
 

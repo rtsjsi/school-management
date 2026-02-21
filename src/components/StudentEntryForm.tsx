@@ -27,6 +27,7 @@ import {
   type PendingPhotos,
   type PendingDocuments,
 } from "@/lib/student-uploads";
+import { upsertCurrentEnrollment } from "@/app/dashboard/students/actions";
 
 const PHOTO_ROLES = ["student"] as const;
 const PHOTO_LABELS: Record<(typeof PHOTO_ROLES)[number], string> = {
@@ -231,6 +232,11 @@ export default function StudentEntryForm() {
       }
 
       if (inserted?.id) {
+        const enrollResult = await upsertCurrentEnrollment(inserted.id, form.grade, form.section);
+        if (!enrollResult.ok) {
+          setError(`Student created but enrollment failed: ${enrollResult.error}`);
+          return;
+        }
         const hasPending = Object.keys(pendingPhotos).length > 0 || Object.keys(pendingDocuments).length > 0;
         if (hasPending) {
           const { error: uploadErr } = await uploadStudentFiles(
