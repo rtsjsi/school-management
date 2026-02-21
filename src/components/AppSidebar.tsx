@@ -131,11 +131,11 @@ export function AppSidebar({ user }: { user: AuthUser }) {
           <X className="h-5 w-5" />
         </Button>
       </div>
-      <nav className="flex-1 space-y-0.5 p-3 overflow-y-auto">
+      <nav className="flex-1 min-h-0 space-y-0.5 p-2.5 overflow-y-auto scrollbar-hide">
         {groupsWithItems.map((group, groupIndex) => (
           <div key={group.label}>
-            {groupIndex > 0 && <Separator className="my-2 bg-sidebar-foreground/10" />}
-            <p className="text-xs font-semibold text-sidebar-foreground/70 uppercase tracking-wider px-3 py-2">
+            {groupIndex > 0 && <Separator className="my-1.5 bg-sidebar-foreground/10" />}
+            <p className="text-xs font-semibold text-sidebar-foreground/70 uppercase tracking-wider px-3 py-1.5">
               {group.label}
             </p>
             <div className="space-y-0.5">
@@ -146,7 +146,7 @@ export function AppSidebar({ user }: { user: AuthUser }) {
                   <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}>
                     <span
                       className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 border-l-2",
+                        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 border-l-2",
                         isActive
                           ? "bg-sidebar-foreground/20 text-sidebar-foreground border-sidebar-foreground/60"
                           : "border-transparent text-sidebar-foreground/90 hover:bg-sidebar-foreground/15 hover:text-sidebar-foreground"

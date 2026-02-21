@@ -6,6 +6,14 @@
   .text-balance {
     text-wrap: balance;
   }
+  /* Hide scrollbar but keep scroll (e.g. sidebar nav) */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
   .shadow-card {
     box-shadow: var(--shadow-card);
   }
