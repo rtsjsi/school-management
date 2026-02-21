@@ -1,7 +1,9 @@
+import { Suspense } from "react";
 import { getUser, isAdminOrAbove } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import ExamEntryForm from "@/components/ExamEntryForm";
 import { ExamSubjectsConfig } from "@/components/ExamSubjectsConfig";
+import { ExamYearFilter } from "@/components/ExamYearFilter";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -12,18 +14,24 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { fetchAcademicYears } from "@/lib/lov";
 
-export async function ExamsList() {
+type ExamsListProps = { academicYearId?: string | null };
+
+export async function ExamsList({ academicYearId }: ExamsListProps) {
   const user = await getUser();
   if (!user) return null;
 
   const supabase = await createClient();
-  const { data: exams } = await supabase
+  let query = supabase
     .from("exams")
-    .select("id, name, exam_type, subject, grade, held_at")
+    .select("id, name, exam_type, subject, grade, held_at, academic_years(id, name)")
     .order("held_at", { ascending: false })
-    .limit(10);
+    .limit(50);
+  if (academicYearId) query = query.eq("academic_year_id", academicYearId);
+  const { data: exams } = await query;
 
+  const academicYears = await fetchAcademicYears();
   const canEdit = isAdminOrAbove(user);
 
   return (
@@ -38,6 +46,11 @@ export async function ExamsList() {
 
       <Card>
         <CardContent className="pt-6">
+          <div className="flex flex-wrap items-end gap-4 mb-4">
+            <Suspense fallback={null}>
+              <ExamYearFilter years={academicYears} />
+            </Suspense>
+          </div>
           {exams && exams.length > 0 ? (
             <>
               <Table>
@@ -45,7 +58,8 @@ export async function ExamsList() {
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Type</TableHead>
-                    <TableHead>Date</TableHead>
+                    <TableHead>Academic year</TableHead>
+                    <TableHead>Start date</TableHead>
                     {canEdit && <TableHead className="w-32">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
@@ -55,6 +69,9 @@ export async function ExamsList() {
                       <TableCell className="font-medium">{exam.name}</TableCell>
                       <TableCell>
                         <Badge variant="secondary">{exam.exam_type}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {(exam.academic_years as { name?: string } | null)?.name ?? "—"}
                       </TableCell>
                       <TableCell>{exam.held_at ? new Date(exam.held_at).toLocaleDateString() : "—"}</TableCell>
                       {canEdit && (
@@ -66,10 +83,14 @@ export async function ExamsList() {
                   ))}
                 </TableBody>
               </Table>
-              <p className="text-xs text-muted-foreground mt-4">Latest 10</p>
+              <p className="text-xs text-muted-foreground mt-4">
+                {academicYearId ? "Exams in selected year" : "Latest 50"}
+              </p>
             </>
           ) : (
-            <p className="text-sm text-muted-foreground py-8 text-center">No exams</p>
+            <p className="text-sm text-muted-foreground py-8 text-center">
+              {academicYearId ? "No exams in this academic year." : "No exams."}
+            </p>
           )}
         </CardContent>
       </Card>

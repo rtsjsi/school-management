@@ -9,9 +9,16 @@ import ReportCardGenerator from "@/components/ReportCardGenerator";
 import { TableSkeleton } from "@/components/skeletons/TableSkeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-export default async function ExamsPage() {
+export default async function ExamsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ academic_year_id?: string }>;
+}) {
   const user = await getUser();
   if (!user) redirect("/login");
+
+  const params = await searchParams;
+  const academicYearId = params.academic_year_id ?? null;
 
   return (
     <div className="space-y-8">
@@ -35,7 +42,7 @@ export default async function ExamsPage() {
         <TabsContent value="exams" className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-2">
             <Suspense fallback={<TableSkeleton rows={3} columns={3} />}>
-              <ExamsList />
+              <ExamsList academicYearId={academicYearId} />
             </Suspense>
           </div>
         </TabsContent>

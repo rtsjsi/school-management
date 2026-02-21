@@ -29,12 +29,14 @@ export async function createExamWithSubjects(
     held_at: string;
     description?: string | null;
     grade: string | null;
+    academic_year_id: string;
     subjectMaxMarks: { subjectId: string; maxMarks: number }[];
   }
 ): Promise<CreateExamResult> {
   const supabase = await createClient();
   if (!payload.name.trim()) return { ok: false, error: "Exam name is required." };
-  if (!payload.held_at) return { ok: false, error: "Date is required." };
+  if (!payload.held_at) return { ok: false, error: "Start date is required." };
+  if (!payload.academic_year_id?.trim()) return { ok: false, error: "Academic year is required." };
 
   const { data: exam, error: examErr } = await supabase
     .from("exams")
@@ -45,6 +47,7 @@ export async function createExamWithSubjects(
       grade: payload.grade?.trim() || null,
       held_at: payload.held_at,
       description: payload.description?.trim() || null,
+      academic_year_id: payload.academic_year_id.trim(),
     })
     .select("id")
     .single();

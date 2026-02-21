@@ -4,8 +4,9 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { createExamWithSubjects } from "@/app/dashboard/exams/actions";
-import { fetchClasses } from "@/lib/lov";
+import { fetchClasses, fetchAcademicYears } from "@/lib/lov";
 import type { ClassOption } from "@/lib/lov";
+import type { AcademicYearOption } from "@/lib/lov";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,11 +27,13 @@ export default function ExamEntryForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [standards, setStandards] = useState<ClassOption[]>([]);
+  const [academicYears, setAcademicYears] = useState<AcademicYearOption[]>([]);
   const [subjects, setSubjects] = useState<SubjectRow[]>([]);
   const [form, setForm] = useState({
     name: "",
     exam_type: "final" as string,
     standardId: "",
+    academicYearId: "",
     held_at: "",
     description: "",
   });
@@ -38,6 +41,7 @@ export default function ExamEntryForm() {
 
   useEffect(() => {
     fetchClasses().then(setStandards);
+    fetchAcademicYears().then(setAcademicYears);
   }, []);
 
   useEffect(() => {
@@ -57,7 +61,7 @@ export default function ExamEntryForm() {
         setSubjects(rows);
         const next: Record<string, string> = {};
         rows.forEach((s) => {
-          next[s.id] = s.evaluation_type === "mark" ? "100" : "100";
+          if (s.evaluation_type === "mark") next[s.id] = "100";
         });
         setMaxMarks(next);
       });
@@ -71,18 +75,35 @@ export default function ExamEntryForm() {
       return;
     }
     if (!form.held_at) {
-      setError("Date is required.");
+      setError("Start date is required.");
       return;
     }
     if (!form.standardId) {
       setError("Standard is required.");
       return;
     }
+    if (!form.academicYearId) {
+      setError("Academic year is required.");
+      return;
+    }
+
+    const markBasedSubjects = subjects.filter((s) => s.evaluation_type === "mark");
+    for (const sub of markBasedSubjects) {
+      const val = maxMarks[sub.id]?.trim();
+      const num = val ? parseFloat(val) : NaN;
+      if (!val || isNaN(num) || num <= 0) {
+        setError(`Max marks is required for ${sub.code ?? sub.name} (marks-based subject).`);
+        return;
+      }
+    }
 
     const standardName = standards.find((s) => s.id === form.standardId)?.name ?? null;
     const subjectMaxMarks: { subjectId: string; maxMarks: number }[] = [];
     for (const sub of subjects) {
-      const val = parseFloat(maxMarks[sub.id] ?? "100");
+      const val =
+        sub.evaluation_type === "mark"
+          ? parseFloat(maxMarks[sub.id] ?? "0")
+          : 100;
       if (!isNaN(val) && val > 0) subjectMaxMarks.push({ subjectId: sub.id, maxMarks: val });
     }
 
@@ -94,6 +115,7 @@ export default function ExamEntryForm() {
         held_at: form.held_at,
         description: form.description.trim() || null,
         grade: standardName,
+        academic_year_id: form.academicYearId,
         subjectMaxMarks,
       });
 
@@ -106,6 +128,7 @@ export default function ExamEntryForm() {
         name: "",
         exam_type: "final",
         standardId: "",
+        academicYearId: "",
         held_at: "",
         description: "",
       });
@@ -154,7 +177,7 @@ export default function ExamEntryForm() {
           </Select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="exam-held">Date *</Label>
+          <Label htmlFor="exam-held">Start date *</Label>
           <Input
             id="exam-held"
             type="date"
@@ -163,8 +186,9 @@ export default function ExamEntryForm() {
           />
         </div>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="exam-standard">Standard *</Label>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="exam-standard">Standard *</Label>
         <Select
           value={form.standardId || "_none"}
           onValueChange={(v) => setForm((p) => ({ ...p, standardId: v === "_none" ? "" : v }))}
@@ -181,12 +205,32 @@ export default function ExamEntryForm() {
             ))}
           </SelectContent>
         </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="exam-ay">Academic year *</Label>
+          <Select
+            value={form.academicYearId || "_none"}
+            onValueChange={(v) => setForm((p) => ({ ...p, academicYearId: v === "_none" ? "" : v }))}
+          >
+            <SelectTrigger id="exam-ay" className="w-full">
+              <SelectValue placeholder="Select academic year" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_none">Select academic year</SelectItem>
+              {academicYears.map((ay) => (
+                <SelectItem key={ay.id} value={ay.id}>
+                  {ay.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       {subjects.length > 0 && (
         <div className="space-y-2">
-          <Label>Subjects &amp; max marks (marks-based)</Label>
+          <Label>Subjects &amp; max marks</Label>
           <p className="text-xs text-muted-foreground">
-            Set max marks for each subject. Grade-based subjects use 100 as placeholder.
+            Max marks is required for marks-based subjects. Grade-based subjects are excluded.
           </p>
           <div className="rounded-md border border-border divide-y divide-border">
             {subjects.map((sub) => (
@@ -200,21 +244,24 @@ export default function ExamEntryForm() {
                     <span className="text-muted-foreground font-normal ml-1">(grade)</span>
                   )}
                 </span>
-                <div className="flex items-center gap-2 shrink-0">
-                  <Label htmlFor={`max-${sub.id}`} className="text-muted-foreground text-xs">
-                    Max marks
-                  </Label>
-                  <Input
-                    id={`max-${sub.id}`}
-                    type="number"
-                    min={1}
-                    className="w-20 h-8"
-                    value={maxMarks[sub.id] ?? "100"}
-                    onChange={(e) =>
-                      setMaxMarks((p) => ({ ...p, [sub.id]: e.target.value }))
-                    }
-                  />
-                </div>
+                {sub.evaluation_type === "mark" && (
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Label htmlFor={`max-${sub.id}`} className="text-muted-foreground text-xs">
+                      Max marks *
+                    </Label>
+                    <Input
+                      id={`max-${sub.id}`}
+                      type="number"
+                      min={1}
+                      className="w-20 h-8"
+                      value={maxMarks[sub.id] ?? ""}
+                      onChange={(e) =>
+                        setMaxMarks((p) => ({ ...p, [sub.id]: e.target.value }))
+                      }
+                      placeholder="e.g. 100"
+                    />
+                  </div>
+                )}
               </div>
             ))}
           </div>
