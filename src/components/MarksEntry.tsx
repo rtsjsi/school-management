@@ -148,9 +148,11 @@ export default function MarksEntry() {
         .select("id, full_name, grade, division")
         .eq("status", "active")
         .order("full_name");
-      if (gradeFilter && gradeFilter !== "all") query = query.eq("grade", gradeFilter);
+      // When exam is for a specific standard, always filter by that standard (ignore other selections)
+      const gradeToUse =
+        exam?.grade && exam.grade.trim() !== "" ? exam.grade : gradeFilter;
+      if (gradeToUse && gradeToUse !== "all") query = query.eq("grade", gradeToUse);
       if (divisionFilter && divisionFilter !== "all") query = query.eq("division", divisionFilter);
-      if (exam?.grade && gradeFilter === "all") query = query.eq("grade", exam.grade);
 
       const { data: st } = await query;
       const studentList = (st ?? []) as Student[];
@@ -278,7 +280,13 @@ export default function MarksEntry() {
     }
   };
 
-  const grades = classNames.length > 0 ? classNames : Array.from(new Set(students.map((s) => s.grade).filter(Boolean))) as string[];
+  // When exam is for a specific standard, only allow that standard (no other standards like Jr KG)
+  const gradesForFilter =
+    exam?.grade && exam.grade.trim() !== ""
+      ? [exam.grade]
+      : classNames.length > 0
+        ? classNames
+        : (Array.from(new Set(students.map((s) => s.grade).filter(Boolean))) as string[]);
   const divisions = Array.from(new Set(students.map((s) => s.division).filter(Boolean))) as string[];
   return (
     <Card>
@@ -314,19 +322,28 @@ export default function MarksEntry() {
             </div>
             <div className="space-y-2">
               <Label>Standard</Label>
-              <Select value={gradeFilter} onValueChange={setGradeFilter}>
+              <Select
+                value={gradeFilter}
+                onValueChange={setGradeFilter}
+                disabled={!!(exam?.grade && exam.grade.trim() !== "")}
+              >
                 <SelectTrigger className="w-[120px]">
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  {grades.map((g) => (
+                  {!(exam?.grade && exam.grade.trim() !== "") && (
+                    <SelectItem value="all">All</SelectItem>
+                  )}
+                  {gradesForFilter.map((g) => (
                     <SelectItem key={g} value={g}>
                       {g}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {exam?.grade && exam.grade.trim() !== "" && (
+                <p className="text-xs text-muted-foreground">Exam is for this standard only</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Division</Label>
