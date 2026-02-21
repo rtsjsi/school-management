@@ -114,7 +114,7 @@ export function AppSidebar({ user }: { user: AuthUser }) {
   }, [mobileOpen]);
 
   const sidebar = (
-    <div className="flex h-full w-64 flex-col bg-sidebar text-sidebar-foreground shadow-xl">
+    <div className="flex h-full w-64 flex-col overflow-hidden bg-sidebar text-sidebar-foreground shadow-xl">
       <div className="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-sidebar-foreground/10 px-5">
         <Link
           href="/dashboard"
@@ -133,7 +133,7 @@ export function AppSidebar({ user }: { user: AuthUser }) {
           <X className="h-5 w-5" />
         </Button>
       </div>
-      <nav className="flex-1 space-y-0.5 p-3 overflow-y-auto">
+      <nav className="min-h-0 flex-1 space-y-0.5 overflow-y-auto p-3">
         {groupsWithItems.map((group, groupIndex) => (
           <div key={group.label}>
             {groupIndex > 0 && <Separator className="my-2 bg-sidebar-foreground/10" />}
@@ -165,7 +165,7 @@ export function AppSidebar({ user }: { user: AuthUser }) {
         ))}
       </nav>
       <Separator className="bg-sidebar-foreground/10" />
-      <div className="p-3">
+      <div className="shrink-0 p-3">
         <div className="rounded-xl bg-sidebar-foreground/5 border border-sidebar-foreground/10 px-3 py-2.5 text-xs text-sidebar-foreground/90">
           <p className="font-semibold text-sidebar-foreground">{roleLabel}</p>
           <p className="truncate mt-0.5 text-sidebar-foreground/80">{user.email ?? user.fullName ?? "User"}</p>
