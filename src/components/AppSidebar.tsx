@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
@@ -14,17 +13,13 @@ import {
   DollarSign,
   FileQuestion,
   Receipt,
-  LogOut,
-  Loader2,
   Menu,
   X,
   ClipboardList,
   BarChart3,
   Wallet,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import type { AuthUser } from "@/lib/auth";
-import { ROLES } from "@/types/auth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -80,23 +75,8 @@ const navGroups: NavGroup[] = [
 
 export function AppSidebar({ user }: { user: AuthUser }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const [signingOut, setSigningOut] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const handleSignOut = async () => {
-    setSigningOut(true);
-    try {
-      const supabase = createClient();
-      await supabase.auth.signOut();
-      router.push("/login");
-      router.refresh();
-    } finally {
-      setSigningOut(false);
-    }
-  };
-
-  const roleLabel = ROLES[user.role as keyof typeof ROLES] ?? user.role;
   const filterByRole = (item: NavItem) => !item.roles || item.roles.includes(user.role);
   const groupsWithItems = navGroups
     .map((g) => ({ ...g, items: g.items.filter(filterByRole) }))
@@ -165,27 +145,6 @@ export function AppSidebar({ user }: { user: AuthUser }) {
           </div>
         ))}
       </nav>
-      <Separator className="bg-sidebar-foreground/10" />
-      <div className="p-3">
-        <div className="rounded-xl bg-sidebar-foreground/5 border border-sidebar-foreground/10 px-3 py-2.5 text-xs text-sidebar-foreground/90">
-          <p className="font-semibold text-sidebar-foreground">{roleLabel}</p>
-          <p className="truncate mt-0.5 text-sidebar-foreground/80">{user.email ?? user.fullName ?? "User"}</p>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="mt-2 w-full justify-start text-sidebar-foreground/90 hover:bg-sidebar-foreground/10 hover:text-sidebar-foreground rounded-lg"
-          onClick={handleSignOut}
-          disabled={signingOut}
-        >
-          {signingOut ? (
-            <Loader2 className="h-4 w-4 animate-spin shrink-0" />
-          ) : (
-            <LogOut className="h-4 w-4 shrink-0" />
-          )}
-          <span className="ml-2">{signingOut ? "Signing out…" : "Sign out"}</span>
-        </Button>
-      </div>
     </div>
   );
 

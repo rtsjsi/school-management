@@ -1,6 +1,6 @@
 /**
  * Seed script: Flush all app data and insert clean test data.
- * 20 students + 10 employees with full variety.
+ * 100 students + 20 employees with full variety.
  * Run: npm run seed
  */
 
@@ -62,6 +62,7 @@ async function deleteAllData() {
     "employee_qualifications",
     "fee_structure_items",
     "expenses",
+    "student_enrollments",
     "students",
     "employees",
     "subjects",
@@ -82,7 +83,7 @@ async function deleteAllData() {
 }
 
 async function main() {
-  console.log("Starting seed (20 students, 10 employees)...");
+  console.log("Starting seed (100 students, 20 employees)...");
   await deleteAllData();
 
   await seedClasses();
@@ -222,44 +223,55 @@ async function seedExams() {
   }
 }
 
-// 10 employees with full variety: roles, departments, types, statuses
-const EMPLOYEES_SEED = [
-  { full_name: "Rajesh Kumar", role: "teacher", department: "Mathematics", designation: "Senior Teacher", employee_type: "full_time", status: "active" },
-  { full_name: "Priya Sharma", role: "teacher", department: "Science", designation: "Teacher", employee_type: "full_time", status: "active" },
-  { full_name: "Amit Patel", role: "teacher", department: "English", designation: "PGT", employee_type: "full_time", status: "active" },
-  { full_name: "Sneha Reddy", role: "teacher", department: "Hindi", designation: "TGT", employee_type: "full_time", status: "active" },
-  { full_name: "Vikram Singh", role: "teacher", department: "Social Studies", designation: "Teacher", employee_type: "part_time", status: "active" },
-  { full_name: "Anjali Gupta", role: "staff", department: "Administration", designation: "Office Assistant", employee_type: "full_time", status: "active" },
-  { full_name: "Suresh Nair", role: "staff", department: "Administration", designation: "Accountant", employee_type: "full_time", status: "active" },
-  { full_name: "Kavita Desai", role: "staff", department: "Administration", designation: "Receptionist", employee_type: "full_time", status: "active" },
-  { full_name: "Ramesh Iyer", role: "staff", department: "Sports", designation: "PE Assistant", employee_type: "contract", status: "active" },
-  { full_name: "Lakshmi Menon", role: "staff", department: "Administration", designation: "Librarian", employee_type: "full_time", status: "inactive" },
-];
+// 20 employees with full variety: roles, departments, designations, types, statuses
+const EMPLOYEE_ROLES = ["teacher", "teacher", "teacher", "teacher", "teacher", "staff", "staff", "staff", "staff", "staff"] as const;
+const DEPARTMENTS = ["Mathematics", "Science", "English", "Hindi", "Social Studies", "Administration", "Sports", "Library", "Accounts", "IT Support"];
+const DESIGNATIONS = ["Senior Teacher", "Teacher", "PGT", "TGT", "Principal", "Vice Principal", "Office Assistant", "Accountant", "Receptionist", "Librarian", "PE Teacher", "Lab Assistant", "Clerk", "Security"];
+const EMPLOYEE_TYPES = ["full_time", "full_time", "full_time", "part_time", "contract", "temporary"] as const;
+const EMPLOYEE_STATUSES = ["active", "active", "active", "active", "inactive", "resigned", "terminated"] as const;
+const FIRST_NAMES = ["Rajesh", "Priya", "Amit", "Sneha", "Vikram", "Anjali", "Suresh", "Kavita", "Ramesh", "Lakshmi", "Arun", "Deepa", "Kiran", "Meera", "Naveen", "Pooja", "Rahul", "Sunita", "Vijay", "Uma"];
+const LAST_NAMES = ["Kumar", "Sharma", "Patel", "Reddy", "Singh", "Gupta", "Nair", "Desai", "Iyer", "Menon", "Pillai", "Nambiar", "Joshi", "Kapoor", "Verma", "Malhotra", "Shah", "Agarwal", "Rao", "Mehta"];
 
 async function seedEmployees() {
-  console.log("Seeding 10 employees...");
+  console.log("Seeding 20 employees...");
   const { data: shifts } = await supabase.from("shifts").select("id");
   const shiftIds = (shifts ?? []).map((s) => s.id);
 
-  const employees = EMPLOYEES_SEED.map((e, i) => ({
-    ...e,
-    email: `emp${i + 1}@school.edu`,
-    phone_number: `98765${String(43210 + i).padStart(5, "0")}`,
-    address: `${100 + i} School Lane, City`,
-    employee_id: `EMP-${new Date().getFullYear()}-${String(i + 1).padStart(4, "0")}`,
-    joining_date: randomDate(new Date(2018, 0, 1), new Date(2023, 5, 1)).toISOString().slice(0, 10),
-    shift_id: shiftIds[i % shiftIds.length] ?? null,
-    monthly_salary: 25000 + randomInt(0, 50000),
-  }));
+  const usedNames = new Set<string>();
+  const employees: Record<string, unknown>[] = [];
+  for (let i = 0; i < 20; i++) {
+    let name = `${pick(FIRST_NAMES)} ${pick(LAST_NAMES)}`;
+    while (usedNames.has(name)) {
+      name = `${pick(FIRST_NAMES)} ${pick(LAST_NAMES)}`;
+    }
+    usedNames.add(name);
+    employees.push({
+      full_name: name,
+      email: `emp${i + 1}@school.edu`,
+      phone_number: `98765${String(43210 + i).padStart(5, "0")}`,
+      address: `${100 + i} Staff Colony, School Lane, City`,
+      employee_id: `EMP-${new Date().getFullYear()}-${String(i + 1).padStart(4, "0")}`,
+      role: pick(EMPLOYEE_ROLES),
+      department: pick(DEPARTMENTS),
+      designation: pick(DESIGNATIONS),
+      employee_type: pick(EMPLOYEE_TYPES),
+      status: pick(EMPLOYEE_STATUSES),
+      joining_date: randomDate(new Date(2018, 0, 1), new Date(2024, 5, 1)).toISOString().slice(0, 10),
+      shift_id: shiftIds[i % shiftIds.length] ?? null,
+      monthly_salary: 25000 + randomInt(0, 75000),
+      aadhaar: i % 3 === 0 ? `9999${String(8000000000 + i).slice(-8)}` : null,
+      pan: i % 4 === 0 ? `ABCDE${String(1000 + i).slice(-4)}F` : null,
+    });
+  }
 
   const { data: emps } = await supabase.from("employees").insert(employees).select("id, full_name");
   if (emps) {
     for (const e of emps) {
       await supabase.from("employee_bank_accounts").insert({
         employee_id: e.id,
-        bank_name: "State Bank",
+        bank_name: pick(["State Bank", "HDFC Bank", "ICICI Bank", "SBI", "Axis Bank"]),
         account_number: `1234567${String(emps.indexOf(e)).padStart(5, "0")}`,
-        ifsc_code: "SBIN0001234",
+        ifsc_code: pick(["SBIN0001234", "HDFC0001234", "ICIC0001234"]),
         account_holder_name: e.full_name,
         is_primary: true,
       });
@@ -268,58 +280,112 @@ async function seedEmployees() {
   console.log(`  Inserted ${emps?.length ?? 0} employees`);
 }
 
-// 20 students with full variety: grades, sections, statuses, RTE, gender, category, admission types
-const STUDENTS_SEED = [
-  { full_name: "Aarav Sharma", grade: "Jr KG", section: "A", status: "active", is_rte: false, gender: "male", category: "general" },
-  { full_name: "Aditi Patel", grade: "Sr KG", section: "B", status: "active", is_rte: true, gender: "female", category: "obc" },
-  { full_name: "Aisha Singh", grade: "1", section: "A", status: "active", is_rte: false, gender: "female", category: "general" },
-  { full_name: "Akash Kumar", grade: "2", section: "C", status: "active", is_rte: true, gender: "male", category: "sc" },
-  { full_name: "Ananya Gupta", grade: "3", section: "B", status: "active", is_rte: false, gender: "female", category: "general" },
-  { full_name: "Arjun Reddy", grade: "4", section: "D", status: "active", is_rte: false, gender: "male", category: "st" },
-  { full_name: "Aryan Rao", grade: "5", section: "A", status: "active", is_rte: true, gender: "male", category: "obc" },
-  { full_name: "Avni Nair", grade: "6", section: "B", status: "active", is_rte: false, gender: "female", category: "general" },
-  { full_name: "Diya Mehta", grade: "7", section: "C", status: "active", is_rte: false, gender: "female", category: "other" },
-  { full_name: "Ishaan Joshi", grade: "8", section: "A", status: "active", is_rte: true, gender: "male", category: "general" },
-  { full_name: "Kavya Iyer", grade: "9", section: "B", status: "active", is_rte: false, gender: "female", category: "general" },
-  { full_name: "Krishna Pillai", grade: "10", section: "D", status: "active", is_rte: false, gender: "male", category: "obc" },
-  { full_name: "Maya Menon", grade: "11", section: "A", status: "active", is_rte: false, gender: "female", category: "general" },
-  { full_name: "Neha Nambiar", grade: "12", section: "B", status: "active", is_rte: false, gender: "female", category: "general" },
-  { full_name: "Priya Desai", grade: "1", section: "D", status: "inactive", is_rte: false, gender: "female", category: "general" },
-  { full_name: "Rahul Shah", grade: "5", section: "C", status: "transferred", is_rte: false, gender: "male", category: "general" },
-  { full_name: "Riya Kapoor", grade: "3", section: "A", status: "active", is_rte: true, gender: "female", category: "general" },
-  { full_name: "Rohan Agarwal", grade: "7", section: "B", status: "graduated", is_rte: false, gender: "male", category: "general" },
-  { full_name: "Saanvi Malhotra", grade: "4", section: "C", status: "active", is_rte: false, gender: "female", category: "sc" },
-  { full_name: "Siddharth Verma", grade: "8", section: "D", status: "suspended", is_rte: false, gender: "male", category: "general" },
-];
+// Student name parts for 100 varied names
+const STUDENT_FIRST = ["Aarav", "Aditi", "Aisha", "Akash", "Ananya", "Arjun", "Aryan", "Avni", "Diya", "Ishaan", "Kavya", "Krishna", "Maya", "Neha", "Priya", "Rahul", "Riya", "Rohan", "Saanvi", "Siddharth", "Vivaan", "Anika", "Arnav", "Ishita", "Karan", "Nisha", "Ravi", "Sneha", "Varun", "Zara", "Abhay", "Bhavya", "Chetan", "Devika", "Esha", "Farhan", "Gayatri", "Harsh", "Ira", "Jai", "Kiara", "Laksh", "Mohan", "Naina", "Omkar", "Pranav", "Quasar", "Ritika", "Sahil", "Tanya", "Uday", "Ved", "Yash", "Aarohi", "Bhumika", "Dhruv", "Eshaan", "Gauri", "Himanshu", "Jhanvi", "Kunal", "Lavanya", "Manish", "Nikita", "Ojas", "Pooja", "Rishabh", "Shreya", "Tanvi", "Utkarsh", "Vansh", "Aadhya", "Advik", "Chhavi", "Daksh", "Ishani", "Kiaan", "Myra", "Navya", "Rehan", "Sara", "Vihaan", "Ayaan", "Disha", "Hridaan", "Kavya", "Mira", "Neel", "Reyansh", "Siya", "Vivaan", "Yuvaan", "Aaradhya", "Atharv", "Ishana", "Krish", "Mihir", "Nysa", "Rudra", "Vedika", "Aryan", "Dhyan", "Keya", "Reyansh", "Samar", "Vanya"];
+const STUDENT_LAST = ["Sharma", "Patel", "Singh", "Kumar", "Gupta", "Reddy", "Rao", "Nair", "Mehta", "Joshi", "Iyer", "Pillai", "Menon", "Nambiar", "Desai", "Shah", "Kapoor", "Agarwal", "Malhotra", "Verma", "Jain", "Bansal", "Chopra", "Dubey", "Garg", "Khanna", "Lal", "Mishra", "Oberoi", "Prasad", "Saxena", "Tiwari", "Bhatt", "Chandra", "Dutta", "Ghoshal", "Kulkarni", "Naidu", "Ranganathan", "Srinivas", "Venkatesh", "Bose", "Das", "Mukherjee", "Roy", "Banerjee", "Chatterjee", "Ghosh", "Basu", "Sen", "Mitra"];
+
+const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"] as const;
+const STUDENT_STATUSES = ["active", "active", "active", "active", "inactive", "transferred", "graduated", "suspended"] as const;
+const CATEGORIES = ["general", "obc", "sc", "st", "other"] as const;
+const ADMISSION_TYPES = ["regular", "transfer", "re-admission"] as const;
+const GENDERS = ["male", "female", "other"] as const;
+const RELIGIONS = ["Hindu", "Muslim", "Christian", "Sikh", "Buddhist", "Jain", "Other", null];
+const DISTRICTS = ["Mumbai", "Pune", "Thane", "Nashik", "Nagpur", "Ahmedabad", "Surat", "Vadodara", "Bangalore", "Chennai", null];
 
 async function seedStudents() {
-  console.log("Seeding 20 students...");
-  const ay = `${new Date().getFullYear()}-${(new Date().getFullYear() + 1).toString().slice(-2)}`;
-  const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+  console.log("Seeding 100 students...");
+  const { data: activeYear } = await supabase
+    .from("academic_years")
+    .select("id, name")
+    .eq("is_active", true)
+    .maybeSingle();
+  if (!activeYear) {
+    console.log("  Skipping students: no active academic year (run migrations first)");
+    return;
+  }
 
-  const students = STUDENTS_SEED.map((s, i) => ({
-    full_name: s.full_name,
-    email: `stu${i + 1}@school.edu`,
-    grade: s.grade,
-    section: s.section,
-    roll_number: (i % 40) + 1,
-    status: s.status,
-    gender: s.gender,
-    blood_group: bloodGroups[i % bloodGroups.length],
-    is_rte_quota: s.is_rte,
-    category: s.category,
-    student_id: `STU-${new Date().getFullYear()}-${String(i + 1).padStart(4, "0")}`,
-    admission_date: randomDate(new Date(2020, 0, 1), new Date(2024, 5, 1)).toISOString().slice(0, 10),
-    admission_type: i % 5 === 0 ? "transfer" : i % 7 === 0 ? "re-admission" : "regular",
-    academic_year: ay,
-    parent_name: `${s.full_name.split(" ")[1]} Parent`,
-    parent_contact: `98765${String(10000 + i).padStart(5, "0")}`,
-    parent_email: `parent${i + 1}@email.com`,
-  }));
+  const { data: grades } = await supabase.from("grades").select("id, name").order("sort_order");
+  if (!grades?.length) {
+    console.log("  Skipping students: no grades (run migrations first)");
+    return;
+  }
 
-  await supabase.from("students").insert(students);
-  const rteCount = students.filter((s) => s.is_rte_quota).length;
-  console.log(`  Inserted ${students.length} students (${rteCount} RTE, variety in status/category/grade)`);
+  const gradeDivisions: { gradeId: string; divisionId: string }[] = [];
+  for (const g of grades) {
+    const { data: divs } = await supabase.from("divisions").select("id").eq("grade_id", g.id).limit(4);
+    for (const d of divs ?? []) {
+      gradeDivisions.push({ gradeId: g.id, divisionId: d.id });
+    }
+  }
+  if (gradeDivisions.length === 0) {
+    console.log("  Skipping students: no divisions (run migrations first)");
+    return;
+  }
+
+  const usedNames = new Set<string>();
+  const students: Record<string, unknown>[] = [];
+  for (let i = 0; i < 100; i++) {
+    let name = `${pick(STUDENT_FIRST)} ${pick(STUDENT_LAST)}`;
+    while (usedNames.has(name)) {
+      name = `${pick(STUDENT_FIRST)} ${pick(STUDENT_LAST)}`;
+    }
+    usedNames.add(name);
+    const status = pick(STUDENT_STATUSES);
+    const category = pick(CATEGORIES);
+    const admissionType = pick(ADMISSION_TYPES);
+    const gender = pick(GENDERS);
+    const dob = randomDate(new Date(2008, 0, 1), new Date(2018, 11, 31)).toISOString().slice(0, 10);
+    students.push({
+      full_name: name,
+      email: `stu${i + 1}@school.edu`,
+      student_id: `STU-${new Date().getFullYear()}-${String(i + 1).padStart(4, "0")}`,
+      date_of_birth: dob,
+      gender,
+      blood_group: BLOOD_GROUPS[i % BLOOD_GROUPS.length],
+      status,
+      category,
+      admission_type: admissionType,
+      admission_date: randomDate(new Date(2020, 0, 1), new Date(2024, 5, 1)).toISOString().slice(0, 10),
+      academic_year: activeYear.name,
+      roll_number: (i % 50) + 1,
+      is_rte_quota: i % 5 === 0,
+      address: `${200 + i} Block, ${pick(["Sector 5", "MG Road", "Park Street", "Lake View"])}, City`,
+      district: pick(DISTRICTS),
+      society: i % 3 === 0 ? `Society ${String(i + 1)}` : null,
+      phone_number: `98765${String(10000 + i).padStart(5, "0")}`,
+      father_name: `${name.split(" ")[0]}'s Father`,
+      mother_name: `${name.split(" ")[0]}'s Mother`,
+      parent_contact: `98765${String(20000 + i).padStart(5, "0")}`,
+      parent_email: `parent${i + 1}@email.com`,
+      guardian_name: i % 7 === 0 ? `Guardian of ${name.split(" ")[0]}` : null,
+      religion: pick(RELIGIONS),
+      caste: category === "sc" || category === "st" ? "ST/SC" : null,
+      birth_place: i % 4 === 0 ? "City Hospital" : null,
+      last_school: admissionType === "transfer" ? "Previous School" : null,
+      aadhar_no: i % 2 === 0 ? `9999${String(8000000000 + i).slice(-8)}` : null,
+      notes: i % 10 === 0 ? "Sample note" : null,
+    });
+  }
+
+  const { data: inserted } = await supabase.from("students").insert(students).select("id");
+  if (!inserted?.length) {
+    console.log("  No students inserted");
+    return;
+  }
+
+  for (let i = 0; i < inserted.length; i++) {
+    const { gradeId, divisionId } = pick(gradeDivisions);
+    await supabase.from("student_enrollments").insert({
+      student_id: inserted[i].id,
+      academic_year_id: activeYear.id,
+      grade_id: gradeId,
+      division_id: divisionId,
+      status: "active",
+    });
+  }
+
+  const rteCount = students.filter((s) => (s as { is_rte_quota?: boolean }).is_rte_quota).length;
+  console.log(`  Inserted ${inserted.length} students (${rteCount} RTE), enrollments created`);
 }
 
 async function seedFeeCollections() {
