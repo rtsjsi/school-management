@@ -41,7 +41,13 @@ export default function ExamEntryForm() {
 
   useEffect(() => {
     fetchClasses().then(setStandards);
-    fetchAcademicYears().then(setAcademicYears);
+    fetchAcademicYears().then((list) => {
+      setAcademicYears(list);
+      const active = list.find((y) => y.is_active) ?? list[0];
+      if (active) {
+        setForm((p) => (p.academicYearId ? p : { ...p, academicYearId: active.id }));
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -159,18 +165,19 @@ export default function ExamEntryForm() {
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="exam-type">Type</Label>
+          <Label htmlFor="exam-ay">Academic year *</Label>
           <Select
-            value={form.exam_type}
-            onValueChange={(v) => setForm((p) => ({ ...p, exam_type: v }))}
+            value={form.academicYearId || "_none"}
+            onValueChange={(v) => setForm((p) => ({ ...p, academicYearId: v === "_none" ? "" : v }))}
           >
-            <SelectTrigger id="exam-type" className="w-full">
-              <SelectValue />
+            <SelectTrigger id="exam-ay" className="w-full">
+              <SelectValue placeholder="Select academic year" />
             </SelectTrigger>
             <SelectContent>
-              {EXAM_TYPES.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {t.charAt(0).toUpperCase() + t.slice(1)}
+              <SelectItem value="_none">Select academic year</SelectItem>
+              {academicYears.map((ay) => (
+                <SelectItem key={ay.id} value={ay.id}>
+                  {ay.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -189,37 +196,36 @@ export default function ExamEntryForm() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="exam-standard">Standard *</Label>
-        <Select
-          value={form.standardId || "_none"}
-          onValueChange={(v) => setForm((p) => ({ ...p, standardId: v === "_none" ? "" : v }))}
-        >
-          <SelectTrigger id="exam-standard" className="w-full">
-            <SelectValue placeholder="Select standard" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="_none">Select standard</SelectItem>
-            {standards.map((s) => (
-              <SelectItem key={s.id} value={s.id}>
-                {s.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="exam-ay">Academic year *</Label>
           <Select
-            value={form.academicYearId || "_none"}
-            onValueChange={(v) => setForm((p) => ({ ...p, academicYearId: v === "_none" ? "" : v }))}
+            value={form.standardId || "_none"}
+            onValueChange={(v) => setForm((p) => ({ ...p, standardId: v === "_none" ? "" : v }))}
           >
-            <SelectTrigger id="exam-ay" className="w-full">
-              <SelectValue placeholder="Select academic year" />
+            <SelectTrigger id="exam-standard" className="w-full">
+              <SelectValue placeholder="Select standard" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="_none">Select academic year</SelectItem>
-              {academicYears.map((ay) => (
-                <SelectItem key={ay.id} value={ay.id}>
-                  {ay.name}
+              <SelectItem value="_none">Select standard</SelectItem>
+              {standards.map((s) => (
+                <SelectItem key={s.id} value={s.id}>
+                  {s.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="exam-type">Type</Label>
+          <Select
+            value={form.exam_type}
+            onValueChange={(v) => setForm((p) => ({ ...p, exam_type: v }))}
+          >
+            <SelectTrigger id="exam-type" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {EXAM_TYPES.map((t) => (
+                <SelectItem key={t} value={t}>
+                  {t.charAt(0).toUpperCase() + t.slice(1)}
                 </SelectItem>
               ))}
             </SelectContent>

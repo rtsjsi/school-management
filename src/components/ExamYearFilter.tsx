@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef } from "react";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -15,6 +16,19 @@ export function ExamYearFilter({ years }: { years: AcademicYearOption[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const current = searchParams.get("academic_year_id") ?? "";
+  const hasDefaulted = useRef(false);
+
+  // Default to current (active) academic year when no filter in URL
+  useEffect(() => {
+    if (hasDefaulted.current || current !== "" || years.length === 0) return;
+    const active = years.find((y) => y.is_active) ?? years[0];
+    if (active) {
+      hasDefaulted.current = true;
+      const next = new URLSearchParams(window.location.search);
+      next.set("academic_year_id", active.id);
+      router.replace(`/dashboard/exams?${next.toString()}`);
+    }
+  }, [years, current, router]);
 
   const handleChange = (value: string) => {
     const next = new URLSearchParams(searchParams.toString());
