@@ -123,7 +123,7 @@ export default async function DashboardPage() {
           value: String(employeesCount ?? 0),
           description: "Staff & teachers",
           icon: UserPlus,
-          href: "/dashboard/employees",
+          href: "/dashboard/payroll",
         }]
       : []),
     {
