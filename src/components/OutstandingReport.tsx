@@ -51,7 +51,7 @@ export default function OutstandingReport() {
   const currentYear = new Date().getFullYear();
   const defaultAy = `${currentYear}-${(currentYear + 1).toString().slice(-2)}`;
 
-  const [academicYear, setAcademicYear] = useState(defaultAy);
+  const [academicYear, setAcademicYear] = useState("");
   const [quarter, setQuarter] = useState("");
   const [grade, setGrade] = useState("");
   const [studentId, setStudentId] = useState("");
@@ -81,6 +81,8 @@ export default function OutstandingReport() {
         if (list.length === 0) list.push({ id: "current", name: defaultAy });
         else if (!list.some((x) => x.name === defaultAy)) list.unshift({ id: "current", name: defaultAy });
         setYears(list);
+        const activeName = y.find((x) => x.is_active)?.name ?? list[0]?.name ?? defaultAy;
+        setAcademicYear((prev) => prev || activeName);
       })
       .catch(() => setYears([{ id: "current", name: defaultAy }]));
   }, []);
@@ -110,7 +112,7 @@ export default function OutstandingReport() {
 
   useEffect(() => {
     if (academicYear) fetchReport();
-  }, []);
+  }, [academicYear]);
 
   return (
     <Card>
@@ -125,7 +127,7 @@ export default function OutstandingReport() {
             <div className="space-y-2">
               <Label>Academic Year *</Label>
               <Select
-                value={academicYear || years[0]?.name || defaultAy}
+                value={academicYear || years[0]?.name || " "}
                 onValueChange={setAcademicYear}
               >
                 <SelectTrigger>

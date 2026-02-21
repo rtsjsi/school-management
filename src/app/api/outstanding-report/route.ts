@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getActiveAcademicYearName } from "@/lib/enrollment";
 
 function isGradeInRange(grade: string, from: string, to: string): boolean {
   const GRADE_ORDER: Record<string, number> = {
@@ -23,9 +24,10 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createClient();
 
+    const defaultAy = await getActiveAcademicYearName();
     const currentYear = new Date().getFullYear();
-    const defaultAy = `${currentYear}-${(currentYear + 1).toString().slice(-2)}`;
-    const ay = academicYear?.trim() || defaultAy;
+    const fallbackAy = `${currentYear}-${(currentYear + 1).toString().slice(-2)}`;
+    const ay = academicYear?.trim() || defaultAy || fallbackAy;
 
     const { data: students } = await supabase
       .from("students")

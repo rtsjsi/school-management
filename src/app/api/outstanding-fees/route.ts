@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isGradeInRange } from "@/lib/grade-utils";
+import { getActiveAcademicYearName } from "@/lib/enrollment";
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,8 +14,10 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createClient();
 
-    // Default to current academic year if not provided
-    const ay = academicYear ?? `${new Date().getFullYear()}-${(new Date().getFullYear() + 1).toString().slice(-2)}`;
+    // Default to current (active) academic year if not provided
+    const activeName = await getActiveAcademicYearName();
+    const fallback = `${new Date().getFullYear()}-${(new Date().getFullYear() + 1).toString().slice(-2)}`;
+    const ay = academicYear ?? activeName ?? fallback;
 
     const { data: students } = await supabase
       .from("students")

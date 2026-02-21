@@ -1,11 +1,12 @@
 import { redirect } from "next/navigation";
-import { getUser } from "@/lib/auth";
+import { getUser, isPrincipal } from "@/lib/auth";
 import { CalendarRange } from "lucide-react";
 import { AcademicYearsManager } from "@/components/AcademicYearsManager";
 
 export default async function AcademicYearsPage() {
   const user = await getUser();
   if (!user) redirect("/login");
+  if (!isPrincipal(user)) redirect("/dashboard");
 
   return (
     <div className="space-y-8">
@@ -15,7 +16,7 @@ export default async function AcademicYearsPage() {
           Academic Year
         </h1>
         <p className="text-muted-foreground mt-1">
-          Manage academic years for dropdowns (e.g. 2024-2025).
+          Set the current academic year and manage years. Only Principal can change the current year.
         </p>
       </div>
       <AcademicYearsManager />

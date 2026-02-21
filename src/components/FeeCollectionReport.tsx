@@ -109,7 +109,13 @@ export default function FeeCollectionReport() {
   }, []);
 
   useEffect(() => {
-    fetchAcademicYears().then((y) => setYears(y.map(({ id, name }) => ({ id, name })))).catch(() => setYears([]));
+    fetchAcademicYears()
+      .then((y) => {
+        setYears(y.map(({ id, name }) => ({ id, name })));
+        const activeName = y.find((x) => x.is_active)?.name ?? y[0]?.name;
+        if (activeName) setAcademicYear((prev) => prev || activeName);
+      })
+      .catch(() => setYears([]));
   }, []);
 
   const fetchReport = () => {

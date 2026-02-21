@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { fetchAcademicYears } from "@/lib/lov";
+import type { AcademicYearOption } from "@/lib/lov";
 
 interface AcademicYearSelectProps {
   value: string;
@@ -19,11 +20,22 @@ interface AcademicYearSelectProps {
 }
 
 export function AcademicYearSelect({ value, onChange, id = "academic_year", label = "Academic year" }: AcademicYearSelectProps) {
-  const [years, setYears] = useState<{ id: string; name: string }[]>([]);
+  const [years, setYears] = useState<AcademicYearOption[]>([]);
+  const hasDefaulted = useRef(false);
 
   useEffect(() => {
     fetchAcademicYears().then(setYears);
   }, []);
+
+  // Default to current (active) academic year when value is empty
+  useEffect(() => {
+    if (hasDefaulted.current || value !== "" || years.length === 0) return;
+    const active = years.find((y) => y.is_active) ?? years[0];
+    if (active?.name) {
+      hasDefaulted.current = true;
+      onChange(active.name);
+    }
+  }, [years, value, onChange]);
 
   return (
     <div className="space-y-2">

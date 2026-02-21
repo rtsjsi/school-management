@@ -36,11 +36,17 @@ export function GradeDivisionYearSelects({
 }: GradeDivisionYearSelectsProps) {
   const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
   const [divisions, setDivisions] = useState<{ id: string; name: string }[]>([]);
-  const [years, setYears] = useState<{ id: string; name: string }[]>([]);
+  const [years, setYears] = useState<{ id: string; name: string; is_active?: boolean }[]>([]);
 
   useEffect(() => {
     fetchClasses().then(setClasses);
-    fetchAcademicYears().then(setYears);
+    fetchAcademicYears().then((y) => {
+      setYears(y);
+      if (onAcademicYearChange && !academicYear && y.length > 0) {
+        const active = y.find((x) => x.is_active) ?? y[0];
+        if (active?.name) onAcademicYearChange(active.name);
+      }
+    });
   }, []);
 
   useEffect(() => {
