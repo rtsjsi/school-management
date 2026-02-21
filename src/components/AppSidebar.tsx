@@ -8,7 +8,6 @@ import {
   LayoutDashboard,
   Users,
   GraduationCap,
-  UserPlus,
   BookOpen,
   BookMarked,
   CalendarRange,
@@ -19,9 +18,9 @@ import {
   Loader2,
   Menu,
   X,
-  Clock,
   ClipboardList,
   BarChart3,
+  Wallet,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { AuthUser } from "@/lib/auth";
@@ -38,11 +37,10 @@ const navItems: { href: string; label: string; icon: React.ComponentType<{ class
   { href: "/dashboard/academic-years", label: "Academic Year", icon: CalendarRange },
   { href: "/dashboard/students", label: "Students management", icon: GraduationCap },
   { href: "/dashboard/admission-enquiry", label: "Admission Enquiry", icon: ClipboardList, roles: ["super_admin", "admin"] },
-  { href: "/dashboard/employees", label: "Employees", icon: UserPlus, roles: ["super_admin", "admin"] },
+  { href: "/dashboard/payroll", label: "Payroll", icon: Wallet, roles: ["super_admin", "admin"] },
   { href: "/dashboard/fees", label: "Fees management", icon: DollarSign, roles: ["super_admin", "admin"] },
   { href: "/dashboard/exams", label: "Exam management", icon: FileQuestion },
   { href: "/dashboard/expenses", label: "Expense management", icon: Receipt, roles: ["super_admin", "admin"] },
-  { href: "/dashboard/attendance", label: "Shift & Attendance", icon: Clock, roles: ["super_admin", "admin"] },
   { href: "/dashboard/class-strength", label: "Class strength report", icon: BarChart3 },
 ];
 
