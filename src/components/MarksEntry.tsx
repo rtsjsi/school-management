@@ -30,8 +30,13 @@ type Exam = {
   exam_type: string;
   grade: string | null;
   held_at: string;
-  academic_years: { id: string; name: string } | null;
+  academic_years: { id: string; name: string } | { id: string; name: string }[] | null;
 };
+
+function getAcademicYearName(ay: Exam["academic_years"]): string {
+  if (!ay) return "";
+  return Array.isArray(ay) ? ay[0]?.name ?? "" : ay.name ?? "";
+}
 type Student = { id: string; full_name: string; grade: string | null; division: string | null };
 type Subject = { id: string; name: string; code: string | null; evaluation_type: string };
 type CellState = { score: string; max_score: string; grade: string; is_absent: boolean };
@@ -67,7 +72,7 @@ export default function MarksEntry() {
       .from("exams")
       .select("id, name, exam_type, grade, held_at, academic_years(id, name)")
       .order("held_at", { ascending: false })
-      .then(({ data }) => setExams((data ?? []) as Exam[]));
+      .then(({ data }) => setExams((data ?? []) as unknown as Exam[]));
     supabase
       .from("classes")
       .select("name")
@@ -272,7 +277,7 @@ export default function MarksEntry() {
 
   const grades = classNames.length > 0 ? classNames : Array.from(new Set(students.map((s) => s.grade).filter(Boolean))) as string[];
   const divisions = Array.from(new Set(students.map((s) => s.division).filter(Boolean))) as string[];
-  const academicYearName = exam?.academic_years?.name ?? "";
+  const academicYearName = getAcademicYearName(exam?.academic_years ?? null);
 
   return (
     <Card>
@@ -294,7 +299,7 @@ export default function MarksEntry() {
               </SelectTrigger>
               <SelectContent>
                 {exams.map((e) => {
-                  const ayName = (e.academic_years as { name?: string } | null)?.name ?? "";
+                  const ayName = getAcademicYearName(e.academic_years ?? null);
                   const dateStr = e.held_at ? new Date(e.held_at).toLocaleDateString() : "";
                   const label = [e.name, e.exam_type, e.grade ?? "All", dateStr, ayName].filter(Boolean).join(" · ");
                   return (
