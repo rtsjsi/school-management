@@ -16,7 +16,6 @@ import {
   Menu,
   X,
   ClipboardList,
-  BarChart3,
   Wallet,
   Building2,
 } from "lucide-react";
@@ -47,6 +46,7 @@ const navGroups: NavGroup[] = [
       { href: "/dashboard/promotion", label: "Year-end promotion", icon: GraduationCap, roles: ["principal", "admin"] },
       { href: "/dashboard/classes", label: "Standard management", icon: BookOpen },
       { href: "/dashboard/subjects", label: "Subject management", icon: BookMarked },
+      { href: "/dashboard/exams", label: "Exam management", icon: FileQuestion },
     ],
   },
   {
@@ -54,7 +54,6 @@ const navGroups: NavGroup[] = [
     items: [
       { href: "/dashboard/students", label: "Students management", icon: GraduationCap },
       { href: "/dashboard/admission-enquiry", label: "Admission Enquiry", icon: ClipboardList, roles: ["principal", "admin"] },
-      { href: "/dashboard/class-strength", label: "Class strength report", icon: BarChart3 },
     ],
   },
   {
@@ -64,10 +63,6 @@ const navGroups: NavGroup[] = [
       { href: "/dashboard/expenses", label: "Expense management", icon: Receipt, roles: ["principal", "admin"] },
       { href: "/dashboard/payroll", label: "Payroll", icon: Wallet, roles: ["principal", "admin"] },
     ],
-  },
-  {
-    label: "Exams",
-    items: [{ href: "/dashboard/exams", label: "Exam management", icon: FileQuestion }],
   },
   {
     label: "Administration",

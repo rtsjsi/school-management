@@ -14,11 +14,10 @@ const pathToBreadcrumb: Record<string, string> = {
   "/dashboard/subjects": "Subject management",
   "/dashboard/students": "Students",
   "/dashboard/admission-enquiry": "Admission Enquiry",
-  "/dashboard/class-strength": "Class strength",
   "/dashboard/fees": "Fees",
   "/dashboard/expenses": "Expenses",
   "/dashboard/payroll": "Payroll",
-  "/dashboard/exams": "Exams",
+  "/dashboard/exams": "Exam management",
   "/dashboard/users": "Users",
   "/dashboard/school-settings": "School settings",
 };
