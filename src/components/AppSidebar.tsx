@@ -21,6 +21,7 @@ import {
   Building2,
 } from "lucide-react";
 import type { AuthUser } from "@/lib/auth";
+import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -80,6 +81,7 @@ const navGroups: NavGroup[] = [
 export function AppSidebar({ user }: { user: AuthUser }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const school = useSchoolSettings();
 
   const filterByRole = (item: NavItem) => !item.roles || item.roles.includes(user.role);
   const groupsWithItems = navGroups
@@ -103,10 +105,11 @@ export function AppSidebar({ user }: { user: AuthUser }) {
       <div className="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-sidebar-foreground/10 px-5">
         <Link
           href="/dashboard"
-          className="font-semibold text-lg tracking-tight text-sidebar-foreground hover:opacity-90 transition-opacity"
+          className="font-semibold text-lg tracking-tight text-sidebar-foreground hover:opacity-90 transition-opacity truncate max-w-[10rem]"
           onClick={() => setMobileOpen(false)}
+          title={school.name}
         >
-          School
+          {school.name}
         </Link>
         <Button
           variant="ghost"
@@ -165,8 +168,8 @@ export function AppSidebar({ user }: { user: AuthUser }) {
         >
           <Menu className="h-5 w-5" />
         </Button>
-        <Link href="/dashboard" className="font-semibold text-foreground">
-          School Management
+        <Link href="/dashboard" className="font-semibold text-foreground truncate">
+          {school.name}
         </Link>
       </div>
       {/* Mobile overlay */}
