@@ -19,7 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 
 type Exam = { id: string; name: string; exam_type: string; grade: string | null; held_at: string };
-type Student = { id: string; full_name: string; grade: string | null; section: string | null };
+type Student = { id: string; full_name: string; grade: string | null; division: string | null };
 type Subject = { id: string; name: string; code: string | null; evaluation_type: string };
 type CellState = { score: string; max_score: string; grade: string; is_absent: boolean };
 
@@ -30,7 +30,7 @@ export default function MultipleSubjectwiseMarksEntry() {
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedExamId, setSelectedExamId] = useState("");
   const [gradeFilter, setGradeFilter] = useState<string>("all");
-  const [sectionFilter, setSectionFilter] = useState<string>("all");
+  const [divisionFilter, setDivisionFilter] = useState<string>("all");
   const [marks, setMarks] = useState<Record<string, Record<string, CellState>>>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -111,11 +111,11 @@ export default function MultipleSubjectwiseMarksEntry() {
     (async () => {
       let query = supabase
         .from("students")
-        .select("id, full_name, grade, section")
+        .select("id, full_name, grade, division")
         .eq("status", "active")
         .order("full_name");
       if (gradeFilter && gradeFilter !== "all") query = query.eq("grade", gradeFilter);
-      if (sectionFilter && sectionFilter !== "all") query = query.eq("section", sectionFilter);
+      if (divisionFilter && divisionFilter !== "all") query = query.eq("division", divisionFilter);
       if (exam?.grade && exam.grade !== "All" && (!gradeFilter || gradeFilter === "all")) query = query.eq("grade", exam.grade);
       const { data: st } = await query;
       const studentList = (st ?? []) as Student[];
@@ -147,7 +147,7 @@ export default function MultipleSubjectwiseMarksEntry() {
       }
       setMarks(initial);
     })().finally(() => setLoading(false));
-  }, [selectedExamId, exams, gradeFilter, sectionFilter, subjects]);
+  }, [selectedExamId, exams, gradeFilter, divisionFilter, subjects]);
 
   useEffect(() => {
     if (!selectedExamId || subjects.length === 0) {
@@ -234,7 +234,7 @@ export default function MultipleSubjectwiseMarksEntry() {
   };
 
   const grades = classNames.length > 0 ? classNames : Array.from(new Set(students.map((s) => s.grade).filter(Boolean))) as string[];
-  const sections = Array.from(new Set(students.map((s) => s.section).filter(Boolean))) as string[];
+  const divisions = Array.from(new Set(students.map((s) => s.division).filter(Boolean))) as string[];
 
   return (
     <Card>
@@ -276,13 +276,13 @@ export default function MultipleSubjectwiseMarksEntry() {
             </div>
             <div className="space-y-2">
               <Label>Section</Label>
-              <Select value={sectionFilter} onValueChange={setSectionFilter}>
+              <Select value={divisionFilter} onValueChange={setDivisionFilter}>
                 <SelectTrigger className="w-24">
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All</SelectItem>
-                  {sections.map((s) => (
+                  {divisions.map((s) => (
                     <SelectItem key={s} value={s}>{s}</SelectItem>
                   ))}
                 </SelectContent>
@@ -316,7 +316,7 @@ export default function MultipleSubjectwiseMarksEntry() {
                         {s.full_name}
                       </TableCell>
                       <TableCell className="sticky left-[140px] z-10 bg-background text-muted-foreground">
-                        {s.grade ?? "—"} / {s.section ?? "—"}
+                        {s.grade ?? "—"} / {s.division ?? "—"}
                       </TableCell>
                       {subjects.map((sub) => {
                         const cell = marks[s.id]?.[sub.id] ?? { score: "", max_score: "", grade: "", is_absent: false };
@@ -371,7 +371,7 @@ export default function MultipleSubjectwiseMarksEntry() {
           )}
 
           {selectedExamId && students.length === 0 && !loading && (
-            <p className="text-sm text-muted-foreground">No students match the filters. Adjust grade/section or add students.</p>
+            <p className="text-sm text-muted-foreground">No students match the filters. Adjust standard/division or add students.</p>
           )}
 
           {selectedExamId && subjects.length === 0 && !loading && (

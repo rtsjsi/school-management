@@ -33,7 +33,7 @@ type StudentRow = {
   email?: string;
   phone_number?: string;
   grade?: string;
-  section?: string;
+  division?: string;
   roll_number?: number;
   status?: string;
   admission_date?: string;
@@ -56,7 +56,7 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [gradeFilter, setGradeFilter] = useState("all");
-  const [sectionFilter, setSectionFilter] = useState("all");
+  const [divisionFilter, setDivisionFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [grades, setGrades] = useState<{ id: string; name: string }[]>([]);
   const [divisions, setDivisions] = useState<{ id: string; name: string }[]>([]);
@@ -75,7 +75,7 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
       .order("created_at", { ascending: false });
 
     if (gradeFilter && gradeFilter !== "all") q = q.eq("grade", gradeFilter);
-    if (sectionFilter && sectionFilter !== "all") q = q.eq("section", sectionFilter);
+    if (divisionFilter && divisionFilter !== "all") q = q.eq("division", divisionFilter);
     if (statusFilter && statusFilter !== "all") q = q.eq("status", statusFilter);
     if (search.trim()) {
       q = q.or(`full_name.ilike.%${search.trim()}%,student_id.ilike.%${search.trim()}%,email.ilike.%${search.trim()}%`);
@@ -86,7 +86,7 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
       setStudents((data ?? []) as StudentRow[]);
       setLoading(false);
     })();
-  }, [search, gradeFilter, sectionFilter, statusFilter]);
+  }, [search, gradeFilter, divisionFilter, statusFilter]);
 
   const getStatusBadge = (status: string) => {
     const map: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -112,7 +112,7 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
             />
           </div>
           <div className="space-y-2 w-28">
-            <Label>Grade</Label>
+            <Label>Standard</Label>
             <Select value={gradeFilter} onValueChange={setGradeFilter}>
               <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
               <SelectContent>
@@ -124,8 +124,8 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
             </Select>
           </div>
           <div className="space-y-2 w-24">
-            <Label>Section</Label>
-            <Select value={sectionFilter} onValueChange={setSectionFilter}>
+            <Label>Division</Label>
+            <Select value={divisionFilter} onValueChange={setDivisionFilter}>
               <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
@@ -164,8 +164,8 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
                   <TableHead>Student ID</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>RTE</TableHead>
-                  <TableHead>Grade</TableHead>
-                  <TableHead>Section</TableHead>
+                  <TableHead>Standard</TableHead>
+                  <TableHead>Division</TableHead>
                   <TableHead>Roll #</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Admission</TableHead>
@@ -192,7 +192,7 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
                       {s.is_rte_quota ? <Badge variant="secondary">RTE</Badge> : "—"}
                     </TableCell>
                     <TableCell>{s.grade ?? "—"}</TableCell>
-                    <TableCell>{s.section ?? "—"}</TableCell>
+                    <TableCell>{s.division ?? "—"}</TableCell>
                     <TableCell className="text-center">{s.roll_number ?? "—"}</TableCell>
                     <TableCell>
                       <Badge variant={getStatusBadge(s.status || "active")}>

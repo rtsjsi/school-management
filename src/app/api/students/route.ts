@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient();
     const { data: students } = await supabase
       .from("students")
-      .select("id, full_name, grade, section")
+      .select("id, full_name, grade, division")
       .order("full_name")
       .limit(Math.min(limit, 500));
     return NextResponse.json({ students: students ?? [] });

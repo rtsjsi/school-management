@@ -11,21 +11,21 @@ export default async function ClassStrengthPage() {
   const supabase = await createClient();
   const { data: students } = await supabase
     .from("students")
-    .select("id, grade, section, status")
+    .select("id, grade, division, status")
     .eq("status", "active");
 
-  const rows: { grade: string; section: string; count: number }[] = [];
+  const rows: { grade: string; division: string; count: number }[] = [];
   const byKey: Record<string, number> = {};
   for (const s of students ?? []) {
     const grade = (s as { grade?: string }).grade ?? "—";
-    const section = (s as { section?: string }).section ?? "—";
-    const key = `${grade}\t${section}`;
+    const division = (s as { division?: string }).division ?? "—";
+    const key = `${grade}\t${division}`;
     byKey[key] = (byKey[key] ?? 0) + 1;
   }
   const keys = Object.keys(byKey).sort();
   for (const key of keys) {
-    const [grade, section] = key.split("\t");
-    rows.push({ grade, section, count: byKey[key]! });
+    const [grade, division] = key.split("\t");
+    rows.push({ grade, division, count: byKey[key]! });
   }
 
   const total = (students ?? []).length;
@@ -35,10 +35,10 @@ export default async function ClassStrengthPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
           <BarChart3 className="h-7 w-7 text-primary" />
-          Class-wise Strength Report
+          Standard-wise strength report
         </h1>
         <p className="text-muted-foreground mt-1">
-          Student count by grade and section (active only).
+          Student count by standard and division (active only).
         </p>
       </div>
 

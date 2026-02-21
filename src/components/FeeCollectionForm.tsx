@@ -20,7 +20,7 @@ const DEFAULT_POLICY_NOTES = [
   "(3) Cheque payment subject to realisation.",
 ];
 
-type StudentOption = { id: string; full_name: string; grade?: string; section?: string; roll_number?: number; student_id?: string };
+type StudentOption = { id: string; full_name: string; grade?: string; division?: string; roll_number?: number; student_id?: string };
 
 export default function FeeCollectionForm({
   students,
@@ -55,7 +55,7 @@ export default function FeeCollectionForm({
   }, [students]);
 
   const divisions = useMemo(() => {
-    const secs = Array.from(new Set(students.map((s) => s.section).filter(Boolean))) as string[];
+    const secs = Array.from(new Set(students.map((s) => s.division).filter(Boolean))) as string[];
     return secs.sort((a, b) => a.localeCompare(b));
   }, [students]);
 
@@ -65,7 +65,7 @@ export default function FeeCollectionForm({
   const filteredStudents = useMemo(() => {
     return students.filter((s) => {
       if (classFilter !== "all" && s.grade !== classFilter) return false;
-      if (divisionFilter !== "all" && s.section !== divisionFilter) return false;
+      if (divisionFilter !== "all" && s.division !== divisionFilter) return false;
       return true;
     });
   }, [students, classFilter, divisionFilter]);
@@ -120,7 +120,7 @@ export default function FeeCollectionForm({
     }
     const amount = parseFloat(form.amount);
     if (isNaN(amount) || amount < 0) {
-      setError("Amount is required. Ensure fee structure exists for this student's grade and quarter.");
+      setError("Amount is required. Ensure fee structure exists for this student's standard and quarter.");
       return;
     }
     if (form.payment_mode === "cheque" && !form.cheque_number?.trim()) {
@@ -251,7 +251,7 @@ export default function FeeCollectionForm({
         schoolName: process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "School",
         schoolAddress: process.env.NEXT_PUBLIC_SCHOOL_ADDRESS ?? "",
         grade: selectedStudent?.grade,
-        section: selectedStudent?.section,
+        division: selectedStudent?.division,
         rollNumber: selectedStudent?.roll_number,
         grNo: selectedStudent?.student_id ?? selectedStudent?.id?.slice(0, 8),
         outstandingAfterPayment,
@@ -371,7 +371,7 @@ export default function FeeCollectionForm({
               <SelectContent>
                 {filteredStudents.map((s) => (
                   <SelectItem key={s.id} value={s.id}>
-                    {s.full_name} {s.grade ? `(${s.grade}${s.section ? "-" + s.section : ""})` : ""}
+                    {s.full_name} {s.grade ? `(${s.grade}${s.division ? "-" + s.division : ""})` : ""}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -411,7 +411,7 @@ export default function FeeCollectionForm({
               value={form.amount}
               readOnly
               className="bg-muted"
-              placeholder={structureAmount === null && selectedStudent ? "No structure for this grade" : "0.00"}
+              placeholder={structureAmount === null && selectedStudent ? "No structure for this standard" : "0.00"}
             />
           </div>
 

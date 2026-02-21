@@ -1,6 +1,6 @@
 /**
  * Seed script: Flush all app data and insert clean test data.
- * 100 students + 20 employees with full variety.
+ * 20 students + 20 employees with full variety.
  * Run: npm run seed
  */
 
@@ -83,7 +83,7 @@ async function deleteAllData() {
 }
 
 async function main() {
-  console.log("Starting seed (100 students, 20 employees)...");
+  console.log("Starting seed (20 students, 20 employees)...");
   await deleteAllData();
 
   await seedClasses();
@@ -293,7 +293,7 @@ const RELIGIONS = ["Hindu", "Muslim", "Christian", "Sikh", "Buddhist", "Jain", "
 const DISTRICTS = ["Mumbai", "Pune", "Thane", "Nashik", "Nagpur", "Ahmedabad", "Surat", "Vadodara", "Bangalore", "Chennai", null];
 
 async function seedStudents() {
-  console.log("Seeding 100 students...");
+  console.log("Seeding 20 students...");
   const { data: activeYear } = await supabase
     .from("academic_years")
     .select("id, name")
@@ -304,15 +304,15 @@ async function seedStudents() {
     return;
   }
 
-  const { data: grades } = await supabase.from("grades").select("id, name").order("sort_order");
+  const { data: grades } = await supabase.from("standards").select("id, name").order("sort_order");
   if (!grades?.length) {
-    console.log("  Skipping students: no grades (run migrations first)");
+    console.log("  Skipping students: no standards (run migrations first)");
     return;
   }
 
   const gradeDivisions: { gradeId: string; divisionId: string }[] = [];
   for (const g of grades) {
-    const { data: divs } = await supabase.from("divisions").select("id").eq("grade_id", g.id).limit(4);
+    const { data: divs } = await supabase.from("divisions").select("id").eq("standard_id", g.id).limit(4);
     for (const d of divs ?? []) {
       gradeDivisions.push({ gradeId: g.id, divisionId: d.id });
     }
@@ -324,7 +324,7 @@ async function seedStudents() {
 
   const usedNames = new Set<string>();
   const students: Record<string, unknown>[] = [];
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 20; i++) {
     let name = `${pick(STUDENT_FIRST)} ${pick(STUDENT_LAST)}`;
     while (usedNames.has(name)) {
       name = `${pick(STUDENT_FIRST)} ${pick(STUDENT_LAST)}`;
@@ -378,7 +378,7 @@ async function seedStudents() {
     await supabase.from("student_enrollments").insert({
       student_id: inserted[i].id,
       academic_year_id: activeYear.id,
-      grade_id: gradeId,
+      standard_id: gradeId,
       division_id: divisionId,
       status: "active",
     });

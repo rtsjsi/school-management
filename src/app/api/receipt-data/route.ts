@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
         id, student_id, receipt_number, amount, fee_type, quarter, academic_year, payment_mode,
         collected_at, collected_by, cheque_number, cheque_bank, cheque_date,
         online_transaction_id, online_transaction_ref,
-        students(full_name, grade, section, roll_number, student_id)
+        students(full_name, grade, division, roll_number, student_id)
       `)
       .eq("id", id)
       .single();
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     if (error || !c) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     const s = Array.isArray(c.students) ? c.students[0] : c.students;
-    const student = s as { full_name?: string; grade?: string; section?: string; roll_number?: number; student_id?: string } | null;
+    const student = s as { full_name?: string; grade?: string; division?: string; roll_number?: number; student_id?: string } | null;
     const studentId = (c as { student_id?: string }).student_id;
     if (!studentId) return NextResponse.json({ error: "Invalid collection" }, { status: 400 });
 
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
       onlineTransactionId: c.online_transaction_id,
       onlineTransactionRef: c.online_transaction_ref,
       grade: student?.grade,
-      section: student?.section,
+      division: student?.division,
       rollNumber: student?.roll_number,
       grNo: student?.student_id,
       outstandingAfterPayment,

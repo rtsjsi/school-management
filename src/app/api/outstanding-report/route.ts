@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 
     const { data: students } = await supabase
       .from("students")
-      .select("id, full_name, grade, section, roll_number, student_id")
+      .select("id, full_name, grade, division, roll_number, student_id")
       .eq("status", "active");
 
     const { data: structures } = await supabase
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
       student_id: string;
       full_name: string;
       grade: string;
-      section: string;
+      division: string;
       roll_number?: number;
       student_id_display?: string;
       quarter: number;
@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
               student_id: s.id,
               full_name: s.full_name ?? "—",
               grade: studentGrade || "—",
-              section: s.section ?? "",
+              division: s.division ?? "",
               roll_number: s.roll_number,
               student_id_display: (s as { student_id?: string }).student_id,
               quarter: quarterFilter,
@@ -126,7 +126,7 @@ export async function GET(request: NextRequest) {
               student_id: s.id,
               full_name: s.full_name ?? "—",
               grade: studentGrade || "—",
-              section: s.section ?? "",
+              division: s.division ?? "",
               roll_number: s.roll_number,
               student_id_display: (s as { student_id?: string }).student_id,
               quarter: item.quarter,

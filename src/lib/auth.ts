@@ -2,7 +2,7 @@ import { cache } from "react";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/types/auth";
 
-const VALID_ROLES: UserRole[] = ["super_admin", "admin", "teacher"];
+const VALID_ROLES: UserRole[] = ["principal", "admin", "teacher"];
 
 function normalizeRole(value: unknown): UserRole {
   const s = typeof value === "string" ? value.trim().toLowerCase() : "";
@@ -62,10 +62,10 @@ export function hasRole(user: AuthUser | null, allowedRoles: UserRole[]): boolea
   return allowedRoles.includes(user.role);
 }
 
-export function isSuperAdmin(user: AuthUser | null): boolean {
-  return user?.role === "super_admin";
+export function isPrincipal(user: AuthUser | null): boolean {
+  return user?.role === "principal";
 }
 
 export function isAdminOrAbove(user: AuthUser | null): boolean {
-  return user?.role === "super_admin" || user?.role === "admin";
+  return user?.role === "principal" || user?.role === "admin";
 }

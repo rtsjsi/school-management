@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 
-type Row = { grade: string; section: string; count: number };
+type Row = { grade: string; division: string; count: number };
 
 export function ClassStrengthReport({ rows, total }: { rows: Row[]; total: number }) {
   const byGrade: Record<string, Row[]> = {};
@@ -31,8 +31,8 @@ export function ClassStrengthReport({ rows, total }: { rows: Row[]; total: numbe
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Grade</TableHead>
-              <TableHead>Section</TableHead>
+              <TableHead>Standard</TableHead>
+              <TableHead>Division</TableHead>
               <TableHead className="text-right">Count</TableHead>
             </TableRow>
           </TableHeader>
@@ -42,9 +42,9 @@ export function ClassStrengthReport({ rows, total }: { rows: Row[]; total: numbe
               const gradeTotal = sectionRows.reduce((s, r) => s + r.count, 0);
               return [
                 ...sectionRows.map((r) => (
-                  <TableRow key={`${r.grade}-${r.section}`}>
+                  <TableRow key={`${r.grade}-${r.division}`}>
                     <TableCell className="font-medium">{r.grade}</TableCell>
-                    <TableCell>{r.section}</TableCell>
+                    <TableCell>{r.division}</TableCell>
                     <TableCell className="text-right">{r.count}</TableCell>
                   </TableRow>
                 )),

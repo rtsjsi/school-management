@@ -42,7 +42,7 @@ type ReportRow = {
   receipt_number: string;
   student_name?: string;
   student_grade?: string;
-  student_section?: string;
+  student_division?: string;
   student_roll_number?: number;
   student_gr_no?: string;
   amount: number;
@@ -175,7 +175,7 @@ export default function FeeCollectionReport() {
         onlineTransactionId: row.online_transaction_id,
         onlineTransactionRef: row.online_transaction_ref,
         grade: row.student_grade,
-        section: row.student_section,
+        division: row.student_division,
         rollNumber: row.student_roll_number,
         grNo: row.student_gr_no,
       };
@@ -199,7 +199,7 @@ export default function FeeCollectionReport() {
         schoolName: process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "School",
         schoolAddress: process.env.NEXT_PUBLIC_SCHOOL_ADDRESS ?? "",
         grade: d.grade,
-        section: d.section,
+        division: d.division,
         rollNumber: d.rollNumber,
         grNo: d.grNo,
         outstandingAfterPayment: d.outstandingAfterPayment,
@@ -229,7 +229,7 @@ export default function FeeCollectionReport() {
         onlineTransactionId: row.online_transaction_id,
         onlineTransactionRef: row.online_transaction_ref,
         grade: row.student_grade,
-        section: row.student_section,
+        division: row.student_division,
         rollNumber: row.student_roll_number,
         grNo: row.student_gr_no,
       };
@@ -253,7 +253,7 @@ export default function FeeCollectionReport() {
         schoolName: process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "School",
         schoolAddress: process.env.NEXT_PUBLIC_SCHOOL_ADDRESS ?? "",
         grade: d.grade,
-        section: d.section,
+        division: d.division,
         rollNumber: d.rollNumber,
         grNo: d.grNo,
         outstandingAfterPayment: d.outstandingAfterPayment,
@@ -461,7 +461,7 @@ export default function FeeCollectionReport() {
                         <TableCell className="font-mono text-xs">{row.receipt_number}</TableCell>
                         <TableCell className="font-medium">{row.student_name ?? "—"}</TableCell>
                         <TableCell>
-                          {[row.student_grade, row.student_section].filter(Boolean).join(" ") || "—"}
+                          {[row.student_grade, row.student_division].filter(Boolean).join(" ") || "—"}
                         </TableCell>
                         <TableCell>{Number(row.amount).toLocaleString()}</TableCell>
                         <TableCell>{getFeeTypeLabel(row.fee_type)}</TableCell>

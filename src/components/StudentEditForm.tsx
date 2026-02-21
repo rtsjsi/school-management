@@ -303,13 +303,13 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
               </div>
               <GradeDivisionYearSelects
                 grade={form.grade}
-                division={form.section}
+                division={form.division}
                 academicYear={form.academic_year}
                 onGradeChange={(v) => {
                   set("grade", v);
-                  set("section", "");
+                  set("division", "");
                 }}
-                onDivisionChange={(v) => set("section", v)}
+                onDivisionChange={(v) => set("division", v)}
                 onAcademicYearChange={(v) => set("academic_year", v)}
                 gradeRequired
                 divisionRequired

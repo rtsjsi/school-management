@@ -41,7 +41,7 @@ interface StudentEditDialogProps {
     blood_group?: string;
     address?: string;
     grade?: string;
-    section?: string;
+    division?: string;
     roll_number?: number;
     admission_date?: string;
     academic_year?: string;
@@ -71,7 +71,7 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
     blood_group: student.blood_group || "",
     address: student.address || "",
     grade: student.grade || "",
-    section: student.section || "",
+    division: student.division || "",
     roll_number: student.roll_number?.toString() || "",
     admission_date: student.admission_date || "",
     academic_year: student.academic_year || "",
@@ -112,7 +112,7 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
         blood_group: form.blood_group || null,
         address: form.address.trim() || null,
         grade: form.grade.trim() || null,
-        section: form.section.trim() || null,
+        division: form.division.trim() || null,
         roll_number: form.roll_number ? parseInt(form.roll_number) : null,
         admission_date: form.admission_date || null,
         academic_year: form.academic_year || null,
@@ -143,7 +143,7 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
         return;
       }
 
-      const enrollResult = await upsertCurrentEnrollment(student.id, form.grade, form.section);
+      const enrollResult = await upsertCurrentEnrollment(student.id, form.grade, form.division);
       if (!enrollResult.ok) {
         setError(`Student updated but enrollment failed: ${enrollResult.error}`);
         return;
@@ -253,9 +253,9 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <GradeDivisionYearSelects
               grade={form.grade}
-              division={form.section}
-              onGradeChange={(v) => setForm((p) => ({ ...p, grade: v, section: "" }))}
-              onDivisionChange={(v) => setForm((p) => ({ ...p, section: v }))}
+              division={form.division}
+              onGradeChange={(v) => setForm((p) => ({ ...p, grade: v, division: "" }))}
+              onDivisionChange={(v) => setForm((p) => ({ ...p, division: v }))}
               showAcademicYear={false}
               gradeRequired
               divisionRequired

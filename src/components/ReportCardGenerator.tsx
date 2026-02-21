@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { generateReportCardPDF } from "@/lib/report-card-pdf";
 
 type Exam = { id: string; name: string; exam_type: string; grade: string | null; held_at: string };
-type Student = { id: string; full_name: string; grade: string | null; section: string | null; roll_number?: number; student_id?: string; academic_year?: string };
+type Student = { id: string; full_name: string; grade: string | null; division: string | null; roll_number?: number; student_id?: string; academic_year?: string };
 type Subject = { id: string; name: string; evaluation_type?: string; max_marks?: number | null };
 type ExamResultSubject = { student_id: string; subject_id: string; score: number | null; max_score: number | null; grade: string | null; is_absent: boolean };
 
@@ -37,7 +37,7 @@ export default function ReportCardGenerator() {
       .select("id, full_name, grade, section, roll_number, student_id, academic_year")
       .eq("status", "active")
       .order("full_name")
-      .then(({ data }) => setStudents((data ?? []) as Student[]));
+      .then(({ data }) => setStudents((data ?? []) as unknown as Student[]));
   }, [supabase]);
 
   const handleGenerate = async () => {
@@ -108,7 +108,7 @@ export default function ReportCardGenerator() {
         schoolAddress: process.env.NEXT_PUBLIC_SCHOOL_ADDRESS ?? "",
         studentName: student.full_name,
         grade: student.grade ?? undefined,
-        section: student.section ?? undefined,
+        division: student.division ?? undefined,
         rollNumber: student.roll_number,
         studentId: student.student_id,
         academicYear: student.academic_year as string | undefined,
@@ -163,7 +163,7 @@ export default function ReportCardGenerator() {
               <SelectContent>
                 {students.map((s) => (
                   <SelectItem key={s.id} value={s.id}>
-                    {s.full_name} {s.grade && s.section ? `(${s.grade} ${s.section})` : ""}
+                    {s.full_name} {s.grade && s.division ? `(${s.grade} ${s.division})` : ""}
                   </SelectItem>
                 ))}
               </SelectContent>

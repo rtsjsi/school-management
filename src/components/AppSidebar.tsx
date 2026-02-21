@@ -28,7 +28,7 @@ type NavItem = {
   href: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
-  roles?: ("super_admin" | "admin" | "teacher")[];
+  roles?: ("principal" | "admin" | "teacher")[];
 };
 
 type NavGroup = { label: string; items: NavItem[] };
@@ -42,8 +42,8 @@ const navGroups: NavGroup[] = [
     label: "Academic setup",
     items: [
       { href: "/dashboard/academic-years", label: "Academic Year", icon: CalendarRange },
-      { href: "/dashboard/promotion", label: "Year-end promotion", icon: GraduationCap, roles: ["super_admin", "admin"] },
-      { href: "/dashboard/classes", label: "Class management", icon: BookOpen },
+      { href: "/dashboard/promotion", label: "Year-end promotion", icon: GraduationCap, roles: ["principal", "admin"] },
+      { href: "/dashboard/classes", label: "Standard management", icon: BookOpen },
       { href: "/dashboard/subjects", label: "Subject management", icon: BookMarked },
     ],
   },
@@ -51,16 +51,16 @@ const navGroups: NavGroup[] = [
     label: "Students",
     items: [
       { href: "/dashboard/students", label: "Students management", icon: GraduationCap },
-      { href: "/dashboard/admission-enquiry", label: "Admission Enquiry", icon: ClipboardList, roles: ["super_admin", "admin"] },
+      { href: "/dashboard/admission-enquiry", label: "Admission Enquiry", icon: ClipboardList, roles: ["principal", "admin"] },
       { href: "/dashboard/class-strength", label: "Class strength report", icon: BarChart3 },
     ],
   },
   {
     label: "Finance",
     items: [
-      { href: "/dashboard/fees", label: "Fees management", icon: DollarSign, roles: ["super_admin", "admin"] },
-      { href: "/dashboard/expenses", label: "Expense management", icon: Receipt, roles: ["super_admin", "admin"] },
-      { href: "/dashboard/payroll", label: "Payroll", icon: Wallet, roles: ["super_admin", "admin"] },
+      { href: "/dashboard/fees", label: "Fees management", icon: DollarSign, roles: ["principal", "admin"] },
+      { href: "/dashboard/expenses", label: "Expense management", icon: Receipt, roles: ["principal", "admin"] },
+      { href: "/dashboard/payroll", label: "Payroll", icon: Wallet, roles: ["principal", "admin"] },
     ],
   },
   {
@@ -69,7 +69,7 @@ const navGroups: NavGroup[] = [
   },
   {
     label: "Administration",
-    items: [{ href: "/dashboard/users", label: "Users", icon: Users, roles: ["super_admin"] }],
+    items: [{ href: "/dashboard/users", label: "Users", icon: Users, roles: ["principal"] }],
   },
 ];
 

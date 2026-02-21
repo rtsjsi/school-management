@@ -20,7 +20,7 @@ export default async function FeesPage() {
   const supabase = await createClient();
   const { data: allStudents } = await supabase
     .from("students")
-    .select("id, full_name, grade, section, roll_number, student_id, is_rte_quota")
+    .select("id, full_name, grade, division, roll_number, student_id, is_rte_quota")
     .eq("status", "active")
     .order("full_name");
   const students = (allStudents ?? []).filter((s) => !(s as { is_rte_quota?: boolean }).is_rte_quota);

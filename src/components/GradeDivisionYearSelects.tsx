@@ -60,10 +60,10 @@ export function GradeDivisionYearSelects({
   return (
     <>
       <div className="space-y-2">
-        <Label>Grade *</Label>
+        <Label>Standard *</Label>
         <Select value={grade || " "} onValueChange={(v) => onGradeChange(v === " " ? "" : v)} required={gradeRequired}>
           <SelectTrigger>
-            <SelectValue placeholder="Select grade" />
+            <SelectValue placeholder="Select standard" />
           </SelectTrigger>
           <SelectContent>
             {classes.map((c) => (
@@ -83,7 +83,7 @@ export function GradeDivisionYearSelects({
           disabled={!grade}
         >
           <SelectTrigger>
-            <SelectValue placeholder={grade ? "Select division" : "Select grade first"} />
+            <SelectValue placeholder={grade ? "Select division" : "Select standard first"} />
           </SelectTrigger>
           <SelectContent>
             {divisions.map((d) => (

@@ -17,7 +17,7 @@ export async function fetchClasses(): Promise<ClassOption[]> {
 export async function fetchGrades(): Promise<GradeOption[]> {
   const supabase = createClient();
   const { data } = await supabase
-    .from("grades")
+    .from("standards")
     .select("id, name")
     .order("sort_order");
   return (data ?? []) as GradeOption[];
@@ -29,7 +29,7 @@ export async function fetchDivisionsByGradeId(gradeId: string): Promise<Division
   const { data } = await supabase
     .from("divisions")
     .select("id, name")
-    .eq("grade_id", gradeId)
+    .eq("standard_id", gradeId)
     .order("sort_order");
   return (data ?? []) as DivisionOption[];
 }

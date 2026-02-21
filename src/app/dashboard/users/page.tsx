@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getUser, isSuperAdmin } from "@/lib/auth";
+import { getUser, isPrincipal } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
 import { Users } from "lucide-react";
 import { ROLES } from "@/types/auth";
@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 export default async function UsersPage() {
   const user = await getUser();
   if (!user) redirect("/login");
-  if (!isSuperAdmin(user)) redirect("/dashboard");
+  if (!isPrincipal(user)) redirect("/dashboard");
 
   const admin = createAdminClient();
   const { data: profiles } = admin
@@ -35,7 +35,7 @@ export default async function UsersPage() {
           User management
         </h1>
         <p className="text-muted-foreground mt-1">
-          Create users and assign roles (Super Admin only).
+          Create users and assign roles (Principal only).
         </p>
       </div>
 

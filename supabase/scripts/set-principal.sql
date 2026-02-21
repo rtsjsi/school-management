@@ -1,12 +1,12 @@
--- Run this in Supabase SQL Editor to make a user Super Admin.
+-- Run this in Supabase SQL Editor to make a user Principal.
 
 -- Option 1: Update by email (replace with your login email)
 UPDATE public.profiles
-SET role = 'super_admin'
+SET role = 'principal'
 WHERE email = 'your@email.com';
 
 -- Option 2: Update by auth user id (from Authentication → Users in dashboard, copy User UID)
--- UPDATE public.profiles SET role = 'super_admin' WHERE id = 'user-uuid-here';
+-- UPDATE public.profiles SET role = 'principal' WHERE id = 'user-uuid-here';
 
 -- Verify:
 -- SELECT id, email, role FROM public.profiles;

@@ -29,7 +29,7 @@ type OutstandingRow = {
   student_id: string;
   full_name: string;
   grade: string;
-  section: string;
+  division: string;
   roll_number?: number;
   student_id_display?: string;
   quarter: number;
@@ -161,7 +161,7 @@ export default function OutstandingReport() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Grade</Label>
+              <Label>Standard</Label>
               <Select value={grade || "all"} onValueChange={(v) => setGrade(v === "all" ? "" : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="All" />
@@ -232,8 +232,8 @@ export default function OutstandingReport() {
                     <TableRow>
                       <TableHead className="sticky left-0 bg-background z-10">Student</TableHead>
                       <TableHead>GR No.</TableHead>
-                      <TableHead>Grade</TableHead>
-                      <TableHead>Section</TableHead>
+                      <TableHead>Standard</TableHead>
+                      <TableHead>Division</TableHead>
                       <TableHead>Quarter</TableHead>
                       <TableHead>Fee Type</TableHead>
                       <TableHead>Total</TableHead>
@@ -249,7 +249,7 @@ export default function OutstandingReport() {
                         </TableCell>
                         <TableCell className="font-mono text-xs">{row.student_id_display ?? "—"}</TableCell>
                         <TableCell>{row.grade}</TableCell>
-                        <TableCell>{row.section || "—"}</TableCell>
+                        <TableCell>{row.division || "—"}</TableCell>
                         <TableCell>{row.quarter_label ?? `Q${row.quarter}`}</TableCell>
                         <TableCell>{getFeeTypeLabel(row.fee_type)}</TableCell>
                         <TableCell>{row.total.toLocaleString()}</TableCell>

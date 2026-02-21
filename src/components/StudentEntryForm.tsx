@@ -57,7 +57,7 @@ const defaultForm = () => ({
   society: "",
   district: "",
   grade: "",
-  section: "",
+  division: "",
   roll_number: "",
   admission_date: "",
   admission_type: "regular",
@@ -130,7 +130,7 @@ export default function StudentEntryForm() {
     { key: "mother_name", label: "Mother name" },
     { key: "parent_contact", label: "Parent contact" },
     { key: "grade", label: "Grade" },
-    { key: "section", label: "Division" },
+    { key: "division", label: "Division" },
     { key: "admission_date", label: "Admission date" },
   ];
 
@@ -162,7 +162,7 @@ export default function StudentEntryForm() {
         society: form.society.trim() || null,
         district: form.district.trim() || null,
         grade: form.grade.trim() || null,
-        section: form.section.trim() || null,
+        division: form.division.trim() || null,
         roll_number: form.roll_number ? parseInt(form.roll_number) : null,
         admission_date: form.admission_date || null,
         admission_type: form.admission_type || null,
@@ -232,7 +232,7 @@ export default function StudentEntryForm() {
       }
 
       if (inserted?.id) {
-        const enrollResult = await upsertCurrentEnrollment(inserted.id, form.grade, form.section);
+        const enrollResult = await upsertCurrentEnrollment(inserted.id, form.grade, form.division);
         if (!enrollResult.ok) {
           setError(`Student created but enrollment failed: ${enrollResult.error}`);
           return;
@@ -496,7 +496,7 @@ export default function StudentEntryForm() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Admission & Academic Details</CardTitle>
-              <CardDescription>Grade, division, admission type, and previous school.</CardDescription>
+              <CardDescription>Standard, division, admission type, and previous school.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
@@ -517,13 +517,13 @@ export default function StudentEntryForm() {
                 </div>
                 <GradeDivisionYearSelects
                   grade={form.grade}
-                  division={form.section}
+                  division={form.division}
                   academicYear={form.academic_year}
                   onGradeChange={(v) => {
                     set("grade", v);
-                    set("section", "");
+                    set("division", "");
                   }}
-                  onDivisionChange={(v) => set("section", v)}
+                  onDivisionChange={(v) => set("division", v)}
                   onAcademicYearChange={(v) => set("academic_year", v)}
                   gradeRequired
                   divisionRequired

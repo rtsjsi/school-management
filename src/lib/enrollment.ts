@@ -38,20 +38,20 @@ export async function getCurrentEnrollment(studentId: string): Promise<CurrentEn
   if (!ayId) return null;
   const { data } = await supabase
     .from("student_enrollments")
-    .select("id, grade_id, division_id, academic_year_id")
+    .select("id, standard_id, division_id, academic_year_id")
     .eq("student_id", studentId)
     .eq("academic_year_id", ayId)
     .eq("status", "active")
     .maybeSingle();
   if (!data) return null;
   const [g, d, ay] = await Promise.all([
-    supabase.from("grades").select("name").eq("id", data.grade_id).maybeSingle(),
+    supabase.from("standards").select("name").eq("id", data.standard_id).maybeSingle(),
     supabase.from("divisions").select("name").eq("id", data.division_id).maybeSingle(),
     supabase.from("academic_years").select("name").eq("id", data.academic_year_id).maybeSingle(),
   ]);
   return {
     id: data.id,
-    gradeId: data.grade_id,
+    gradeId: data.standard_id,
     gradeName: (g.data?.name as string) ?? "",
     divisionId: data.division_id,
     divisionName: (d.data?.name as string) ?? "",
@@ -62,10 +62,10 @@ export async function getCurrentEnrollment(studentId: string): Promise<CurrentEn
 
 export async function getNextGradeId(currentGradeId: string): Promise<string | null> {
   const supabase = await createClient();
-  const { data: current } = await supabase.from("grades").select("sort_order").eq("id", currentGradeId).maybeSingle();
+  const { data: current } = await supabase.from("standards").select("sort_order").eq("id", currentGradeId).maybeSingle();
   if (!current) return null;
   const { data: next } = await supabase
-    .from("grades")
+    .from("standards")
     .select("id")
     .eq("sort_order", current.sort_order + 1)
     .limit(1)
@@ -75,8 +75,8 @@ export async function getNextGradeId(currentGradeId: string): Promise<string | n
 
 export async function isHighestGrade(gradeId: string): Promise<boolean> {
   const supabase = await createClient();
-  const { data: maxRow } = await supabase.from("grades").select("sort_order").order("sort_order", { ascending: false }).limit(1).maybeSingle();
-  const { data: grade } = await supabase.from("grades").select("sort_order").eq("id", gradeId).maybeSingle();
+  const { data: maxRow } = await supabase.from("standards").select("sort_order").order("sort_order", { ascending: false }).limit(1).maybeSingle();
+  const { data: grade } = await supabase.from("standards").select("sort_order").eq("id", gradeId).maybeSingle();
   if (!maxRow || !grade) return false;
   return grade.sort_order >= maxRow.sort_order;
 }

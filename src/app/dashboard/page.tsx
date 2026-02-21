@@ -127,9 +127,9 @@ export default async function DashboardPage() {
         }]
       : []),
     {
-      title: "Classes",
+      title: "Standards",
       value: String(classesCount ?? 0),
-      description: "View classes",
+      description: "View standards",
       icon: BookOpen,
       href: "/dashboard/classes",
     },

@@ -21,7 +21,7 @@ export async function getEnrollmentsForYear(academicYearId: string): Promise<Enr
   const supabase = await createClient();
   const { data: enrollments } = await supabase
     .from("student_enrollments")
-    .select("id, student_id, grade_id, division_id")
+    .select("id, student_id, standard_id, division_id")
     .eq("academic_year_id", academicYearId)
     .eq("status", "active");
 
@@ -29,14 +29,14 @@ export async function getEnrollmentsForYear(academicYearId: string): Promise<Enr
   const outcomes: EnrollmentOutcome[] = [];
   for (const e of enrollments) {
     const [g, d, s] = await Promise.all([
-      supabase.from("grades").select("name").eq("id", e.grade_id).single(),
+      supabase.from("standards").select("name").eq("id", e.standard_id).single(),
       supabase.from("divisions").select("name").eq("id", e.division_id).single(),
       supabase.from("students").select("full_name").eq("id", e.student_id).single(),
     ]);
     outcomes.push({
       enrollmentId: e.id,
       studentId: e.student_id,
-      gradeId: e.grade_id,
+      gradeId: e.standard_id,
       studentName: (s.data?.full_name as string) ?? "",
       gradeName: (g.data?.name as string) ?? "",
       divisionName: (d.data?.name as string) ?? "",
@@ -81,7 +81,7 @@ export async function computeOutcomesFromExam(
       const nextId = await getNextGradeId(o.gradeId);
       let nextName: string | null = null;
       if (nextId) {
-        const { data } = await supabase.from("grades").select("name").eq("id", nextId).single();
+        const { data } = await supabase.from("standards").select("name").eq("id", nextId).single();
         nextName = data?.name ?? null;
       }
       o.nextGradeId = nextId;
@@ -142,7 +142,7 @@ export async function runPromotion(
     const { data: divisions } = await supabase
       .from("divisions")
       .select("id")
-      .eq("grade_id", o.nextGradeId)
+      .eq("standard_id", o.nextGradeId)
       .order("sort_order")
       .limit(1);
     const divisionId = divisions?.[0]?.id;
@@ -151,7 +151,7 @@ export async function runPromotion(
     const { error: insertErr } = await supabase.from("student_enrollments").insert({
       student_id: o.studentId,
       academic_year_id: nextYearId,
-      grade_id: o.nextGradeId,
+      standard_id: o.nextGradeId,
       division_id: divisionId,
       status: "active",
       promoted_from_enrollment_id: o.enrollmentId,

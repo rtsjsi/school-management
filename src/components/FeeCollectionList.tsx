@@ -19,7 +19,7 @@ type CollectionRow = {
   receipt_number: string;
   student_name?: string;
   student_grade?: string;
-  student_section?: string;
+  student_division?: string;
   student_roll_number?: number;
   student_gr_no?: string;
   amount: number;
@@ -74,7 +74,7 @@ function printReceipt(row: CollectionRow) {
       schoolName: process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "School",
       schoolAddress: process.env.NEXT_PUBLIC_SCHOOL_ADDRESS ?? "",
       grade: data.grade,
-      section: data.section,
+      division: data.division,
       rollNumber: data.rollNumber,
       grNo: data.grNo,
       outstandingAfterPayment: data.outstandingAfterPayment,
@@ -107,7 +107,7 @@ function generateAndPrintFallback(row: CollectionRow) {
     schoolName: process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "School",
     schoolAddress: process.env.NEXT_PUBLIC_SCHOOL_ADDRESS ?? "",
     grade: row.student_grade,
-    section: row.student_section,
+    division: row.student_division,
     rollNumber: row.student_roll_number,
     grNo: row.student_gr_no,
   });
@@ -143,7 +143,7 @@ function downloadReceipt(row: CollectionRow) {
       schoolName: process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "School",
       schoolAddress: process.env.NEXT_PUBLIC_SCHOOL_ADDRESS ?? "",
       grade: data.grade,
-      section: data.section,
+      division: data.division,
       rollNumber: data.rollNumber,
       grNo: data.grNo,
       outstandingAfterPayment: data.outstandingAfterPayment,
@@ -178,7 +178,7 @@ function downloadFallback(row: CollectionRow) {
     schoolName: process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "School",
     schoolAddress: process.env.NEXT_PUBLIC_SCHOOL_ADDRESS ?? "",
     grade: row.student_grade,
-    section: row.student_section,
+    division: row.student_division,
     rollNumber: row.student_roll_number,
     grNo: row.student_gr_no,
   });

@@ -14,7 +14,7 @@ export interface ReportCardData {
   schoolAddress?: string;
   studentName: string;
   grade?: string;
-  section?: string;
+  division?: string;
   rollNumber?: number | string;
   studentId?: string;
   academicYear?: string;
@@ -70,12 +70,12 @@ export function generateReportCardPDF(data: ReportCardData): Blob {
   nameLines.forEach((line: string, i: number) => {
     doc.text(line, colLeft + labelW, y + i * lh);
   });
-  doc.text("Grade:", colRight, y);
+  doc.text("Standard:", colRight, y);
   doc.text(data.grade ?? "—", colRight + labelW, y);
   y += Math.max(lh * nameLines.length, lh);
 
-  doc.text("Section:", colLeft, y);
-  doc.text(data.section ?? "—", colLeft + labelW, y);
+  doc.text("Division:", colLeft, y);
+  doc.text(data.division ?? "—", colLeft + labelW, y);
   doc.text("Roll No.:", colRight, y);
   doc.text(String(data.rollNumber ?? "—"), colRight + labelW, y);
   y += lh;

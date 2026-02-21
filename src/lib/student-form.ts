@@ -12,7 +12,7 @@ export type StudentFormState = {
   society: string;
   district: string;
   grade: string;
-  section: string;
+  division: string;
   roll_number: string;
   admission_date: string;
   admission_type: string;
@@ -80,7 +80,7 @@ export function studentFormFromRecord(r: Record<string, unknown>): StudentFormSt
     society: (r.society as string) || "",
     district: (r.district as string) || "",
     grade: (r.grade as string) || "",
-    section: (r.section as string) || "",
+    division: (r.division as string) || "",
     roll_number: r.roll_number != null ? String(r.roll_number) : "",
     admission_date: (r.admission_date as string) || "",
     admission_type: (r.admission_type as string) || "regular",
@@ -149,7 +149,7 @@ export function formToPayload(form: StudentFormState): Record<string, unknown> {
     society: form.society.trim() || null,
     district: form.district.trim() || null,
     grade: form.grade.trim() || null,
-    section: form.section.trim() || null,
+    division: form.division.trim() || null,
     roll_number: form.roll_number ? parseInt(form.roll_number) : null,
     admission_date: form.admission_date || null,
     admission_type: form.admission_type || null,
