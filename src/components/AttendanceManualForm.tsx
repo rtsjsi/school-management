@@ -102,7 +102,9 @@ export default function AttendanceManualForm({ employees }: { employees: Employe
               <Input type="time" value={form.out_time} onChange={(e) => setForm((p) => ({ ...p, out_time: e.target.value }))} />
             </div>
           </div>
-          <SubmitButton loading={loading} loadingLabel="Saving…" className="w-full">Save Attendance</SubmitButton>
+          <div className="flex justify-start">
+          <SubmitButton loading={loading} loadingLabel="Saving…">Save Attendance</SubmitButton>
+        </div>
         </form>
       </CardContent>
     </Card>

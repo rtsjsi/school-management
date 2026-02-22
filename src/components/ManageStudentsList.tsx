@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pencil } from "lucide-react";
+import { Pencil, BookOpen } from "lucide-react";
 import { fetchClasses, fetchAllDivisions } from "@/lib/lov";
 
 type StudentRow = {
@@ -160,7 +160,7 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  {canEdit && <TableHead className="w-16"></TableHead>}
+                  {canEdit && <TableHead className="w-40 whitespace-nowrap">Actions</TableHead>}
                   <TableHead>Student ID</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>RTE</TableHead>
@@ -175,12 +175,22 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
                 {students.map((s) => (
                   <TableRow key={s.id}>
                     {canEdit && (
-                      <TableCell>
+                      <TableCell className="space-x-1">
                         <Button size="sm" variant="outline" className="gap-1" asChild>
                           <Link href={`/dashboard/students/${s.id}/edit`}>
                             <Pencil className="h-3 w-3" />
                             Edit
                           </Link>
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="gap-1"
+                          onClick={() => window.open(`/dashboard/students/${s.id}/enrolments`, "_blank", "noopener,noreferrer")}
+                        >
+                          <BookOpen className="h-3 w-3" />
+                          Enrolments
                         </Button>
                       </TableCell>
                     )}

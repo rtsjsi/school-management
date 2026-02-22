@@ -44,7 +44,7 @@ export function AdministrationTabs({
 }) {
   return (
     <Tabs defaultValue={defaultTab} className="space-y-6">
-      <TabsList className="flex flex-wrap gap-1 w-full overflow-x-auto">
+      <TabsList className="flex flex-nowrap gap-1 w-full">
         <TabsTrigger value="users">Users</TabsTrigger>
         <TabsTrigger value="settings">School settings</TabsTrigger>
         <TabsTrigger value="academic-year">Academic year</TabsTrigger>

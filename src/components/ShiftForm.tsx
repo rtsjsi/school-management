@@ -85,7 +85,9 @@ export default function ShiftForm() {
               <Input type="number" min={0} value={form.early_departure_threshold_minutes} onChange={(e) => setForm((p) => ({ ...p, early_departure_threshold_minutes: e.target.value }))} />
             </div>
           </div>
-          <SubmitButton loading={loading} loadingLabel="Adding…" className="w-full">Add Shift</SubmitButton>
+          <div className="flex justify-start">
+          <SubmitButton loading={loading} loadingLabel="Adding…">Add Shift</SubmitButton>
+        </div>
         </form>
       </CardContent>
     </Card>

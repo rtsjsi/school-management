@@ -14,9 +14,11 @@ const TabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      "inline-flex h-9 items-center justify-start rounded-lg bg-muted p-1 text-muted-foreground",
+      "inline-flex h-9 items-center justify-start rounded-lg bg-muted p-1 text-muted-foreground overflow-x-auto overflow-y-hidden flex-nowrap w-full max-w-full flex-shrink-0 touch-pan-x",
+      "scrollbar-thin [scrollbar-width:thin]",
       className
     )}
+    style={{ WebkitOverflowScrolling: "touch" } as React.CSSProperties}
     {...props}
   />
 ))

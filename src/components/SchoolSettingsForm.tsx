@@ -281,7 +281,9 @@ export function SchoolSettingsForm({
         </CardContent>
       </Card>
 
+      <div className="flex justify-start">
       <SubmitButton loading={saving} loadingLabel="Saving…">Save school settings</SubmitButton>
+    </div>
     </form>
   );
 }

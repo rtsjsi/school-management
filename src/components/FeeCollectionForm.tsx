@@ -317,13 +317,14 @@ export default function FeeCollectionForm({
               <Label>Collected By</Label>
               <Input value={receivedBy ?? "—"} readOnly className="bg-muted" />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 w-full min-w-0 sm:w-[180px]">
               <Label htmlFor="collection_date">Collection Date *</Label>
               <Input
                 id="collection_date"
                 type="date"
                 value={form.collection_date}
                 onChange={(e) => setForm((p) => ({ ...p, collection_date: e.target.value }))}
+                className="w-full"
               />
             </div>
           </div>
@@ -502,9 +503,11 @@ export default function FeeCollectionForm({
             />
           </div>
 
-          <SubmitButton loading={loading} loadingLabel="Saving & printing receipt…" className="w-full">
+          <div className="flex justify-start">
+          <SubmitButton loading={loading} loadingLabel="Saving & printing receipt…">
             Collect Fee & Print Receipt
           </SubmitButton>
+        </div>
         </form>
       </CardContent>
     </Card>

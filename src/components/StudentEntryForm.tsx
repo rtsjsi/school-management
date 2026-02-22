@@ -15,12 +15,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StudentDocumentsPhotos } from "@/components/StudentDocumentsPhotos";
 import { CameraCaptureButton } from "@/components/CameraCapture";
 import { GradeDivisionYearSelects } from "@/components/GradeDivisionYearSelects";
 import { Button } from "@/components/ui/button";
-import { Upload, FileText, ImageIcon } from "lucide-react";
+import Link from "next/link";
+import { Upload, FileText, ImageIcon, ArrowLeft } from "lucide-react";
 import {
   uploadStudentFiles,
   type PendingPhotos,
@@ -287,19 +288,29 @@ export default function StudentEntryForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/dashboard/students" className="gap-1">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Students
+          </Link>
+        </Button>
+      </div>
+
       {error && (
         <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="space-y-6">
         <Card>
-          <CardHeader className="py-3">
-            <CardTitle className="text-sm font-medium">Basic information</CardTitle>
+          <CardHeader>
+            <CardTitle className="text-base">Basic Information</CardTitle>
+            <CardDescription>Student name, contact, and identity details.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3 pt-0">
-              <div className="grid gap-3 grid-cols-2">
-                <div className="space-y-2 col-span-2">
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="full_name">Full name *</Label>
                   <Input id="full_name" value={form.full_name} onChange={(e) => set("full_name", e.target.value)} placeholder="Student full name" required />
                 </div>
@@ -348,7 +359,7 @@ export default function StudentEntryForm() {
                   <Label>Caste</Label>
                   <Input value={form.caste} onChange={(e) => set("caste", e.target.value)} />
                 </div>
-                <div className="space-y-2 col-span-2">
+                <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="address">Address *</Label>
                   <Input id="address" value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="Full address" required />
                 </div>
@@ -411,11 +422,12 @@ export default function StudentEntryForm() {
         </Card>
 
         <Card>
-          <CardHeader className="py-3">
-            <CardTitle className="text-sm font-medium">Parent & guardian</CardTitle>
+          <CardHeader>
+            <CardTitle className="text-base">Parent & Guardian Details</CardTitle>
+            <CardDescription>Father, mother, and guardian information.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3 pt-0">
-              <div className="grid gap-3 grid-cols-2">
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="father_name">Father name *</Label>
                   <Input id="father_name" value={form.father_name} onChange={(e) => set("father_name", e.target.value)} required />
@@ -456,13 +468,17 @@ export default function StudentEntryForm() {
                   <Label>Mother occupation</Label>
                   <Input value={form.mother_occupation} onChange={(e) => set("mother_occupation", e.target.value)} />
                 </div>
-                <div className="space-y-2 col-span-2">
+                <div className="space-y-2 sm:col-span-2">
                   <Label>Guardian name (if different)</Label>
                   <Input value={form.guardian_name} onChange={(e) => set("guardian_name", e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label>Guardian contact</Label>
                   <Input type="tel" value={form.guardian_contact} onChange={(e) => set("guardian_contact", e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Guardian email</Label>
+                  <Input type="email" value={form.guardian_email} onChange={(e) => set("guardian_email", e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label>Guardian education</Label>
@@ -475,14 +491,14 @@ export default function StudentEntryForm() {
               </div>
           </CardContent>
         </Card>
-      </div>
 
-      <Card>
-        <CardHeader className="py-3">
-          <CardTitle className="text-sm font-medium">Academic</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 pt-0">
-              <div className="grid gap-3 grid-cols-2 md:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Admission & Academic Details</CardTitle>
+            <CardDescription>Grade, division, admission type, and previous school.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Admission type</Label>
                   <Select value={form.admission_type} onValueChange={(v) => set("admission_type", v)}>
@@ -528,15 +544,16 @@ export default function StudentEntryForm() {
                   <Label htmlFor="rte" className="font-normal">RTE (Right to Education) Quota</Label>
                 </div>
               </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader className="py-3">
-          <CardTitle className="text-sm font-medium">Other details</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 pt-0">
-              <div className="grid gap-3 grid-cols-2 md:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Other Details</CardTitle>
+            <CardDescription>Physical, medical, and miscellaneous information.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Height</Label>
                   <Input value={form.height} onChange={(e) => set("height", e.target.value)} placeholder="e.g. 160cm" />
@@ -579,20 +596,21 @@ export default function StudentEntryForm() {
                     <Label htmlFor="food" className="font-normal">Food provided</Label>
                   </div>
                 </div>
-                <div className="space-y-2 col-span-2">
+                <div className="space-y-2 sm:col-span-2">
                   <Label>Notes</Label>
                   <Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={2} />
                 </div>
               </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader className="py-3">
-          <CardTitle className="text-sm font-medium">Fee & bank</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 pt-0">
-              <div className="grid gap-3 grid-cols-2 md:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Fee Concession & Bank Details</CardTitle>
+            <CardDescription>Fee mafi and bank account for refunds.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Fee mafi amount (Rs)</Label>
                   <Input type="number" value={form.fee_mafi_amount} onChange={(e) => set("fee_mafi_amount", e.target.value)} placeholder="0" />
@@ -605,7 +623,7 @@ export default function StudentEntryForm() {
                   <Checkbox id="all_mafi" checked={form.all_fee_mafi} onCheckedChange={(c) => set("all_fee_mafi", !!c)} />
                   <Label htmlFor="all_mafi" className="font-normal">All fee mafi</Label>
                 </div>
-                <div className="space-y-2 col-span-2">
+                <div className="space-y-2 sm:col-span-2">
                   <Label>Account holder name</Label>
                   <Input value={form.account_holder_name} onChange={(e) => set("account_holder_name", e.target.value)} />
                 </div>
@@ -626,14 +644,15 @@ export default function StudentEntryForm() {
                   <Input value={form.account_no} onChange={(e) => set("account_no", e.target.value)} />
                 </div>
               </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader className="py-3">
-          <CardTitle className="text-sm font-medium">Documents & photos</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4 pt-0">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Documents & Photos</CardTitle>
+            <CardDescription>Upload Aadhar card, photographs, and other documents.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
               <div>
                 <Label className="text-sm font-medium mb-2 block">Photos</Label>
                 <p className="text-xs text-muted-foreground mb-3">Student photo (image only)</p>
@@ -750,12 +769,18 @@ export default function StudentEntryForm() {
                   })}
                 </div>
               </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
 
-      <SubmitButton loading={loading} loadingLabel="Adding…" className="w-full">
-        Add student
-      </SubmitButton>
+      <div className="flex gap-2 justify-start">
+        <Button type="button" variant="outline" asChild>
+          <Link href="/dashboard/students">Cancel</Link>
+        </Button>
+        <SubmitButton loading={loading} loadingLabel="Adding…">
+          Add student
+        </SubmitButton>
+      </div>
     </form>
   );
 }

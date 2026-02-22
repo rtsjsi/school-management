@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { getUser, isAdminOrAbove } from "@/lib/auth";
 import { GraduationCap } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
 import StudentEntryForm from "@/components/StudentEntryForm";
 import { ManageStudentsList } from "@/components/ManageStudentsList";
 import { AdmissionEnquiryForm } from "@/components/AdmissionEnquiryForm";
@@ -36,7 +35,7 @@ export default async function StudentsPage({
       </div>
 
       <Tabs defaultValue={defaultTab} className="space-y-6">
-        <TabsList className="flex flex-wrap gap-1 w-full overflow-x-auto">
+        <TabsList className="flex flex-nowrap gap-1 w-full">
           {canEdit && (
             <TabsTrigger value="add">Add Student</TabsTrigger>
           )}
@@ -48,11 +47,7 @@ export default async function StudentsPage({
 
         {canEdit && (
           <TabsContent value="add" className="space-y-6">
-            <Card>
-              <CardContent className="pt-6">
-                <StudentEntryForm />
-              </CardContent>
-            </Card>
+            <StudentEntryForm />
           </TabsContent>
         )}
 

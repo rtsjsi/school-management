@@ -455,9 +455,11 @@ export default function MarksEntry() {
                   </TableBody>
                 </Table>
               </div>
-              <SubmitButton loading={saving} loadingLabel="Saving…">
-                Save marks
-              </SubmitButton>
+              <div className="flex justify-start">
+                <SubmitButton loading={saving} loadingLabel="Saving…">
+                  Save marks
+                </SubmitButton>
+              </div>
             </>
           )}
 

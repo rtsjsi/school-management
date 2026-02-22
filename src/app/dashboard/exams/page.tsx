@@ -25,7 +25,7 @@ export default async function ExamsPage() {
       </div>
 
       <Tabs defaultValue="exams" className="space-y-6">
-        <TabsList className="flex flex-wrap gap-1 w-full overflow-x-auto">
+        <TabsList className="flex flex-nowrap gap-1 w-full">
           <TabsTrigger value="exams">Exams</TabsTrigger>
           <TabsTrigger value="marks">Record Marks</TabsTrigger>
           <TabsTrigger value="reportcard">Report Card</TabsTrigger>

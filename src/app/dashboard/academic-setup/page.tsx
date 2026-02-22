@@ -35,7 +35,7 @@ export default async function AcademicSetupPage({
       </div>
 
       <Tabs defaultValue={tab} className="space-y-6">
-        <TabsList className="flex flex-wrap gap-1 w-full overflow-x-auto">
+        <TabsList className="flex flex-nowrap gap-1 w-full">
           <TabsTrigger value="standards">Standard management</TabsTrigger>
           <TabsTrigger value="subjects">Subject management</TabsTrigger>
           {canPromote && (

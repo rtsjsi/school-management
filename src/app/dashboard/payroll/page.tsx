@@ -47,7 +47,7 @@ export default async function PayrollPage() {
 
       <Tabs defaultValue="employees" className="space-y-6">
         <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-          <TabsList className="inline-flex w-max min-w-full justify-start gap-1 flex-wrap">
+          <TabsList className="inline-flex flex-nowrap w-max min-w-full justify-start gap-1">
             <TabsTrigger value="employees">Employees</TabsTrigger>
             <TabsTrigger value="shifts">Shifts</TabsTrigger>
             <TabsTrigger value="holidays">Holidays</TabsTrigger>
@@ -61,7 +61,7 @@ export default async function PayrollPage() {
 
         <TabsContent value="employees" className="space-y-6">
           <Tabs defaultValue="directory" className="space-y-6">
-            <TabsList className="flex flex-wrap gap-1 w-full overflow-x-auto">
+            <TabsList className="flex flex-nowrap gap-1 w-full">
               <TabsTrigger value="directory">Directory</TabsTrigger>
               <TabsTrigger value="department">Department Report</TabsTrigger>
             </TabsList>

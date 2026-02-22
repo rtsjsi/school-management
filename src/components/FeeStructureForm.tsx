@@ -279,7 +279,7 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 justify-start">
             {onCancel && (
               <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
                 Cancel
@@ -288,7 +288,6 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
             <SubmitButton
               loading={loading}
               loadingLabel={structureId ? "Saving…" : "Adding…"}
-              className={onCancel ? "" : "w-full"}
             >
               {structureId ? "Update Fee Structure" : "Add Fee Structure"}
             </SubmitButton>

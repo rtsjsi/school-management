@@ -127,9 +127,11 @@ export default function FeeEntryForm({ students }: { students: StudentOption[] }
           placeholder="Optional"
         />
       </div>
-      <SubmitButton loading={loading} loadingLabel="Adding…" className="w-full">
+      <div className="flex justify-start">
+      <SubmitButton loading={loading} loadingLabel="Adding…">
         Add fee
       </SubmitButton>
+    </div>
     </form>
   );
 }

@@ -250,7 +250,9 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
             </div>
           )}
 
-          <SubmitButton loading={loading} loadingLabel="Adding…" className="w-full">Add Employee</SubmitButton>
+          <div className="flex justify-start">
+          <SubmitButton loading={loading} loadingLabel="Adding…">Add Employee</SubmitButton>
+        </div>
         </form>
       </CardContent>
     </Card>

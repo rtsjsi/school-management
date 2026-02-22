@@ -108,9 +108,11 @@ export default function CreateUserForm() {
           ))}
         </select>
       </div>
-      <SubmitButton loading={loading} loadingLabel="Creating…" className="w-full">
+      <div className="flex justify-start">
+      <SubmitButton loading={loading} loadingLabel="Creating…">
         Create user
       </SubmitButton>
+    </div>
     </form>
   );
 }

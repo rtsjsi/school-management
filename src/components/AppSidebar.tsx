@@ -9,11 +9,11 @@ import {
   BookOpen,
   DollarSign,
   FileQuestion,
-  Receipt,
   Menu,
   X,
   Wallet,
   Building2,
+  Banknote,
 } from "lucide-react";
 import type { AuthUser } from "@/lib/auth";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
@@ -32,7 +32,7 @@ const navItems: NavItem[] = [
   { href: "/dashboard/academic-setup", label: "Academic setup", icon: BookOpen },
   { href: "/dashboard/students", label: "Students management", icon: GraduationCap },
   { href: "/dashboard/fees", label: "Fees management", icon: DollarSign, roles: ["principal", "admin"] },
-  { href: "/dashboard/expenses", label: "Expense management", icon: Receipt, roles: ["principal", "admin"] },
+  { href: "/dashboard/expenses", label: "Expense management", icon: Banknote, roles: ["principal", "admin"] },
   { href: "/dashboard/payroll", label: "Payroll", icon: Wallet, roles: ["principal", "admin"] },
   { href: "/dashboard/exams", label: "Exam management", icon: FileQuestion },
   { href: "/dashboard/administration", label: "Administration", icon: Building2, roles: ["principal"] },

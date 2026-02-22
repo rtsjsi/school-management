@@ -76,6 +76,10 @@ export default function ExpenseEntryForm({
     account?: string; // payment_mode: cash, cheque, online
     description?: string;
     expense_date?: string;
+    cheque_number?: string;
+    cheque_bank?: string;
+    cheque_date?: string;
+    transaction_reference_id?: string;
   };
 }) {
   const router = useRouter();
@@ -90,6 +94,10 @@ export default function ExpenseEntryForm({
     account: (initialValues?.account as string) ?? "cash",
     description: initialValues?.description ?? "",
     expense_date: initialValues?.expense_date ?? new Date().toISOString().slice(0, 10),
+    cheque_number: initialValues?.cheque_number ?? "",
+    cheque_bank: initialValues?.cheque_bank ?? "",
+    cheque_date: initialValues?.cheque_date ?? "",
+    transaction_reference_id: initialValues?.transaction_reference_id ?? "",
   });
 
   useEffect(() => {
@@ -103,6 +111,10 @@ export default function ExpenseEntryForm({
         account: initialValues.account ?? "cash",
         description: initialValues.description ?? "",
         expense_date: initialValues.expense_date ?? new Date().toISOString().slice(0, 10),
+        cheque_number: initialValues.cheque_number ?? "",
+        cheque_bank: initialValues.cheque_bank ?? "",
+        cheque_date: initialValues.cheque_date ?? "",
+        transaction_reference_id: initialValues.transaction_reference_id ?? "",
       });
     }
   }, [initialValues, editingId]);
@@ -113,6 +125,10 @@ export default function ExpenseEntryForm({
     const amount = parseFloat(form.amount);
     if (isNaN(amount) || amount < 0) {
       setError("Enter a valid amount.");
+      return;
+    }
+    if (form.account === "cheque" && !form.cheque_number?.trim()) {
+      setError("Cheque number is required for cheque payment.");
       return;
     }
 
@@ -129,6 +145,10 @@ export default function ExpenseEntryForm({
         description: form.description.trim() || null,
         expense_date: form.expense_date,
         category: "other",
+        cheque_number: form.account === "cheque" ? form.cheque_number.trim() || null : null,
+        cheque_bank: form.account === "cheque" ? form.cheque_bank.trim() || null : null,
+        cheque_date: form.account === "cheque" && form.cheque_date ? form.cheque_date : null,
+        transaction_reference_id: form.account === "online" ? form.transaction_reference_id.trim() || null : null,
       };
 
       if (editingId) {
@@ -147,6 +167,10 @@ export default function ExpenseEntryForm({
         account: "cash",
         description: "",
         expense_date: new Date().toISOString().slice(0, 10),
+        cheque_number: "",
+        cheque_bank: "",
+        cheque_date: "",
+        transaction_reference_id: "",
       });
       router.refresh();
     } catch {
@@ -167,6 +191,10 @@ export default function ExpenseEntryForm({
       account: "cash",
       description: "",
       expense_date: new Date().toISOString().slice(0, 10),
+      cheque_number: "",
+      cheque_bank: "",
+      cheque_date: "",
+      transaction_reference_id: "",
     });
   };
 
@@ -274,6 +302,57 @@ export default function ExpenseEntryForm({
           </SelectContent>
         </Select>
       </div>
+
+      {form.account === "cheque" && (
+        <div className="space-y-4 p-4 border rounded-lg">
+          <h4 className="text-sm font-semibold">Cheque Details</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="expense-cheque-number">Cheque Number *</Label>
+              <Input
+                id="expense-cheque-number"
+                value={form.cheque_number}
+                onChange={(e) => setForm((p) => ({ ...p, cheque_number: e.target.value }))}
+                placeholder="e.g. 123456"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="expense-cheque-bank">Bank Name</Label>
+              <Input
+                id="expense-cheque-bank"
+                value={form.cheque_bank}
+                onChange={(e) => setForm((p) => ({ ...p, cheque_bank: e.target.value }))}
+                placeholder="Bank name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="expense-cheque-date">Cheque Date</Label>
+              <Input
+                id="expense-cheque-date"
+                type="date"
+                value={form.cheque_date}
+                onChange={(e) => setForm((p) => ({ ...p, cheque_date: e.target.value }))}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {form.account === "online" && (
+        <div className="space-y-4 p-4 border rounded-lg">
+          <h4 className="text-sm font-semibold">Online Transaction Details</h4>
+          <div className="space-y-2">
+            <Label htmlFor="expense-txn-ref">Transaction Reference ID</Label>
+            <Input
+              id="expense-txn-ref"
+              value={form.transaction_reference_id}
+              onChange={(e) => setForm((p) => ({ ...p, transaction_reference_id: e.target.value }))}
+              placeholder="Reference or transaction ID"
+            />
+          </div>
+        </div>
+      )}
+
       <div className="space-y-2">
         <Label htmlFor="expense-desc">Description</Label>
         <Input
@@ -283,7 +362,7 @@ export default function ExpenseEntryForm({
           placeholder="Optional"
         />
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 justify-start">
         <SubmitButton loading={loading} loadingLabel="Saving…">
           {editingId ? "Update" : "Add"} expense
         </SubmitButton>

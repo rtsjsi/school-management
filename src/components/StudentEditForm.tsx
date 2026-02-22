@@ -445,7 +445,7 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
         </Card>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 justify-start">
         <Button type="button" variant="outline" asChild>
           <Link href="/dashboard/students">Cancel</Link>
         </Button>

@@ -283,9 +283,11 @@ export default function ExamEntryForm() {
           placeholder="Optional"
         />
       </div>
-      <SubmitButton loading={loading} loadingLabel="Adding…" className="w-full">
+      <div className="flex justify-start">
+      <SubmitButton loading={loading} loadingLabel="Adding…">
         Add exam
       </SubmitButton>
+    </div>
     </form>
   );
 }

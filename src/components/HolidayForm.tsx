@@ -73,7 +73,9 @@ export default function HolidayForm() {
               </SelectContent>
             </Select>
           </div>
-          <SubmitButton loading={loading} loadingLabel="Adding…" className="w-full">Add Holiday</SubmitButton>
+          <div className="flex justify-start">
+          <SubmitButton loading={loading} loadingLabel="Adding…">Add Holiday</SubmitButton>
+        </div>
         </form>
       </CardContent>
     </Card>
