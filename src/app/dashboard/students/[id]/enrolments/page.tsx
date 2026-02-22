@@ -36,9 +36,9 @@ export default async function StudentEnrolmentsPage({
     .eq("student_id", studentId)
     .order("created_at", { ascending: false });
 
-  const yearIds = [...new Set((enrollments ?? []).map((e) => e.academic_year_id))];
-  const stdIds = [...new Set((enrollments ?? []).map((e) => e.standard_id))];
-  const divIds = [...new Set((enrollments ?? []).map((e) => e.division_id))];
+  const yearIds = Array.from(new Set((enrollments ?? []).map((e) => e.academic_year_id)));
+  const stdIds = Array.from(new Set((enrollments ?? []).map((e) => e.standard_id)));
+  const divIds = Array.from(new Set((enrollments ?? []).map((e) => e.division_id)));
 
   const { data: years } = await supabase
     .from("academic_years")
