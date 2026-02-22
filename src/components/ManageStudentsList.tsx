@@ -182,15 +182,11 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
                             Edit
                           </Link>
                         </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          className="gap-1"
-                          onClick={() => window.open(`/dashboard/students/${s.id}/enrolments`, "_blank", "noopener,noreferrer")}
-                        >
-                          <BookOpen className="h-3 w-3" />
-                          Enrolments
+                        <Button size="sm" variant="ghost" className="gap-1" asChild>
+                          <Link href={`/dashboard/students/${s.id}/enrolments`}>
+                            <BookOpen className="h-3 w-3" />
+                            Enrolments
+                          </Link>
                         </Button>
                       </TableCell>
                     )}
