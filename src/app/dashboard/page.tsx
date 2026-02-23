@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getUser, isAdminOrAbove } from "@/lib/auth";
+import { getUser, canViewFinance } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { ROLES } from "@/types/auth";
 import {
@@ -78,7 +78,7 @@ export default async function DashboardPage() {
   const roleLabel = ROLES[user.role as keyof typeof ROLES] ?? user.role;
 
   const statCards = [
-    ...(isAdminOrAbove(user)
+    ...(canViewFinance(user)
       ? [
           {
             title: "Active students",
@@ -117,7 +117,7 @@ export default async function DashboardPage() {
           },
         ]
       : []),
-    ...(isAdminOrAbove(user)
+    ...(canViewFinance(user)
       ? [{
           title: "Total employees",
           value: String(employeesCount ?? 0),

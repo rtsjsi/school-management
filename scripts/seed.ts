@@ -1,30 +1,56 @@
 /**
  * Seed script: Flush all app data and insert clean test data.
- * 20 students + 20 employees with full variety.
+ * 5 students + 10 employees with full variety.
  * Run: npm run seed
  */
 
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
+import { execSync } from "child_process";
 
-// Load .env.local
-const envPath = join(process.cwd(), ".env.local");
-if (existsSync(envPath)) {
-  readFileSync(envPath, "utf8")
+const repoRoot = process.cwd();
+
+function loadEnvFile(fileName: string): Record<string, string> {
+  const p = join(repoRoot, fileName);
+  if (!existsSync(p)) return {};
+  const out: Record<string, string> = {};
+  readFileSync(p, "utf8")
     .split("\n")
     .forEach((line) => {
       const m = line.match(/^([^#=]+)=(.*)$/);
-      if (m) process.env[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g, "");
+      if (m) out[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g, "");
     });
+  return out;
 }
+
+function getCurrentBranch(): string | null {
+  try {
+    return execSync("git rev-parse --abbrev-ref HEAD", { encoding: "utf8", cwd: repoRoot }).trim();
+  } catch {
+    return null;
+  }
+}
+
+// Load env by branch (same as sync-env-by-branch): .env.development or .env.main, then .env.local overrides
+const branch = getCurrentBranch();
+const branchFile = branch === "main" ? ".env.main" : ".env.development";
+const branchEnv = loadEnvFile(branchFile);
+const localEnv = loadEnvFile(".env.local");
+Object.entries(branchEnv).forEach(([k, v]) => (process.env[k] = v));
+Object.entries(localEnv).forEach(([k, v]) => (process.env[k] = v));
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!url || !serviceKey) {
-  console.error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in env");
+  console.error(
+    "Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY. Set them in",
+    branchFile,
+    "or .env.local (see docs/supabase-branches.md)."
+  );
   process.exit(1);
 }
+console.log("Using Supabase project from", branch ? `${branch} (${branchFile})` : ".env.local");
 
 const supabase = createClient(url, serviceKey, { auth: { persistSession: false } });
 
@@ -85,7 +111,7 @@ async function deleteAllData() {
 }
 
 async function main() {
-  console.log("Starting seed (20 students, 20 employees)...");
+  console.log("Starting seed (5 students, 10 employees)...");
   await deleteAllData();
 
   await seedClasses();
@@ -275,13 +301,13 @@ const FIRST_NAMES = ["Rajesh", "Priya", "Amit", "Sneha", "Vikram", "Anjali", "Su
 const LAST_NAMES = ["Kumar", "Sharma", "Patel", "Reddy", "Singh", "Gupta", "Nair", "Desai", "Iyer", "Menon", "Pillai", "Nambiar", "Joshi", "Kapoor", "Verma", "Malhotra", "Shah", "Agarwal", "Rao", "Mehta"];
 
 async function seedEmployees() {
-  console.log("Seeding 20 employees...");
+  console.log("Seeding 10 employees...");
   const { data: shifts } = await supabase.from("shifts").select("id");
   const shiftIds = (shifts ?? []).map((s) => s.id);
 
   const usedNames = new Set<string>();
   const employees: Record<string, unknown>[] = [];
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 10; i++) {
     let name = `${pick(FIRST_NAMES)} ${pick(LAST_NAMES)}`;
     while (usedNames.has(name)) {
       name = `${pick(FIRST_NAMES)} ${pick(LAST_NAMES)}`;
@@ -366,7 +392,7 @@ async function seedStudents() {
 
   const usedNames = new Set<string>();
   const students: Record<string, unknown>[] = [];
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 5; i++) {
     let name = `${pick(STUDENT_FIRST)} ${pick(STUDENT_LAST)}`;
     while (usedNames.has(name)) {
       name = `${pick(STUDENT_FIRST)} ${pick(STUDENT_LAST)}`;

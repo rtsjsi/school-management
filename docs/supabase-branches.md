@@ -45,3 +45,47 @@ To copy all application users (auth + profiles with role/full_name) from the mai
    ```
    - New users are created in dev with a **temporary password**; existing dev users get their profile (role, full_name) updated from prod.
    - New-user passwords are printed to the console only (no file is kept). Copy them before the script exits. Any existing `sync-users-passwords.csv` from a previous run is removed after a successful run.
+
+## Development database backup (for manual import into main)
+
+To **create a backup file of the development database** and import it into main yourself:
+
+1. **Set `DEV_DATABASE_URL` in `.env.development`**  
+   Supabase Dashboard → Development project → **Connect**.  
+   **Use the Session pooler URI** (not the direct database URI): choose **Session** and copy the URI.  
+   The direct DB host (`db.xxx.supabase.co`) is IPv6-only on the free tier; the Session pooler host (`aws-0-<region>.pooler.supabase.com:5432`) works over IPv4.
+   ```bash
+   DEV_DATABASE_URL=postgresql://postgres.[DEV-REF]:[PASSWORD]@aws-0-us-east-1.pooler.supabase.com:5432/postgres
+   ```
+   (Replace region and password as shown in your dashboard.)
+
+2. **Create the backup:**
+   ```bash
+   npm run db:backup-dev
+   ```
+   This writes a single SQL file to **`supabase/backups/dev-backup-<timestamp>.sql`** (schema + data for the `public` schema).
+
+3. **Import into main manually:**
+   - **Option A:** Supabase Dashboard → **main** project → **SQL Editor** → paste or upload the backup file and run it (after dropping or clearing the `public` schema if you want a full replace).
+   - **Option B:** Using `psql` with main’s connection string:  
+     `psql "postgresql://..." -f supabase/backups/dev-backup-<timestamp>.sql`
+
+The backup file is in `.gitignore` (`supabase/backups`); keep it local and do not commit it.
+
+---
+
+## Cloning development database into main (automated)
+
+To **flush the main database and restore from dev in one go** (requires both DB URLs and `psql` on PATH):
+
+1. **Install PostgreSQL client** and add **both** `DEV_DATABASE_URL` and `MAIN_DATABASE_URL` to your env files. Use the **Session pooler** URI for each project (free tier needs this for IPv4).
+
+2. **Run:**
+   ```bash
+   npm run db:clone-dev-to-main
+   ```
+   This dumps dev’s **auth** (users, identities) and **public** (including **profiles** for role-based access), flushes main’s public schema and auth users, then restores both. Main will have the same users and profiles as dev (same passwords; users may need to sign in again unless you set main’s JWT secret to match dev: Dashboard → Settings → API → JWT Secret).
+
+   **Storage:** If `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set in both `.env.development` and `.env.main`, the script also copies **all storage buckets** from dev to main (Step 5): creates missing buckets and copies every object by path so the app’s path-based references work on main. If either env file is missing these, storage copy is skipped and a warning is printed.
+
+   **Warning:** This overwrites main’s auth users and all public data (and storage, when Step 5 runs).

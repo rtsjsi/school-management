@@ -12,6 +12,8 @@
     "lint": "next lint",
     "db:push": "node scripts/supabase-by-branch.js db push",
     "push:all": "git push && npm run db:push",
+    "db:backup-dev": "node scripts/backup-dev-db.js",
+    "db:clone-dev-to-main": "node scripts/clone-dev-db-to-main.js",
     "supabase:link": "node scripts/supabase-by-branch.js",
     "seed": "npx tsx scripts/seed.ts",
     "sync-users:prod-to-dev": "npx tsx scripts/sync-users-prod-to-dev.ts"

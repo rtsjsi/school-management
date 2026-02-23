@@ -2,7 +2,7 @@ import { cache } from "react";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/types/auth";
 
-const VALID_ROLES: UserRole[] = ["principal", "admin", "teacher"];
+const VALID_ROLES: UserRole[] = ["principal", "admin", "teacher", "auditor"];
 
 function normalizeRole(value: unknown): UserRole {
   const s = typeof value === "string" ? value.trim().toLowerCase() : "";
@@ -38,6 +38,8 @@ export const getUser = cache(async (): Promise<AuthUser | null> => {
     console.error("[auth] profiles fetch error:", profileSource.error.message);
   }
 
+  // If no profile row (e.g. after dev→main clone with old session), role defaults to teacher.
+  // User must sign out and sign in again so the session matches the cloned auth.users and profiles.
   const role = normalizeRole(profile?.role);
   const fullName = profile?.full_name ?? null;
 
@@ -68,4 +70,12 @@ export function isPrincipal(user: AuthUser | null): boolean {
 
 export function isAdminOrAbove(user: AuthUser | null): boolean {
   return user?.role === "principal" || user?.role === "admin";
+}
+
+export function isAuditor(user: AuthUser | null): boolean {
+  return user?.role === "auditor";
+}
+
+export function canViewFinance(user: AuthUser | null): boolean {
+  return isAdminOrAbove(user) || isAuditor(user);
 }

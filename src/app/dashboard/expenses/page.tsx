@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getUser, isAdminOrAbove } from "@/lib/auth";
+import { getUser, isAdminOrAbove, canViewFinance } from "@/lib/auth";
 import { Receipt } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ExpensesManager from "@/components/ExpensesManager";
@@ -9,7 +9,7 @@ import ExpenseReports from "@/components/ExpenseReports";
 export default async function ExpensesPage() {
   const user = await getUser();
   if (!user) redirect("/login");
-  if (!isAdminOrAbove(user)) redirect("/dashboard");
+  if (!canViewFinance(user)) redirect("/dashboard");
 
   const canEdit = isAdminOrAbove(user);
 

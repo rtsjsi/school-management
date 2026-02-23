@@ -1,4 +1,4 @@
-import { getUser, isAdminOrAbove } from "@/lib/auth";
+import { getUser, isAdminOrAbove, isAuditor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import EmployeeEntryForm from "@/components/EmployeeEntryForm";
 import { EmployeeEditDialog } from "@/components/EmployeeEditDialog";
@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 export async function EmployeesList() {
   const user = await getUser();
   if (!user) return null;
-  if (!isAdminOrAbove(user)) return null;
+  if (!isAdminOrAbove(user) && !isAuditor(user)) return null;
 
   const supabase = await createClient();
   const { data: employees } = await supabase

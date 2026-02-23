@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { getUser, isAdminOrAbove } from "@/lib/auth";
+import { getUser, isAdminOrAbove, canViewFinance } from "@/lib/auth";
 import { DollarSign } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TableSkeleton } from "@/components/skeletons/TableSkeleton";
@@ -15,7 +15,7 @@ import { createClient } from "@/lib/supabase/server";
 export default async function FeesPage() {
   const user = await getUser();
   if (!user) redirect("/login");
-  if (!isAdminOrAbove(user)) redirect("/dashboard");
+  if (!canViewFinance(user)) redirect("/dashboard");
 
   const supabase = await createClient();
   const { data: allStudents } = await supabase

@@ -24,16 +24,16 @@ type NavItem = {
   href: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
-  roles?: ("principal" | "admin" | "teacher")[];
+  roles?: ("principal" | "admin" | "teacher" | "auditor")[];
 };
 
 const navItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/academic-setup", label: "Academic setup", icon: BookOpen },
   { href: "/dashboard/students", label: "Students management", icon: GraduationCap },
-  { href: "/dashboard/fees", label: "Fees management", icon: DollarSign, roles: ["principal", "admin"] },
-  { href: "/dashboard/expenses", label: "Expense management", icon: Banknote, roles: ["principal", "admin"] },
-  { href: "/dashboard/payroll", label: "Payroll", icon: Wallet, roles: ["principal", "admin"] },
+  { href: "/dashboard/fees", label: "Fees management", icon: DollarSign, roles: ["principal", "admin", "auditor"] },
+  { href: "/dashboard/expenses", label: "Expense management", icon: Banknote, roles: ["principal", "admin", "auditor"] },
+  { href: "/dashboard/payroll", label: "Payroll", icon: Wallet, roles: ["principal", "admin", "auditor"] },
   { href: "/dashboard/exams", label: "Exam management", icon: FileQuestion },
   { href: "/dashboard/administration", label: "Administration", icon: Building2, roles: ["principal"] },
 ];

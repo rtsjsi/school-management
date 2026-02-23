@@ -36,6 +36,8 @@ sync-users-passwords.csv
 
 # supabase local link state
 supabase/.temp
+# DB backup files (from db:clone-dev-to-main)
+supabase/backups
 
 # typescript
 *.tsbuildinfo

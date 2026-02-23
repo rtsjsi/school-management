@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { getUser, isAdminOrAbove } from "@/lib/auth";
+import { getUser, isAdminOrAbove, canViewFinance } from "@/lib/auth";
 import { Wallet } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ShiftForm from "@/components/ShiftForm";
@@ -22,7 +22,7 @@ import { TableSkeleton } from "@/components/skeletons/TableSkeleton";
 export default async function PayrollPage() {
   const user = await getUser();
   if (!user) redirect("/login");
-  if (!isAdminOrAbove(user)) redirect("/dashboard");
+  if (!canViewFinance(user)) redirect("/dashboard");
 
   const supabase = await createClient();
   const { data: employees } = await supabase
