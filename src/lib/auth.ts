@@ -29,7 +29,7 @@ export const getUser = cache(async (): Promise<AuthUser | null> => {
 
   // Prefer admin client (bypasses RLS) so role is always read correctly
   const admin = createAdminClient();
-  let profileSource = admin
+  const profileSource = admin
     ? await admin.from("profiles").select("role, full_name").eq("id", user.id).maybeSingle()
     : await supabase.from("profiles").select("role, full_name").eq("id", user.id).maybeSingle();
 

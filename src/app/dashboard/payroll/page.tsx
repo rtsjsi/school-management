@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { getUser, isAdminOrAbove, canViewFinance } from "@/lib/auth";
+import { getUser, canViewFinance } from "@/lib/auth";
 import { Wallet } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ShiftForm from "@/components/ShiftForm";
