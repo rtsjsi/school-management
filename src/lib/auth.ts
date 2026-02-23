@@ -18,7 +18,6 @@ export type AuthUser = {
 };
 
 // Cache getUser per request so multiple calls don't query Supabase multiple times
-// This deduplicates calls on the same page load
 export const getUser = cache(async (): Promise<AuthUser | null> => {
   const supabase = await createClient();
   const {
@@ -27,46 +26,16 @@ export const getUser = cache(async (): Promise<AuthUser | null> => {
 
   if (!user) return null;
 
-  // Prefer admin client (bypasses RLS) so role is always read correctly.
-  // When admin is available, look up by email first so role is correct even if auth.users id
-  // and profiles id are out of sync (e.g. after dev→main clone or different Auth/DB state).
+  // Standard auth: resolve profile by auth user id only (profiles.id = auth.uid())
   const admin = createAdminClient();
-  let profile: { role: unknown; full_name: string | null } | null = null;
+  const client = admin ?? supabase;
+  const { data: profile, error } = await client
+    .from("profiles")
+    .select("role, full_name")
+    .eq("id", user.id)
+    .maybeSingle();
 
-  if (admin && user.email) {
-    const byEmail = await admin.from("profiles").select("role, full_name").eq("email", user.email).maybeSingle();
-    if (byEmail.data) profile = byEmail.data;
-    if (byEmail.error) console.error("[auth] profiles by email:", byEmail.error.message);
-  }
-
-  if (!profile) {
-    const profileSource = admin
-      ? await admin.from("profiles").select("role, full_name").eq("id", user.id).maybeSingle()
-      : await supabase.from("profiles").select("role, full_name").eq("id", user.id).maybeSingle();
-    profile = profileSource.data;
-    if (profileSource.error) console.error("[auth] profiles fetch error:", profileSource.error.message);
-  }
-
-  // Without admin client (e.g. production missing service role key): try by email so role
-  // resolves after dev→main clone. RLS allows reading profile where email = current user email.
-  if (!profile && user.email) {
-    const byEmail = await supabase.from("profiles").select("role, full_name").eq("email", user.email).maybeSingle();
-    if (byEmail.data) profile = byEmail.data;
-  }
-
-  if (!profile && user?.email) {
-    if (!admin) {
-      console.warn(
-        "[auth] No profile found and SUPABASE_SERVICE_ROLE_KEY is not set. " +
-          "Set it in production (e.g. Vercel env) so the app can resolve role by email. " +
-          "User id=" + user.id + " email=" + user.email
-      );
-    } else {
-      console.warn(
-        "[auth] No profile row for user id=" + user.id + " email=" + user.email + ". Sign out and sign in again after a DB clone."
-      );
-    }
-  }
+  if (error) console.error("[auth] profiles fetch error:", error.message);
 
   const role = normalizeRole(profile?.role);
   const fullName = profile?.full_name ?? null;

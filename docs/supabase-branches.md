@@ -25,7 +25,7 @@ No manual linking or env switching is required; the current branch controls whic
 
    Both files are in `.gitignore` and must never be committed.
 
-**Production deployment (e.g. Vercel):** For the **production** environment, set the same three variables: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and **`SUPABASE_SERVICE_ROLE_KEY`** (main project’s service role key). The service role key is required so the app can resolve the user’s role from the `profiles` table (e.g. principal). Without it, users may appear as "teacher" after a dev→main clone.
+**Production deployment (e.g. Vercel):** Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` for the main project. Optionally set `SUPABASE_SERVICE_ROLE_KEY` for server-side admin operations (e.g. listing all profiles in Administration). Auth uses the standard flow: profile is read by user id from the `profiles` table.
 
 ## Usage
 
