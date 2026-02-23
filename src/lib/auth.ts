@@ -48,9 +48,17 @@ export const getUser = cache(async (): Promise<AuthUser | null> => {
   }
 
   if (!profile && user?.email) {
-    console.warn(
-      "[auth] No profile row for user id=" + user.id + " email=" + user.email + ". Sign out and sign in again after a DB clone."
-    );
+    if (!admin) {
+      console.warn(
+        "[auth] No profile found and SUPABASE_SERVICE_ROLE_KEY is not set. " +
+          "Set it in production (e.g. Vercel env) so the app can resolve role by email. " +
+          "User id=" + user.id + " email=" + user.email
+      );
+    } else {
+      console.warn(
+        "[auth] No profile row for user id=" + user.id + " email=" + user.email + ". Sign out and sign in again after a DB clone."
+      );
+    }
   }
 
   const role = normalizeRole(profile?.role);

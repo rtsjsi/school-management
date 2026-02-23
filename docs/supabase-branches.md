@@ -25,6 +25,8 @@ No manual linking or env switching is required; the current branch controls whic
 
    Both files are in `.gitignore` and must never be committed.
 
+**Production deployment (e.g. Vercel):** For the **production** environment, set the same three variables: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and **`SUPABASE_SERVICE_ROLE_KEY`** (main project’s service role key). The service role key is required so the app can resolve the user’s role from the `profiles` table (e.g. principal). Without it, users may appear as "teacher" after a dev→main clone.
+
 ## Usage
 
 - **`npm run dev`** / **`npm run build`** — Sync env from the current branch (`.env.main` or `.env.development`) into `.env.local`, then run Next.js. The app uses the correct Supabase project for that branch.
