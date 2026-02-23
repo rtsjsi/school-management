@@ -47,6 +47,13 @@ export const getUser = cache(async (): Promise<AuthUser | null> => {
     if (profileSource.error) console.error("[auth] profiles fetch error:", profileSource.error.message);
   }
 
+  // Without admin client (e.g. production missing service role key): try by email so role
+  // resolves after dev→main clone. RLS allows reading profile where email = current user email.
+  if (!profile && user.email) {
+    const byEmail = await supabase.from("profiles").select("role, full_name").eq("email", user.email).maybeSingle();
+    if (byEmail.data) profile = byEmail.data;
+  }
+
   if (!profile && user?.email) {
     if (!admin) {
       console.warn(
