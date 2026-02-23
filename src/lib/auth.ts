@@ -29,17 +29,31 @@ export const getUser = cache(async (): Promise<AuthUser | null> => {
 
   // Prefer admin client (bypasses RLS) so role is always read correctly
   const admin = createAdminClient();
-  const profileSource = admin
+  let profileSource = admin
     ? await admin.from("profiles").select("role, full_name").eq("id", user.id).maybeSingle()
     : await supabase.from("profiles").select("role, full_name").eq("id", user.id).maybeSingle();
 
-  const profile = profileSource.data;
+  let profile = profileSource.data;
   if (profileSource.error) {
     console.error("[auth] profiles fetch error:", profileSource.error.message);
   }
 
-  // If no profile row (e.g. after dev→main clone with old session), role defaults to teacher.
-  // User must sign out and sign in again so the session matches the cloned auth.users and profiles.
+  // Fallback: if no profile by id (e.g. auth.users id and profiles id out of sync after clone),
+  // look up by email so the correct role is used. Requires admin client.
+  if (!profile && user.email && admin) {
+    const byEmail = await admin.from("profiles").select("role, full_name").eq("email", user.email).maybeSingle();
+    if (byEmail.data) {
+      profile = byEmail.data;
+      console.warn("[auth] Profile found by email (id mismatch). Ensure auth.users and profiles are in sync.");
+    }
+  }
+
+  if (!profile && user?.email) {
+    console.warn(
+      "[auth] No profile row for user id=" + user.id + " email=" + user.email + ". Sign out and sign in again after a DB clone."
+    );
+  }
+
   const role = normalizeRole(profile?.role);
   const fullName = profile?.full_name ?? null;
 

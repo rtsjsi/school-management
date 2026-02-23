@@ -235,6 +235,32 @@ runPsql(
   `--single-transaction -c "SET session_replication_role = replica" -f "${publicBackupFile}" -c "SET session_replication_role = DEFAULT"`
 );
 
+console.log("\nStep 4b: Verify auth and profiles are in sync on main…");
+try {
+  const verifyOut = execSync(
+    `"${psql}" -h ${mainConn.host} -p ${mainConn.port} -U ${mainConn.user} -d ${mainConn.database} -t -A -c "SELECT u.email, p.role FROM auth.users u LEFT JOIN public.profiles p ON p.id = u.id ORDER BY u.email"`,
+    { encoding: "utf8", env: envWithMainPass, shell: true }
+  );
+  const lines = verifyOut.trim().split("\n").filter(Boolean);
+  if (lines.length === 0) {
+    console.log("  (no users in auth.users)");
+  } else {
+    console.log("  Users and roles on main:");
+    for (const line of lines) {
+      const [email, role] = line.split("|");
+      console.log("   ", email || "(no email)", "→", role || "(no profile row)");
+    }
+    const missingProfile = lines.some((l) => !l.split("|")[1] || l.split("|")[1].trim() === "");
+    if (missingProfile) {
+      console.warn("\n  Warning: Some auth users have no profile row. Roles will show as teacher until they sign out and sign in again.");
+    }
+  }
+} catch (e) {
+  console.warn("  Verification query failed (non-fatal):", e.message);
+}
+
+console.log("\nImportant: After clone, users must sign out and sign in on the main app so their session matches the cloned auth.users and profiles. Otherwise the app may show role 'teacher'.");
+
 (async () => {
   if (doStorage) {
     console.log("\nStep 5: Copy storage (all buckets) from dev to main…");
