@@ -2,17 +2,15 @@
 "use strict";
 
 /**
- * Clone development database and storage into main: dump dev (auth + public, including profiles),
- * flush main, restore, then copy all storage buckets from dev to main.
+ * Clone development database and storage into main: dump dev public schema (excluding profiles data),
+ * flush main public schema, restore dev data, then restore main's existing profiles so main keeps
+ * its own users and profiles. Auth (auth.users) is not touched. Optionally copy all storage buckets.
  *
  * Prerequisites:
  * - PostgreSQL client tools (pg_dump, psql) on PATH — no Docker required
  * - DEV_DATABASE_URL and MAIN_DATABASE_URL (use Session pooler URI for free tier / IPv4).
  * - For storage copy: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.development
  *   and .env.main (or equivalent) for dev and main projects.
- *
- * Note: To keep existing tokens valid on main, set main project's JWT secret to match dev
- * (Dashboard → Settings → API → JWT Secret). Otherwise users must sign in again.
  */
 
 const { execSync } = require("child_process");
@@ -38,7 +36,7 @@ function parseDbUrl(url) {
 const backupsDir = path.join(repoRoot, "supabase", "backups");
 const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
 const backupName = `dev-to-main-${timestamp}`;
-const authDataFile = path.join(backupsDir, `${backupName}-auth.sql`);
+const mainProfilesBackupFile = path.join(backupsDir, `${backupName}-main-profiles.sql`);
 const publicBackupFile = path.join(backupsDir, `${backupName}-public.sql`);
 
 function loadEnv(fileName) {
@@ -193,80 +191,52 @@ async function copyStorage(devUrl, devKey, mainUrl, mainKey) {
   }
 }
 
-console.log("Step 1a: Dump auth.users + auth.identities (data only) from dev — for profiles/user IDs…");
-// Only users and identities; full auth dump includes schema_migrations which we cannot write on main
+console.log("Step 1: Backup main's public.profiles (data only) so we can restore it after clone…");
 try {
   execSync(
-    `"${pgDump}" -h ${devConn.host} -p ${devConn.port} -U ${devConn.user} -d ${devConn.database} --no-owner --no-privileges --data-only -t auth.users -t auth.identities -f "${authDataFile}"`,
-    { stdio: "inherit", shell: true, env: envWithDevPass }
+    `"${pgDump}" -h ${mainConn.host} -p ${mainConn.port} -U ${mainConn.user} -d ${mainConn.database} --no-owner --no-privileges --data-only -t public.profiles -f "${mainProfilesBackupFile}"`,
+    { stdio: "inherit", shell: true, env: envWithMainPass }
   );
 } catch (e) {
-  console.error("pg_dump (auth) failed.");
+  console.error("pg_dump (main profiles) failed.");
   process.exit(1);
 }
 
-console.log("Step 1b: Full dump of public schema from dev (including profiles)…");
+console.log("Step 2: Dump dev public schema (excluding profiles data so main keeps its own profiles)…");
 try {
   execSync(
-    `"${pgDump}" -h ${devConn.host} -p ${devConn.port} -U ${devConn.user} -d ${devConn.database} --schema=public --no-owner --no-privileges -f "${publicBackupFile}"`,
+    `"${pgDump}" -h ${devConn.host} -p ${devConn.port} -U ${devConn.user} -d ${devConn.database} --schema=public --no-owner --no-privileges --exclude-table-data=public.profiles -f "${publicBackupFile}"`,
     { stdio: "inherit", shell: true, env: envWithDevPass }
   );
 } catch (e) {
   console.error("pg_dump (public) failed.");
   process.exit(1);
 }
-console.log("Backup files:", authDataFile, publicBackupFile);
+console.log("Backup files:", mainProfilesBackupFile, publicBackupFile);
 
-console.log("\nStep 2: Flush main — drop public schema and clear auth users (so we can restore dev auth + public)…");
+console.log("\nStep 3: Flush main public schema (auth.users and profiles will be restored from main backup)…");
 runPsql(mainConn, envWithMainPass, `-c "DROP SCHEMA IF EXISTS public CASCADE"`);
-runPsql(mainConn, envWithMainPass, `-c "TRUNCATE auth.users CASCADE"`);
 
-console.log("\nStep 3: Restore auth data into main (triggers disabled)…");
-runPsql(
-  mainConn,
-  envWithMainPass,
-  `--single-transaction -c "SET session_replication_role = replica" -f "${authDataFile}" -c "SET session_replication_role = DEFAULT"`
-);
-
-console.log("\nStep 4: Restore public schema (including profiles) into main…");
+console.log("\nStep 4: Restore public schema from dev (profiles table empty)…");
 runPsql(
   mainConn,
   envWithMainPass,
   `--single-transaction -c "SET session_replication_role = replica" -f "${publicBackupFile}" -c "SET session_replication_role = DEFAULT"`
 );
 
-console.log("\nStep 4b: Verify auth and profiles are in sync on main…");
-try {
-  const verifyOut = execSync(
-    `"${psql}" -h ${mainConn.host} -p ${mainConn.port} -U ${mainConn.user} -d ${mainConn.database} -t -A -c "SELECT u.email, p.role FROM auth.users u LEFT JOIN public.profiles p ON p.id = u.id ORDER BY u.email"`,
-    { encoding: "utf8", env: envWithMainPass, shell: true }
-  );
-  const lines = verifyOut.trim().split("\n").filter(Boolean);
-  if (lines.length === 0) {
-    console.log("  (no users in auth.users)");
-  } else {
-    console.log("  Users and roles on main:");
-    for (const line of lines) {
-      const [email, role] = line.split("|");
-      console.log("   ", email || "(no email)", "→", role || "(no profile row)");
-    }
-    const missingProfile = lines.some((l) => !l.split("|")[1] || l.split("|")[1].trim() === "");
-    if (missingProfile) {
-      console.warn("\n  Warning: Some auth users have no profile row. Roles will show as teacher until they sign out and sign in again.");
-    }
-  }
-} catch (e) {
-  console.warn("  Verification query failed (non-fatal):", e.message);
-}
-
-console.log("\nImportant: After clone, users must sign out and sign in on the main app so their session matches the cloned auth.users and profiles. Otherwise the app may show role 'teacher'.");
+console.log("\nStep 5: Restore main's profiles data (main keeps its own users and roles)…");
+runPsql(
+  mainConn,
+  envWithMainPass,
+  `--single-transaction -c "SET session_replication_role = replica" -f "${mainProfilesBackupFile}" -c "SET session_replication_role = DEFAULT"`
+);
 
 (async () => {
   if (doStorage) {
-    console.log("\nStep 5: Copy storage (all buckets) from dev to main…");
+    console.log("\nStep 6: Copy storage (all buckets) from dev to main…");
     await copyStorage(devSupabaseUrl, devServiceKey, mainSupabaseUrl, mainServiceKey);
   }
-  console.log("\nDone. Main database (and storage, if enabled) is now a clone of development.");
+  console.log("\nDone. Main public data is from dev; main's auth.users and profiles were not changed.");
   console.log("Backup kept at:", backupsDir);
 })().catch((err) => {
   console.error(err);

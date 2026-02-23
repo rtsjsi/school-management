@@ -86,8 +86,8 @@ To **flush the main database and restore from dev in one go** (requires both DB 
    ```bash
    npm run db:clone-dev-to-main
    ```
-   This dumps dev’s **auth** (users, identities) and **public** (including **profiles** for role-based access), flushes main’s public schema and auth users, then restores both. Main will have the same users and profiles as dev (same passwords; users may need to sign in again unless you set main’s JWT secret to match dev: Dashboard → Settings → API → JWT Secret).
+   This backs up main’s **profiles** (data only), dumps dev’s **public** schema (excluding profiles data), flushes main’s public schema, restores dev’s public data, then restores main’s profiles. **Auth (auth.users) is not touched** — main keeps its own users and profiles, so no sign-in or role issues after clone.
 
-   **Storage:** If `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set in both `.env.development` and `.env.main`, the script also copies **all storage buckets** from dev to main (Step 5): creates missing buckets and copies every object by path so the app’s path-based references work on main. If either env file is missing these, storage copy is skipped and a warning is printed.
+   **Storage:** If `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set in both `.env.development` and `.env.main`, the script also copies **all storage buckets** from dev to main: creates missing buckets and copies every object by path. If either env file is missing these, storage copy is skipped.
 
-   **Warning:** This overwrites main’s auth users and all public data (and storage, when Step 5 runs).
+   **Warning:** This overwrites all main public data except profiles; main’s auth and profiles are preserved.
