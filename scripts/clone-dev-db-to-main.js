@@ -224,6 +224,13 @@ runPsql(
   `--single-transaction -c "SET session_replication_role = replica" -f "${publicBackupFile}" -c "SET session_replication_role = DEFAULT"`
 );
 
+console.log("\nStep 4b: Recreate trigger on auth.users so new signups get a profile row…");
+runPsql(
+  mainConn,
+  envWithMainPass,
+  `-c "DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users; CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();"`
+);
+
 console.log("\nStep 5: Restore main's profiles data (main keeps its own users and roles)…");
 runPsql(
   mainConn,
