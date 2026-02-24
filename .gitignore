@@ -29,14 +29,11 @@ yarn-error.log*
 .env*.local
 .env.main
 .env.development
-sync-users-passwords.csv
-
 # vercel
 .vercel
 
 # supabase local link state
 supabase/.temp
-# DB backup files (from db:clone-dev-to-main)
 supabase/backups
 
 # typescript

@@ -6,18 +6,14 @@
     "node": ">=18.17.0"
   },
   "scripts": {
-    "dev": "node scripts/sync-env-by-branch.js && next dev",
-    "build": "node scripts/sync-env-by-branch.js && next build",
+    "dev": "node scripts/by-branch.js && next dev",
+    "build": "node scripts/by-branch.js && next build",
     "start": "next start",
     "lint": "next lint",
-    "db:push": "node scripts/supabase-by-branch.js db push",
+    "db:push": "node scripts/by-branch.js db push",
     "push:all": "git push && npm run db:push",
-    "db:backup-dev": "node scripts/backup-dev-db.js",
-    "db:clone-dev-to-main": "node scripts/clone-dev-db-to-main.js",
-    "db:flush": "node scripts/run-flush-db.js",
-    "supabase:link": "node scripts/supabase-by-branch.js",
-    "seed": "npx tsx scripts/seed.ts",
-    "sync-users:prod-to-dev": "npx tsx scripts/sync-users-prod-to-dev.ts"
+    "supabase:link": "node scripts/by-branch.js link",
+    "seed": "npx tsx scripts/seed.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
