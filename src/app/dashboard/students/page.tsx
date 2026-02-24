@@ -5,8 +5,6 @@ import { GraduationCap } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StudentEntryForm from "@/components/StudentEntryForm";
 import { ManageStudentsList } from "@/components/ManageStudentsList";
-import { AdmissionEnquiryForm } from "@/components/AdmissionEnquiryForm";
-import { AdmissionEnquiryList } from "@/components/AdmissionEnquiryList";
 import { TableSkeleton } from "@/components/skeletons/TableSkeleton";
 
 export default async function StudentsPage({
@@ -20,7 +18,7 @@ export default async function StudentsPage({
   const canEdit = isAdminOrAbove(user);
   const params = await searchParams;
   const tabParam = params.tab ?? (canEdit ? "add" : "manage");
-  const defaultTab = ["add", "manage", "admission"].includes(tabParam) ? tabParam : (canEdit ? "add" : "manage");
+  const defaultTab = ["add", "manage"].includes(tabParam) ? tabParam : (canEdit ? "add" : "manage");
 
   return (
     <div className="space-y-8">
@@ -30,7 +28,7 @@ export default async function StudentsPage({
           Student Master
         </h1>
         <p className="caption mt-1">
-          {canEdit ? "Add new students, manage records, or track admission enquiries." : "View student records (read-only)."}
+          {canEdit ? "Add new students or manage student records." : "View student records (read-only)."}
         </p>
       </div>
 
@@ -40,9 +38,6 @@ export default async function StudentsPage({
             <TabsTrigger value="add">Add Student</TabsTrigger>
           )}
           <TabsTrigger value="manage">{canEdit ? "Manage Students" : "Students"}</TabsTrigger>
-          {canEdit && (
-            <TabsTrigger value="admission">Admission Enquiry</TabsTrigger>
-          )}
         </TabsList>
 
         {canEdit && (
@@ -56,15 +51,6 @@ export default async function StudentsPage({
             <ManageStudentsList canEdit={canEdit} />
           </Suspense>
         </TabsContent>
-
-        {canEdit && (
-          <TabsContent value="admission" className="space-y-6">
-            <AdmissionEnquiryForm />
-            <Suspense fallback={<TableSkeleton rows={5} columns={5} />}>
-              <AdmissionEnquiryList />
-            </Suspense>
-          </TabsContent>
-        )}
       </Tabs>
     </div>
   );

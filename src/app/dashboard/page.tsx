@@ -9,7 +9,6 @@ import {
   ArrowRight,
   IndianRupee,
   AlertCircle,
-  UserCheck,
   TrendingUp,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,7 +39,6 @@ export default async function DashboardPage() {
     { count: classesCount },
     feeCollectedResult,
     pendingFeesResult,
-    { count: admissionEnquiriesCount },
     expensesResult,
   ] = await Promise.all([
     supabase.from("students").select("*", { count: "exact", head: true }),
@@ -56,11 +54,6 @@ export default async function DashboardPage() {
       .from("fees")
       .select("amount, paid_amount")
       .in("status", ["pending", "overdue"]),
-    supabase
-      .from("admission_enquiries")
-      .select("*", { count: "exact", head: true })
-      .gte("enquiry_date", monthStart)
-      .lte("enquiry_date", monthEnd),
     supabase
       .from("expenses")
       .select("amount")
@@ -100,13 +93,6 @@ export default async function DashboardPage() {
             description: "Outstanding amount",
             icon: AlertCircle,
             href: "/dashboard/fees",
-          },
-          {
-            title: "Admission enquiries",
-            value: String(admissionEnquiriesCount ?? 0),
-            description: "This month",
-            icon: UserCheck,
-            href: "/dashboard/admission-enquiry",
           },
           {
             title: "Expenses (this month)",
