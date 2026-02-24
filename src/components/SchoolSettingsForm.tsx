@@ -4,12 +4,13 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { updateSchoolSettings } from "@/app/dashboard/school-settings/actions";
-import { Building2, ImageIcon, FileSignature } from "lucide-react";
+import { Building2, ImageIcon, FileSignature, Upload } from "lucide-react";
 
 const BUCKET = "school-assets";
 const LOGO_PATH = "logo.png";
@@ -232,13 +233,22 @@ export function SchoolSettingsForm({
             )}
             <div className="space-y-2">
               <Label htmlFor="logo">Upload logo</Label>
-              <Input
-                id="logo"
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={handleLogoChange}
-                disabled={uploadingLogo}
-              />
+              <label className={uploadingLogo ? "inline-block cursor-not-allowed opacity-70" : "inline-block cursor-pointer"}>
+                <input
+                  id="logo"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleLogoChange}
+                  disabled={uploadingLogo}
+                  className="sr-only"
+                />
+                <Button type="button" variant="default" className="gap-2 pointer-events-none" asChild>
+                  <span>
+                    <Upload className="h-4 w-4" />
+                    Choose file
+                  </span>
+                </Button>
+              </label>
               {uploadingLogo && <p className="text-xs text-muted-foreground">Uploading…</p>}
             </div>
           </div>
@@ -268,13 +278,22 @@ export function SchoolSettingsForm({
             )}
             <div className="space-y-2">
               <Label htmlFor="signature">Upload signature image</Label>
-              <Input
-                id="signature"
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={handleSignatureChange}
-                disabled={uploadingSignature}
-              />
+              <label className={uploadingSignature ? "inline-block cursor-not-allowed opacity-70" : "inline-block cursor-pointer"}>
+                <input
+                  id="signature"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleSignatureChange}
+                  disabled={uploadingSignature}
+                  className="sr-only"
+                />
+                <Button type="button" variant="default" className="gap-2 pointer-events-none" asChild>
+                  <span>
+                    <Upload className="h-4 w-4" />
+                    Choose file
+                  </span>
+                </Button>
+              </label>
               {uploadingSignature && <p className="text-xs text-muted-foreground">Uploading…</p>}
             </div>
           </div>
