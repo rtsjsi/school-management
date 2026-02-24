@@ -23,18 +23,19 @@ export async function updateSchoolSettings(
   if (!isPrincipal) return { ok: false, error: "Only Principal can update school settings." };
 
   const supabase = await createClient();
+  const payload = {
+    id: SCHOOL_SETTINGS_ID,
+    name: data.name.trim() || "School",
+    address: data.address.trim() || null,
+    phone: data.phone.trim() || null,
+    email: data.email.trim() || null,
+    logo_path: data.logo_path || null,
+    principal_signature_path: data.principal_signature_path || null,
+    updated_at: new Date().toISOString(),
+  };
   const { error } = await supabase
     .from("school_settings")
-    .update({
-      name: data.name.trim() || "School",
-      address: data.address.trim() || null,
-      phone: data.phone.trim() || null,
-      email: data.email.trim() || null,
-      logo_path: data.logo_path || null,
-      principal_signature_path: data.principal_signature_path || null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", SCHOOL_SETTINGS_ID);
+    .upsert(payload, { onConflict: "id" });
 
   if (error) return { ok: false, error: error.message };
   revalidatePath("/dashboard/school-settings");
