@@ -89,8 +89,14 @@
   * {
     @apply border-border;
   }
+  html {
+    height: 100%;
+    overflow: hidden;
+  }
   body {
     @apply bg-background text-foreground antialiased;
+    height: 100%;
+    overflow: hidden;
   }
   /* Number inputs: no up/down spinners app-wide */
   input[type="number"] {
