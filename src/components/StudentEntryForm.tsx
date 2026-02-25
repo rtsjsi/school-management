@@ -20,8 +20,7 @@ import { StudentDocumentsPhotos } from "@/components/StudentDocumentsPhotos";
 import { CameraCaptureButton } from "@/components/CameraCapture";
 import { GradeDivisionYearSelects } from "@/components/GradeDivisionYearSelects";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { Upload, FileText, ImageIcon, ArrowLeft } from "lucide-react";
+import { Upload, FileText, ImageIcon } from "lucide-react";
 import {
   uploadStudentFiles,
   type PendingPhotos,
@@ -289,15 +288,6 @@ export default function StudentEntryForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/dashboard/students" className="gap-1">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Students
-          </Link>
-        </Button>
-      </div>
-
       {error && (
         <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>
       )}

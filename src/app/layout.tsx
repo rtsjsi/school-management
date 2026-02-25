@@ -26,7 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${plusJakarta.variable} font-sans antialiased bg-background text-foreground`}>
+      <body className={`${plusJakarta.variable} font-sans antialiased bg-background text-foreground overflow-hidden h-screen`}>
         {children}
         <Toaster />
       </body>
