@@ -5,8 +5,6 @@ import { Wallet } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ShiftForm from "@/components/ShiftForm";
 import HolidayForm from "@/components/HolidayForm";
-import AttendanceManualForm from "@/components/AttendanceManualForm";
-import { createClient } from "@/lib/supabase/server";
 import { ShiftList } from "@/components/ShiftList";
 import { HolidayList } from "@/components/HolidayList";
 import { AttendanceDailyRegister } from "@/components/AttendanceDailyRegister";
@@ -16,22 +14,12 @@ import NEFTGeneration from "@/components/NEFTGeneration";
 import PayslipGenerator from "@/components/PayslipGenerator";
 import SalaryDeductionsManager from "@/components/SalaryDeductionsManager";
 import { EmployeesList } from "@/components/async/EmployeesList";
-import { EmployeeDepartmentReport } from "@/components/EmployeeDepartmentReport";
 import { TableSkeleton } from "@/components/skeletons/TableSkeleton";
 
 export default async function PayrollPage() {
   const user = await getUser();
   if (!user) redirect("/login");
   if (!canViewFinance(user)) redirect("/dashboard");
-
-  const supabase = await createClient();
-  const { data: employees } = await supabase
-    .from("employees")
-    .select("id, full_name")
-    .eq("status", "active")
-    .order("full_name");
-
-  const empList = employees ?? [];
 
   return (
     <div className="space-y-8">
@@ -60,22 +48,9 @@ export default async function PayrollPage() {
         </div>
 
         <TabsContent value="employees" className="space-y-6">
-          <Tabs defaultValue="directory" className="space-y-6">
-            <TabsList className="flex flex-nowrap gap-1 w-full">
-              <TabsTrigger value="directory">Directory</TabsTrigger>
-              <TabsTrigger value="department">Department Report</TabsTrigger>
-            </TabsList>
-            <TabsContent value="directory" className="space-y-6">
-              <Suspense fallback={<TableSkeleton rows={5} columns={6} />}>
-                <EmployeesList />
-              </Suspense>
-            </TabsContent>
-            <TabsContent value="department" className="space-y-6">
-              <Suspense fallback={<TableSkeleton rows={5} columns={4} />}>
-                <EmployeeDepartmentReport />
-              </Suspense>
-            </TabsContent>
-          </Tabs>
+          <Suspense fallback={<TableSkeleton rows={5} columns={6} />}>
+            <EmployeesList />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="shifts" className="space-y-6">
@@ -93,9 +68,6 @@ export default async function PayrollPage() {
         </TabsContent>
 
         <TabsContent value="attendance" className="space-y-6">
-          <div className="grid gap-6 lg:grid-cols-1">
-            <AttendanceManualForm employees={empList} />
-          </div>
           <Suspense fallback={<TableSkeleton rows={5} columns={6} />}>
             <AttendanceDailyRegister />
           </Suspense>
