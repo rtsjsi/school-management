@@ -59,7 +59,7 @@ export function AppSidebar({ user }: { user: AuthUser }) {
   }, [mobileOpen]);
 
   const sidebar = (
-    <div className="flex h-full w-64 flex-col bg-sidebar text-sidebar-foreground shadow-xl">
+    <div className="flex h-full w-64 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-foreground/10">
       <div className="flex h-14 shrink-0 items-center gap-3 border-b border-sidebar-foreground/10 px-3 py-2">
         <Link
           href="/dashboard"
@@ -102,10 +102,10 @@ export function AppSidebar({ user }: { user: AuthUser }) {
             <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}>
               <span
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 border-l-2",
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-200 border-l-2",
                   isActive
-                    ? "bg-sidebar-foreground/20 text-sidebar-foreground border-sidebar-foreground/60"
-                    : "border-transparent text-sidebar-foreground/90 hover:bg-sidebar-foreground/15 hover:text-sidebar-foreground"
+                    ? "bg-sidebar-foreground/15 text-sidebar-foreground border-sidebar-foreground/50"
+                    : "border-transparent text-sidebar-foreground/85 hover:bg-sidebar-foreground/10 hover:text-sidebar-foreground"
                 )}
               >
                 <Icon className="h-4 w-4 shrink-0 opacity-90" />

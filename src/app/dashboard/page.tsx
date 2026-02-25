@@ -138,7 +138,7 @@ export default async function DashboardPage() {
           const card = (
             <Card
               key={stat.title}
-              className={stat.href ? "hover:shadow-card-hover hover:border-primary/20 transition-all duration-200" : ""}
+              className={stat.href ? "hover:shadow-card-hover hover:border-primary/15 transition-all duration-200 ease-out" : ""}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
