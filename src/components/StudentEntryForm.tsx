@@ -20,6 +20,7 @@ import { StudentDocumentsPhotos } from "@/components/StudentDocumentsPhotos";
 import { CameraCaptureButton } from "@/components/CameraCapture";
 import { GradeDivisionYearSelects } from "@/components/GradeDivisionYearSelects";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { Upload, FileText, ImageIcon } from "lucide-react";
 import {
   uploadStudentFiles,
