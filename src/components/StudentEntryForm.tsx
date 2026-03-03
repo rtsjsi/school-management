@@ -48,13 +48,10 @@ const ADMISSION_TYPES = ["regular", "transfer", "re-admission"] as const;
 
 const defaultForm = () => ({
   full_name: "",
-  email: "",
-  phone_number: "",
   date_of_birth: "",
   gender: "",
   blood_group: "",
   address: "",
-  society: "",
   district: "",
   grade: "",
   division: "",
@@ -69,7 +66,6 @@ const defaultForm = () => ({
   birth_place: "",
   last_school: "",
   aadhar_no: "",
-  unique_id: "",
   pen_no: "",
   apaar_id: "",
   father_name: "",
@@ -83,14 +79,8 @@ const defaultForm = () => ({
   fee_mafi_amount: "",
   fee_mafi_reason: "",
   all_fee_mafi: false,
-  is_permanent: false,
-  hostel_student: false,
-  food_provided: false,
-  prev_school_attendance: "",
   height: "",
   weight: "",
-  handicap: false,
-  minority: false,
   hobby: "",
   sign_of_identity: "",
   refer_name: "",
@@ -134,12 +124,27 @@ export default function StudentEntryForm({
     { key: "full_name", label: "Full name" },
     { key: "date_of_birth", label: "Date of birth" },
     { key: "address", label: "Address" },
+    { key: "gender", label: "Gender" },
+    { key: "blood_group", label: "Blood group" },
+    { key: "category", label: "Category" },
+    { key: "religion", label: "Religion" },
+    { key: "caste", label: "Caste" },
+    { key: "district", label: "District" },
     { key: "father_name", label: "Father name" },
     { key: "mother_name", label: "Mother name" },
     { key: "parent_contact", label: "Parent contact" },
+    { key: "whatsapp_no", label: "WhatsApp no" },
     { key: "grade", label: "Grade" },
     { key: "division", label: "Division" },
+    { key: "admission_type", label: "Admission type" },
     { key: "admission_date", label: "Admission date" },
+    { key: "academic_year", label: "Academic year" },
+    { key: "roll_number", label: "Roll number" },
+    { key: "aadhar_no", label: "Aadhar No" },
+    { key: "pen_no", label: "PEN No" },
+    { key: "apaar_id", label: "APAR ID" },
+    { key: "udise_id", label: "UDISE ID" },
+    { key: "gr_number", label: "GR Number" },
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -161,13 +166,10 @@ export default function StudentEntryForm({
 
       const payload: Record<string, unknown> = {
         full_name: form.full_name.trim(),
-        email: form.email.trim() || null,
-        phone_number: form.phone_number.trim() || null,
         date_of_birth: form.date_of_birth || null,
         gender: form.gender || null,
         blood_group: form.blood_group || null,
         address: form.address.trim() || null,
-        society: form.society.trim() || null,
         district: form.district.trim() || null,
         grade: form.grade.trim() || null,
         division: form.division.trim() || null,
@@ -183,7 +185,6 @@ export default function StudentEntryForm({
         birth_place: form.birth_place.trim() || null,
         last_school: form.last_school.trim() || null,
         aadhar_no: form.aadhar_no.trim() || null,
-        unique_id: form.unique_id.trim() || null,
         pen_no: form.pen_no.trim() || null,
         apaar_id: form.apaar_id.trim() || null,
         father_name: form.father_name.trim() || null,
@@ -198,14 +199,8 @@ export default function StudentEntryForm({
         fee_mafi_amount: form.fee_mafi_amount ? parseFloat(form.fee_mafi_amount) : null,
         fee_mafi_reason: form.fee_mafi_reason.trim() || null,
         all_fee_mafi: form.all_fee_mafi,
-        is_permanent: form.is_permanent,
-        hostel_student: form.hostel_student,
-        food_provided: form.food_provided,
-        prev_school_attendance: form.prev_school_attendance ? parseInt(form.prev_school_attendance) : null,
         height: form.height.trim() || null,
         weight: form.weight.trim() || null,
-        handicap: form.handicap,
-        minority: form.minority,
         hobby: form.hobby.trim() || null,
         sign_of_identity: form.sign_of_identity.trim() || null,
         refer_name: form.refer_name.trim() || null,
@@ -314,7 +309,7 @@ export default function StudentEntryForm({
                   <Input id="full_name" value={form.full_name} onChange={(e) => set("full_name", e.target.value)} placeholder="Student full name" required />
                 </div>
                 <div className="space-y-2">
-                  <Label>Gender</Label>
+                  <Label>Gender *</Label>
                   <Select value={form.gender} onValueChange={(v) => set("gender", v)}>
                     <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                     <SelectContent>
@@ -329,7 +324,7 @@ export default function StudentEntryForm({
                   <Input id="date_of_birth" type="date" value={form.date_of_birth} onChange={(e) => set("date_of_birth", e.target.value)} required />
                 </div>
                 <div className="space-y-2">
-                  <Label>Blood group</Label>
+                  <Label>Blood group *</Label>
                   <Select value={form.blood_group} onValueChange={(v) => set("blood_group", v)}>
                     <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                     <SelectContent>
@@ -340,7 +335,7 @@ export default function StudentEntryForm({
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Category</Label>
+                  <Label>Category *</Label>
                   <Select value={form.category} onValueChange={(v) => set("category", v)}>
                     <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                     <SelectContent>
@@ -351,60 +346,54 @@ export default function StudentEntryForm({
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Religion</Label>
-                  <Input value={form.religion} onChange={(e) => set("religion", e.target.value)} placeholder="e.g. Hindu" />
+                  <Label>Religion *</Label>
+                  <Input
+                    value={form.religion}
+                    onChange={(e) => set("religion", e.target.value)}
+                    placeholder="e.g. Hindu"
+                    required
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label>Caste</Label>
-                  <Input value={form.caste} onChange={(e) => set("caste", e.target.value)} />
+                  <Label>Caste *</Label>
+                  <Input value={form.caste} onChange={(e) => set("caste", e.target.value)} required />
                 </div>
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="address">Address *</Label>
                   <Input id="address" value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="Full address" required />
                 </div>
                 <div className="space-y-2">
-                  <Label>Society</Label>
-                  <Input value={form.society} onChange={(e) => set("society", e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>District</Label>
-                  <Input value={form.district} onChange={(e) => set("district", e.target.value)} />
+                  <Label>District *</Label>
+                  <Input value={form.district} onChange={(e) => set("district", e.target.value)} required />
                 </div>
                 <div className="space-y-2">
                   <Label>Birth place</Label>
                   <Input value={form.birth_place} onChange={(e) => set("birth_place", e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Phone</Label>
-                  <Input type="tel" value={form.phone_number} onChange={(e) => set("phone_number", e.target.value)} />
+                  <Label>Aadhar No *</Label>
+                  <Input
+                    value={form.aadhar_no}
+                    onChange={(e) => set("aadhar_no", e.target.value)}
+                    placeholder="12-digit"
+                    required
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label>Email</Label>
-                  <Input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
+                  <Label>PEN No *</Label>
+                  <Input value={form.pen_no} onChange={(e) => set("pen_no", e.target.value)} required />
                 </div>
                 <div className="space-y-2">
-                  <Label>Aadhar No</Label>
-                  <Input value={form.aadhar_no} onChange={(e) => set("aadhar_no", e.target.value)} placeholder="12-digit" />
+                  <Label>APAR ID *</Label>
+                  <Input value={form.apaar_id} onChange={(e) => set("apaar_id", e.target.value)} required />
                 </div>
                 <div className="space-y-2">
-                  <Label>Unique ID</Label>
-                  <Input value={form.unique_id} onChange={(e) => set("unique_id", e.target.value)} />
+                  <Label>UDISE ID *</Label>
+                  <Input value={form.udise_id} onChange={(e) => set("udise_id", e.target.value)} required />
                 </div>
                 <div className="space-y-2">
-                  <Label>PEN No</Label>
-                  <Input value={form.pen_no} onChange={(e) => set("pen_no", e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>APAR ID</Label>
-                  <Input value={form.apaar_id} onChange={(e) => set("apaar_id", e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>UDISE ID</Label>
-                  <Input value={form.udise_id} onChange={(e) => set("udise_id", e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>GR Number</Label>
-                  <Input value={form.gr_number} onChange={(e) => set("gr_number", e.target.value)} />
+                  <Label>GR Number *</Label>
+                  <Input value={form.gr_number} onChange={(e) => set("gr_number", e.target.value)} required />
                 </div>
                 <div className="space-y-2">
                   <Label>Second Language</Label>
@@ -448,8 +437,13 @@ export default function StudentEntryForm({
                   <Input type="email" value={form.parent_email} onChange={(e) => set("parent_email", e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label>WhatsApp no</Label>
-                  <Input type="tel" value={form.whatsapp_no} onChange={(e) => set("whatsapp_no", e.target.value)} />
+                  <Label>WhatsApp no *</Label>
+                  <Input
+                    type="tel"
+                    value={form.whatsapp_no}
+                    onChange={(e) => set("whatsapp_no", e.target.value)}
+                    required
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Father education</Label>
@@ -499,7 +493,7 @@ export default function StudentEntryForm({
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Admission type</Label>
+                  <Label>Admission type *</Label>
                   <Select value={form.admission_type} onValueChange={(v) => set("admission_type", v)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -525,19 +519,23 @@ export default function StudentEntryForm({
                   onAcademicYearChange={(v) => set("academic_year", v)}
                   gradeRequired
                   divisionRequired
+                  academicYearRequired
                 />
                 <div className="space-y-2">
-                  <Label>Roll number</Label>
-                  <Input type="number" value={form.roll_number} onChange={(e) => set("roll_number", e.target.value)} min={0} />
+                  <Label>Roll number *</Label>
+                  <Input
+                    type="number"
+                    value={form.roll_number}
+                    onChange={(e) => set("roll_number", e.target.value)}
+                    min={0}
+                    required
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Last school</Label>
                   <Input value={form.last_school} onChange={(e) => set("last_school", e.target.value)} />
                 </div>
-                <div className="space-y-2">
-                  <Label>Prev. school attendance</Label>
-                  <Input type="number" value={form.prev_school_attendance} onChange={(e) => set("prev_school_attendance", e.target.value)} min={0} />
-                </div>
+                <div className="space-y-2" />
                 <div className="flex items-center space-x-2">
                   <Checkbox id="rte" checked={form.is_rte_quota} onCheckedChange={(c) => set("is_rte_quota", !!c)} />
                   <Label htmlFor="rte" className="font-normal">RTE (Right to Education) Quota</Label>
@@ -572,28 +570,6 @@ export default function StudentEntryForm({
                 <div className="space-y-2">
                   <Label>Refer name</Label>
                   <Input value={form.refer_name} onChange={(e) => set("refer_name", e.target.value)} />
-                </div>
-                <div className="flex flex-wrap gap-4 items-center">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox id="handicap" checked={form.handicap} onCheckedChange={(c) => set("handicap", !!c)} />
-                    <Label htmlFor="handicap" className="font-normal">Handicap</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox id="minority" checked={form.minority} onCheckedChange={(c) => set("minority", !!c)} />
-                    <Label htmlFor="minority" className="font-normal">Minority</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox id="permanent" checked={form.is_permanent} onCheckedChange={(c) => set("is_permanent", !!c)} />
-                    <Label htmlFor="permanent" className="font-normal">Is permanent</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox id="hostel" checked={form.hostel_student} onCheckedChange={(c) => set("hostel_student", !!c)} />
-                    <Label htmlFor="hostel" className="font-normal">Hostel student</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox id="food" checked={form.food_provided} onCheckedChange={(c) => set("food_provided", !!c)} />
-                    <Label htmlFor="food" className="font-normal">Food provided</Label>
-                  </div>
                 </div>
                 <div className="space-y-2 sm:col-span-2">
                   <Label>Notes</Label>

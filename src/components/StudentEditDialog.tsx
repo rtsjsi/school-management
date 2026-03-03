@@ -34,8 +34,6 @@ interface StudentEditDialogProps {
     id: string;
     student_id?: string;
     full_name: string;
-    email?: string;
-    phone_number?: string;
     date_of_birth?: string;
     gender?: string;
     blood_group?: string;
@@ -64,8 +62,6 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
   const [expandedForm, setExpandedForm] = useState(false);
   const [form, setForm] = useState({
     full_name: student.full_name || "",
-    email: student.email || "",
-    phone_number: student.phone_number || "",
     date_of_birth: student.date_of_birth || "",
     gender: student.gender || "",
     blood_group: student.blood_group || "",
@@ -105,8 +101,6 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
       const supabase = createClient();
       const payload: Record<string, unknown> = {
         full_name: form.full_name.trim(),
-        email: form.email.trim() || null,
-        phone_number: form.phone_number.trim() || null,
         date_of_birth: form.date_of_birth || null,
         gender: form.gender || null,
         blood_group: form.blood_group || null,
@@ -192,26 +186,8 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-                placeholder="student@example.com"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone_number">Phone</Label>
-              <Input
-                id="phone_number"
-                type="tel"
-                value={form.phone_number}
-                onChange={(e) => setForm((p) => ({ ...p, phone_number: e.target.value }))}
-                placeholder="+1 (555) 000-0000"
-              />
-            </div>
+            <div className="space-y-2" />
+            <div className="space-y-2" />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

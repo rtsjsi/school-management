@@ -419,8 +419,6 @@ async function seedStudents() {
       is_rte_quota: i % 5 === 0,
       address: `${200 + i} Block, ${pick(["Sector 5", "MG Road", "Park Street", "Lake View"])}, City`,
       district: pick(DISTRICTS),
-      society: i % 3 === 0 ? `Society ${String(i + 1)}` : null,
-      phone_number: `98765${String(10000 + i).padStart(5, "0")}`,
       father_name: `${name.split(" ")[0]}'s Father`,
       mother_name: `${name.split(" ")[0]}'s Mother`,
       parent_contact: `98765${String(20000 + i).padStart(5, "0")}`,

@@ -3,13 +3,10 @@ export const ADMISSION_TYPES = ["regular", "transfer", "re-admission"] as const;
 
 export type StudentFormState = {
   full_name: string;
-  email: string;
-  phone_number: string;
   date_of_birth: string;
   gender: string;
   blood_group: string;
   address: string;
-  society: string;
   district: string;
   grade: string;
   division: string;
@@ -24,7 +21,6 @@ export type StudentFormState = {
   birth_place: string;
   last_school: string;
   aadhar_no: string;
-  unique_id: string;
   pen_no: string;
   apaar_id: string;
   father_name: string;
@@ -38,14 +34,8 @@ export type StudentFormState = {
   fee_mafi_amount: string;
   fee_mafi_reason: string;
   all_fee_mafi: boolean;
-  is_permanent: boolean;
-  hostel_student: boolean;
-  food_provided: boolean;
-  prev_school_attendance: string;
   height: string;
   weight: string;
-  handicap: boolean;
-  minority: boolean;
   hobby: string;
   sign_of_identity: string;
   refer_name: string;
@@ -71,13 +61,10 @@ export type StudentFormState = {
 export function studentFormFromRecord(r: Record<string, unknown>): StudentFormState {
   return {
     full_name: (r.full_name as string) || "",
-    email: (r.email as string) || "",
-    phone_number: (r.phone_number as string) || "",
     date_of_birth: (r.date_of_birth as string) || "",
     gender: (r.gender as string) || "",
     blood_group: (r.blood_group as string) || "",
     address: (r.address as string) || "",
-    society: (r.society as string) || "",
     district: (r.district as string) || "",
     grade: (r.grade as string) || "",
     division: (r.division as string) || "",
@@ -92,7 +79,6 @@ export function studentFormFromRecord(r: Record<string, unknown>): StudentFormSt
     birth_place: (r.birth_place as string) || "",
     last_school: (r.last_school as string) || "",
     aadhar_no: (r.aadhar_no as string) || "",
-    unique_id: (r.unique_id as string) || "",
     pen_no: (r.pen_no as string) || "",
     apaar_id: (r.apaar_id as string) || "",
     father_name: (r.father_name as string) || "",
@@ -106,14 +92,8 @@ export function studentFormFromRecord(r: Record<string, unknown>): StudentFormSt
     fee_mafi_amount: r.fee_mafi_amount != null ? String(r.fee_mafi_amount) : "",
     fee_mafi_reason: (r.fee_mafi_reason as string) || "",
     all_fee_mafi: (r.all_fee_mafi as boolean) ?? false,
-    is_permanent: (r.is_permanent as boolean) ?? false,
-    hostel_student: (r.hostel_student as boolean) ?? false,
-    food_provided: (r.food_provided as boolean) ?? false,
-    prev_school_attendance: r.prev_school_attendance != null ? String(r.prev_school_attendance) : "",
     height: (r.height as string) || "",
     weight: (r.weight as string) || "",
-    handicap: (r.handicap as boolean) ?? false,
-    minority: (r.minority as boolean) ?? false,
     hobby: (r.hobby as string) || "",
     sign_of_identity: (r.sign_of_identity as string) || "",
     refer_name: (r.refer_name as string) || "",
@@ -140,13 +120,10 @@ export function studentFormFromRecord(r: Record<string, unknown>): StudentFormSt
 export function formToPayload(form: StudentFormState): Record<string, unknown> {
   return {
     full_name: form.full_name.trim(),
-    email: form.email.trim() || null,
-    phone_number: form.phone_number.trim() || null,
     date_of_birth: form.date_of_birth || null,
     gender: form.gender || null,
     blood_group: form.blood_group || null,
     address: form.address.trim() || null,
-    society: form.society.trim() || null,
     district: form.district.trim() || null,
     grade: form.grade.trim() || null,
     division: form.division.trim() || null,
@@ -161,7 +138,6 @@ export function formToPayload(form: StudentFormState): Record<string, unknown> {
     birth_place: form.birth_place.trim() || null,
     last_school: form.last_school.trim() || null,
     aadhar_no: form.aadhar_no.trim() || null,
-    unique_id: form.unique_id.trim() || null,
     pen_no: form.pen_no.trim() || null,
     apaar_id: form.apaar_id.trim() || null,
     father_name: form.father_name.trim() || null,
@@ -176,14 +152,8 @@ export function formToPayload(form: StudentFormState): Record<string, unknown> {
     fee_mafi_amount: form.fee_mafi_amount ? parseFloat(form.fee_mafi_amount) : null,
     fee_mafi_reason: form.fee_mafi_reason.trim() || null,
     all_fee_mafi: form.all_fee_mafi,
-    is_permanent: form.is_permanent,
-    hostel_student: form.hostel_student,
-    food_provided: form.food_provided,
-    prev_school_attendance: form.prev_school_attendance ? parseInt(form.prev_school_attendance) : null,
     height: form.height.trim() || null,
     weight: form.weight.trim() || null,
-    handicap: form.handicap,
-    minority: form.minority,
     hobby: form.hobby.trim() || null,
     sign_of_identity: form.sign_of_identity.trim() || null,
     refer_name: form.refer_name.trim() || null,

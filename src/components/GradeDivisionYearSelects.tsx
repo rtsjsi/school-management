@@ -21,6 +21,7 @@ interface GradeDivisionYearSelectsProps {
   gradeRequired?: boolean;
   divisionRequired?: boolean;
   showAcademicYear?: boolean;
+  academicYearRequired?: boolean;
 }
 
 export function GradeDivisionYearSelects({
@@ -33,6 +34,7 @@ export function GradeDivisionYearSelects({
   gradeRequired,
   divisionRequired,
   showAcademicYear = true,
+  academicYearRequired,
 }: GradeDivisionYearSelectsProps) {
   const [standards, setStandards] = useState<{ id: string; name: string }[]>([]);
   const [divisions, setDivisions] = useState<{ id: string; name: string }[]>([]);
@@ -102,8 +104,12 @@ export function GradeDivisionYearSelects({
       </div>
       {showAcademicYear && (
         <div className="space-y-2">
-          <Label>Academic year</Label>
-          <Select value={academicYear || " "} onValueChange={(v) => onAcademicYearChange?.(v === " " ? "" : v)}>
+        <Label>Academic year{academicYearRequired ? " *" : ""}</Label>
+        <Select
+          value={academicYear || " "}
+          onValueChange={(v) => onAcademicYearChange?.(v === " " ? "" : v)}
+          required={academicYearRequired}
+        >
             <SelectTrigger>
               <SelectValue placeholder="Select year" />
             </SelectTrigger>

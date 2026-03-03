@@ -151,10 +151,6 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
                 <Input value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="Full address" />
               </div>
               <div className="space-y-2">
-                <Label>Society</Label>
-                <Input value={form.society} onChange={(e) => set("society", e.target.value)} />
-              </div>
-              <div className="space-y-2">
                 <Label>District</Label>
                 <Input value={form.district} onChange={(e) => set("district", e.target.value)} />
               </div>
@@ -163,20 +159,8 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
                 <Input value={form.birth_place} onChange={(e) => set("birth_place", e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Phone</Label>
-                <Input type="tel" value={form.phone_number} onChange={(e) => set("phone_number", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Email</Label>
-                <Input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
-              </div>
-              <div className="space-y-2">
                 <Label>Aadhar No</Label>
                 <Input value={form.aadhar_no} onChange={(e) => set("aadhar_no", e.target.value)} placeholder="12-digit" />
-              </div>
-              <div className="space-y-2">
-                <Label>Unique ID</Label>
-                <Input value={form.unique_id} onChange={(e) => set("unique_id", e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>PEN No</Label>
@@ -322,10 +306,7 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
                 <Label>Last school</Label>
                 <Input value={form.last_school} onChange={(e) => set("last_school", e.target.value)} />
               </div>
-              <div className="space-y-2">
-                <Label>Prev. school attendance</Label>
-                <Input type="number" value={form.prev_school_attendance} onChange={(e) => set("prev_school_attendance", e.target.value)} min={0} />
-              </div>
+              <div className="space-y-2" />
               <div className="flex items-center space-x-2">
                 <Checkbox id="rte" checked={form.is_rte_quota} onCheckedChange={(c) => set("is_rte_quota", !!c)} />
                 <Label htmlFor="rte" className="font-normal">RTE (Right to Education) Quota</Label>
@@ -361,28 +342,7 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
                 <Label>Refer name</Label>
                 <Input value={form.refer_name} onChange={(e) => set("refer_name", e.target.value)} />
               </div>
-              <div className="flex flex-wrap gap-4 items-center">
-                <div className="flex items-center space-x-2">
-                  <Checkbox id="handicap" checked={form.handicap} onCheckedChange={(c) => set("handicap", !!c)} />
-                  <Label htmlFor="handicap" className="font-normal">Handicap</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox id="minority" checked={form.minority} onCheckedChange={(c) => set("minority", !!c)} />
-                  <Label htmlFor="minority" className="font-normal">Minority</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox id="permanent" checked={form.is_permanent} onCheckedChange={(c) => set("is_permanent", !!c)} />
-                  <Label htmlFor="permanent" className="font-normal">Is permanent</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox id="hostel" checked={form.hostel_student} onCheckedChange={(c) => set("hostel_student", !!c)} />
-                  <Label htmlFor="hostel" className="font-normal">Hostel student</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox id="food" checked={form.food_provided} onCheckedChange={(c) => set("food_provided", !!c)} />
-                  <Label htmlFor="food" className="font-normal">Food provided</Label>
-                </div>
-              </div>
+              <div className="flex flex-wrap gap-4 items-center" />
               <div className="space-y-2 sm:col-span-2">
                 <Label>Notes</Label>
                 <Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={2} />

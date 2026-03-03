@@ -78,7 +78,7 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
     if (divisionFilter && divisionFilter !== "all") q = q.eq("division", divisionFilter);
     if (statusFilter && statusFilter !== "all") q = q.eq("status", statusFilter);
     if (search.trim()) {
-      q = q.or(`full_name.ilike.%${search.trim()}%,student_id.ilike.%${search.trim()}%,email.ilike.%${search.trim()}%`);
+      q = q.or(`full_name.ilike.%${search.trim()}%,student_id.ilike.%${search.trim()}%`);
     }
 
     (async () => {
@@ -106,7 +106,7 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
           <div className="space-y-2 flex-1 min-w-[180px]">
             <Label>Search</Label>
             <Input
-              placeholder="Name, Student ID, email"
+              placeholder="Name or Student ID"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
