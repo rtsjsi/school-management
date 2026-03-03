@@ -47,7 +47,7 @@ export default function MultipleSubjectwiseMarksEntry() {
       .order("held_at", { ascending: false })
       .then(({ data }) => setExams(data ?? []));
     supabase
-      .from("classes")
+      .from("standards")
       .select("name")
       .order("sort_order")
       .then(({ data }) => setClassNames((data ?? []).map((c) => c.name)));
@@ -68,7 +68,7 @@ export default function MultipleSubjectwiseMarksEntry() {
     }
     (async () => {
       const { data: classRow } = await supabase
-        .from("classes")
+        .from("standards")
         .select("id")
         .eq("name", effectiveGrade)
         .maybeSingle();
@@ -79,7 +79,7 @@ export default function MultipleSubjectwiseMarksEntry() {
       const { data: subData } = await supabase
         .from("subjects")
         .select("id, name, code, evaluation_type")
-        .eq("class_id", classRow.id)
+        .eq("standard_id", classRow.id)
         .order("sort_order");
       setSubjects((subData ?? []) as Subject[]);
     })();
@@ -376,7 +376,7 @@ export default function MultipleSubjectwiseMarksEntry() {
 
           {selectedExamId && subjects.length === 0 && !loading && (
             <p className="text-sm text-muted-foreground">
-              {effectiveGrade ? "No subjects found for this class. Add subjects in Class management → Subject Master." : "Select a grade to load subjects."}
+              {effectiveGrade ? "No subjects found for this standard. Add subjects in Standard management → Subject Master." : "Select a grade to load subjects."}
             </p>
           )}
 

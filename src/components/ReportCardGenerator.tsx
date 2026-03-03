@@ -61,7 +61,7 @@ export default function ReportCardGenerator() {
       let subjectList: Subject[] = [];
       if (studentGrade) {
         const { data: classRow } = await supabase
-          .from("classes")
+          .from("standards")
           .select("id")
           .eq("name", studentGrade)
           .maybeSingle();
@@ -69,7 +69,7 @@ export default function ReportCardGenerator() {
           const { data: subData } = await supabase
             .from("subjects")
             .select("id, name, evaluation_type")
-            .eq("class_id", classRow.id)
+            .eq("standard_id", classRow.id)
             .order("sort_order");
           subjectList = (subData ?? []) as Subject[];
         }

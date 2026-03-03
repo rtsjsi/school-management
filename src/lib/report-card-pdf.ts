@@ -155,7 +155,7 @@ export function generateReportCardPDF(data: ReportCardData): Blob {
   doc.line(margin, y, w - margin, y);
   y += blockGap;
 
-  doc.text("Class Teacher", margin + 35, y);
+  doc.text("Teacher", margin + 35, y);
   doc.text("Principal", w - margin - 45, y);
   y += 6;
   doc.line(margin, y, margin + 55, y);

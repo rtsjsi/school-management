@@ -77,7 +77,7 @@ export default function MarksEntry() {
       setExams((examData ?? []) as unknown as Exam[]);
     })();
     supabase
-      .from("classes")
+      .from("standards")
       .select("name")
       .order("sort_order")
       .then(({ data }) => setClassNames((data ?? []).map((c: { name: string }) => c.name)));
@@ -101,7 +101,7 @@ export default function MarksEntry() {
       return;
     }
     supabase
-      .from("classes")
+      .from("standards")
       .select("id")
       .eq("name", effectiveGrade)
       .maybeSingle()
@@ -113,7 +113,7 @@ export default function MarksEntry() {
         supabase
           .from("subjects")
           .select("id, name, code, evaluation_type")
-          .eq("class_id", classRow.id)
+          .eq("standard_id", classRow.id)
           .order("sort_order")
           .then(({ data }) => setSubjects((data ?? []) as Subject[]));
       });

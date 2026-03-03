@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { createExamWithSubjects } from "@/app/dashboard/exams/actions";
-import { fetchClasses, fetchAcademicYears } from "@/lib/lov";
-import type { ClassOption } from "@/lib/lov";
+import { fetchStandards, fetchAcademicYears } from "@/lib/lov";
+import type { StandardOption } from "@/lib/lov";
 import type { AcademicYearOption } from "@/lib/lov";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Input } from "@/components/ui/input";
@@ -26,7 +26,7 @@ export default function ExamEntryForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [standards, setStandards] = useState<ClassOption[]>([]);
+  const [standardsList, setStandardsList] = useState<StandardOption[]>([]);
   const [academicYears, setAcademicYears] = useState<AcademicYearOption[]>([]);
   const [subjects, setSubjects] = useState<SubjectRow[]>([]);
   const [form, setForm] = useState({
@@ -40,7 +40,7 @@ export default function ExamEntryForm() {
   const [maxMarks, setMaxMarks] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    fetchClasses().then(setStandards);
+    fetchStandards().then(setStandardsList);
     fetchAcademicYears().then((list) => {
       setAcademicYears(list);
       const active = list.find((y) => y.is_active) ?? list[0];
@@ -60,7 +60,7 @@ export default function ExamEntryForm() {
     supabase
       .from("subjects")
       .select("id, name, code, evaluation_type")
-      .eq("class_id", form.standardId)
+      .eq("standard_id", form.standardId)
       .order("sort_order")
       .then(({ data }) => {
         const rows = (data ?? []) as SubjectRow[];
@@ -103,7 +103,7 @@ export default function ExamEntryForm() {
       }
     }
 
-    const standardName = standards.find((s) => s.id === form.standardId)?.name ?? null;
+    const standardName = standardsList.find((s) => s.id === form.standardId)?.name ?? null;
     const subjectMaxMarks: { subjectId: string; maxMarks: number }[] = [];
     for (const sub of subjects) {
       const val =
@@ -205,7 +205,7 @@ export default function ExamEntryForm() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="_none">Select standard</SelectItem>
-              {standards.map((s) => (
+              {standardsList.map((s) => (
                 <SelectItem key={s.id} value={s.id}>
                   {s.name}
                 </SelectItem>

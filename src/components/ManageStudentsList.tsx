@@ -24,7 +24,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Pencil, BookOpen } from "lucide-react";
-import { fetchClasses, fetchAllDivisions } from "@/lib/lov";
+import { fetchStandards, fetchAllDivisions } from "@/lib/lov";
 
 type StudentRow = {
   id: string;
@@ -64,7 +64,7 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
   const supabase = createClient();
 
   useEffect(() => {
-    fetchClasses().then(setGrades);
+    fetchStandards().then(setGrades);
     fetchAllDivisions().then(setDivisions);
   }, []);
 

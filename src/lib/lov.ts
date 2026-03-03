@@ -1,18 +1,21 @@
 import { createClient } from "@/lib/supabase/client";
 
-export type ClassOption = { id: string; name: string };
+export type StandardOption = { id: string; name: string };
 export type DivisionOption = { id: string; name: string };
 export type AcademicYearOption = { id: string; name: string; is_active?: boolean };
 export type GradeOption = { id: string; name: string };
 
-export async function fetchClasses(): Promise<ClassOption[]> {
+export async function fetchStandards(): Promise<StandardOption[]> {
   const supabase = createClient();
   const { data } = await supabase
-    .from("classes")
+    .from("standards")
     .select("id, name")
     .order("sort_order");
-  return (data ?? []) as ClassOption[];
+  return (data ?? []) as StandardOption[];
 }
+
+/** @deprecated Use fetchStandards */
+export const fetchClasses = fetchStandards;
 
 export async function fetchGrades(): Promise<GradeOption[]> {
   const supabase = createClient();
@@ -34,33 +37,36 @@ export async function fetchDivisionsByGradeId(gradeId: string): Promise<Division
   return (data ?? []) as DivisionOption[];
 }
 
-export async function fetchDivisionsByClassId(classId: string): Promise<DivisionOption[]> {
-  if (!classId) return [];
+export async function fetchDivisionsByStandardId(standardId: string): Promise<DivisionOption[]> {
+  if (!standardId) return [];
   const supabase = createClient();
   const { data } = await supabase
-    .from("class_divisions")
+    .from("standard_divisions")
     .select("id, name")
-    .eq("class_id", classId)
+    .eq("standard_id", standardId)
     .order("sort_order");
   return (data ?? []) as DivisionOption[];
 }
 
+/** @deprecated Use fetchDivisionsByStandardId */
+export const fetchDivisionsByClassId = fetchDivisionsByStandardId;
+
 export async function fetchDivisionsByGrade(grade: string): Promise<DivisionOption[]> {
   if (!grade.trim()) return [];
   const supabase = createClient();
-  const { data: classRow } = await supabase
-    .from("classes")
+  const { data: standardRow } = await supabase
+    .from("standards")
     .select("id")
     .eq("name", grade.trim())
     .maybeSingle();
-  if (!classRow) return [];
-  return fetchDivisionsByClassId(classRow.id);
+  if (!standardRow) return [];
+  return fetchDivisionsByStandardId(standardRow.id);
 }
 
 export async function fetchAllDivisions(): Promise<DivisionOption[]> {
   const supabase = createClient();
   const { data } = await supabase
-    .from("class_divisions")
+    .from("standard_divisions")
     .select("id, name")
     .order("name");
   const seen = new Set<string>();

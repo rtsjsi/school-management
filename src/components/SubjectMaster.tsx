@@ -34,14 +34,14 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 
-type ClassRow = { id: string; name: string; section: string };
+type StandardRow = { id: string; name: string; section: string };
 type SubjectRow = { id: string; name: string; evaluation_type: string };
 
 export function SubjectMaster() {
   const router = useRouter();
-  const [classes, setClasses] = useState<ClassRow[]>([]);
+  const [standards, setStandards] = useState<StandardRow[]>([]);
   const [subjects, setSubjects] = useState<SubjectRow[]>([]);
-  const [selectedClassId, setSelectedClassId] = useState<string>("");
+  const [selectedStandardId, setSelectedStandardId] = useState<string>("");
   const [addOpen, setAddOpen] = useState(false);
   const [addName, setAddName] = useState("");
   const [addEvalType, setAddEvalType] = useState<"grade" | "mark">("mark");
@@ -52,36 +52,36 @@ export function SubjectMaster() {
 
   useEffect(() => {
     supabase
-      .from("classes")
+      .from("standards")
       .select("id, name, section")
       .order("sort_order")
-      .then(({ data }) => setClasses((data ?? []) as ClassRow[]));
+      .then(({ data }) => setStandards((data ?? []) as StandardRow[]));
   }, []);
 
   const loadSubjects = () => {
-    if (!selectedClassId) return;
+    if (!selectedStandardId) return;
     supabase
       .from("subjects")
       .select("id, name, evaluation_type")
-      .eq("class_id", selectedClassId)
+      .eq("standard_id", selectedStandardId)
       .order("sort_order")
       .then(({ data }) => setSubjects((data ?? []) as SubjectRow[]));
   };
 
   useEffect(() => {
-    if (!selectedClassId) {
+    if (!selectedStandardId) {
       setSubjects([]);
       return;
     }
     loadSubjects();
-  }, [selectedClassId]);
+  }, [selectedStandardId]);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     setAddError(null);
     setAddLoading(true);
     try {
-      const result = await createSubject(selectedClassId, addName, addEvalType);
+      const result = await createSubject(selectedStandardId, addName, addEvalType);
       if (result.ok) {
         setAddOpen(false);
         setAddName("");
@@ -110,20 +110,20 @@ export function SubjectMaster() {
     }
   };
 
-  const selectedClass = classes.find((c) => c.id === selectedClassId);
+  const selectedStandard = standards.find((c) => c.id === selectedStandardId);
 
   return (
     <Card>
       <CardContent className="space-y-4 pt-6">
         <div className="flex flex-wrap gap-4 items-end">
           <div className="space-y-2 min-w-[200px]">
-            <Label>Class</Label>
-            <Select value={selectedClassId} onValueChange={setSelectedClassId}>
+            <Label>Standard</Label>
+            <Select value={selectedStandardId} onValueChange={setSelectedStandardId}>
               <SelectTrigger>
-                <SelectValue placeholder="Select class" />
+                <SelectValue placeholder="Select standard" />
               </SelectTrigger>
               <SelectContent>
-                {classes.map((c) => (
+                {standards.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.name}
                   </SelectItem>
@@ -131,7 +131,7 @@ export function SubjectMaster() {
               </SelectContent>
             </Select>
           </div>
-          {selectedClassId && (
+          {selectedStandardId && (
             <Dialog open={addOpen} onOpenChange={setAddOpen}>
               <DialogTrigger asChild>
                 <Button size="sm" className="gap-1">
@@ -143,7 +143,7 @@ export function SubjectMaster() {
                 <DialogHeader>
                   <DialogTitle>Add Subject</DialogTitle>
                   <DialogDescription>
-                    Add a subject for {selectedClass?.name}. Choose evaluation type.
+                    Add a subject for {selectedStandard?.name}. Choose evaluation type.
                   </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleAdd} className="space-y-4">
@@ -185,7 +185,7 @@ export function SubjectMaster() {
           )}
         </div>
 
-        {selectedClassId && (
+        {selectedStandardId && (
           subjects.length > 0 ? (
             <div className="rounded-md border">
               <Table>
@@ -205,13 +205,13 @@ export function SubjectMaster() {
             </div>
           ) : (
             <p className="text-sm text-muted-foreground py-6 text-center">
-              No subjects for this class. Click &quot;Add Subject&quot; to add.
+              No subjects for this standard. Click &quot;Add Subject&quot; to add.
             </p>
           )
         )}
 
-        {!selectedClassId && classes.length > 0 && (
-          <p className="text-sm text-muted-foreground py-4">Select a class to manage its subjects.</p>
+        {!selectedStandardId && standards.length > 0 && (
+          <p className="text-sm text-muted-foreground py-4">Select a standard to manage its subjects.</p>
         )}
       </CardContent>
     </Card>

@@ -21,7 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AlertCircle } from "lucide-react";
-import { fetchClasses, fetchAcademicYears } from "@/lib/lov";
+import { fetchStandards, fetchAcademicYears } from "@/lib/lov";
 
 const QUARTERS = [1, 2, 3, 4] as const;
 
@@ -56,7 +56,7 @@ export default function OutstandingReport() {
   const [grade, setGrade] = useState("");
   const [studentId, setStudentId] = useState("");
   const [students, setStudents] = useState<{ id: string; full_name: string; grade?: string }[]>([]);
-  const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
+  const [standards, setStandards] = useState<{ id: string; name: string }[]>([]);
   const [years, setYears] = useState<{ id: string; name: string }[]>([]);
   const [data, setData] = useState<OutstandingRow[] | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -71,7 +71,7 @@ export default function OutstandingReport() {
   }, []);
 
   useEffect(() => {
-    fetchClasses().then(setClasses).catch(() => setClasses([]));
+    fetchStandards().then(setStandards).catch(() => setStandards([]));
   }, []);
 
   useEffect(() => {
@@ -170,7 +170,7 @@ export default function OutstandingReport() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All grades</SelectItem>
-                  {classes.map((c) => (
+                  {standards.map((c) => (
                     <SelectItem key={c.id} value={c.name}>
                       {c.name}
                     </SelectItem>

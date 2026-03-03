@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { createClass, updateClass, deleteClass, createDivision, deleteDivision } from "@/app/dashboard/classes/actions";
+import { createStandard, updateStandard, deleteStandard, createDivision, deleteDivision } from "@/app/dashboard/classes/actions";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -45,11 +45,11 @@ const SECTION_LABELS: Record<string, string> = {
 
 const SECTIONS = ["pre_primary", "primary", "secondary", "higher_secondary"] as const;
 
-type ClassRow = { id: string; name: string; section: string; sort_order: number };
+type StandardRow = { id: string; name: string; section: string; sort_order: number };
 
 export function ClassManagement() {
   const router = useRouter();
-  const [classes, setClasses] = useState<ClassRow[]>([]);
+  const [standards, setStandards] = useState<StandardRow[]>([]);
   const [addOpen, setAddOpen] = useState(false);
   const [addName, setAddName] = useState("");
   const [addSection, setAddSection] = useState<string>("primary");
@@ -58,16 +58,16 @@ export function ClassManagement() {
 
   const supabase = createClient();
 
-  const loadClasses = () => {
+  const loadStandards = () => {
     supabase
-      .from("classes")
+      .from("standards")
       .select("id, name, section, sort_order")
       .order("sort_order")
-      .then(({ data }) => setClasses((data ?? []) as ClassRow[]));
+      .then(({ data }) => setStandards((data ?? []) as StandardRow[]));
   };
 
   useEffect(() => {
-    loadClasses();
+    loadStandards();
   }, []);
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -75,12 +75,12 @@ export function ClassManagement() {
     setAddError(null);
     setAddLoading(true);
     try {
-      const result = await createClass(addName, addSection);
+      const result = await createStandard(addName, addSection);
       if (result.ok) {
         setAddOpen(false);
         setAddName("");
         setAddSection("primary");
-        loadClasses();
+        loadStandards();
         router.refresh();
       } else {
         setAddError(result.error);
@@ -93,10 +93,10 @@ export function ClassManagement() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this class? Subjects and student references may be affected.")) return;
-    const result = await deleteClass(id);
+    if (!confirm("Delete this standard? Subjects and student references may be affected.")) return;
+    const result = await deleteStandard(id);
     if (result.ok) {
-      loadClasses();
+      loadStandards();
       router.refresh();
     } else {
       alert(result.error);
@@ -110,20 +110,20 @@ export function ClassManagement() {
           <DialogTrigger asChild>
             <Button size="sm" className="gap-1">
               <Plus className="h-4 w-4" />
-              Add class
+              Add standard
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add class</DialogTitle>
-              <DialogDescription>Add a new class with name and section.</DialogDescription>
+              <DialogTitle>Add standard</DialogTitle>
+              <DialogDescription>Add a new standard with name and section.</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleAdd} className="space-y-4">
               {addError && (
                 <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{addError}</p>
               )}
               <div className="space-y-2">
-                <Label>Class name</Label>
+                <Label>Standard name</Label>
                 <Input
                   value={addName}
                   onChange={(e) => setAddName(e.target.value)}
@@ -158,26 +158,26 @@ export function ClassManagement() {
           </DialogContent>
         </Dialog>
 
-        {classes.length > 0 ? (
+        {standards.length > 0 ? (
           <div className="rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-8"></TableHead>
-                  <TableHead>Class</TableHead>
+                  <TableHead>Standard</TableHead>
                   <TableHead>Section</TableHead>
                   <TableHead>Divisions</TableHead>
                   <TableHead className="w-24"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {classes.map((c) => (
-                  <ClassRow
+                {standards.map((c) => (
+                  <StandardRow
                     key={c.id}
-                    cls={c}
+                    row={c}
                     onDelete={handleDelete}
                     onSaved={() => {
-                      loadClasses();
+                      loadStandards();
                       router.refresh();
                     }}
                   />
@@ -186,26 +186,26 @@ export function ClassManagement() {
             </Table>
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground py-8 text-center">No classes. Add one above.</p>
+          <p className="text-sm text-muted-foreground py-8 text-center">No standards. Add one above.</p>
         )}
       </CardContent>
     </Card>
   );
 }
 
-function ClassRow({
-  cls,
+function StandardRow({
+  row,
   onDelete,
   onSaved,
 }: {
-  cls: ClassRow;
+  row: StandardRow;
   onDelete: (id: string) => void;
   onSaved: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [name, setName] = useState(cls.name);
-  const [section, setSection] = useState(cls.section);
+  const [name, setName] = useState(row.name);
+  const [section, setSection] = useState(row.section);
   const [loading, setLoading] = useState(false);
   const [divisions, setDivisions] = useState<DivisionRow[]>([]);
   const [addDivOpen, setAddDivOpen] = useState(false);
@@ -214,20 +214,20 @@ function ClassRow({
 
   const loadDivisions = () => {
     createClient()
-      .from("class_divisions")
+      .from("standard_divisions")
       .select("id, name, sort_order")
-      .eq("class_id", cls.id)
+      .eq("standard_id", row.id)
       .order("sort_order")
       .then(({ data }) => setDivisions((data ?? []) as DivisionRow[]));
   };
 
   useEffect(() => {
     loadDivisions();
-  }, [cls.id]);
+  }, [row.id]);
 
   const handleSave = async () => {
     setLoading(true);
-    const result = await updateClass(cls.id, name, section);
+    const result = await updateStandard(row.id, name, section);
     setLoading(false);
     if (result.ok) {
       setEditing(false);
@@ -240,7 +240,7 @@ function ClassRow({
   const handleAddDivision = async (e: React.FormEvent) => {
     e.preventDefault();
     setAddDivLoading(true);
-    const result = await createDivision(cls.id, addDivName);
+    const result = await createDivision(row.id, addDivName);
     setAddDivLoading(false);
     if (result.ok) {
       setAddDivOpen(false);
@@ -316,9 +316,9 @@ function ClassRow({
             )}
           </Button>
         </TableCell>
-        <TableCell className="font-medium">{cls.name}</TableCell>
+        <TableCell className="font-medium">{row.name}</TableCell>
         <TableCell>
-          <span className="text-sm">{SECTION_LABELS[cls.section] ?? cls.section}</span>
+          <span className="text-sm">{SECTION_LABELS[row.section] ?? row.section}</span>
         </TableCell>
         <TableCell>
           {divisions.length > 0 ? (
@@ -334,7 +334,7 @@ function ClassRow({
             <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>
               <Pencil className="h-3 w-3" />
             </Button>
-            <Button size="sm" variant="ghost" className="text-destructive" onClick={() => onDelete(cls.id)}>
+            <Button size="sm" variant="ghost" className="text-destructive" onClick={() => onDelete(row.id)}>
               <Trash2 className="h-3 w-3" />
             </Button>
           </div>
@@ -345,7 +345,7 @@ function ClassRow({
           <TableCell colSpan={5} className="p-4">
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">Divisions for {cls.name}</span>
+                <span className="text-sm font-medium">Divisions for {row.name}</span>
                 <Dialog open={addDivOpen} onOpenChange={setAddDivOpen}>
                   <DialogTrigger asChild>
                     <Button size="sm" variant="outline" className="gap-1 h-7">
@@ -356,7 +356,7 @@ function ClassRow({
                   <DialogContent className="max-w-sm">
                     <DialogHeader>
                       <DialogTitle>Add division</DialogTitle>
-                      <DialogDescription>Add a division (e.g. A, B, C) for {cls.name}.</DialogDescription>
+                      <DialogDescription>Add a division (e.g. A, B, C) for {row.name}.</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleAddDivision} className="space-y-4">
                       <div className="space-y-2">

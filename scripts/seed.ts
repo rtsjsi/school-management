@@ -98,7 +98,7 @@ async function deleteAllData() {
     "fee_structures",
     "holidays",
     "shifts",
-    "classes",
+    "standards",
   ];
   for (const t of tables) {
     try {
@@ -114,8 +114,8 @@ async function main() {
   console.log("Starting seed (5 students, 10 employees)...");
   await deleteAllData();
 
-  await seedClasses();
-  await seedStandardsAndDivisions();
+  await seedStandards();
+  await seedStandardDivisionsAndDivisions();
   await seedShifts();
   await seedHolidays();
   await seedSubjects();
@@ -130,57 +130,57 @@ async function main() {
   console.log("Seed completed successfully!");
 }
 
-async function seedClasses() {
-  console.log("Seeding classes...");
-  const classes = [
-    { name: "Jr KG", section: "pre_primary", sort_order: 0 },
-    { name: "Sr KG", section: "pre_primary", sort_order: 1 },
-    ...Array.from({ length: 8 }, (_, i) => ({ name: String(i + 1), section: "primary", sort_order: i + 2 })),
-    { name: "9", section: "secondary", sort_order: 10 },
-    { name: "10", section: "secondary", sort_order: 11 },
-    { name: "11", section: "higher_secondary", sort_order: 12 },
-    { name: "12", section: "higher_secondary", sort_order: 13 },
+async function seedStandards() {
+  console.log("Seeding standards...");
+  const standards = [
+    // Pre-primary
+    { name: "Nursery", section: "pre_primary", sort_order: 0 },
+    { name: "Junior KG (LKG)", section: "pre_primary", sort_order: 1 },
+    { name: "Senior KG (UKG)", section: "pre_primary", sort_order: 2 },
+    // Primary (1 to 8)
+    ...Array.from({ length: 8 }, (_, i) => ({ name: String(i + 1), section: "primary", sort_order: i + 3 })),
+    // Secondary (9-10)
+    { name: "9", section: "secondary", sort_order: 11 },
+    { name: "10", section: "secondary", sort_order: 12 },
+    // Higher secondary (11-12)
+    { name: "11", section: "higher_secondary", sort_order: 13 },
+    { name: "12", section: "higher_secondary", sort_order: 14 },
   ];
-  await supabase.from("classes").insert(classes);
+  await supabase.from("standards").insert(standards);
 }
 
-async function seedStandardsAndDivisions() {
-  console.log("Seeding standards and divisions from classes...");
-  const { data: classes } = await supabase.from("classes").select("id, name, sort_order").order("sort_order");
-  if (!classes?.length) return;
-
-  await supabase.from("standards").upsert(
-    classes.map((c) => ({ id: c.id, name: c.name, sort_order: c.sort_order })),
-    { onConflict: "id" }
-  );
+async function seedStandardDivisionsAndDivisions() {
+  console.log("Seeding standard divisions and divisions...");
+  const { data: standards } = await supabase.from("standards").select("id, name, sort_order").order("sort_order");
+  if (!standards?.length) return;
 
   const divisionNames = ["A", "B", "C"];
-  for (const c of classes) {
+  for (const s of standards) {
     for (let i = 0; i < divisionNames.length; i++) {
-      await supabase.from("class_divisions").upsert(
-        { class_id: c.id, name: divisionNames[i], sort_order: i },
-        { onConflict: "class_id,name" }
+      await supabase.from("standard_divisions").upsert(
+        { standard_id: s.id, name: divisionNames[i], sort_order: i },
+        { onConflict: "standard_id,name" }
       );
     }
   }
 
-  const { data: classDivs } = await supabase
-    .from("class_divisions")
-    .select("id, name, class_id, sort_order")
-    .order("class_id")
+  const { data: standardDivs } = await supabase
+    .from("standard_divisions")
+    .select("id, name, standard_id, sort_order")
+    .order("standard_id")
     .order("sort_order");
-  if (classDivs?.length) {
+  if (standardDivs?.length) {
     await supabase.from("divisions").upsert(
-      classDivs.map((cd) => ({
+      standardDivs.map((cd) => ({
         id: cd.id,
         name: cd.name,
-        standard_id: cd.class_id,
+        standard_id: cd.standard_id,
         sort_order: cd.sort_order,
       })),
       { onConflict: "id" }
     );
   }
-  console.log("  Standards and divisions ready");
+  console.log("  Standard divisions and divisions ready");
 }
 
 async function seedShifts() {
@@ -206,9 +206,9 @@ async function seedHolidays() {
 }
 
 async function seedSubjects() {
-  console.log("Seeding subjects per class...");
-  const { data: classes } = await supabase.from("classes").select("id, name");
-  if (!classes?.length) return;
+  console.log("Seeding subjects per standard...");
+  const { data: standards } = await supabase.from("standards").select("id, name");
+  if (!standards?.length) return;
 
   const subjectDefs = [
     { name: "English", code: "EN", eval: "mark" as const },
@@ -219,11 +219,11 @@ async function seedSubjects() {
     { name: "Physical Education", code: "PE", eval: "grade" as const },
   ];
 
-  for (const c of classes) {
+  for (const st of standards) {
     let so = 0;
     for (const s of subjectDefs) {
       await supabase.from("subjects").insert({
-        class_id: c.id,
+        standard_id: st.id,
         name: s.name,
         code: s.code,
         sort_order: ++so,
@@ -231,7 +231,7 @@ async function seedSubjects() {
       });
     }
   }
-  console.log(`  Added ${subjectDefs.length} subjects × ${classes.length} classes`);
+  console.log(`  Added ${subjectDefs.length} subjects × ${standards.length} standards`);
 }
 
 async function seedFeeStructures() {
@@ -277,9 +277,9 @@ async function seedExams() {
   if (inserted?.length) {
     const examWithGrade = inserted.find((e) => e.grade && e.grade !== "All");
     if (examWithGrade) {
-      const { data: classRow } = await supabase.from("classes").select("id").eq("name", examWithGrade.grade).maybeSingle();
-      if (classRow?.id) {
-        const { data: subs } = await supabase.from("subjects").select("id, evaluation_type").eq("class_id", classRow.id);
+      const { data: standardRow } = await supabase.from("standards").select("id").eq("name", examWithGrade.grade).maybeSingle();
+      if (standardRow?.id) {
+        const { data: subs } = await supabase.from("subjects").select("id, evaluation_type").eq("standard_id", standardRow.id);
         for (const sub of subs ?? []) {
           if (sub.evaluation_type === "mark") {
             await supabase.from("exam_subjects").insert({ exam_id: examWithGrade.id, subject_id: sub.id, max_marks: 100 });

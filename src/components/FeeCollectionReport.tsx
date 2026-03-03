@@ -32,7 +32,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { FileText, Pencil, Download, Printer } from "lucide-react";
-import { fetchClasses, fetchAcademicYears } from "@/lib/lov";
+import { fetchStandards, fetchAcademicYears } from "@/lib/lov";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 
 const PAYMENT_MODES = ["cash", "cheque", "online"] as const;
@@ -86,7 +86,7 @@ export default function FeeCollectionReport() {
   const [studentId, setStudentId] = useState("");
   const [grade, setGrade] = useState("");
   const [students, setStudents] = useState<{ id: string; full_name: string; grade?: string }[]>([]);
-  const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
+  const [standards, setStandards] = useState<{ id: string; name: string }[]>([]);
   const [years, setYears] = useState<{ id: string; name: string }[]>([]);
   const [data, setData] = useState<ReportRow[] | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -105,7 +105,7 @@ export default function FeeCollectionReport() {
   }, []);
 
   useEffect(() => {
-    fetchClasses().then(setClasses).catch(() => setClasses([]));
+    fetchStandards().then(setStandards).catch(() => setStandards([]));
   }, []);
 
   useEffect(() => {
@@ -392,7 +392,7 @@ export default function FeeCollectionReport() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All</SelectItem>
-                  {classes.map((c) => (
+                  {standards.map((c) => (
                     <SelectItem key={c.id} value={c.name}>
                       {c.name}
                     </SelectItem>

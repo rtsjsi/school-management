@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 export type SubjectActionResult = { ok: true } | { ok: false; error: string };
 
 export async function createSubject(
-  classId: string,
+  standardId: string,
   name: string,
   evaluationType: "grade" | "mark"
 ): Promise<SubjectActionResult> {
@@ -14,7 +14,7 @@ export async function createSubject(
   if (!trimmed) return { ok: false, error: "Subject name is required." };
 
   const { error } = await supabase.from("subjects").insert({
-    class_id: classId,
+    standard_id: standardId,
     name: trimmed,
     evaluation_type: evaluationType,
     sort_order: 999,
@@ -42,19 +42,19 @@ export async function updateSubject(
   return { ok: true };
 }
 
-export type ClassActionResult = { ok: true } | { ok: false; error: string };
+export type StandardActionResult = { ok: true } | { ok: false; error: string };
 
-export async function createClass(name: string, section: string): Promise<ClassActionResult> {
+export async function createStandard(name: string, section: string): Promise<StandardActionResult> {
   const supabase = await createClient();
   const trimmed = name.trim();
-  if (!trimmed) return { ok: false, error: "Class name is required." };
+  if (!trimmed) return { ok: false, error: "Standard name is required." };
   const validSections = ["pre_primary", "primary", "secondary", "higher_secondary"];
   if (!validSections.includes(section)) return { ok: false, error: "Invalid section." };
 
-  const { data: classes } = await supabase.from("classes").select("sort_order").order("sort_order", { ascending: false }).limit(1);
-  const nextOrder = classes?.[0]?.sort_order != null ? classes[0].sort_order + 1 : 0;
+  const { data: rows } = await supabase.from("standards").select("sort_order").order("sort_order", { ascending: false }).limit(1);
+  const nextOrder = rows?.[0]?.sort_order != null ? rows[0].sort_order + 1 : 0;
 
-  const { error } = await supabase.from("classes").insert({
+  const { error } = await supabase.from("standards").insert({
     name: trimmed,
     section,
     sort_order: nextOrder,
@@ -64,21 +64,21 @@ export async function createClass(name: string, section: string): Promise<ClassA
   return { ok: true };
 }
 
-export async function updateClass(id: string, name: string, section: string): Promise<ClassActionResult> {
+export async function updateStandard(id: string, name: string, section: string): Promise<StandardActionResult> {
   const supabase = await createClient();
   const trimmed = name.trim();
-  if (!trimmed) return { ok: false, error: "Class name is required." };
+  if (!trimmed) return { ok: false, error: "Standard name is required." };
   const validSections = ["pre_primary", "primary", "secondary", "higher_secondary"];
   if (!validSections.includes(section)) return { ok: false, error: "Invalid section." };
 
-  const { error } = await supabase.from("classes").update({ name: trimmed, section }).eq("id", id);
+  const { error } = await supabase.from("standards").update({ name: trimmed, section }).eq("id", id);
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }
 
-export async function deleteClass(id: string): Promise<ClassActionResult> {
+export async function deleteStandard(id: string): Promise<StandardActionResult> {
   const supabase = await createClient();
-  const { error } = await supabase.from("classes").delete().eq("id", id);
+  const { error } = await supabase.from("standards").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }
@@ -92,22 +92,22 @@ export async function deleteSubject(id: string): Promise<SubjectActionResult> {
 
 export type DivisionActionResult = { ok: true } | { ok: false; error: string };
 
-export async function createDivision(classId: string, name: string): Promise<DivisionActionResult> {
+export async function createDivision(standardId: string, name: string): Promise<DivisionActionResult> {
   const supabase = await createClient();
   const trimmed = name.trim();
   if (!trimmed) return { ok: false, error: "Division name is required." };
 
   const { data: existing } = await supabase
-    .from("class_divisions")
+    .from("standard_divisions")
     .select("sort_order")
-    .eq("class_id", classId)
+    .eq("standard_id", standardId)
     .order("sort_order", { ascending: false })
     .limit(1)
     .maybeSingle();
   const nextOrder = existing?.sort_order != null ? existing.sort_order + 1 : 0;
 
-  const { error } = await supabase.from("class_divisions").insert({
-    class_id: classId,
+  const { error } = await supabase.from("standard_divisions").insert({
+    standard_id: standardId,
     name: trimmed,
     sort_order: nextOrder,
   });
@@ -118,7 +118,7 @@ export async function createDivision(classId: string, name: string): Promise<Div
 
 export async function deleteDivision(id: string): Promise<DivisionActionResult> {
   const supabase = await createClient();
-  const { error } = await supabase.from("class_divisions").delete().eq("id", id);
+  const { error } = await supabase.from("standard_divisions").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }

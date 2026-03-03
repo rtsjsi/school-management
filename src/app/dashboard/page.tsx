@@ -36,7 +36,7 @@ export default async function DashboardPage() {
     { count: studentsCount },
     { count: activeStudentsCount },
     { count: employeesCount },
-    { count: classesCount },
+    { count: standardsCount },
     feeCollectedResult,
     pendingFeesResult,
     expensesResult,
@@ -44,7 +44,7 @@ export default async function DashboardPage() {
     supabase.from("students").select("*", { count: "exact", head: true }),
     supabase.from("students").select("*", { count: "exact", head: true }).eq("status", "active"),
     supabase.from("employees").select("*", { count: "exact", head: true }),
-    supabase.from("classes").select("*", { count: "exact", head: true }),
+    supabase.from("standards").select("*", { count: "exact", head: true }),
     supabase
       .from("fee_collections")
       .select("amount")
@@ -114,7 +114,7 @@ export default async function DashboardPage() {
       : []),
     {
       title: "Standards",
-      value: String(classesCount ?? 0),
+      value: String(standardsCount ?? 0),
       description: "View standards",
       icon: BookOpen,
       href: "/dashboard/classes",

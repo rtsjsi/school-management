@@ -27,8 +27,8 @@ export function ExamSubjectsConfig({ exam }: { exam: Exam }) {
     if (!open || !exam.grade || exam.grade === "All") return;
     setLoading(true);
     (async () => {
-      const { data: classRow } = await supabase.from("classes").select("id").eq("name", exam.grade).maybeSingle();
-      if (!classRow?.id) {
+      const { data: standardRow } = await supabase.from("standards").select("id").eq("name", exam.grade).maybeSingle();
+      if (!standardRow?.id) {
         setSubjects([]);
         setLoading(false);
         return;
@@ -36,7 +36,7 @@ export function ExamSubjectsConfig({ exam }: { exam: Exam }) {
       const { data: subData } = await supabase
         .from("subjects")
         .select("id, name, code, evaluation_type")
-        .eq("class_id", classRow.id)
+        .eq("standard_id", standardRow.id)
         .order("sort_order");
       setSubjects((subData ?? []) as Subject[]);
 
@@ -102,7 +102,7 @@ export function ExamSubjectsConfig({ exam }: { exam: Exam }) {
               ) : !exam.grade || exam.grade === "All" ? (
                 <p className="text-sm text-muted-foreground">Select a specific grade for the exam to set max marks.</p>
               ) : markBasedSubjects.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No mark-based subjects for this class.</p>
+                <p className="text-sm text-muted-foreground">No mark-based subjects for this standard.</p>
               ) : (
                 <>
                   {markBasedSubjects.map((sub) => (

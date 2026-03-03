@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { fetchClasses, fetchDivisionsByGrade, fetchAcademicYears } from "@/lib/lov";
+import { fetchStandards, fetchDivisionsByGrade, fetchAcademicYears } from "@/lib/lov";
 
 interface GradeDivisionYearSelectsProps {
   grade: string;
@@ -34,12 +34,12 @@ export function GradeDivisionYearSelects({
   divisionRequired,
   showAcademicYear = true,
 }: GradeDivisionYearSelectsProps) {
-  const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
+  const [standards, setStandards] = useState<{ id: string; name: string }[]>([]);
   const [divisions, setDivisions] = useState<{ id: string; name: string }[]>([]);
   const [years, setYears] = useState<{ id: string; name: string; is_active?: boolean }[]>([]);
 
   useEffect(() => {
-    fetchClasses().then(setClasses);
+    fetchStandards().then(setStandards);
     fetchAcademicYears().then((y) => {
       setYears(y);
       if (onAcademicYearChange && !academicYear && y.length > 0) {
@@ -72,7 +72,7 @@ export function GradeDivisionYearSelects({
             <SelectValue placeholder="Select standard" />
           </SelectTrigger>
           <SelectContent>
-            {classes.map((c) => (
+            {standards.map((c) => (
               <SelectItem key={c.id} value={c.name}>
                 {c.name}
               </SelectItem>

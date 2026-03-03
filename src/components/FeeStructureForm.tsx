@@ -36,7 +36,7 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
   const [classes, setClasses] = useState<{ id: string; name: string; sort_order: number }[]>([]);
 
   useEffect(() => {
-    createClient().from("classes").select("id, name, sort_order").order("sort_order").then(({ data }) => setClasses(data ?? []));
+    createClient().from("standards").select("id, name, sort_order").order("sort_order").then(({ data }) => setClasses(data ?? []));
   }, []);
 
   useEffect(() => {

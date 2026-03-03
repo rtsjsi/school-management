@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil } from "lucide-react";
-import { fetchClasses } from "@/lib/lov";
-import type { ClassOption } from "@/lib/lov";
+import { fetchStandards } from "@/lib/lov";
+import type { StandardOption } from "@/lib/lov";
 import { updateExam } from "@/app/dashboard/exams/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +31,7 @@ type ExamRow = { id: string; name: string; exam_type: string; grade: string | nu
 export function ExamEditDialog({ exam }: { exam: ExamRow }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [standards, setStandards] = useState<ClassOption[]>([]);
+  const [standardsList, setStandardsList] = useState<StandardOption[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -42,7 +42,7 @@ export function ExamEditDialog({ exam }: { exam: ExamRow }) {
   });
 
   useEffect(() => {
-    fetchClasses().then(setStandards);
+    fetchStandards().then(setStandardsList);
   }, []);
 
   useEffect(() => {
@@ -50,7 +50,7 @@ export function ExamEditDialog({ exam }: { exam: ExamRow }) {
       setForm({
         name: exam.name,
         exam_type: exam.exam_type,
-        standardId: standards.find((s) => s.name === exam.grade)?.id ?? "",
+        standardId: standardsList.find((s) => s.name === exam.grade)?.id ?? "",
         held_at: exam.held_at ? exam.held_at.slice(0, 10) : "",
       });
       setError(null);
@@ -68,7 +68,7 @@ export function ExamEditDialog({ exam }: { exam: ExamRow }) {
       setError("Start date is required.");
       return;
     }
-    const gradeName = standards.find((s) => s.id === form.standardId)?.name ?? null;
+    const gradeName = standardsList.find((s) => s.id === form.standardId)?.name ?? null;
     setSaving(true);
     try {
       const result = await updateExam(exam.id, {
@@ -151,7 +151,7 @@ export function ExamEditDialog({ exam }: { exam: ExamRow }) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="_none">Select standard</SelectItem>
-                {standards.map((s) => (
+                {standardsList.map((s) => (
                   <SelectItem key={s.id} value={s.id}>
                     {s.name}
                   </SelectItem>
