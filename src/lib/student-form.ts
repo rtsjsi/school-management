@@ -31,9 +31,8 @@ export type StudentFormState = {
   guardian_name: string;
   guardian_contact: string;
   guardian_email: string;
-  fee_mafi_amount: string;
-  fee_mafi_reason: string;
-  all_fee_mafi: boolean;
+  fee_concession_amount: string;
+  fee_concession_reason: string;
   height: string;
   weight: string;
   hobby: string;
@@ -89,9 +88,8 @@ export function studentFormFromRecord(r: Record<string, unknown>): StudentFormSt
     guardian_name: (r.guardian_name as string) || "",
     guardian_contact: (r.guardian_contact as string) || "",
     guardian_email: (r.guardian_email as string) || "",
-    fee_mafi_amount: r.fee_mafi_amount != null ? String(r.fee_mafi_amount) : "",
-    fee_mafi_reason: (r.fee_mafi_reason as string) || "",
-    all_fee_mafi: (r.all_fee_mafi as boolean) ?? false,
+    fee_concession_amount: r.fee_concession_amount != null ? String(r.fee_concession_amount) : "",
+    fee_concession_reason: (r.fee_concession_reason as string) || "",
     height: (r.height as string) || "",
     weight: (r.weight as string) || "",
     hobby: (r.hobby as string) || "",
@@ -149,9 +147,8 @@ export function formToPayload(form: StudentFormState): Record<string, unknown> {
     guardian_name: form.guardian_name.trim() || null,
     guardian_contact: form.guardian_contact.trim() || null,
     guardian_email: form.guardian_email.trim() || null,
-    fee_mafi_amount: form.fee_mafi_amount ? parseFloat(form.fee_mafi_amount) : null,
-    fee_mafi_reason: form.fee_mafi_reason.trim() || null,
-    all_fee_mafi: form.all_fee_mafi,
+    fee_concession_amount: form.fee_concession_amount ? parseFloat(form.fee_concession_amount) : null,
+    fee_concession_reason: form.fee_concession_reason.trim() || null,
     height: form.height.trim() || null,
     weight: form.weight.trim() || null,
     hobby: form.hobby.trim() || null,

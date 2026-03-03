@@ -354,21 +354,17 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Fee Concession & Bank Details</CardTitle>
-            <CardDescription>Fee mafi and bank account for refunds.</CardDescription>
+            <CardDescription>Fee concession and bank account for refunds.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>Fee mafi amount (Rs)</Label>
-                <Input type="number" value={form.fee_mafi_amount} onChange={(e) => set("fee_mafi_amount", e.target.value)} placeholder="0" />
+                <Label>Fee concession amount (Rs)</Label>
+                <Input type="number" value={form.fee_concession_amount} onChange={(e) => set("fee_concession_amount", e.target.value)} placeholder="0" />
               </div>
               <div className="space-y-2">
-                <Label>Fee mafi reason</Label>
-                <Input value={form.fee_mafi_reason} onChange={(e) => set("fee_mafi_reason", e.target.value)} />
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="all_mafi" checked={form.all_fee_mafi} onCheckedChange={(c) => set("all_fee_mafi", !!c)} />
-                <Label htmlFor="all_mafi" className="font-normal">All fee mafi</Label>
+                <Label>Fee concession reason</Label>
+                <Input value={form.fee_concession_reason} onChange={(e) => set("fee_concession_reason", e.target.value)} />
               </div>
               <div className="space-y-2 sm:col-span-2">
                 <Label>Account holder name</Label>
