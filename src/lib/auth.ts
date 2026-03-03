@@ -26,16 +26,43 @@ export const getUser = cache(async (): Promise<AuthUser | null> => {
 
   if (!user) return null;
 
-  // Standard auth: resolve profile by auth user id only (profiles.id = auth.uid())
+  // Standard auth: resolve profile primarily by auth user id (profiles.id = auth.uid()).
+  // In case of data drift (e.g. cloned DB where id/email mismatch), fall back to email lookup.
   const admin = createAdminClient();
   const client = admin ?? supabase;
-  const { data: profile, error } = await client
+
+  const {
+    data: profileById,
+    error: errorById,
+  } = await client
     .from("profiles")
     .select("role, full_name")
     .eq("id", user.id)
     .maybeSingle();
 
-  if (error) console.error("[auth] profiles fetch error:", error.message);
+  let profile = profileById;
+
+  if (!profile && user.email) {
+    const {
+      data: profileByEmail,
+      error: errorByEmail,
+    } = await client
+      .from("profiles")
+      .select("role, full_name")
+      .eq("email", user.email)
+      .maybeSingle();
+
+    if (profileByEmail) {
+      profile = profileByEmail;
+    }
+    if (errorByEmail) {
+      console.error("[auth] profiles fetch by email error:", errorByEmail.message);
+    }
+  }
+
+  if (errorById) {
+    console.error("[auth] profiles fetch by id error:", errorById.message);
+  }
 
   const role = normalizeRole(profile?.role);
   const fullName = profile?.full_name ?? null;
