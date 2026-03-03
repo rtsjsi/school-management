@@ -24,7 +24,10 @@ export const getUser = cache(async (): Promise<AuthUser | null> => {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return null;
+  if (!user) {
+    console.warn("[auth:getUser] No auth user found");
+    return null;
+  }
 
   // Standard auth: resolve profile primarily by auth user id (profiles.id = auth.uid()).
   // In case of data drift (e.g. cloned DB where id/email mismatch), fall back to email lookup.
@@ -54,18 +57,52 @@ export const getUser = cache(async (): Promise<AuthUser | null> => {
 
     if (profileByEmail) {
       profile = profileByEmail;
+      console.info("[auth:getUser] Using profile by email", {
+        authId: user.id,
+        authEmail: user.email,
+        profileEmail: user.email,
+        rawRole: profileByEmail.role,
+      });
     }
     if (errorByEmail) {
-      console.error("[auth] profiles fetch by email error:", errorByEmail.message);
+      console.error("[auth:getUser] profiles fetch by email error:", errorByEmail.message, {
+        authId: user.id,
+        authEmail: user.email,
+      });
     }
   }
 
   if (errorById) {
-    console.error("[auth] profiles fetch by id error:", errorById.message);
+    console.error("[auth:getUser] profiles fetch by id error:", errorById.message, {
+      authId: user.id,
+      authEmail: user.email,
+    });
+  }
+
+  if (profileById) {
+    console.info("[auth:getUser] Using profile by id", {
+      authId: user.id,
+      authEmail: user.email,
+      rawRole: profileById.role,
+    });
+  }
+
+  if (!profile) {
+    console.warn("[auth:getUser] No profile found by id or email", {
+      authId: user.id,
+      authEmail: user.email,
+    });
   }
 
   const role = normalizeRole(profile?.role);
   const fullName = profile?.full_name ?? null;
+
+  console.info("[auth:getUser] Final user role", {
+    authId: user.id,
+    authEmail: user.email,
+    rawRole: profile?.role ?? null,
+    normalizedRole: role,
+  });
 
   return {
     id: user.id,
