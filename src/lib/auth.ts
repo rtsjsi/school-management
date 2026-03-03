@@ -32,6 +32,14 @@ export const getUser = cache(async (): Promise<AuthUser | null> => {
   // Standard auth: resolve profile primarily by auth user id (profiles.id = auth.uid()).
   // In case of data drift (e.g. cloned DB where id/email mismatch), fall back to email lookup.
   const admin = createAdminClient();
+  if (!admin) {
+    console.warn("[auth:getUser] Admin client NOT available – using anon/authenticated client", {
+      hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      hasServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    });
+  } else {
+    console.info("[auth:getUser] Admin client available – using service role for profiles lookup");
+  }
   const client = admin ?? supabase;
 
   const {
