@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getUser, isAdminOrAbove } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import { GraduationCap } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StudentEntryForm from "@/components/StudentEntryForm";
@@ -19,6 +20,18 @@ export default async function StudentsPage({
   const params = await searchParams;
   const tabParam = params.tab ?? (canEdit ? "add" : "manage");
   const defaultTab = ["add", "manage"].includes(tabParam) ? tabParam : (canEdit ? "add" : "manage");
+
+  let currentAcademicYearName: string | null = null;
+  if (canEdit) {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("academic_years")
+      .select("name")
+      .eq("is_active", true)
+      .limit(1)
+      .maybeSingle();
+    currentAcademicYearName = data?.name ?? null;
+  }
 
   return (
     <div className="space-y-8">
@@ -42,7 +55,7 @@ export default async function StudentsPage({
 
         {canEdit && (
           <TabsContent value="add" className="space-y-6">
-            <StudentEntryForm />
+            <StudentEntryForm defaultAcademicYear={currentAcademicYearName ?? undefined} />
           </TabsContent>
         )}
 

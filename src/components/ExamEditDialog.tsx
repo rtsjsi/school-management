@@ -55,7 +55,7 @@ export function ExamEditDialog({ exam }: { exam: ExamRow }) {
       });
       setError(null);
     }
-  }, [open, exam.name, exam.exam_type, exam.grade, exam.held_at, standards]);
+  }, [open, exam.name, exam.exam_type, exam.grade, exam.held_at, standardsList]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

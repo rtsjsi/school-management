@@ -113,11 +113,19 @@ const defaultForm = () => ({
   is_rte_quota: false,
 });
 
-export default function StudentEntryForm() {
+export default function StudentEntryForm({
+  defaultAcademicYear,
+}: {
+  defaultAcademicYear?: string;
+} = {}) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState(defaultForm());
+  const getDefaultFormWithYear = () => ({
+    ...defaultForm(),
+    ...(defaultAcademicYear ? { academic_year: defaultAcademicYear } : {}),
+  });
+  const [form, setForm] = useState(getDefaultFormWithYear);
   const [createdStudentId, setCreatedStudentId] = useState<string | null>(null);
   const [pendingPhotos, setPendingPhotos] = useState<PendingPhotos>({});
   const [pendingDocuments, setPendingDocuments] = useState<PendingDocuments>({});
@@ -253,7 +261,7 @@ export default function StudentEntryForm() {
         setPendingPhotos({});
         setPendingDocuments({});
       } else {
-        setForm(defaultForm());
+        setForm(getDefaultFormWithYear());
       }
       router.refresh();
     } catch {
@@ -278,7 +286,7 @@ export default function StudentEntryForm() {
           variant="outline"
           onClick={() => {
             setCreatedStudentId(null);
-            setForm(defaultForm());
+            setForm(getDefaultFormWithYear());
           }}
         >
           Add another student
