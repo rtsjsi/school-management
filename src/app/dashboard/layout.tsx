@@ -21,7 +21,7 @@ export default async function DashboardLayout({
       <AppSidebar user={user} />
       <main className="flex flex-col flex-1 min-w-0 min-h-0 lg:ml-64 overflow-hidden bg-background border-l border-border/80">
         <DashboardHeader user={user} />
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden content-area">
+        <div className="flex-1 min-h-[60vh] overflow-y-auto overflow-x-hidden content-area">
           <div className="container py-8 px-4 sm:px-6 lg:px-8 xl:px-10 max-w-7xl xl:max-w-[90rem] min-w-0 w-full">
             {children}
           </div>

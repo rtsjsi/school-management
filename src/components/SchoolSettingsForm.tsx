@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { SubmitButton } from "@/components/ui/SubmitButton";
@@ -52,6 +52,8 @@ export function SchoolSettingsForm({
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingSignature, setUploadingSignature] = useState(false);
   const [saving, setSaving] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const signatureInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setForm({
@@ -233,22 +235,27 @@ export function SchoolSettingsForm({
             )}
             <div className="space-y-2">
               <Label htmlFor="logo">Upload logo</Label>
-              <label className={uploadingLogo ? "inline-block cursor-not-allowed opacity-70" : "inline-block cursor-pointer"}>
-                <input
-                  id="logo"
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  onChange={handleLogoChange}
-                  disabled={uploadingLogo}
-                  className="sr-only"
-                />
-                <Button type="button" variant="default" className="gap-2 pointer-events-none" asChild>
-                  <span>
-                    <Upload className="h-4 w-4" />
-                    Choose file
-                  </span>
-                </Button>
-              </label>
+              <input
+                ref={logoInputRef}
+                id="logo"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleLogoChange}
+                disabled={uploadingLogo}
+                tabIndex={-1}
+                aria-hidden
+                className="absolute w-0 h-0 opacity-0 overflow-hidden"
+              />
+              <Button
+                type="button"
+                variant="default"
+                className="gap-2"
+                disabled={uploadingLogo}
+                onClick={() => logoInputRef.current?.click()}
+              >
+                <Upload className="h-4 w-4" />
+                Choose file
+              </Button>
               {uploadingLogo && <p className="text-xs text-muted-foreground">Uploading…</p>}
             </div>
           </div>
@@ -278,22 +285,27 @@ export function SchoolSettingsForm({
             )}
             <div className="space-y-2">
               <Label htmlFor="signature">Upload signature image</Label>
-              <label className={uploadingSignature ? "inline-block cursor-not-allowed opacity-70" : "inline-block cursor-pointer"}>
-                <input
-                  id="signature"
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  onChange={handleSignatureChange}
-                  disabled={uploadingSignature}
-                  className="sr-only"
-                />
-                <Button type="button" variant="default" className="gap-2 pointer-events-none" asChild>
-                  <span>
-                    <Upload className="h-4 w-4" />
-                    Choose file
-                  </span>
-                </Button>
-              </label>
+              <input
+                ref={signatureInputRef}
+                id="signature"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleSignatureChange}
+                disabled={uploadingSignature}
+                tabIndex={-1}
+                aria-hidden
+                className="absolute w-0 h-0 opacity-0 overflow-hidden"
+              />
+              <Button
+                type="button"
+                variant="default"
+                className="gap-2"
+                disabled={uploadingSignature}
+                onClick={() => signatureInputRef.current?.click()}
+              >
+                <Upload className="h-4 w-4" />
+                Choose file
+              </Button>
               {uploadingSignature && <p className="text-xs text-muted-foreground">Uploading…</p>}
             </div>
           </div>
