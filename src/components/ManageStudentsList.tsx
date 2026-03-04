@@ -25,6 +25,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Pencil, BookOpen } from "lucide-react";
 import { fetchStandards, fetchAllDivisions } from "@/lib/lov";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 type StudentRow = {
   id: string;
@@ -49,7 +57,142 @@ type StudentRow = {
   guardian_contact?: string;
   notes?: string;
   created_at?: string;
+  academic_year?: string;
 };
+
+type EnrolmentRow = {
+  id: string;
+  academicYear: string;
+  standard: string;
+  division: string;
+  status: string;
+  createdAt: string | null;
+};
+
+function StudentEnrolmentsDialog({
+  studentId,
+  studentName,
+  studentCode,
+}: {
+  studentId: string;
+  studentName: string;
+  studentCode?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [rows, setRows] = useState<EnrolmentRow[]>([]);
+  const supabase = createClient();
+
+  const loadEnrolments = async () => {
+    setLoading(true);
+    try {
+      const { data: enrollments, error } = await supabase
+        .from("student_enrollments")
+        .select("id, academic_year_id, standard_id, division_id, status, created_at")
+        .eq("student_id", studentId)
+        .order("created_at", { ascending: false });
+      if (error || !enrollments) {
+        setRows([]);
+        return;
+      }
+
+      const yearIds = Array.from(new Set(enrollments.map((e) => e.academic_year_id)));
+      const stdIds = Array.from(new Set(enrollments.map((e) => e.standard_id)));
+      const divIds = Array.from(new Set(enrollments.map((e) => e.division_id)));
+
+      const [yearsRes, stdsRes, divsRes] = await Promise.all([
+        yearIds.length
+          ? supabase.from("academic_years").select("id, name").in("id", yearIds)
+          : Promise.resolve({ data: [] } as { data: { id: string; name: string }[] | null }),
+        stdIds.length
+          ? supabase.from("standards").select("id, name").in("id", stdIds)
+          : Promise.resolve({ data: [] } as { data: { id: string; name: string }[] | null }),
+        divIds.length
+          ? supabase.from("divisions").select("id, name").in("id", divIds)
+          : Promise.resolve({ data: [] } as { data: { id: string; name: string }[] | null }),
+      ]);
+
+      const yearMap = new Map((yearsRes.data ?? []).map((y) => [y.id, y.name]));
+      const stdMap = new Map((stdsRes.data ?? []).map((s) => [s.id, s.name]));
+      const divMap = new Map((divsRes.data ?? []).map((d) => [d.id, d.name]));
+
+      const mapped: EnrolmentRow[] = enrollments.map((e) => ({
+        id: e.id,
+        academicYear: yearMap.get(e.academic_year_id) ?? "—",
+        standard: stdMap.get(e.standard_id) ?? "—",
+        division: divMap.get(e.division_id) ?? "—",
+        status: e.status,
+        createdAt: e.created_at,
+      }));
+      setRows(mapped);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenChange = async (next: boolean) => {
+    setOpen(next);
+    if (next && rows.length === 0 && !loading) {
+      await loadEnrolments();
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="ghost" className="gap-1">
+          <BookOpen className="h-3 w-3" />
+          Enrolments
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle className="text-base">
+            Enrolments — {studentName}
+            {studentCode && (
+              <span className="font-mono text-xs font-normal text-muted-foreground ml-2">
+                ({studentCode})
+              </span>
+            )}
+          </DialogTitle>
+          <DialogDescription>Read-only view of enrollment history for this student.</DialogDescription>
+        </DialogHeader>
+        {loading ? (
+          <p className="text-sm text-muted-foreground py-4">Loading enrolments…</p>
+        ) : rows.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-4">No enrolments found.</p>
+        ) : (
+          <div className="overflow-x-auto rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Academic Year</TableHead>
+                  <TableHead>Standard</TableHead>
+                  <TableHead>Division</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-muted-foreground">Created</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((r) => (
+                  <TableRow key={r.id}>
+                    <TableCell>{r.academicYear}</TableCell>
+                    <TableCell>{r.standard}</TableCell>
+                    <TableCell>{r.division}</TableCell>
+                    <TableCell className="capitalize">{r.status}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {r.createdAt ? new Date(r.createdAt).toLocaleDateString() : "—"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
   const [students, setStudents] = useState<StudentRow[]>([]);
@@ -182,12 +325,11 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
                             Edit
                           </Link>
                         </Button>
-                        <Button size="sm" variant="ghost" className="gap-1" asChild>
-                          <Link href={`/dashboard/students/${s.id}/enrolments`}>
-                            <BookOpen className="h-3 w-3" />
-                            Enrolments
-                          </Link>
-                        </Button>
+                        <StudentEnrolmentsDialog
+                          studentId={s.id}
+                          studentName={s.full_name}
+                          studentCode={s.student_id}
+                        />
                       </TableCell>
                     )}
                     <TableCell className="font-mono text-xs text-muted-foreground">
