@@ -531,7 +531,7 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  {canEdit && <TableHead className="w-40 whitespace-nowrap">Actions</TableHead>}
+                  {canEdit && <TableHead className="w-32 whitespace-nowrap">Actions</TableHead>}
                   <TableHead>Name</TableHead>
                   <TableHead>RTE</TableHead>
                   <TableHead>Standard</TableHead>
@@ -539,6 +539,7 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
                   <TableHead>Roll #</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Admission</TableHead>
+                  {canEdit && <TableHead className="w-32 text-center">Enrolments</TableHead>}
                   {canEdit && <TableHead className="w-28 text-right">Exit</TableHead>}
                 </TableRow>
               </TableHeader>
@@ -552,11 +553,6 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
                           onSaved={() => {
                             setReloadKey((k) => k + 1);
                           }}
-                        />
-                        <StudentEnrolmentsDialog
-                          studentId={s.id}
-                          studentName={s.full_name}
-                          studentCode={s.student_id}
                         />
                       </TableCell>
                     )}
@@ -577,6 +573,15 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
                         ? new Date(s.admission_date).toLocaleDateString()
                         : "—"}
                     </TableCell>
+                    {canEdit && (
+                      <TableCell className="text-center">
+                        <StudentEnrolmentsDialog
+                          studentId={s.id}
+                          studentName={s.full_name}
+                          studentCode={s.student_id}
+                        />
+                      </TableCell>
+                    )}
                     {canEdit && (
                       <TableCell className="text-right">
                         <StudentExitDialog
