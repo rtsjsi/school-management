@@ -117,7 +117,8 @@ export function CameraCaptureButton({
     attachStreamToVideo(stream);
     const fallback = setTimeout(() => setVideoReady(true), 1500);
     return () => {
-      video.srcObject = null;
+      const v = videoRef.current;
+      if (v) v.srcObject = null;
       clearTimeout(fallback);
     };
   }, [showCamera]);
