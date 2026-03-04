@@ -110,10 +110,42 @@ async function deleteAllData() {
   }
 }
 
+async function seedAcademicYears() {
+  console.log("Ensuring academic years...");
+  const { data: existing } = await supabase.from("academic_years").select("id").limit(1);
+  if (existing && existing.length > 0) {
+    console.log("  academic_years already present, skipping creation.");
+    return;
+  }
+
+  const currentYear = new Date().getFullYear();
+  const prevName = `${currentYear - 1}-${currentYear}`;
+  const curName = `${currentYear}-${currentYear + 1}`;
+
+  await supabase.from("academic_years").insert([
+    {
+      name: prevName,
+      sort_order: 1,
+      start_date: `${currentYear - 1}-06-01`,
+      end_date: `${currentYear}-05-31`,
+      is_active: false,
+    },
+    {
+      name: curName,
+      sort_order: 2,
+      start_date: `${currentYear}-06-01`,
+      end_date: `${currentYear + 1}-05-31`,
+      is_active: true,
+    },
+  ]);
+  console.log("  Inserted academic years", prevName, "and", curName);
+}
+
 async function main() {
   console.log("Starting seed (50 students, 20 employees)...");
   await deleteAllData();
 
+  await seedAcademicYears();
   await seedStandards();
   await seedStandardDivisionsAndDivisions();
   await seedShifts();
