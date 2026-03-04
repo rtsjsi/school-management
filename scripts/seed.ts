@@ -476,7 +476,11 @@ async function seedStudents() {
     });
   }
 
-  const { data: inserted } = await supabase.from("students").insert(students).select("id");
+  const { data: inserted, error: insertError } = await supabase.from("students").insert(students).select("id");
+  if (insertError) {
+    console.error("  Error inserting students:", insertError.message);
+    return;
+  }
   if (!inserted?.length) {
     console.log("  No students inserted");
     return;
