@@ -253,7 +253,7 @@ function StudentExitDialog({
     }
   };
 
-  const disabled = currentStatus && currentStatus !== "active";
+  const disabled = !!currentStatus && currentStatus !== "active";
 
   return (
     <Dialog open={open} onOpenChange={(next) => !submitting && setOpen(next)}>
