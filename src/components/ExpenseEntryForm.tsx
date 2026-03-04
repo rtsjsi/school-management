@@ -22,22 +22,45 @@ function RemainingBudget({ expenseHeadId }: { expenseHeadId: string }) {
   useEffect(() => {
     const supabase = createClient();
     (async () => {
-      const { data: head } = await supabase
-        .from("expense_heads")
-        .select("budget")
-        .eq("id", expenseHeadId)
-        .single();
-      const budget = head?.budget != null ? Number(head.budget) : null;
+      // Find active academic year
+      const { data: year } = await supabase
+        .from("academic_years")
+        .select("id, start_date, end_date")
+        .eq("is_active", true)
+        .limit(1)
+        .maybeSingle();
+      if (!year?.id) {
+        setRemaining(null);
+        setLoading(false);
+        return;
+      }
+
+      // Get budget for this head in the active academic year
+      const { data: budgetRow } = await supabase
+        .from("expense_budgets")
+        .select("amount")
+        .eq("expense_head_id", expenseHeadId)
+        .eq("academic_year_id", year.id)
+        .maybeSingle();
+      const budget = budgetRow?.amount != null ? Number(budgetRow.amount) : null;
       if (budget == null) {
         setRemaining(null);
         setLoading(false);
         return;
       }
-      const { data: rows } = await supabase
+
+      // Sum expenses for this head within the academic year date range (if dates present)
+      let query = supabase
         .from("expenses")
         .select("amount")
         .eq("expense_head_id", expenseHeadId);
-      const spent = (rows ?? []).reduce((s, r) => s + Number(r.amount ?? 0), 0);
+
+      if (year.start_date && year.end_date) {
+        query = query.gte("expense_date", year.start_date as string).lte("expense_date", year.end_date as string);
+      }
+
+      const { data: rows } = await query;
+      const spent = (rows ?? []).reduce((s, r) => s + Number((r as { amount?: number }).amount ?? 0), 0);
       setRemaining(Math.max(0, budget - spent));
       setLoading(false);
     })();

@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 
-type HeadRow = { id: string; name: string; budget: number | null; sort_order: number };
+type HeadRow = { id: string; name: string; sort_order: number };
 
 export function ExpenseHeadsManager() {
   const router = useRouter();
@@ -34,7 +34,7 @@ export function ExpenseHeadsManager() {
   const [addOpen, setAddOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: "", budget: "" });
+  const [form, setForm] = useState({ name: "" });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -43,7 +43,7 @@ export function ExpenseHeadsManager() {
   const loadHeads = () => {
     supabase
       .from("expense_heads")
-      .select("id, name, budget, sort_order")
+      .select("id, name, sort_order")
       .order("sort_order")
       .then(({ data }) => setHeads((data ?? []) as HeadRow[]));
   };
@@ -68,15 +68,8 @@ export function ExpenseHeadsManager() {
       .limit(1)
       .maybeSingle();
     const nextOrder = (max?.sort_order ?? 0) + 1;
-    const budgetVal = form.budget.trim() ? parseFloat(form.budget) : null;
-    if (form.budget.trim() && (isNaN(budgetVal!) || budgetVal! < 0)) {
-      setError("Budget must be a non-negative number.");
-      setLoading(false);
-      return;
-    }
     const { error: err } = await supabase.from("expense_heads").insert({
       name: trimmed,
-      budget: budgetVal,
       sort_order: nextOrder,
     });
     setLoading(false);
@@ -85,17 +78,14 @@ export function ExpenseHeadsManager() {
       return;
     }
     setAddOpen(false);
-    setForm({ name: "", budget: "" });
+    setForm({ name: "" });
     loadHeads();
     router.refresh();
   };
 
   const handleEdit = (row: HeadRow) => {
     setEditingId(row.id);
-    setForm({
-      name: row.name,
-      budget: row.budget != null ? String(row.budget) : "",
-    });
+    setForm({ name: row.name });
     setEditOpen(true);
   };
 
@@ -108,15 +98,10 @@ export function ExpenseHeadsManager() {
       setError("Name is required.");
       return;
     }
-    const budgetVal = form.budget.trim() ? parseFloat(form.budget) : null;
-    if (form.budget.trim() && (isNaN(budgetVal!) || budgetVal! < 0)) {
-      setError("Budget must be a non-negative number.");
-      return;
-    }
     setLoading(true);
     const { error: err } = await supabase
       .from("expense_heads")
-      .update({ name: trimmed, budget: budgetVal })
+      .update({ name: trimmed })
       .eq("id", editingId);
     setLoading(false);
     if (err) {
@@ -125,7 +110,7 @@ export function ExpenseHeadsManager() {
     }
     setEditOpen(false);
     setEditingId(null);
-    setForm({ name: "", budget: "" });
+    setForm({ name: "" });
     loadHeads();
     router.refresh();
   };
@@ -150,7 +135,7 @@ export function ExpenseHeadsManager() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Add expense head</DialogTitle>
-              <DialogDescription>Create a new expense category with optional budget.</DialogDescription>
+              <DialogDescription>Create a new expense category.</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleAdd} className="space-y-4">
               {error && (
@@ -163,17 +148,6 @@ export function ExpenseHeadsManager() {
                   onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
                   placeholder="e.g. Salary, Maintenance"
                   required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Budget (optional)</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.budget}
-                  onChange={(e) => setForm((p) => ({ ...p, budget: e.target.value }))}
-                  placeholder="0.00"
                 />
               </div>
               <DialogFooter>
@@ -192,7 +166,7 @@ export function ExpenseHeadsManager() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Edit expense head</DialogTitle>
-              <DialogDescription>Update name and budget.</DialogDescription>
+              <DialogDescription>Update name.</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleUpdate} className="space-y-4">
               {error && (
@@ -204,17 +178,6 @@ export function ExpenseHeadsManager() {
                   value={form.name}
                   onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
                   required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Budget (optional)</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.budget}
-                  onChange={(e) => setForm((p) => ({ ...p, budget: e.target.value }))}
-                  placeholder="0.00"
                 />
               </div>
               <DialogFooter>
@@ -229,13 +192,12 @@ export function ExpenseHeadsManager() {
           </DialogContent>
         </Dialog>
 
-        {heads.length > 0 ? (
+                {heads.length > 0 ? (
           <div className="rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
-                  <TableHead className="text-right">Budget</TableHead>
                   <TableHead className="w-24"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -243,9 +205,6 @@ export function ExpenseHeadsManager() {
                 {heads.map((h) => (
                   <TableRow key={h.id}>
                     <TableCell className="font-medium">{h.name}</TableCell>
-                    <TableCell className="text-right">
-                      {h.budget != null ? Number(h.budget).toLocaleString() : "—"}
-                    </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
                         <Button

@@ -120,7 +120,6 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
       }
 
       const supabase = createClient();
-      const standardName = form.standard.trim();
       const { data: structure, error: structErr } = await supabase
         .from("fee_structures")
         .insert({

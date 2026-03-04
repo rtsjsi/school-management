@@ -32,7 +32,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronDown, ChevronRight, Download } from "lucide-react";
 
 type DivisionRow = { id: string; name: string; sort_order: number };
 
@@ -70,6 +70,102 @@ export function ClassManagement() {
     loadStandards();
   }, []);
 
+  const exportStandards = async (format: "csv" | "xlsx" | "pdf") => {
+    try {
+      const { data, error } = await supabase
+        .from("standards")
+        .select("id, name, section, sort_order, standard_divisions(name)")
+        .order("sort_order");
+      if (error) {
+        alert(error.message);
+        return;
+      }
+      const rows =
+        (data ?? []).map((s: any) => ({
+          Standard: s.name,
+          Section: SECTION_LABELS[s.section] ?? s.section,
+          Divisions: ((s.standard_divisions as { name: string }[]) ?? []).map((d) => d.name).join(", "),
+        })) ?? [];
+      if (rows.length === 0) {
+        alert("No standards to export.");
+        return;
+      }
+
+      if (format === "csv") {
+        const header = Object.keys(rows[0]).join(",");
+        const body = rows
+          .map((r) =>
+            Object.values(r)
+              .map((v) => {
+                const s = String(v ?? "");
+                if (s.includes(",") || s.includes("\"") || s.includes("\n")) {
+                  return `"${s.replace(/"/g, '""')}"`;
+                }
+                return s;
+              })
+              .join(",")
+          )
+          .join("\n");
+        const csv = `${header}\n${body}`;
+        const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "standards.csv";
+        a.click();
+        URL.revokeObjectURL(url);
+        return;
+      }
+
+      if (format === "xlsx") {
+        const XLSX = await import("xlsx");
+        const ws = XLSX.utils.json_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Standards");
+        const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+        const blob = new Blob([wbout], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "standards.xlsx";
+        a.click();
+        URL.revokeObjectURL(url);
+        return;
+      }
+
+      if (format === "pdf") {
+        const { jsPDF } = await import("jspdf");
+        const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+        let y = 15;
+        doc.setFontSize(14);
+        doc.text("Standards", 10, y);
+        y += 8;
+        doc.setFontSize(10);
+        doc.text("Standard", 10, y);
+        doc.text("Section", 60, y);
+        doc.text("Divisions", 100, y);
+        y += 4;
+        doc.line(10, y, 200, y);
+        y += 4;
+        for (const row of rows) {
+          if (y > 280) {
+            doc.addPage();
+            y = 15;
+          }
+          doc.text(String(row.Standard), 10, y);
+          doc.text(String(row.Section), 60, y);
+          doc.text(String(row.Divisions ?? ""), 100, y, { maxWidth: 90 });
+          y += 5;
+        }
+        doc.save("standards.pdf");
+      }
+    } catch {
+      alert("Failed to export standards.");
+    }
+  };
+
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     setAddError(null);
@@ -106,57 +202,92 @@ export function ClassManagement() {
   return (
     <Card>
       <CardContent className="space-y-4 pt-6">
-        <Dialog open={addOpen} onOpenChange={setAddOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" className="gap-1">
-              <Plus className="h-4 w-4" />
-              Add standard
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Dialog open={addOpen} onOpenChange={setAddOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="gap-1">
+                <Plus className="h-4 w-4" />
+                Add standard
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add standard</DialogTitle>
+                <DialogDescription>Add a new standard with name and section.</DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleAdd} className="space-y-4">
+                {addError && (
+                  <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{addError}</p>
+                )}
+                <div className="space-y-2">
+                  <Label>Standard name</Label>
+                  <Input
+                    value={addName}
+                    onChange={(e) => setAddName(e.target.value)}
+                    placeholder="e.g. 1, Jr KG, 13"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Section</Label>
+                  <Select value={addSection} onValueChange={setAddSection}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SECTIONS.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {SECTION_LABELS[s]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={addLoading}>
+                    {addLoading ? "Adding…" : "Add"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="gap-1"
+              onClick={() => exportStandards("csv")}
+            >
+              <Download className="h-3 w-3" />
+              CSV
             </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add standard</DialogTitle>
-              <DialogDescription>Add a new standard with name and section.</DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleAdd} className="space-y-4">
-              {addError && (
-                <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{addError}</p>
-              )}
-              <div className="space-y-2">
-                <Label>Standard name</Label>
-                <Input
-                  value={addName}
-                  onChange={(e) => setAddName(e.target.value)}
-                  placeholder="e.g. 1, Jr KG, 13"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Section</Label>
-                <Select value={addSection} onValueChange={setAddSection}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SECTIONS.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {SECTION_LABELS[s]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={addLoading}>
-                  {addLoading ? "Adding…" : "Add"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="gap-1"
+              onClick={() => exportStandards("xlsx")}
+            >
+              <Download className="h-3 w-3" />
+              Excel
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="gap-1"
+              onClick={() => exportStandards("pdf")}
+            >
+              <Download className="h-3 w-3" />
+              PDF
+            </Button>
+          </div>
+        </div>
 
         {standards.length > 0 ? (
           <div className="rounded-md border">
