@@ -178,7 +178,6 @@ export function PromotionRunner() {
                 <Button
                   type="button"
                   variant="outline"
-                  size="xs"
                   onClick={() =>
                     setSelectedEnrollmentIds(new Set(filteredOutcomes.map((o) => o.enrollmentId)))
                   }
@@ -188,7 +187,6 @@ export function PromotionRunner() {
                 <Button
                   type="button"
                   variant="outline"
-                  size="xs"
                   onClick={() => setSelectedEnrollmentIds(new Set())}
                 >
                   Clear
