@@ -214,8 +214,9 @@ function StudentEditDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline" className="p-1.5">
+        <Button size="sm" variant="outline" className="gap-1 px-2">
           <Pencil className="h-3 w-3" />
+          <span className="text-xs">Edit</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-5xl">
