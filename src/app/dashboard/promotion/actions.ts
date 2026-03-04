@@ -48,6 +48,62 @@ export async function getEnrollmentsForYear(academicYearId: string): Promise<Enr
   return outcomes;
 }
 
+export async function getPromotionCandidates(academicYearId: string): Promise<EnrollmentOutcome[]> {
+  const supabase = await createClient();
+  const { data: enrollments } = await supabase
+    .from("student_enrollments")
+    .select("id, student_id, standard_id, division_id")
+    .eq("academic_year_id", academicYearId)
+    .eq("status", "active");
+
+  if (!enrollments?.length) return [];
+
+  const outcomes: EnrollmentOutcome[] = [];
+  for (const e of enrollments) {
+    const [g, d, s] = await Promise.all([
+      supabase.from("standards").select("name").eq("id", e.standard_id).single(),
+      supabase.from("divisions").select("name").eq("id", e.division_id).single(),
+      supabase.from("students").select("full_name").eq("id", e.student_id).single(),
+    ]);
+
+    const gradeId = e.standard_id;
+    const gradeName = (g.data?.name as string) ?? "";
+    const divisionName = (d.data?.name as string) ?? "";
+    const studentName = (s.data?.full_name as string) ?? "";
+
+    let status: EnrollmentOutcome["status"];
+    let nextGradeId: string | null = null;
+    let nextGradeName: string | null = null;
+
+    const highest = await isHighestGrade(gradeId);
+    if (highest) {
+      status = "graduated";
+    } else {
+      status = "promoted";
+      const nid = await getNextGradeId(gradeId);
+      if (nid) {
+        nextGradeId = nid;
+        const { data: nextStandard } = await supabase.from("standards").select("name").eq("id", nid).single();
+        nextGradeName = (nextStandard?.name as string) ?? null;
+      }
+    }
+
+    outcomes.push({
+      enrollmentId: e.id,
+      studentId: e.student_id,
+      gradeId,
+      studentName,
+      gradeName,
+      divisionName,
+      status,
+      nextGradeId,
+      nextGradeName,
+    });
+  }
+
+  return outcomes;
+}
+
 export async function computeOutcomesFromExam(
   academicYearId: string,
   examId: string
