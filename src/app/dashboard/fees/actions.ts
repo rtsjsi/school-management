@@ -14,30 +14,27 @@ export async function deleteFeeStructure(id: string): Promise<FeeStructureAction
 export async function updateFeeStructure(
   id: string,
   data: {
-    name: string;
-    grade_from: string;
-    grade_to: string;
+    standard: string;
     academic_year: string;
     items: { fee_type: string; quarter: number; amount: number }[];
   }
 ): Promise<FeeStructureActionResult> {
   const supabase = await createClient();
   const trimmed = {
-    name: data.name.trim(),
-    grade_from: data.grade_from.trim(),
-    grade_to: data.grade_to.trim(),
+    standard: data.standard.trim(),
     academic_year: data.academic_year.trim(),
   };
-  if (!trimmed.name || !trimmed.grade_from || !trimmed.grade_to || !trimmed.academic_year) {
-    return { ok: false, error: "Name, grade range, and academic year are required." };
+  if (!trimmed.standard || !trimmed.academic_year) {
+    return { ok: false, error: "Standard and academic year are required." };
   }
 
   const { error: structErr } = await supabase
     .from("fee_structures")
     .update({
-      name: trimmed.name,
-      grade_from: trimmed.grade_from,
-      grade_to: trimmed.grade_to,
+      // Keep legacy columns for compatibility, but derive them from the selected standard
+      name: trimmed.standard,
+      grade_from: trimmed.standard,
+      grade_to: trimmed.standard,
       academic_year: trimmed.academic_year,
       updated_at: new Date().toISOString(),
     })

@@ -27,9 +27,7 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
   const [loadingData, setLoadingData] = useState(!!structureId);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
-    name: "",
-    grade_from: "",
-    grade_to: "",
+    standard: "",
     academic_year: "",
   });
   const [quarterAmounts, setQuarterAmounts] = useState<Record<string, Record<number, string>>>({});
@@ -46,7 +44,7 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
       const supabase = createClient();
       const { data: structure, error: structErr } = await supabase
         .from("fee_structures")
-        .select("id, name, grade_from, grade_to, academic_year")
+        .select("id, grade_from, academic_year")
         .eq("id", structureId)
         .single();
       if (structErr || !structure) {
@@ -59,9 +57,7 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
         .select("fee_type, quarter, amount")
         .eq("fee_structure_id", structureId);
       setForm({
-        name: structure.name,
-        grade_from: structure.grade_from,
-        grade_to: structure.grade_to,
+        standard: structure.grade_from,
         academic_year: structure.academic_year,
       });
       const amounts: Record<string, Record<number, string>> = {};
@@ -90,8 +86,8 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!form.name.trim() || !form.grade_from.trim() || !form.grade_to.trim() || !form.academic_year.trim()) {
-      setError("Name, grade range, and academic year are required.");
+    if (!form.standard.trim() || !form.academic_year.trim()) {
+      setError("Standard and academic year are required.");
       return;
     }
 
@@ -107,11 +103,10 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
 
     setLoading(true);
     try {
+      const standardName = form.standard.trim();
       if (structureId) {
         const result = await updateFeeStructure(structureId, {
-          name: form.name.trim(),
-          grade_from: form.grade_from.trim(),
-          grade_to: form.grade_to.trim(),
+          standard: standardName,
           academic_year: form.academic_year.trim(),
           items,
         });
@@ -125,12 +120,14 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
       }
 
       const supabase = createClient();
+      const standardName = form.standard.trim();
       const { data: structure, error: structErr } = await supabase
         .from("fee_structures")
         .insert({
-          name: form.name.trim(),
-          grade_from: form.grade_from.trim(),
-          grade_to: form.grade_to.trim(),
+          // Keep legacy columns for compatibility, but derive them from the selected standard
+          name: standardName,
+          grade_from: standardName,
+          grade_to: standardName,
           academic_year: form.academic_year.trim(),
         })
         .select("id")
@@ -156,7 +153,7 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
         }
       }
 
-      setForm({ name: "", grade_from: "", grade_to: "", academic_year: "" });
+      setForm({ standard: "", academic_year: "" });
       setQuarterAmounts({});
       router.refresh();
     } catch {
@@ -184,14 +181,23 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Structure Name *</Label>
-              <Input
-                id="name"
-                value={form.name}
-                onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-                placeholder="e.g. Primary (1-6)"
-                required
-              />
+              <Label htmlFor="standard">Standard *</Label>
+              {classes.length > 0 ? (
+                <Select value={form.standard} onValueChange={(v) => setForm((p) => ({ ...p, standard: v }))} required>
+                  <SelectTrigger id="standard"><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>
+                    {classes.map((c) => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  id="standard"
+                  value={form.standard}
+                  onChange={(e) => setForm((p) => ({ ...p, standard: e.target.value }))}
+                  placeholder="e.g. 1"
+                  required
+                />
+              )}
             </div>
             <AcademicYearSelect
               value={form.academic_year}
@@ -199,47 +205,6 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
               id="academic_year"
               label="Academic Year *"
             />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="grade_from">Grade From *</Label>
-              {classes.length > 0 ? (
-                <Select value={form.grade_from} onValueChange={(v) => setForm((p) => ({ ...p, grade_from: v }))} required>
-                  <SelectTrigger id="grade_from"><SelectValue placeholder="Select" /></SelectTrigger>
-                  <SelectContent>
-                    {classes.map((c) => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input
-                  id="grade_from"
-                  value={form.grade_from}
-                  onChange={(e) => setForm((p) => ({ ...p, grade_from: e.target.value }))}
-                  placeholder="e.g. 1"
-                  required
-                />
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="grade_to">Grade To *</Label>
-              {classes.length > 0 ? (
-                <Select value={form.grade_to} onValueChange={(v) => setForm((p) => ({ ...p, grade_to: v }))} required>
-                  <SelectTrigger id="grade_to"><SelectValue placeholder="Select" /></SelectTrigger>
-                  <SelectContent>
-                    {classes.map((c) => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input
-                  id="grade_to"
-                  value={form.grade_to}
-                  onChange={(e) => setForm((p) => ({ ...p, grade_to: e.target.value }))}
-                  placeholder="e.g. 6"
-                  required
-                />
-              )}
-            </div>
           </div>
 
           <div className="pt-4 border-t">
