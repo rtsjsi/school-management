@@ -31,9 +31,11 @@ import { GradeDivisionYearSelects } from "@/components/GradeDivisionYearSelects"
 
 interface StudentEditFormProps {
   student: Record<string, unknown> & { id: string; full_name: string };
+  embedded?: boolean;
+  onSaved?: () => void;
 }
 
-export function StudentEditForm({ student }: StudentEditFormProps) {
+export function StudentEditForm({ student, embedded = false, onSaved }: StudentEditFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -93,7 +95,8 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
         return;
       }
 
-      router.refresh();
+      if (onSaved) onSaved();
+      if (!embedded) router.refresh();
     } catch {
       setError("Something went wrong.");
     } finally {
@@ -103,14 +106,16 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/dashboard/students" className="gap-1">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Students
-          </Link>
-        </Button>
-      </div>
+      {!embedded && (
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/dashboard/students" className="gap-1">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Students
+            </Link>
+          </Button>
+        </div>
+      )}
 
       {error && (
         <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>
@@ -514,9 +519,11 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
       </div>
 
       <div className="flex gap-2 justify-start">
-        <Button type="button" variant="outline" asChild>
-          <Link href="/dashboard/students">Cancel</Link>
-        </Button>
+        {!embedded && (
+          <Button type="button" variant="outline" asChild>
+            <Link href="/dashboard/students">Cancel</Link>
+          </Button>
+        )}
         <SubmitButton loading={loading} loadingLabel="Saving…">
           Save Changes
         </SubmitButton>

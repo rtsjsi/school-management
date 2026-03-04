@@ -35,6 +35,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import StudentEntryForm from "@/components/StudentEntryForm";
+import { StudentEditForm } from "@/components/StudentEditForm";
 
 type StudentRow = {
   id: string;
@@ -197,6 +198,49 @@ function StudentEnrolmentsDialog({
             </Table>
           </div>
         )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function StudentEditDialog({
+  student,
+  onSaved,
+}: {
+  student: StudentRow & { [key: string]: unknown };
+  onSaved: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" className="p-1.5">
+          <Pencil className="h-3 w-3" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-5xl">
+        <DialogHeader>
+          <DialogTitle className="text-base">
+            Edit student — {student.full_name}
+            {student.student_id && (
+              <span className="font-mono text-xs font-normal text-muted-foreground ml-2">
+                ({student.student_id})
+              </span>
+            )}
+          </DialogTitle>
+          <DialogDescription>Update student details. Changes will be saved immediately.</DialogDescription>
+        </DialogHeader>
+        <div className="max-h-[70vh] overflow-y-auto pr-1">
+          <StudentEditForm
+            student={student as unknown as Record<string, unknown> & { id: string; full_name: string }}
+            embedded
+            onSaved={() => {
+              setOpen(false);
+              onSaved();
+            }}
+          />
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -489,7 +533,6 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
               <TableHeader>
                 <TableRow>
                   {canEdit && <TableHead className="w-40 whitespace-nowrap">Actions</TableHead>}
-                  <TableHead>Student ID</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>RTE</TableHead>
                   <TableHead>Standard</TableHead>
@@ -505,12 +548,12 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
                   <TableRow key={s.id}>
                     {canEdit && (
                       <TableCell className="space-x-1">
-                        <Button size="sm" variant="outline" className="gap-1" asChild>
-                          <Link href={`/dashboard/students/${s.id}/edit`}>
-                            <Pencil className="h-3 w-3" />
-                            Edit
-                          </Link>
-                        </Button>
+                        <StudentEditDialog
+                          student={s}
+                          onSaved={() => {
+                            setReloadKey((k) => k + 1);
+                          }}
+                        />
                         <StudentEnrolmentsDialog
                           studentId={s.id}
                           studentName={s.full_name}
@@ -518,9 +561,6 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
                         />
                       </TableCell>
                     )}
-                    <TableCell className="font-mono text-xs text-muted-foreground">
-                      {s.student_id || "—"}
-                    </TableCell>
                     <TableCell className="font-medium">{s.full_name}</TableCell>
                     <TableCell>
                       {s.is_rte_quota ? <Badge variant="secondary">RTE</Badge> : "—"}
