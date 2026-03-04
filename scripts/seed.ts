@@ -448,7 +448,6 @@ async function seedStudents() {
       previousYear && i >= Math.floor(totalStudents * 0.7) ? previousYear : activeYear;
     students.push({
       full_name: name,
-      email: `stu${i + 1}@school.edu`,
       student_id: `STU-${new Date().getFullYear()}-${String(i + 1).padStart(4, "0")}`,
       date_of_birth: dob,
       gender,
