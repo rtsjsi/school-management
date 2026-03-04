@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pencil, BookOpen } from "lucide-react";
+import { Pencil, BookOpen, UserPlus } from "lucide-react";
 import { fetchStandards, fetchAllDivisions } from "@/lib/lov";
 import {
   Dialog,
@@ -33,6 +33,7 @@ import {
   DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import StudentEntryForm from "@/components/StudentEntryForm";
 
 type StudentRow = {
   id: string;
@@ -203,12 +204,22 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
   const [statusFilter, setStatusFilter] = useState("all");
   const [grades, setGrades] = useState<{ id: string; name: string }[]>([]);
   const [divisions, setDivisions] = useState<{ id: string; name: string }[]>([]);
+  const [activeYearName, setActiveYearName] = useState<string | undefined>(undefined);
+  const [addOpen, setAddOpen] = useState(false);
 
   const supabase = createClient();
 
   useEffect(() => {
     fetchStandards().then(setGrades);
     fetchAllDivisions().then(setDivisions);
+    supabase
+      .from("academic_years")
+      .select("name")
+      .eq("is_active", true)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.name) setActiveYearName(data.name as string);
+      });
   }, []);
 
   useEffect(() => {
@@ -245,53 +256,76 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
   return (
     <Card>
       <CardContent className="space-y-4 pt-6">
-        <div className="flex flex-wrap gap-4 items-end">
-          <div className="space-y-2 flex-1 min-w-[180px]">
-            <Label>Search</Label>
-            <Input
-              placeholder="Name or Student ID"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+        <div className="flex flex-wrap items-end gap-4 justify-between">
+          <div className="flex flex-wrap gap-4 items-end flex-1 min-w-[260px]">
+            <div className="space-y-2 flex-1 min-w-[180px]">
+              <Label>Search</Label>
+              <Input
+                placeholder="Name or Student ID"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2 w-28">
+              <Label>Standard</Label>
+              <Select value={gradeFilter} onValueChange={setGradeFilter}>
+                <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  {grades.map((g) => (
+                    <SelectItem key={g.id} value={g.name}>{g.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 w-24">
+              <Label>Division</Label>
+              <Select value={divisionFilter} onValueChange={setDivisionFilter}>
+                <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  {divisions.map((d) => (
+                    <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 w-28">
+              <Label>Status</Label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="transferred">Transferred</SelectItem>
+                  <SelectItem value="graduated">Graduated</SelectItem>
+                  <SelectItem value="suspended">Suspended</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <div className="space-y-2 w-28">
-            <Label>Standard</Label>
-            <Select value={gradeFilter} onValueChange={setGradeFilter}>
-              <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                {grades.map((g) => (
-                  <SelectItem key={g.id} value={g.name}>{g.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2 w-24">
-            <Label>Division</Label>
-            <Select value={divisionFilter} onValueChange={setDivisionFilter}>
-              <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                {divisions.map((d) => (
-                  <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2 w-28">
-            <Label>Status</Label>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-                <SelectItem value="transferred">Transferred</SelectItem>
-                <SelectItem value="graduated">Graduated</SelectItem>
-                <SelectItem value="suspended">Suspended</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {canEdit && (
+            <Dialog open={addOpen} onOpenChange={setAddOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-1">
+                  <UserPlus className="h-4 w-4" />
+                  Add student
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-5xl">
+                <DialogHeader>
+                  <DialogTitle className="text-base">Add new student</DialogTitle>
+                  <DialogDescription>
+                    Fill in the admission form to create a new student record.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="max-h-[70vh] overflow-y-auto pr-1">
+                  <StudentEntryForm defaultAcademicYear={activeYearName} />
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
 
         {loading ? (
