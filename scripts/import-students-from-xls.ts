@@ -53,7 +53,7 @@ if (!url || !serviceKey) {
 const supabase = createClient(url, serviceKey, { auth: { persistSession: false } });
 
 /** Default path to the Excel file (override with first CLI arg). */
-const DEFAULT_XLS_PATH =
+export const DEFAULT_XLS_PATH =
   process.platform === "win32"
     ? "d:\\Angel School Management App Project\\Student List 2025-26.xls"
     : join(repoRoot, "Student List 2025-26.xls");
@@ -102,7 +102,21 @@ function mapGender(raw: unknown): string | null {
   return s ? "other" : null;
 }
 
-function parseSheet(xlsPath: string): { grade: string; division: string; gr: string; name: string; dob: string | null; mobile: string; mobile2: string; caste: string; category: string | null; gender: string | null; address: string }[] {
+export type ParsedExcelRow = {
+  grade: string;
+  division: string;
+  gr: string;
+  name: string;
+  dob: string | null;
+  mobile: string;
+  mobile2: string;
+  caste: string;
+  category: string | null;
+  gender: string | null;
+  address: string;
+};
+
+export function parseSheet(xlsPath: string): ParsedExcelRow[] {
   const wb = XLSX.readFile(xlsPath);
   const sheetName = wb.SheetNames[0];
   const sheet = wb.Sheets[sheetName];
