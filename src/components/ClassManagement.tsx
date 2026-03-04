@@ -70,6 +70,13 @@ export function ClassManagement() {
     loadStandards();
   }, []);
 
+  type StandardWithDivisions = {
+    id: string;
+    name: string;
+    section: string;
+    standard_divisions?: { name: string }[] | null;
+  };
+
   const exportStandards = async (format: "csv" | "xlsx" | "pdf") => {
     try {
       const { data, error } = await supabase
@@ -80,8 +87,9 @@ export function ClassManagement() {
         alert(error.message);
         return;
       }
+      const standardsWithDivisions = (data ?? []) as StandardWithDivisions[];
       const rows =
-        (data ?? []).map((s: any) => ({
+        standardsWithDivisions.map((s) => ({
           Standard: s.name,
           Section: SECTION_LABELS[s.section] ?? s.section,
           Divisions: ((s.standard_divisions as { name: string }[]) ?? []).map((d) => d.name).join(", "),
