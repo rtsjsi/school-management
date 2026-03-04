@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pencil, BookOpen, UserPlus } from "lucide-react";
+import { Pencil, BookOpen, UserPlus, LogOut } from "lucide-react";
 import { fetchStandards, fetchAllDivisions } from "@/lib/lov";
 import {
   Dialog,
@@ -68,6 +68,12 @@ type EnrolmentRow = {
   division: string;
   status: string;
   createdAt: string | null;
+};
+
+type ExitFormState = {
+  exit_date: string;
+  reason: string;
+  notes: string;
 };
 
 function StudentEnrolmentsDialog({
@@ -195,6 +201,149 @@ function StudentEnrolmentsDialog({
   );
 }
 
+function StudentExitDialog({
+  studentId,
+  studentName,
+  currentStatus,
+  onExited,
+}: {
+  studentId: string;
+  studentName: string;
+  currentStatus?: string | null;
+  onExited?: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const today = new Date().toISOString().slice(0, 10);
+  const [form, setForm] = useState<ExitFormState>({ exit_date: today, reason: "", notes: "" });
+  const supabase = createClient();
+
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    setError(null);
+    try {
+      const { error: updErr } = await supabase
+        .from("students")
+        .update({
+          status: "inactive",
+          exit_date: form.exit_date || today,
+          exit_reason: form.reason || null,
+          exit_notes: form.notes || null,
+        })
+        .eq("id", studentId);
+      if (updErr) {
+        setError(updErr.message);
+        return;
+      }
+
+      await supabase
+        .from("student_enrollments")
+        .update({ status: "inactive" })
+        .eq("student_id", studentId)
+        .eq("status", "active");
+
+      setOpen(false);
+      if (onExited) onExited();
+    } catch {
+      setError("Failed to exit student. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const disabled = currentStatus && currentStatus !== "active";
+
+  return (
+    <Dialog open={open} onOpenChange={(next) => !submitting && setOpen(next)}>
+      <DialogTrigger asChild>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="gap-1 text-destructive hover:text-destructive"
+          disabled={disabled}
+        >
+          <LogOut className="h-3 w-3" />
+          Exit
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="text-base">Exit student</DialogTitle>
+          <DialogDescription>
+            Mark <span className="font-semibold text-foreground">{studentName}</span> as inactive. All
+            records will remain in the system for reports and history.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="exit_date">Exit date</Label>
+            <Input
+              id="exit_date"
+              type="date"
+              value={form.exit_date}
+              onChange={(e) => setForm((p) => ({ ...p, exit_date: e.target.value }))}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="exit_reason">Reason</Label>
+            <Select
+              value={form.reason}
+              onValueChange={(v) => setForm((p) => ({ ...p, reason: v }))}
+            >
+              <SelectTrigger id="exit_reason">
+                <SelectValue placeholder="Select reason" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="completed">Completed course / graduated</SelectItem>
+                <SelectItem value="transfer">Transferred to another school</SelectItem>
+                <SelectItem value="fee_default">Fee default / non-payment</SelectItem>
+                <SelectItem value="personal">Personal reasons</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="exit_notes">Notes (optional)</Label>
+            <Textarea
+              id="exit_notes"
+              rows={3}
+              value={form.notes}
+              onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
+              placeholder="Any additional details about this exit."
+            />
+          </div>
+          {error && (
+            <p className="text-xs text-destructive bg-destructive/10 rounded-md px-2 py-1.5">
+              {error}
+            </p>
+          )}
+          <div className="flex justify-end gap-2 pt-1">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setOpen(false)}
+              disabled={submitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="destructive"
+              onClick={handleSubmit}
+              disabled={submitting}
+            >
+              {submitting ? "Saving…" : "Confirm exit"}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
   const [students, setStudents] = useState<StudentRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -206,6 +355,7 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
   const [divisions, setDivisions] = useState<{ id: string; name: string }[]>([]);
   const [activeYearName, setActiveYearName] = useState<string | undefined>(undefined);
   const [addOpen, setAddOpen] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const supabase = createClient();
 
@@ -240,7 +390,7 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
       setStudents((data ?? []) as StudentRow[]);
       setLoading(false);
     })();
-  }, [search, gradeFilter, divisionFilter, statusFilter]);
+  }, [search, gradeFilter, divisionFilter, statusFilter, reloadKey]);
 
   const getStatusBadge = (status: string) => {
     const map: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -346,6 +496,7 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
                   <TableHead>Roll #</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Admission</TableHead>
+                  {canEdit && <TableHead className="w-28 text-right">Exit</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -386,6 +537,18 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
                         ? new Date(s.admission_date).toLocaleDateString()
                         : "—"}
                     </TableCell>
+                    {canEdit && (
+                      <TableCell className="text-right">
+                        <StudentExitDialog
+                          studentId={s.id}
+                          studentName={s.full_name}
+                          currentStatus={s.status}
+                          onExited={() => {
+                            setReloadKey((k) => k + 1);
+                          }}
+                        />
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
