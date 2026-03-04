@@ -76,6 +76,8 @@ const defaultForm = () => ({
   guardian_name: "",
   guardian_contact: "",
   guardian_email: "",
+  emergency_contact_name: "",
+  emergency_contact_number: "",
   fee_concession_amount: "",
   fee_concession_reason: "",
   height: "",
@@ -126,9 +128,6 @@ export default function StudentEntryForm({
     { key: "gender", label: "Gender" },
     { key: "blood_group", label: "Blood group" },
     { key: "category", label: "Category" },
-    { key: "religion", label: "Religion" },
-    { key: "caste", label: "Caste" },
-    { key: "district", label: "District" },
     { key: "father_name", label: "Father name" },
     { key: "mother_name", label: "Mother name" },
     { key: "parent_contact", label: "Parent contact" },
@@ -195,6 +194,8 @@ export default function StudentEntryForm({
         guardian_name: form.guardian_name.trim() || null,
         guardian_contact: form.guardian_contact.trim() || null,
         guardian_email: form.guardian_email.trim() || null,
+        emergency_contact_name: form.emergency_contact_name.trim() || null,
+        emergency_contact_number: form.emergency_contact_number.trim() || null,
         fee_concession_amount: form.fee_concession_amount ? parseFloat(form.fee_concession_amount) : null,
         fee_concession_reason: form.fee_concession_reason.trim() || null,
         height: form.height.trim() || null,
@@ -344,25 +345,24 @@ export default function StudentEntryForm({
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Religion *</Label>
+                  <Label>Religion</Label>
                   <Input
                     value={form.religion}
                     onChange={(e) => set("religion", e.target.value)}
                     placeholder="e.g. Hindu"
-                    required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Caste *</Label>
-                  <Input value={form.caste} onChange={(e) => set("caste", e.target.value)} required />
+                  <Label>Caste</Label>
+                  <Input value={form.caste} onChange={(e) => set("caste", e.target.value)} />
                 </div>
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="address">Address *</Label>
                   <Input id="address" value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="Full address" required />
                 </div>
                 <div className="space-y-2">
-                  <Label>District *</Label>
-                  <Input value={form.district} onChange={(e) => set("district", e.target.value)} required />
+                  <Label>District</Label>
+                  <Input value={form.district} onChange={(e) => set("district", e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label>Birth place</Label>
@@ -442,6 +442,23 @@ export default function StudentEntryForm({
                     onChange={(e) => set("whatsapp_no", e.target.value)}
                     required
                   />
+              </div>
+              <div className="space-y-2">
+                <Label>Emergency contact name</Label>
+                <Input
+                  value={form.emergency_contact_name}
+                  onChange={(e) => set("emergency_contact_name", e.target.value)}
+                  placeholder="Person to call in emergency"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Emergency contact mobile</Label>
+                <Input
+                  type="tel"
+                  value={form.emergency_contact_number}
+                  onChange={(e) => set("emergency_contact_number", e.target.value)}
+                  placeholder="Emergency phone number"
+                />
                 </div>
                 <div className="space-y-2">
                   <Label>Father education</Label>

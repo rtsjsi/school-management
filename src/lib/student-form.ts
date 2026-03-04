@@ -31,6 +31,8 @@ export type StudentFormState = {
   guardian_name: string;
   guardian_contact: string;
   guardian_email: string;
+  emergency_contact_name: string;
+  emergency_contact_number: string;
   fee_concession_amount: string;
   fee_concession_reason: string;
   height: string;
@@ -88,6 +90,8 @@ export function studentFormFromRecord(r: Record<string, unknown>): StudentFormSt
     guardian_name: (r.guardian_name as string) || "",
     guardian_contact: (r.guardian_contact as string) || "",
     guardian_email: (r.guardian_email as string) || "",
+    emergency_contact_name: (r.emergency_contact_name as string) || "",
+    emergency_contact_number: (r.emergency_contact_number as string) || "",
     fee_concession_amount: r.fee_concession_amount != null ? String(r.fee_concession_amount) : "",
     fee_concession_reason: (r.fee_concession_reason as string) || "",
     height: (r.height as string) || "",
@@ -147,6 +151,8 @@ export function formToPayload(form: StudentFormState): Record<string, unknown> {
     guardian_name: form.guardian_name.trim() || null,
     guardian_contact: form.guardian_contact.trim() || null,
     guardian_email: form.guardian_email.trim() || null,
+    emergency_contact_name: form.emergency_contact_name.trim() || null,
+    emergency_contact_number: form.emergency_contact_number.trim() || null,
     fee_concession_amount: form.fee_concession_amount ? parseFloat(form.fee_concession_amount) : null,
     fee_concession_reason: form.fee_concession_reason.trim() || null,
     height: form.height.trim() || null,

@@ -224,6 +224,23 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
                 <Input type="tel" value={form.whatsapp_no} onChange={(e) => set("whatsapp_no", e.target.value)} />
               </div>
               <div className="space-y-2">
+                <Label>Emergency contact name</Label>
+                <Input
+                  value={form.emergency_contact_name}
+                  onChange={(e) => set("emergency_contact_name", e.target.value)}
+                  placeholder="Person to call in emergency"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Emergency contact mobile</Label>
+                <Input
+                  type="tel"
+                  value={form.emergency_contact_number}
+                  onChange={(e) => set("emergency_contact_number", e.target.value)}
+                  placeholder="Emergency phone number"
+                />
+              </div>
+              <div className="space-y-2">
                 <Label>Father education</Label>
                 <Input value={form.father_education} onChange={(e) => set("father_education", e.target.value)} />
               </div>
