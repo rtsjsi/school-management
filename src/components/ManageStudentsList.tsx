@@ -39,6 +39,7 @@ type StudentRow = {
   admission_date?: string;
   date_of_birth?: string;
   is_rte_quota?: boolean;
+  academic_year?: string;
   father_name?: string;
   mother_name?: string;
   parent_name?: string;
@@ -193,7 +194,42 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
                     <TableCell className="font-mono text-xs text-muted-foreground">
                       {s.student_id || "—"}
                     </TableCell>
-                    <TableCell className="font-medium">{s.full_name}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="relative inline-block group">
+                        {s.full_name}
+                        <div className="pointer-events-none absolute left-0 top-full z-20 mt-1 hidden min-w-[240px] rounded-md border bg-background p-3 text-xs shadow-md group-hover:block">
+                          <div className="mb-1 font-semibold">Enrollment details</div>
+                          <div className="flex justify-between gap-2">
+                            <span className="text-muted-foreground">Academic year</span>
+                            <span>{s.academic_year ?? "—"}</span>
+                          </div>
+                          <div className="flex justify-between gap-2">
+                            <span className="text-muted-foreground">Standard</span>
+                            <span>{s.grade ?? "—"}</span>
+                          </div>
+                          <div className="flex justify-between gap-2">
+                            <span className="text-muted-foreground">Division</span>
+                            <span>{s.division ?? "—"}</span>
+                          </div>
+                          <div className="flex justify-between gap-2">
+                            <span className="text-muted-foreground">Roll #</span>
+                            <span>{s.roll_number ?? "—"}</span>
+                          </div>
+                          <div className="flex justify-between gap-2">
+                            <span className="text-muted-foreground">Status</span>
+                            <span>{s.status ?? "active"}</span>
+                          </div>
+                          <div className="flex justify-between gap-2">
+                            <span className="text-muted-foreground">Admission</span>
+                            <span>
+                              {s.admission_date
+                                ? new Date(s.admission_date).toLocaleDateString()
+                                : "—"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </TableCell>
                     <TableCell>
                       {s.is_rte_quota ? <Badge variant="secondary">RTE</Badge> : "—"}
                     </TableCell>
