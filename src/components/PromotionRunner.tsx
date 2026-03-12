@@ -19,11 +19,12 @@ export function PromotionRunner() {
   const router = useRouter();
   const [years, setYears] = useState<{ id: string; name: string }[]>([]);
   const [standards, setStandards] = useState<{ id: string; name: string }[]>([]);
+  const [divisions, setDivisions] = useState<{ id: string; name: string; standard_id: string }[]>([]);
   const [selectedYearId, setSelectedYearId] = useState<string>("");
   const [outcomes, setOutcomes] = useState<EnrollmentOutcome[]>([]);
   const [selectedEnrollmentIds, setSelectedEnrollmentIds] = useState<Set<string>>(new Set());
-  const [selectedGrade, setSelectedGrade] = useState<string>("all");
-  const [selectedDivision, setSelectedDivision] = useState<string>("all");
+  const [selectedGrade, setSelectedGrade] = useState<string>("");
+  const [selectedDivision, setSelectedDivision] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,9 +32,10 @@ export function PromotionRunner() {
   useEffect(() => {
     const supabase = createClient();
     async function load() {
-      const [{ data: yearData }, { data: standardData }] = await Promise.all([
+      const [{ data: yearData }, { data: standardData }, { data: divisionData }] = await Promise.all([
         supabase.from("academic_years").select("id, name, status").order("sort_order"),
         supabase.from("standards").select("id, name").order("sort_order"),
+        supabase.from("divisions").select("id, name, standard_id").order("standard_id").order("sort_order"),
       ]);
 
       const list = (yearData ?? []) as { id: string; name: string; status?: string | null }[];
@@ -44,6 +46,7 @@ export function PromotionRunner() {
       }
 
       setStandards((standardData ?? []) as { id: string; name: string }[]);
+      setDivisions((divisionData ?? []) as { id: string; name: string; standard_id: string }[]);
     }
 
     load();
@@ -57,8 +60,8 @@ export function PromotionRunner() {
       const list = await getPromotionCandidates(selectedYearId);
       setOutcomes(list);
       setSelectedEnrollmentIds(new Set(list.map((o) => o.enrollmentId)));
-      setSelectedGrade("all");
-      setSelectedDivision("all");
+      setSelectedGrade("");
+      setSelectedDivision("");
     } catch (e) {
       setError(String(e));
     } finally {
@@ -69,9 +72,15 @@ export function PromotionRunner() {
   const gradeOptions = useMemo(() => standards.map((s) => s.name), [standards]);
 
   const divisionOptions = useMemo(() => {
-    const filtered = selectedGrade ? outcomes.filter((o) => o.gradeName === selectedGrade) : [];
-    return Array.from(new Set(filtered.map((o) => o.divisionName))).sort((a, b) => a.localeCompare(b));
-  }, [outcomes, selectedGrade]);
+    if (!selectedGrade) return [];
+    const std = standards.find((s) => s.name === selectedGrade);
+    if (!std) return [];
+    return divisions
+      .filter((d) => d.standard_id === std.id)
+      .map((d) => d.name)
+      .filter((value, index, self) => self.indexOf(value) === index)
+      .sort((a, b) => a.localeCompare(b));
+  }, [divisions, standards, selectedGrade]);
 
   const filteredOutcomes = useMemo(
     () =>
@@ -96,8 +105,8 @@ export function PromotionRunner() {
         setOutcomes([]);
         setSelectedEnrollmentIds(new Set());
         setSelectedYearId("");
-        setSelectedGrade("all");
-        setSelectedDivision("all");
+        setSelectedGrade("");
+        setSelectedDivision("");
       } else {
         setError(result.error);
       }
@@ -159,7 +168,7 @@ export function PromotionRunner() {
           <Select
             value={selectedDivision}
             onValueChange={setSelectedDivision}
-            disabled={!outcomes.length || !selectedGrade}
+            disabled={!selectedGrade}
           >
             <SelectTrigger>
               <SelectValue placeholder={selectedGrade ? "Select division" : "Select standard first"} />
