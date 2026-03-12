@@ -29,7 +29,18 @@ export function PromotionRunner() {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.from("academic_years").select("id, name").order("sort_order").then(({ data }) => setYears(data ?? []));
+    supabase
+      .from("academic_years")
+      .select("id, name, status")
+      .order("sort_order")
+      .then(({ data }) => {
+        const list = (data ?? []) as { id: string; name: string; status?: string | null }[];
+        const activeOnly = list.filter((y) => y.status === "active");
+        setYears(activeOnly.length > 0 ? activeOnly : []);
+        if (activeOnly.length === 1) {
+          setSelectedYearId(activeOnly[0].id);
+        }
+      });
   }, []);
 
   const handleLoad = async () => {
@@ -55,7 +66,7 @@ export function PromotionRunner() {
   );
 
   const divisionOptions = useMemo(() => {
-    const filtered = selectedGrade === "all" ? outcomes : outcomes.filter((o) => o.gradeName === selectedGrade);
+    const filtered = selectedGrade ? outcomes.filter((o) => o.gradeName === selectedGrade) : [];
     return Array.from(new Set(filtered.map((o) => o.divisionName))).sort((a, b) => a.localeCompare(b));
   }, [outcomes, selectedGrade]);
 
@@ -63,14 +74,14 @@ export function PromotionRunner() {
     () =>
       outcomes.filter(
         (o) =>
-          (selectedGrade === "all" || o.gradeName === selectedGrade) &&
-          (selectedDivision === "all" || o.divisionName === selectedDivision)
+          (!selectedGrade || o.gradeName === selectedGrade) &&
+          (!selectedDivision || o.divisionName === selectedDivision)
       ),
     [outcomes, selectedGrade, selectedDivision]
   );
 
   const handleRun = async () => {
-    if (!selectedYearId || selectedEnrollmentIds.size === 0) return;
+    if (!selectedYearId || !selectedGrade || !selectedDivision || selectedEnrollmentIds.size === 0) return;
     const selected = outcomes.filter((o) => selectedEnrollmentIds.has(o.enrollmentId));
     if (selected.length === 0) return;
     setRunning(true);
@@ -120,20 +131,19 @@ export function PromotionRunner() {
           </Select>
         </div>
         <div className="space-y-2">
-          <Label>Standard (optional)</Label>
+          <Label>Standard *</Label>
           <Select
             value={selectedGrade}
             onValueChange={(v) => {
               setSelectedGrade(v);
-              setSelectedDivision("all");
+              setSelectedDivision("");
             }}
             disabled={!outcomes.length}
           >
             <SelectTrigger>
-              <SelectValue placeholder="All standards" />
+              <SelectValue placeholder="Select standard to promote" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All</SelectItem>
               {gradeOptions.map((g) => (
                 <SelectItem key={g} value={g}>
                   {g}
@@ -143,17 +153,16 @@ export function PromotionRunner() {
           </Select>
         </div>
         <div className="space-y-2">
-          <Label>Division (optional)</Label>
+          <Label>Division *</Label>
           <Select
             value={selectedDivision}
             onValueChange={setSelectedDivision}
-            disabled={!outcomes.length}
+            disabled={!outcomes.length || !selectedGrade}
           >
             <SelectTrigger>
-              <SelectValue placeholder="All divisions" />
+              <SelectValue placeholder={selectedGrade ? "Select division" : "Select standard first"} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All</SelectItem>
               {divisionOptions.map((d) => (
                 <SelectItem key={d} value={d}>
                   {d}
