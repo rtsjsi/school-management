@@ -138,7 +138,6 @@ export function PromotionRunner() {
               setSelectedGrade(v);
               setSelectedDivision("");
             }}
-            disabled={!outcomes.length}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select standard to promote" />
