@@ -35,6 +35,7 @@ export function AcademicYearsManager() {
   const [addName, setAddName] = useState("");
   const [addError, setAddError] = useState<string | null>(null);
   const [addLoading, setAddLoading] = useState(false);
+  const [addStatus, setAddStatus] = useState<"active" | "closed" | "future">("future");
 
   const supabase = createClient();
 
@@ -46,13 +47,8 @@ export function AcademicYearsManager() {
       .then(({ data }) => setYears((data ?? []) as YearRow[]));
   };
 
-  const setActiveYear = async (id: string) => {
-    const current = years.find((y) => y.id === id);
-    if (!current) return;
-    const sortOrder = current.sort_order;
-    await supabase.from("academic_years").update({ status: "closed" }).lt("sort_order", sortOrder);
-    await supabase.from("academic_years").update({ status: "future" }).gt("sort_order", sortOrder);
-    await supabase.from("academic_years").update({ status: "active" }).eq("id", id);
+  const updateYearStatus = async (id: string, status: "active" | "closed" | "future") => {
+    await supabase.from("academic_years").update({ status }).eq("id", id);
     loadYears();
     router.refresh();
   };
@@ -80,6 +76,7 @@ export function AcademicYearsManager() {
     const { error } = await supabase.from("academic_years").insert({
       name: trimmed,
       sort_order: nextOrder,
+      status: addStatus,
     });
     setAddLoading(false);
     if (error) {
@@ -88,6 +85,7 @@ export function AcademicYearsManager() {
     }
     setAddOpen(false);
     setAddName("");
+    setAddStatus("future");
     loadYears();
     router.refresh();
   };
@@ -127,6 +125,18 @@ export function AcademicYearsManager() {
                   required
                 />
               </div>
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <select
+                  className="border-input bg-background text-sm rounded-md border px-2 py-1.5"
+                  value={addStatus}
+                  onChange={(e) => setAddStatus(e.target.value as "active" | "closed" | "future")}
+                >
+                  <option value="active">Active</option>
+                  <option value="closed">Closed</option>
+                  <option value="future">Future</option>
+                </select>
+              </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>
                   Cancel
@@ -151,25 +161,22 @@ export function AcademicYearsManager() {
               </TableHeader>
               <TableBody>
                 {years.map((y) => {
-                  const statusRaw = y.status ?? "future";
-                  const statusLabel =
-                    statusRaw === "active"
-                      ? "Active"
-                      : statusRaw === "closed"
-                        ? "Closed"
-                        : "Future";
+                  const statusRaw = (y.status as "active" | "closed" | "future" | null) ?? "future";
                   return (
                     <TableRow key={y.id}>
                       <TableCell className="font-medium">{y.name}</TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm text-muted-foreground">{statusLabel}</span>
-                          {statusRaw !== "active" && (
-                            <Button size="sm" variant="outline" onClick={() => setActiveYear(y.id)}>
-                              Set as current
-                            </Button>
-                          )}
-                        </div>
+                        <select
+                          className="border-input bg-background text-sm rounded-md border px-2 py-1.5"
+                          value={statusRaw}
+                          onChange={(e) =>
+                            updateYearStatus(y.id, e.target.value as "active" | "closed" | "future")
+                          }
+                        >
+                          <option value="active">Active</option>
+                          <option value="closed">Closed</option>
+                          <option value="future">Future</option>
+                        </select>
                       </TableCell>
                       <TableCell>
                         <Button
