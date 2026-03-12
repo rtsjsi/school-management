@@ -140,35 +140,50 @@ export function AcademicYearsManager() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Year</TableHead>
-                  <TableHead>Current</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead className="w-24"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {years.map((y) => (
-                  <TableRow key={y.id}>
-                    <TableCell className="font-medium">{y.name}</TableCell>
-                    <TableCell>
-                      {y.is_active ? (
-                        <span className="text-sm text-muted-foreground">Active</span>
-                      ) : (
-                        <Button size="sm" variant="outline" onClick={() => setActiveYear(y.id)}>
-                          Set as current
-                        </Button>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-destructive"
-                        onClick={() => handleDelete(y.id)}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {(() => {
+                  const active = years.find((y) => y.is_active);
+                  const activeSort = active?.sort_order ?? null;
+                  return years.map((y) => {
+                    let statusLabel: "Active" | "Closed" | "Future" = "Future";
+                    if (y.is_active) {
+                      statusLabel = "Active";
+                    } else if (activeSort !== null && y.sort_order < activeSort) {
+                      statusLabel = "Closed";
+                    } else {
+                      statusLabel = "Future";
+                    }
+                    return (
+                      <TableRow key={y.id}>
+                        <TableCell className="font-medium">{y.name}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm text-muted-foreground">{statusLabel}</span>
+                            {!y.is_active && (
+                              <Button size="sm" variant="outline" onClick={() => setActiveYear(y.id)}>
+                                Set as current
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-destructive"
+                            onClick={() => handleDelete(y.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  });
+                })()}
               </TableBody>
             </Table>
           </div>
