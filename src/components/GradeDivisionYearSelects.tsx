@@ -104,21 +104,27 @@ export function GradeDivisionYearSelects({
       </div>
       {showAcademicYear && (
         <div className="space-y-2">
-        <Label>Academic year{academicYearRequired ? " *" : ""}</Label>
-        <Select
-          value={academicYear || " "}
-          onValueChange={(v) => onAcademicYearChange?.(v === " " ? "" : v)}
-          required={academicYearRequired}
-        >
+          <Label>Academic year{academicYearRequired ? " *" : ""}</Label>
+          <Select
+            value={academicYear || " "}
+            onValueChange={(v) => onAcademicYearChange?.(v === " " ? "" : v)}
+            required={academicYearRequired}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Select year" />
             </SelectTrigger>
             <SelectContent>
-              {years.map((y) => (
-                <SelectItem key={y.id} value={y.name}>
-                  {y.name}
-                </SelectItem>
-              ))}
+              {years
+                .filter(
+                  (y) =>
+                    y.status !== "closed" ||
+                    (academicYear && y.name === academicYear)
+                )
+                .map((y) => (
+                  <SelectItem key={y.id} value={y.name}>
+                    {y.name}
+                  </SelectItem>
+                ))}
             </SelectContent>
           </Select>
         </div>
