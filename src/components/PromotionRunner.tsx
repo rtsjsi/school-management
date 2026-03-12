@@ -236,10 +236,10 @@ export function PromotionRunner() {
                   <tr className="border-b bg-muted/50">
                     <th className="w-8 p-2"></th>
                     <th className="text-left p-2">Student</th>
-                    <th className="text-left p-2">Current standard</th>
-                    <th className="text-left p-2">Current division</th>
-                    <th className="text-left p-2">Next standard</th>
-                    <th className="text-left p-2">Next division</th>
+                    <th className="text-left p-2 border-r">Current standard</th>
+                    <th className="text-left p-2 border-r">Current division</th>
+                    <th className="text-left p-2 text-emerald-700">Next standard</th>
+                    <th className="text-left p-2 text-emerald-700">Next division</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -269,7 +269,15 @@ export function PromotionRunner() {
                         <td className="p-2">{o.studentName}</td>
                         <td className="p-2">{o.gradeName}</td>
                         <td className="p-2">{o.divisionName}</td>
-                        <td className="p-2">{o.nextGradeName ?? "—"}</td>
+                        <td className="p-2">
+                          {o.nextGradeName ? (
+                            <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                              {o.nextGradeName}
+                            </span>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
                         <td className="p-2">
                           {o.nextGradeId && nextDivisions.length > 0 ? (
                             <Select
@@ -289,7 +297,7 @@ export function PromotionRunner() {
                                 )
                               }
                             >
-                              <SelectTrigger className="h-8 w-full">
+                              <SelectTrigger className="h-8 w-full border-emerald-300 focus:ring-emerald-500 focus-visible:ring-emerald-500">
                                 <SelectValue placeholder="Select division" />
                               </SelectTrigger>
                               <SelectContent>
