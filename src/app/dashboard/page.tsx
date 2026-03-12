@@ -35,7 +35,7 @@ export default async function DashboardPage() {
   const { data: activeYear } = await supabase
     .from("academic_years")
     .select("name")
-    .eq("is_active", true)
+    .eq("status", "active")
     .maybeSingle();
   const activeYearName = activeYear?.name ?? null;
 

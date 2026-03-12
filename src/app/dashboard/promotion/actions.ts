@@ -215,7 +215,8 @@ export async function runPromotion(
     if (insertErr) return { ok: false, error: insertErr.message };
   }
 
-  await supabase.from("academic_years").update({ is_active: false }).eq("id", academicYearId);
-  await supabase.from("academic_years").update({ is_active: true }).eq("id", nextYearId);
+  // Update statuses: current year -> closed, next year -> active, others -> closed/future based on order
+  await supabase.from("academic_years").update({ status: "closed" }).eq("id", academicYearId);
+  await supabase.from("academic_years").update({ status: "active" }).eq("id", nextYearId);
   return { ok: true };
 }

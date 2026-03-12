@@ -410,7 +410,7 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
     supabase
       .from("academic_years")
       .select("name")
-      .eq("is_active", true)
+      .eq("status", "active")
       .maybeSingle()
       .then(({ data }) => {
         if (data?.name) setActiveYearName(data.name as string);

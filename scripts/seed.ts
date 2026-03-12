@@ -128,14 +128,14 @@ async function seedAcademicYears() {
       sort_order: 1,
       start_date: `${currentYear - 1}-06-01`,
       end_date: `${currentYear}-05-31`,
-      is_active: false,
+      status: "closed",
     },
     {
       name: curName,
       sort_order: 2,
       start_date: `${currentYear}-06-01`,
       end_date: `${currentYear + 1}-05-31`,
-      is_active: true,
+      status: "active",
     },
   ]);
   console.log("  Inserted academic years", prevName, "and", curName);
@@ -396,14 +396,14 @@ async function seedStudents() {
   console.log("Seeding 50 students across current and previous academic years...");
   const { data: years } = await supabase
     .from("academic_years")
-    .select("id, name, is_active, sort_order")
+    .select("id, name, status, sort_order")
     .order("sort_order", { ascending: true });
   if (!years || years.length === 0) {
     console.log("  Skipping students: no academic years (configure academic years first)");
     return;
   }
 
-  const activeYear = years.find((y) => (y as { is_active?: boolean }).is_active) ?? years[years.length - 1];
+  const activeYear = years.find((y) => (y as { status?: string }).status === "active") ?? years[years.length - 1];
   const previousYear =
     years
       .filter((y) => y.id !== activeYear.id)

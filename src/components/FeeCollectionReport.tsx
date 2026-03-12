@@ -112,7 +112,7 @@ export default function FeeCollectionReport() {
     fetchAcademicYears()
       .then((y) => {
         setYears(y.map(({ id, name }) => ({ id, name })));
-        const activeName = y.find((x) => x.is_active)?.name ?? y[0]?.name;
+        const activeName = y.find((x) => x.status === "active")?.name ?? y[0]?.name;
         if (activeName) setAcademicYear((prev) => prev || activeName);
       })
       .catch(() => setYears([]));

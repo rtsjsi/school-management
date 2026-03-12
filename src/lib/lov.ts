@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/client";
 
 export type StandardOption = { id: string; name: string };
 export type DivisionOption = { id: string; name: string };
-export type AcademicYearOption = { id: string; name: string; is_active?: boolean };
+export type AcademicYearOption = { id: string; name: string; status?: string | null };
 export type GradeOption = { id: string; name: string };
 
 export async function fetchStandards(): Promise<StandardOption[]> {
@@ -81,7 +81,7 @@ export async function fetchAcademicYears(): Promise<AcademicYearOption[]> {
   const supabase = createClient();
   const { data } = await supabase
     .from("academic_years")
-    .select("id, name, is_active")
+    .select("id, name, status")
     .order("sort_order");
   return (data ?? []) as AcademicYearOption[];
 }

@@ -189,7 +189,11 @@ async function main() {
     process.exit(0);
   }
 
-  const { data: activeYear } = await supabase.from("academic_years").select("id, name").eq("is_active", true).maybeSingle();
+  const { data: activeYear } = await supabase
+    .from("academic_years")
+    .select("id, name")
+    .eq("status", "active")
+    .maybeSingle();
   if (!activeYear) {
     console.error("No active academic year in DB. Set one in Settings / Academic years.");
     process.exit(1);

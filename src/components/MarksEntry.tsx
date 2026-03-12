@@ -67,7 +67,12 @@ export default function MarksEntry() {
   // Load current academic year exams and class names
   useEffect(() => {
     (async () => {
-      const { data: ay } = await supabase.from("academic_years").select("id").eq("is_active", true).limit(1).maybeSingle();
+      const { data: ay } = await supabase
+        .from("academic_years")
+        .select("id")
+        .eq("status", "active")
+        .limit(1)
+        .maybeSingle();
       let query = supabase
         .from("exams")
         .select("id, name, exam_type, grade, held_at, academic_years(id, name)")

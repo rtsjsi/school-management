@@ -30,7 +30,7 @@ export function AcademicYearSelect({ value, onChange, id = "academic_year", labe
   // Default to current (active) academic year when value is empty
   useEffect(() => {
     if (hasDefaulted.current || value !== "" || years.length === 0) return;
-    const active = years.find((y) => y.is_active) ?? years[0];
+    const active = years.find((y) => y.status === "active") ?? years[0];
     if (active?.name) {
       hasDefaulted.current = true;
       onChange(active.name);

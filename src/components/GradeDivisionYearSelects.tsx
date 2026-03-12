@@ -38,14 +38,14 @@ export function GradeDivisionYearSelects({
 }: GradeDivisionYearSelectsProps) {
   const [standards, setStandards] = useState<{ id: string; name: string }[]>([]);
   const [divisions, setDivisions] = useState<{ id: string; name: string }[]>([]);
-  const [years, setYears] = useState<{ id: string; name: string; is_active?: boolean }[]>([]);
+  const [years, setYears] = useState<{ id: string; name: string; status?: string | null }[]>([]);
 
   useEffect(() => {
     fetchStandards().then(setStandards);
     fetchAcademicYears().then((y) => {
       setYears(y);
       if (onAcademicYearChange && !academicYear && y.length > 0) {
-        const active = y.find((x) => x.is_active) ?? y[0];
+        const active = y.find((x) => x.status === "active") ?? y[0];
         if (active?.name) onAcademicYearChange(active.name);
       }
     });

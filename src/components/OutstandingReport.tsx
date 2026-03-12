@@ -81,7 +81,7 @@ export default function OutstandingReport() {
         if (list.length === 0) list.push({ id: "current", name: defaultAy });
         else if (!list.some((x) => x.name === defaultAy)) list.unshift({ id: "current", name: defaultAy });
         setYears(list);
-        const activeName = y.find((x) => x.is_active)?.name ?? list[0]?.name ?? defaultAy;
+        const activeName = y.find((x) => x.status === "active")?.name ?? list[0]?.name ?? defaultAy;
         setAcademicYear((prev) => prev || activeName);
       })
       .catch(() => setYears([{ id: "current", name: defaultAy }]));

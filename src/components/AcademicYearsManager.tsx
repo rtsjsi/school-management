@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Trash2 } from "lucide-react";
 
-type YearRow = { id: string; name: string; sort_order: number; is_active?: boolean };
+type YearRow = { id: string; name: string; sort_order: number; status?: string | null };
 
 export function AcademicYearsManager() {
   const router = useRouter();
@@ -41,13 +41,18 @@ export function AcademicYearsManager() {
   const loadYears = () => {
     supabase
       .from("academic_years")
-      .select("id, name, sort_order, is_active")
+      .select("id, name, sort_order, status")
       .order("sort_order")
       .then(({ data }) => setYears((data ?? []) as YearRow[]));
   };
 
   const setActiveYear = async (id: string) => {
-    await supabase.from("academic_years").update({ is_active: true }).eq("id", id);
+    const current = years.find((y) => y.id === id);
+    if (!current) return;
+    const sortOrder = current.sort_order;
+    await supabase.from("academic_years").update({ status: "closed" }).lt("sort_order", sortOrder);
+    await supabase.from("academic_years").update({ status: "future" }).gt("sort_order", sortOrder);
+    await supabase.from("academic_years").update({ status: "active" }).eq("id", id);
     loadYears();
     router.refresh();
   };
@@ -145,45 +150,40 @@ export function AcademicYearsManager() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(() => {
-                  const active = years.find((y) => y.is_active);
-                  const activeSort = active?.sort_order ?? null;
-                  return years.map((y) => {
-                    let statusLabel: "Active" | "Closed" | "Future" = "Future";
-                    if (y.is_active) {
-                      statusLabel = "Active";
-                    } else if (activeSort !== null && y.sort_order < activeSort) {
-                      statusLabel = "Closed";
-                    } else {
-                      statusLabel = "Future";
-                    }
-                    return (
-                      <TableRow key={y.id}>
-                        <TableCell className="font-medium">{y.name}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <span className="text-sm text-muted-foreground">{statusLabel}</span>
-                            {!y.is_active && (
-                              <Button size="sm" variant="outline" onClick={() => setActiveYear(y.id)}>
-                                Set as current
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-destructive"
-                            onClick={() => handleDelete(y.id)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  });
-                })()}
+                {years.map((y) => {
+                  const statusRaw = y.status ?? "future";
+                  const statusLabel =
+                    statusRaw === "active"
+                      ? "Active"
+                      : statusRaw === "closed"
+                        ? "Closed"
+                        : "Future";
+                  return (
+                    <TableRow key={y.id}>
+                      <TableCell className="font-medium">{y.name}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-muted-foreground">{statusLabel}</span>
+                          {statusRaw !== "active" && (
+                            <Button size="sm" variant="outline" onClick={() => setActiveYear(y.id)}>
+                              Set as current
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive"
+                          onClick={() => handleDelete(y.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
