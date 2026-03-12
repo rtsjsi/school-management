@@ -53,15 +53,16 @@ export function PromotionRunner() {
   }, []);
 
   const handleLoad = async () => {
-    if (!selectedYearId) return;
+    if (!selectedYearId || !selectedGrade || !selectedDivision) return;
     setLoading(true);
     setError(null);
     try {
       const list = await getPromotionCandidates(selectedYearId);
-      setOutcomes(list);
-      setSelectedEnrollmentIds(new Set(list.map((o) => o.enrollmentId)));
-      setSelectedGrade("");
-      setSelectedDivision("");
+      const filtered = list.filter(
+        (o) => o.gradeName === selectedGrade && o.divisionName === selectedDivision
+      );
+      setOutcomes(filtered);
+      setSelectedEnrollmentIds(new Set(filtered.map((o) => o.enrollmentId)));
     } catch (e) {
       setError(String(e));
     } finally {
@@ -105,8 +106,6 @@ export function PromotionRunner() {
         setOutcomes([]);
         setSelectedEnrollmentIds(new Set());
         setSelectedYearId("");
-        setSelectedGrade("");
-        setSelectedDivision("");
       } else {
         setError(result.error);
       }
@@ -184,13 +183,16 @@ export function PromotionRunner() {
         </div>
       </div>
       <div className="flex gap-2">
-        <Button onClick={handleLoad} disabled={!selectedYearId || loading}>
+        <Button
+          onClick={handleLoad}
+          disabled={!selectedYearId || !selectedGrade || !selectedDivision || loading}
+        >
           {loading ? "Loading…" : "Load enrollments"}
         </Button>
       </div>
       {error && <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>}
       {filteredOutcomes.length > 0 && (
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="space-y-4">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold">Students available for promotion</h3>
@@ -251,35 +253,9 @@ export function PromotionRunner() {
               </table>
             </div>
           </div>
-          <div className="space-y-4">
-            <div className="rounded-md border">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/50">
-                    <th className="text-left p-2">Student</th>
-                    <th className="text-left p-2">Current grade</th>
-                    <th className="text-left p-2">Next grade</th>
-                    <th className="text-left p-2">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {outcomes
-                    .filter((o) => selectedEnrollmentIds.has(o.enrollmentId))
-                    .map((o) => (
-                      <tr key={o.enrollmentId} className="border-b">
-                        <td className="p-2">{o.studentName}</td>
-                        <td className="p-2">{o.gradeName}</td>
-                        <td className="p-2">{o.nextGradeName ?? "—"}</td>
-                        <td className="p-2 capitalize">{o.status}</td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-            <Button onClick={handleRun} disabled={running || selectedEnrollmentIds.size === 0}>
-              {running ? "Running…" : "Run promotion (close year & create next enrollments)"}
-            </Button>
-          </div>
+          <Button onClick={handleRun} disabled={running || selectedEnrollmentIds.size === 0}>
+            {running ? "Running…" : "Run promotion (close year & create next enrollments)"}
+          </Button>
         </div>
       )}
     </div>
