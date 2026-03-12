@@ -21,7 +21,7 @@ export function ExamYearFilter({ years }: { years: AcademicYearOption[] }) {
   // Default to current (active) academic year when no filter in URL
   useEffect(() => {
     if (hasDefaulted.current || current !== "" || years.length === 0) return;
-    const active = years.find((y) => y.is_active) ?? years[0];
+    const active = years.find((y) => y.status === "active") ?? years[0];
     if (active) {
       hasDefaulted.current = true;
       const next = new URLSearchParams(window.location.search);

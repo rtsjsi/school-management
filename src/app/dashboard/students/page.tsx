@@ -1,37 +1,15 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getUser, isAdminOrAbove } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
 import { GraduationCap } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import StudentEntryForm from "@/components/StudentEntryForm";
 import { ManageStudentsList } from "@/components/ManageStudentsList";
 import { TableSkeleton } from "@/components/skeletons/TableSkeleton";
 
-export default async function StudentsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ tab?: string }>;
-}) {
+export default async function StudentsPage() {
   const user = await getUser();
   if (!user) redirect("/login");
 
   const canEdit = isAdminOrAbove(user);
-  const params = await searchParams;
-  const tabParam = params.tab ?? (canEdit ? "add" : "manage");
-  const defaultTab = ["add", "manage"].includes(tabParam) ? tabParam : (canEdit ? "add" : "manage");
-
-  let currentAcademicYearName: string | null = null;
-  if (canEdit) {
-    const supabase = await createClient();
-    const { data } = await supabase
-      .from("academic_years")
-      .select("name")
-      .eq("is_active", true)
-      .limit(1)
-      .maybeSingle();
-    currentAcademicYearName = data?.name ?? null;
-  }
 
   return (
     <div className="space-y-8">
@@ -45,26 +23,9 @@ export default async function StudentsPage({
         </p>
       </div>
 
-      <Tabs defaultValue={defaultTab} className="space-y-6">
-        <TabsList className="flex flex-nowrap gap-1 w-full">
-          {canEdit && (
-            <TabsTrigger value="add">Add Student</TabsTrigger>
-          )}
-          <TabsTrigger value="manage">{canEdit ? "Manage Students" : "Students"}</TabsTrigger>
-        </TabsList>
-
-        {canEdit && (
-          <TabsContent value="add" className="space-y-6">
-            <StudentEntryForm defaultAcademicYear={currentAcademicYearName ?? undefined} />
-          </TabsContent>
-        )}
-
-        <TabsContent value="manage" className="space-y-6">
-          <Suspense fallback={<TableSkeleton rows={8} columns={8} />}>
-            <ManageStudentsList canEdit={canEdit} />
-          </Suspense>
-        </TabsContent>
-      </Tabs>
+      <Suspense fallback={<TableSkeleton rows={8} columns={8} />}>
+        <ManageStudentsList canEdit={canEdit} />
+      </Suspense>
     </div>
   );
 }

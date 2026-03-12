@@ -110,10 +110,42 @@ async function deleteAllData() {
   }
 }
 
+async function seedAcademicYears() {
+  console.log("Ensuring academic years...");
+  const { data: existing } = await supabase.from("academic_years").select("id").limit(1);
+  if (existing && existing.length > 0) {
+    console.log("  academic_years already present, skipping creation.");
+    return;
+  }
+
+  const currentYear = new Date().getFullYear();
+  const prevName = `${currentYear - 1}-${currentYear}`;
+  const curName = `${currentYear}-${currentYear + 1}`;
+
+  await supabase.from("academic_years").insert([
+    {
+      name: prevName,
+      sort_order: 1,
+      start_date: `${currentYear - 1}-06-01`,
+      end_date: `${currentYear}-05-31`,
+      status: "closed",
+    },
+    {
+      name: curName,
+      sort_order: 2,
+      start_date: `${currentYear}-06-01`,
+      end_date: `${currentYear + 1}-05-31`,
+      status: "active",
+    },
+  ]);
+  console.log("  Inserted academic years", prevName, "and", curName);
+}
+
 async function main() {
-  console.log("Starting seed (5 students, 10 employees)...");
+  console.log("Starting seed (50 students, 20 employees)...");
   await deleteAllData();
 
+  await seedAcademicYears();
   await seedStandards();
   await seedStandardDivisionsAndDivisions();
   await seedShifts();
@@ -301,13 +333,13 @@ const FIRST_NAMES = ["Rajesh", "Priya", "Amit", "Sneha", "Vikram", "Anjali", "Su
 const LAST_NAMES = ["Kumar", "Sharma", "Patel", "Reddy", "Singh", "Gupta", "Nair", "Desai", "Iyer", "Menon", "Pillai", "Nambiar", "Joshi", "Kapoor", "Verma", "Malhotra", "Shah", "Agarwal", "Rao", "Mehta"];
 
 async function seedEmployees() {
-  console.log("Seeding 10 employees...");
+  console.log("Seeding 20 employees...");
   const { data: shifts } = await supabase.from("shifts").select("id");
   const shiftIds = (shifts ?? []).map((s) => s.id);
 
   const usedNames = new Set<string>();
   const employees: Record<string, unknown>[] = [];
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 20; i++) {
     let name = `${pick(FIRST_NAMES)} ${pick(LAST_NAMES)}`;
     while (usedNames.has(name)) {
       name = `${pick(FIRST_NAMES)} ${pick(LAST_NAMES)}`;
@@ -361,16 +393,24 @@ const RELIGIONS = ["Hindu", "Muslim", "Christian", "Sikh", "Buddhist", "Jain", "
 const DISTRICTS = ["Mumbai", "Pune", "Thane", "Nashik", "Nagpur", "Ahmedabad", "Surat", "Vadodara", "Bangalore", "Chennai", null];
 
 async function seedStudents() {
-  console.log("Seeding 20 students...");
-  const { data: activeYear } = await supabase
+  console.log("Seeding 50 students across current and previous academic years...");
+  const { data: years } = await supabase
     .from("academic_years")
-    .select("id, name")
-    .eq("is_active", true)
-    .maybeSingle();
-  if (!activeYear) {
-    console.log("  Skipping students: no active academic year (run migrations first)");
+    .select("id, name, status, sort_order")
+    .order("sort_order", { ascending: true });
+  if (!years || years.length === 0) {
+    console.log("  Skipping students: no academic years (configure academic years first)");
     return;
   }
+
+  const activeYear = years.find((y) => (y as { status?: string }).status === "active") ?? years[years.length - 1];
+  const previousYear =
+    years
+      .filter((y) => y.id !== activeYear.id)
+      .sort(
+        (a, b) =>
+          ((a as { sort_order?: number }).sort_order ?? 0) - ((b as { sort_order?: number }).sort_order ?? 0)
+      )[years.length > 1 ? years.length - 2 : 0] ?? null;
 
   const { data: grades } = await supabase.from("standards").select("id, name").order("sort_order");
   if (!grades?.length) {
@@ -392,7 +432,8 @@ async function seedStudents() {
 
   const usedNames = new Set<string>();
   const students: Record<string, unknown>[] = [];
-  for (let i = 0; i < 5; i++) {
+  const totalStudents = 50;
+  for (let i = 0; i < totalStudents; i++) {
     let name = `${pick(STUDENT_FIRST)} ${pick(STUDENT_LAST)}`;
     while (usedNames.has(name)) {
       name = `${pick(STUDENT_FIRST)} ${pick(STUDENT_LAST)}`;
@@ -403,9 +444,10 @@ async function seedStudents() {
     const admissionType = pick(ADMISSION_TYPES);
     const gender = pick(GENDERS);
     const dob = randomDate(new Date(2008, 0, 1), new Date(2018, 11, 31)).toISOString().slice(0, 10);
+    const yearForStudent =
+      previousYear && i >= Math.floor(totalStudents * 0.7) ? previousYear : activeYear;
     students.push({
       full_name: name,
-      email: `stu${i + 1}@school.edu`,
       student_id: `STU-${new Date().getFullYear()}-${String(i + 1).padStart(4, "0")}`,
       date_of_birth: dob,
       gender,
@@ -414,7 +456,7 @@ async function seedStudents() {
       category,
       admission_type: admissionType,
       admission_date: randomDate(new Date(2020, 0, 1), new Date(2024, 5, 1)).toISOString().slice(0, 10),
-      academic_year: activeYear.name,
+      academic_year: yearForStudent.name,
       roll_number: (i % 50) + 1,
       is_rte_quota: i % 5 === 0,
       address: `${200 + i} Block, ${pick(["Sector 5", "MG Road", "Park Street", "Lake View"])}, City`,
@@ -433,7 +475,11 @@ async function seedStudents() {
     });
   }
 
-  const { data: inserted } = await supabase.from("students").insert(students).select("id");
+  const { data: inserted, error: insertError } = await supabase.from("students").insert(students).select("id");
+  if (insertError) {
+    console.error("  Error inserting students:", insertError.message);
+    return;
+  }
   if (!inserted?.length) {
     console.log("  No students inserted");
     return;
@@ -441,9 +487,12 @@ async function seedStudents() {
 
   for (let i = 0; i < inserted.length; i++) {
     const { gradeId, divisionId } = pick(gradeDivisions);
+    const yearForEnrollment =
+      previousYear && i >= Math.floor(inserted.length * 0.7) ? previousYear : activeYear;
+
     await supabase.from("student_enrollments").insert({
       student_id: inserted[i].id,
-      academic_year_id: activeYear.id,
+      academic_year_id: yearForEnrollment.id,
       standard_id: gradeId,
       division_id: divisionId,
       status: "active",
@@ -451,7 +500,11 @@ async function seedStudents() {
   }
 
   const rteCount = students.filter((s) => (s as { is_rte_quota?: boolean }).is_rte_quota).length;
-  console.log(`  Inserted ${inserted.length} students (${rteCount} RTE), enrollments created`);
+  console.log(
+    `  Inserted ${inserted.length} students (${rteCount} RTE) across ${
+      previousYear ? 2 : 1
+    } academic year(s), enrollments created`
+  );
 }
 
 async function seedFeeCollections() {

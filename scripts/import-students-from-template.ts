@@ -241,7 +241,7 @@ async function main() {
   const { data: activeYear } = await supabase
     .from("academic_years")
     .select("id, name")
-    .eq("is_active", true)
+    .eq("status", "active")
     .maybeSingle();
   if (!activeYear) {
     console.error("No active academic year in DB. Set one in Settings / Academic years.");

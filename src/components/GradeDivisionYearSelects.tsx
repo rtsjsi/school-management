@@ -38,14 +38,14 @@ export function GradeDivisionYearSelects({
 }: GradeDivisionYearSelectsProps) {
   const [standards, setStandards] = useState<{ id: string; name: string }[]>([]);
   const [divisions, setDivisions] = useState<{ id: string; name: string }[]>([]);
-  const [years, setYears] = useState<{ id: string; name: string; is_active?: boolean }[]>([]);
+  const [years, setYears] = useState<{ id: string; name: string; status?: string | null }[]>([]);
 
   useEffect(() => {
     fetchStandards().then(setStandards);
     fetchAcademicYears().then((y) => {
       setYears(y);
       if (onAcademicYearChange && !academicYear && y.length > 0) {
-        const active = y.find((x) => x.is_active) ?? y[0];
+        const active = y.find((x) => x.status === "active") ?? y[0];
         if (active?.name) onAcademicYearChange(active.name);
       }
     });
@@ -104,21 +104,27 @@ export function GradeDivisionYearSelects({
       </div>
       {showAcademicYear && (
         <div className="space-y-2">
-        <Label>Academic year{academicYearRequired ? " *" : ""}</Label>
-        <Select
-          value={academicYear || " "}
-          onValueChange={(v) => onAcademicYearChange?.(v === " " ? "" : v)}
-          required={academicYearRequired}
-        >
+          <Label>Academic year{academicYearRequired ? " *" : ""}</Label>
+          <Select
+            value={academicYear || " "}
+            onValueChange={(v) => onAcademicYearChange?.(v === " " ? "" : v)}
+            required={academicYearRequired}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Select year" />
             </SelectTrigger>
             <SelectContent>
-              {years.map((y) => (
-                <SelectItem key={y.id} value={y.name}>
-                  {y.name}
-                </SelectItem>
-              ))}
+              {years
+                .filter(
+                  (y) =>
+                    y.status !== "closed" ||
+                    (academicYear && y.name === academicYear)
+                )
+                .map((y) => (
+                  <SelectItem key={y.id} value={y.name}>
+                    {y.name}
+                  </SelectItem>
+                ))}
             </SelectContent>
           </Select>
         </div>

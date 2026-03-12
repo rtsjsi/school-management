@@ -31,9 +31,11 @@ import { GradeDivisionYearSelects } from "@/components/GradeDivisionYearSelects"
 
 interface StudentEditFormProps {
   student: Record<string, unknown> & { id: string; full_name: string };
+  embedded?: boolean;
+  onSaved?: () => void;
 }
 
-export function StudentEditForm({ student }: StudentEditFormProps) {
+export function StudentEditForm({ student, embedded = false, onSaved }: StudentEditFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,12 +44,40 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
   const set = (key: keyof StudentFormState, value: string | number | boolean) =>
     setForm((p) => ({ ...p, [key]: value }));
 
+  const requiredFields: { key: keyof StudentFormState; label: string }[] = [
+    { key: "full_name", label: "Full name" },
+    { key: "date_of_birth", label: "Date of birth" },
+    { key: "address", label: "Address" },
+    { key: "gender", label: "Gender" },
+    { key: "blood_group", label: "Blood group" },
+    { key: "category", label: "Category" },
+    { key: "father_name", label: "Father name" },
+    { key: "mother_name", label: "Mother name" },
+    { key: "parent_contact", label: "Parent contact" },
+    { key: "whatsapp_no", label: "WhatsApp no" },
+    { key: "grade", label: "Grade" },
+    { key: "division", label: "Division" },
+    { key: "admission_type", label: "Admission type" },
+    { key: "admission_date", label: "Admission date" },
+    { key: "academic_year", label: "Academic year" },
+    { key: "roll_number", label: "Roll number" },
+    { key: "aadhar_no", label: "Aadhar No" },
+    { key: "pen_no", label: "PEN No" },
+    { key: "apaar_id", label: "APAR ID" },
+    { key: "udise_id", label: "UDISE ID" },
+    { key: "gr_number", label: "GR Number" },
+  ];
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!form.full_name.trim()) {
-      setError("Full name is required.");
-      return;
+    for (const { key, label } of requiredFields) {
+      const value = form[key];
+      const str = typeof value === "string" ? value.trim() : "";
+      if (!str) {
+        setError(`${label} is required.`);
+        return;
+      }
     }
 
     setLoading(true);
@@ -65,7 +95,8 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
         return;
       }
 
-      router.refresh();
+      if (onSaved) onSaved();
+      if (!embedded) router.refresh();
     } catch {
       setError("Something went wrong.");
     } finally {
@@ -75,14 +106,16 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/dashboard/students" className="gap-1">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Students
-          </Link>
-        </Button>
-      </div>
+      {!embedded && (
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/dashboard/students" className="gap-1">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Students
+            </Link>
+          </Button>
+        </div>
+      )}
 
       {error && (
         <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>
@@ -98,10 +131,16 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="full_name">Full name *</Label>
-                <Input id="full_name" value={form.full_name} onChange={(e) => set("full_name", e.target.value)} placeholder="Student full name" required />
+                <Input
+                  id="full_name"
+                  value={form.full_name}
+                  onChange={(e) => set("full_name", e.target.value)}
+                  placeholder="Student full name"
+                  required
+                />
               </div>
               <div className="space-y-2">
-                <Label>Gender</Label>
+                <Label>Gender *</Label>
                 <Select value={form.gender} onValueChange={(v) => set("gender", v)}>
                   <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent>
@@ -112,11 +151,16 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Date of birth</Label>
-                <Input type="date" value={form.date_of_birth} onChange={(e) => set("date_of_birth", e.target.value)} />
+                <Label>Date of birth *</Label>
+                <Input
+                  type="date"
+                  value={form.date_of_birth}
+                  onChange={(e) => set("date_of_birth", e.target.value)}
+                  required
+                />
               </div>
               <div className="space-y-2">
-                <Label>Blood group</Label>
+                <Label>Blood group *</Label>
                 <Select value={form.blood_group} onValueChange={(v) => set("blood_group", v)}>
                   <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent>
@@ -127,7 +171,7 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Category</Label>
+                <Label>Category *</Label>
                 <Select value={form.category || "none"} onValueChange={(v) => set("category", v === "none" ? "" : v)}>
                   <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent>
@@ -147,8 +191,13 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
                 <Input value={form.caste} onChange={(e) => set("caste", e.target.value)} />
               </div>
               <div className="space-y-2 sm:col-span-2">
-                <Label>Address</Label>
-                <Input value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="Full address" />
+                <Label>Address *</Label>
+                <Input
+                  value={form.address}
+                  onChange={(e) => set("address", e.target.value)}
+                  placeholder="Full address"
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label>District</Label>
@@ -159,24 +208,45 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
                 <Input value={form.birth_place} onChange={(e) => set("birth_place", e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Aadhar No</Label>
-                <Input value={form.aadhar_no} onChange={(e) => set("aadhar_no", e.target.value)} placeholder="12-digit" />
+                <Label>Aadhar No *</Label>
+                <Input
+                  value={form.aadhar_no}
+                  onChange={(e) => set("aadhar_no", e.target.value)}
+                  placeholder="12-digit"
+                  required
+                />
               </div>
               <div className="space-y-2">
-                <Label>PEN No</Label>
-                <Input value={form.pen_no} onChange={(e) => set("pen_no", e.target.value)} />
+                <Label>PEN No *</Label>
+                <Input
+                  value={form.pen_no}
+                  onChange={(e) => set("pen_no", e.target.value)}
+                  required
+                />
               </div>
               <div className="space-y-2">
-                <Label>APAR ID</Label>
-                <Input value={form.apaar_id} onChange={(e) => set("apaar_id", e.target.value)} />
+                <Label>APAR ID *</Label>
+                <Input
+                  value={form.apaar_id}
+                  onChange={(e) => set("apaar_id", e.target.value)}
+                  required
+                />
               </div>
               <div className="space-y-2">
-                <Label>UDISE ID</Label>
-                <Input value={form.udise_id} onChange={(e) => set("udise_id", e.target.value)} />
+                <Label>UDISE ID *</Label>
+                <Input
+                  value={form.udise_id}
+                  onChange={(e) => set("udise_id", e.target.value)}
+                  required
+                />
               </div>
               <div className="space-y-2">
-                <Label>GR Number</Label>
-                <Input value={form.gr_number} onChange={(e) => set("gr_number", e.target.value)} />
+                <Label>GR Number *</Label>
+                <Input
+                  value={form.gr_number}
+                  onChange={(e) => set("gr_number", e.target.value)}
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label>Second Language</Label>
@@ -200,16 +270,29 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>Father name</Label>
-                <Input value={form.father_name} onChange={(e) => set("father_name", e.target.value)} />
+                <Label>Father name *</Label>
+                <Input
+                  value={form.father_name}
+                  onChange={(e) => set("father_name", e.target.value)}
+                  required
+                />
               </div>
               <div className="space-y-2">
-                <Label>Mother name</Label>
-                <Input value={form.mother_name} onChange={(e) => set("mother_name", e.target.value)} />
+                <Label>Mother name *</Label>
+                <Input
+                  value={form.mother_name}
+                  onChange={(e) => set("mother_name", e.target.value)}
+                  required
+                />
               </div>
               <div className="space-y-2">
-                <Label>Father contact</Label>
-                <Input type="tel" value={form.parent_contact} onChange={(e) => set("parent_contact", e.target.value)} />
+                <Label>Parent contact *</Label>
+                <Input
+                  type="tel"
+                  value={form.parent_contact}
+                  onChange={(e) => set("parent_contact", e.target.value)}
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label>Mother contact</Label>
@@ -220,8 +303,13 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
                 <Input type="email" value={form.parent_email} onChange={(e) => set("parent_email", e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>WhatsApp no</Label>
-                <Input type="tel" value={form.whatsapp_no} onChange={(e) => set("whatsapp_no", e.target.value)} />
+                <Label>WhatsApp no *</Label>
+                <Input
+                  type="tel"
+                  value={form.whatsapp_no}
+                  onChange={(e) => set("whatsapp_no", e.target.value)}
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label>Emergency contact name</Label>
@@ -288,7 +376,7 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>Admission type</Label>
+                <Label>Admission type *</Label>
                 <Select value={form.admission_type} onValueChange={(v) => set("admission_type", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -299,8 +387,13 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Admission date</Label>
-                <Input type="date" value={form.admission_date} onChange={(e) => set("admission_date", e.target.value)} />
+                <Label>Admission date *</Label>
+                <Input
+                  type="date"
+                  value={form.admission_date}
+                  onChange={(e) => set("admission_date", e.target.value)}
+                  required
+                />
               </div>
               <GradeDivisionYearSelects
                 grade={form.grade}
@@ -314,10 +407,17 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
                 onAcademicYearChange={(v) => set("academic_year", v)}
                 gradeRequired
                 divisionRequired
+                academicYearRequired
               />
               <div className="space-y-2">
-                <Label>Roll number</Label>
-                <Input type="number" value={form.roll_number} onChange={(e) => set("roll_number", e.target.value)} min={0} />
+                <Label>Roll number *</Label>
+                <Input
+                  type="number"
+                  value={form.roll_number}
+                  onChange={(e) => set("roll_number", e.target.value)}
+                  min={0}
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label>Last school</Label>
@@ -419,9 +519,11 @@ export function StudentEditForm({ student }: StudentEditFormProps) {
       </div>
 
       <div className="flex gap-2 justify-start">
-        <Button type="button" variant="outline" asChild>
-          <Link href="/dashboard/students">Cancel</Link>
-        </Button>
+        {!embedded && (
+          <Button type="button" variant="outline" asChild>
+            <Link href="/dashboard/students">Cancel</Link>
+          </Button>
+        )}
         <SubmitButton loading={loading} loadingLabel="Saving…">
           Save Changes
         </SubmitButton>

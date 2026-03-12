@@ -15,7 +15,7 @@ export async function getActiveAcademicYearId(): Promise<string | null> {
   const { data } = await supabase
     .from("academic_years")
     .select("id")
-    .eq("is_active", true)
+    .eq("status", "active")
     .limit(1)
     .maybeSingle();
   return data?.id ?? null;
@@ -26,7 +26,7 @@ export async function getActiveAcademicYearName(): Promise<string | null> {
   const { data } = await supabase
     .from("academic_years")
     .select("name")
-    .eq("is_active", true)
+    .eq("status", "active")
     .limit(1)
     .maybeSingle();
   return data?.name ?? null;

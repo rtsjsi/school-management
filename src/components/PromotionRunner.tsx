@@ -18,30 +18,66 @@ import { getPromotionCandidates, runPromotion, type EnrollmentOutcome } from "@/
 export function PromotionRunner() {
   const router = useRouter();
   const [years, setYears] = useState<{ id: string; name: string }[]>([]);
+  const [standards, setStandards] = useState<{ id: string; name: string }[]>([]);
+  const [divisions, setDivisions] = useState<{ id: string; name: string; standard_id: string }[]>([]);
   const [selectedYearId, setSelectedYearId] = useState<string>("");
   const [outcomes, setOutcomes] = useState<EnrollmentOutcome[]>([]);
   const [selectedEnrollmentIds, setSelectedEnrollmentIds] = useState<Set<string>>(new Set());
-  const [selectedGrade, setSelectedGrade] = useState<string>("all");
-  const [selectedDivision, setSelectedDivision] = useState<string>("all");
+  const [selectedGrade, setSelectedGrade] = useState<string>("");
+  const [selectedDivision, setSelectedDivision] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.from("academic_years").select("id, name").order("sort_order").then(({ data }) => setYears(data ?? []));
+    async function load() {
+      const [{ data: yearData }, { data: standardData }, { data: divisionData }] = await Promise.all([
+        supabase.from("academic_years").select("id, name, status").order("sort_order"),
+        supabase.from("standards").select("id, name").order("sort_order"),
+        supabase.from("divisions").select("id, name, standard_id").order("standard_id").order("sort_order"),
+      ]);
+
+      const list = (yearData ?? []) as { id: string; name: string; status?: string | null }[];
+      const activeOnly = list.filter((y) => y.status === "active");
+      setYears(activeOnly.length > 0 ? activeOnly : []);
+      if (activeOnly.length === 1) {
+        setSelectedYearId(activeOnly[0].id);
+      }
+
+      setStandards((standardData ?? []) as { id: string; name: string }[]);
+      setDivisions((divisionData ?? []) as { id: string; name: string; standard_id: string }[]);
+    }
+
+    load();
   }, []);
 
   const handleLoad = async () => {
-    if (!selectedYearId) return;
+    if (!selectedYearId || !selectedGrade || !selectedDivision) return;
     setLoading(true);
     setError(null);
     try {
       const list = await getPromotionCandidates(selectedYearId);
-      setOutcomes(list);
-      setSelectedEnrollmentIds(new Set(list.map((o) => o.enrollmentId)));
-      setSelectedGrade("all");
-      setSelectedDivision("all");
+      const filteredBase = list.filter(
+        (o) => o.gradeName === selectedGrade && o.divisionName === selectedDivision
+      );
+
+      const enhanced: EnrollmentOutcome[] = filteredBase.map((o) => {
+        if (!o.nextGradeId) return o;
+        const nextDivs = divisions.filter((d) => d.standard_id === o.nextGradeId);
+        if (!nextDivs.length) return o;
+
+        // Prefer same division name if it exists in next standard, else first division
+        const sameName = nextDivs.find((d) => d.name === o.divisionName) ?? nextDivs[0];
+        return {
+          ...o,
+          nextDivisionId: sameName.id,
+          nextDivisionName: sameName.name,
+        };
+      });
+
+      setOutcomes(enhanced);
+      setSelectedEnrollmentIds(new Set(enhanced.map((o) => o.enrollmentId)));
     } catch (e) {
       setError(String(e));
     } finally {
@@ -49,28 +85,31 @@ export function PromotionRunner() {
     }
   };
 
-  const gradeOptions = useMemo(
-    () => Array.from(new Set(outcomes.map((o) => o.gradeName))).sort((a, b) => a.localeCompare(b)),
-    [outcomes]
-  );
+  const gradeOptions = useMemo(() => standards.map((s) => s.name), [standards]);
 
   const divisionOptions = useMemo(() => {
-    const filtered = selectedGrade === "all" ? outcomes : outcomes.filter((o) => o.gradeName === selectedGrade);
-    return Array.from(new Set(filtered.map((o) => o.divisionName))).sort((a, b) => a.localeCompare(b));
-  }, [outcomes, selectedGrade]);
+    if (!selectedGrade) return [];
+    const std = standards.find((s) => s.name === selectedGrade);
+    if (!std) return [];
+    return divisions
+      .filter((d) => d.standard_id === std.id)
+      .map((d) => d.name)
+      .filter((value, index, self) => self.indexOf(value) === index)
+      .sort((a, b) => a.localeCompare(b));
+  }, [divisions, standards, selectedGrade]);
 
   const filteredOutcomes = useMemo(
     () =>
       outcomes.filter(
         (o) =>
-          (selectedGrade === "all" || o.gradeName === selectedGrade) &&
-          (selectedDivision === "all" || o.divisionName === selectedDivision)
+          (!selectedGrade || o.gradeName === selectedGrade) &&
+          (!selectedDivision || o.divisionName === selectedDivision)
       ),
     [outcomes, selectedGrade, selectedDivision]
   );
 
   const handleRun = async () => {
-    if (!selectedYearId || selectedEnrollmentIds.size === 0) return;
+    if (!selectedYearId || !selectedGrade || !selectedDivision || selectedEnrollmentIds.size === 0) return;
     const selected = outcomes.filter((o) => selectedEnrollmentIds.has(o.enrollmentId));
     if (selected.length === 0) return;
     setRunning(true);
@@ -82,8 +121,6 @@ export function PromotionRunner() {
         setOutcomes([]);
         setSelectedEnrollmentIds(new Set());
         setSelectedYearId("");
-        setSelectedGrade("all");
-        setSelectedDivision("all");
       } else {
         setError(result.error);
       }
@@ -120,20 +157,18 @@ export function PromotionRunner() {
           </Select>
         </div>
         <div className="space-y-2">
-          <Label>Standard (optional)</Label>
+          <Label>Standard *</Label>
           <Select
             value={selectedGrade}
             onValueChange={(v) => {
               setSelectedGrade(v);
-              setSelectedDivision("all");
+              setSelectedDivision("");
             }}
-            disabled={!outcomes.length}
           >
             <SelectTrigger>
-              <SelectValue placeholder="All standards" />
+              <SelectValue placeholder="Select standard to promote" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All</SelectItem>
               {gradeOptions.map((g) => (
                 <SelectItem key={g} value={g}>
                   {g}
@@ -143,17 +178,16 @@ export function PromotionRunner() {
           </Select>
         </div>
         <div className="space-y-2">
-          <Label>Division (optional)</Label>
+          <Label>Division *</Label>
           <Select
             value={selectedDivision}
             onValueChange={setSelectedDivision}
-            disabled={!outcomes.length}
+            disabled={!selectedGrade}
           >
             <SelectTrigger>
-              <SelectValue placeholder="All divisions" />
+              <SelectValue placeholder={selectedGrade ? "Select division" : "Select standard first"} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All</SelectItem>
               {divisionOptions.map((d) => (
                 <SelectItem key={d} value={d}>
                   {d}
@@ -164,13 +198,16 @@ export function PromotionRunner() {
         </div>
       </div>
       <div className="flex gap-2">
-        <Button onClick={handleLoad} disabled={!selectedYearId || loading}>
+        <Button
+          onClick={handleLoad}
+          disabled={!selectedYearId || !selectedGrade || !selectedDivision || loading}
+        >
           {loading ? "Loading…" : "Load enrollments"}
         </Button>
       </div>
       {error && <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>}
       {filteredOutcomes.length > 0 && (
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="space-y-4">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold">Students available for promotion</h3>
@@ -199,67 +236,92 @@ export function PromotionRunner() {
                   <tr className="border-b bg-muted/50">
                     <th className="w-8 p-2"></th>
                     <th className="text-left p-2">Student</th>
-                    <th className="text-left p-2">Grade</th>
-                    <th className="text-left p-2">Division</th>
+                    <th className="text-left p-2 border-r">Current standard</th>
+                    <th className="text-left p-2 border-r">Current division</th>
+                    <th className="text-left p-2 text-emerald-700">Next standard</th>
+                    <th className="text-left p-2 text-emerald-700">Next division</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredOutcomes.map((o) => (
-                    <tr key={o.enrollmentId} className="border-b">
-                      <td className="p-2">
-                        <Checkbox
-                          checked={selectedEnrollmentIds.has(o.enrollmentId)}
-                          onCheckedChange={(checked) =>
-                            setSelectedEnrollmentIds((prev) => {
-                              const next = new Set(prev);
-                              if (checked) {
-                                next.add(o.enrollmentId);
-                              } else {
-                                next.delete(o.enrollmentId);
-                              }
-                              return next;
-                            })
-                          }
-                        />
-                      </td>
-                      <td className="p-2">{o.studentName}</td>
-                      <td className="p-2">{o.gradeName}</td>
-                      <td className="p-2">{o.divisionName}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-          <div className="space-y-4">
-            <div className="rounded-md border">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/50">
-                    <th className="text-left p-2">Student</th>
-                    <th className="text-left p-2">Current grade</th>
-                    <th className="text-left p-2">Next grade</th>
-                    <th className="text-left p-2">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {outcomes
-                    .filter((o) => selectedEnrollmentIds.has(o.enrollmentId))
-                    .map((o) => (
+                  {filteredOutcomes.map((o) => {
+                    const nextDivisions =
+                      o.nextGradeId && divisions.length
+                        ? divisions.filter((d) => d.standard_id === o.nextGradeId)
+                        : [];
+                    return (
                       <tr key={o.enrollmentId} className="border-b">
+                        <td className="p-2">
+                          <Checkbox
+                            checked={selectedEnrollmentIds.has(o.enrollmentId)}
+                            onCheckedChange={(checked) =>
+                              setSelectedEnrollmentIds((prev) => {
+                                const next = new Set(prev);
+                                if (checked) {
+                                  next.add(o.enrollmentId);
+                                } else {
+                                  next.delete(o.enrollmentId);
+                                }
+                                return next;
+                              })
+                            }
+                          />
+                        </td>
                         <td className="p-2">{o.studentName}</td>
                         <td className="p-2">{o.gradeName}</td>
-                        <td className="p-2">{o.nextGradeName ?? "—"}</td>
-                        <td className="p-2 capitalize">{o.status}</td>
+                        <td className="p-2">{o.divisionName}</td>
+                        <td className="p-2">
+                          {o.nextGradeName ? (
+                            <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                              {o.nextGradeName}
+                            </span>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                        <td className="p-2">
+                          {o.nextGradeId && nextDivisions.length > 0 ? (
+                            <Select
+                              value={o.nextDivisionId ?? undefined}
+                              onValueChange={(val) =>
+                                setOutcomes((prev) =>
+                                  prev.map((row) =>
+                                    row.enrollmentId === o.enrollmentId
+                                      ? {
+                                          ...row,
+                                          nextDivisionId: val,
+                                          nextDivisionName:
+                                            nextDivisions.find((d) => d.id === val)?.name ?? row.nextDivisionName,
+                                        }
+                                      : row
+                                  )
+                                )
+                              }
+                            >
+                              <SelectTrigger className="h-8 w-full border-emerald-300 focus:ring-emerald-500 focus-visible:ring-emerald-500">
+                                <SelectValue placeholder="Select division" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {nextDivisions.map((d) => (
+                                  <SelectItem key={d.id} value={d.id}>
+                                    {d.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
                       </tr>
-                    ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
-            <Button onClick={handleRun} disabled={running || selectedEnrollmentIds.size === 0}>
-              {running ? "Running…" : "Run promotion (close year & create next enrollments)"}
-            </Button>
           </div>
+          <Button onClick={handleRun} disabled={running || selectedEnrollmentIds.size === 0}>
+            {running ? "Running…" : "Run Promotion"}
+          </Button>
         </div>
       )}
     </div>

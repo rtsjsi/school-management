@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-type AcademicYear = { id: string; name: string; is_active?: boolean | null };
+type AcademicYear = { id: string; name: string; status?: string | null };
 type ExpenseHead = { id: string; name: string };
 
 export function ExpenseBudgetsManager() {
@@ -27,14 +27,14 @@ export function ExpenseBudgetsManager() {
       setError(null);
       try {
         const [{ data: yearsData }, { data: headsData }] = await Promise.all([
-          supabase.from("academic_years").select("id, name, is_active").order("sort_order"),
+          supabase.from("academic_years").select("id, name, status").order("sort_order"),
           supabase.from("expense_heads").select("id, name").order("sort_order"),
         ]);
         const ys = (yearsData ?? []) as AcademicYear[];
         const hs = (headsData ?? []) as ExpenseHead[];
         setYears(ys);
         setHeads(hs);
-        const active = ys.find((y) => y.is_active) ?? ys[0];
+        const active = ys.find((y) => y.status === "active") ?? ys[0];
         if (active?.id) setSelectedYearId(active.id);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Failed to load years and heads.");
@@ -144,14 +144,14 @@ export function ExpenseBudgetsManager() {
               <SelectTrigger id="budget-year" className="w-40">
                 <SelectValue placeholder="Select year" />
               </SelectTrigger>
-              <SelectContent>
-                {years.map((y) => (
-                  <SelectItem key={y.id} value={y.id}>
-                    {y.name}
-                    {y.is_active ? " (Current)" : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
+                <SelectContent>
+                  {years.map((y) => (
+                    <SelectItem key={y.id} value={y.id}>
+                      {y.name}
+                      {y.status === "active" ? " (Current)" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
             </Select>
           </div>
           <Button type="button" onClick={handleSave} disabled={saving || loading || !selectedYearId}>

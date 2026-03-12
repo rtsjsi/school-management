@@ -43,7 +43,7 @@ export default function ExamEntryForm() {
     fetchStandards().then(setStandardsList);
     fetchAcademicYears().then((list) => {
       setAcademicYears(list);
-      const active = list.find((y) => y.is_active) ?? list[0];
+      const active = list.find((y) => y.status === "active") ?? list[0];
       if (active) {
         setForm((p) => (p.academicYearId ? p : { ...p, academicYearId: active.id }));
       }

@@ -20,15 +20,15 @@ function RemainingBudget({ expenseHeadId }: { expenseHeadId: string }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const supabase = createClient();
-    (async () => {
-      // Find active academic year
-      const { data: year } = await supabase
-        .from("academic_years")
-        .select("id, start_date, end_date")
-        .eq("is_active", true)
-        .limit(1)
-        .maybeSingle();
+      const supabase = createClient();
+      (async () => {
+        // Find active academic year
+        const { data: year } = await supabase
+          .from("academic_years")
+          .select("id, start_date, end_date")
+          .eq("status", "active")
+          .limit(1)
+          .maybeSingle();
       if (!year?.id) {
         setRemaining(null);
         setLoading(false);

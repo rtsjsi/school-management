@@ -32,11 +32,25 @@ export default async function DashboardPage() {
   const monthStart = thisMonthStart.slice(0, 10);
   const monthEnd = thisMonthEnd.slice(0, 10);
 
+  const { data: activeYear } = await supabase
+    .from("academic_years")
+    .select("name")
+    .eq("status", "active")
+    .maybeSingle();
+  const activeYearName = activeYear?.name ?? null;
+
+  const newAdmissionsPromise = activeYearName
+    ? supabase.from("students").select("*", { count: "exact", head: true }).eq("academic_year", activeYearName)
+    : Promise.resolve({ count: null } as { count: number | null });
+
   const [
     { count: studentsCount },
     { count: activeStudentsCount },
     { count: employeesCount },
     { count: standardsCount },
+    { count: rteStudentsCount },
+    { count: newAdmissionsCount },
+    { count: studentsWithPendingFeesCount },
     feeCollectedResult,
     pendingFeesResult,
     expensesResult,
@@ -45,6 +59,12 @@ export default async function DashboardPage() {
     supabase.from("students").select("*", { count: "exact", head: true }).eq("status", "active"),
     supabase.from("employees").select("*", { count: "exact", head: true }),
     supabase.from("standards").select("*", { count: "exact", head: true }),
+    supabase.from("students").select("*", { count: "exact", head: true }).eq("status", "active").eq("is_rte_quota", true),
+    newAdmissionsPromise,
+    supabase
+      .from("fees")
+      .select("student_id", { count: "exact", head: true })
+      .in("status", ["pending", "overdue"]),
     supabase
       .from("fee_collections")
       .select("amount")
@@ -67,19 +87,41 @@ export default async function DashboardPage() {
     0
   );
   const expensesThisMonth = (expensesResult.data ?? []).reduce((sum, r) => sum + Number(r.amount ?? 0), 0);
+  const netThisMonth = feeCollected - expensesThisMonth;
 
   const roleLabel = ROLES[user.role as keyof typeof ROLES] ?? user.role;
 
   const statCards = [
+    {
+      title: "Standards",
+      value: String(standardsCount ?? 0),
+      description: "View standards",
+      icon: BookOpen,
+      href: "/dashboard/classes",
+    },
+    {
+      title: "Active students",
+      value: String(activeStudentsCount ?? 0),
+      description: `${studentsCount ?? 0} total enrolled`,
+      icon: GraduationCap,
+      href: "/dashboard/students",
+    },
+    {
+      title: "New admissions (current year)",
+      value: String(newAdmissionsCount ?? 0),
+      description: activeYearName ? activeYearName : "Set active academic year",
+      icon: UserPlus,
+      href: "/dashboard/students",
+    },
+    {
+      title: "RTE quota students",
+      value: String(rteStudentsCount ?? 0),
+      description: "Active students under RTE",
+      icon: AlertCircle,
+      href: "/dashboard/students",
+    },
     ...(canViewFinance(user)
       ? [
-          {
-            title: "Active students",
-            value: String(activeStudentsCount ?? 0),
-            description: `${studentsCount ?? 0} total enrolled`,
-            icon: GraduationCap,
-            href: "/dashboard/students",
-          },
           {
             title: "Fee collected (this month)",
             value: formatCurrency(feeCollected),
@@ -88,37 +130,42 @@ export default async function DashboardPage() {
             href: "/dashboard/fees",
           },
           {
-            title: "Pending fees",
+            title: "Pending fees (amount)",
             value: formatCurrency(pendingFees),
             description: "Outstanding amount",
             icon: AlertCircle,
             href: "/dashboard/fees",
           },
           {
+            title: "Students with pending fees",
+            value: String(studentsWithPendingFeesCount ?? 0),
+            description: "Students having dues",
+            icon: GraduationCap,
+            href: "/dashboard/fees",
+          },
+          {
+            title: "Net this month",
+            value: formatCurrency(netThisMonth),
+            description: "Collections − expenses",
+            icon: TrendingUp,
+            href: "/dashboard/fees",
+          },
+          {
             title: "Expenses (this month)",
             value: formatCurrency(expensesThisMonth),
-            description: "This month",
+            description: "Approved expenses",
             icon: TrendingUp,
             href: "/dashboard/expenses",
           },
+          {
+            title: "Total employees",
+            value: String(employeesCount ?? 0),
+            description: "Staff & teachers",
+            icon: UserPlus,
+            href: "/dashboard/payroll",
+          },
         ]
       : []),
-    ...(canViewFinance(user)
-      ? [{
-          title: "Total employees",
-          value: String(employeesCount ?? 0),
-          description: "Staff & teachers",
-          icon: UserPlus,
-          href: "/dashboard/payroll",
-        }]
-      : []),
-    {
-      title: "Standards",
-      value: String(standardsCount ?? 0),
-      description: "View standards",
-      icon: BookOpen,
-      href: "/dashboard/classes",
-    },
   ];
 
   return (
