@@ -13,6 +13,8 @@ export type EnrollmentOutcome = {
   status: "promoted" | "detained" | "graduated" | "manual";
   nextGradeId: string | null;
   nextGradeName: string | null;
+  nextDivisionId?: string | null;
+  nextDivisionName?: string | null;
 };
 
 const PASS_PERCENTAGE = 40;
@@ -220,13 +222,16 @@ export async function runPromotion(
       .maybeSingle();
     if (existing) continue;
 
-    const { data: divisions } = await supabase
-      .from("divisions")
-      .select("id")
-      .eq("standard_id", o.nextGradeId)
-      .order("sort_order")
-      .limit(1);
-    const divisionId = divisions?.[0]?.id;
+    let divisionId = o.nextDivisionId ?? null;
+    if (!divisionId) {
+      const { data: divisions } = await supabase
+        .from("divisions")
+        .select("id")
+        .eq("standard_id", o.nextGradeId)
+        .order("sort_order")
+        .limit(1);
+      divisionId = divisions?.[0]?.id ?? null;
+    }
     if (!divisionId) return { ok: false, error: `No division for grade ${o.nextGradeName}.` };
 
     const { error: insertErr } = await supabase.from("student_enrollments").insert({

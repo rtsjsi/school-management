@@ -58,11 +58,26 @@ export function PromotionRunner() {
     setError(null);
     try {
       const list = await getPromotionCandidates(selectedYearId);
-      const filtered = list.filter(
+      const filteredBase = list.filter(
         (o) => o.gradeName === selectedGrade && o.divisionName === selectedDivision
       );
-      setOutcomes(filtered);
-      setSelectedEnrollmentIds(new Set(filtered.map((o) => o.enrollmentId)));
+
+      const enhanced: EnrollmentOutcome[] = filteredBase.map((o) => {
+        if (!o.nextGradeId) return o;
+        const nextDivs = divisions.filter((d) => d.standard_id === o.nextGradeId);
+        if (!nextDivs.length) return o;
+
+        // Prefer same division name if it exists in next standard, else first division
+        const sameName = nextDivs.find((d) => d.name === o.divisionName) ?? nextDivs[0];
+        return {
+          ...o,
+          nextDivisionId: sameName.id,
+          nextDivisionName: sameName.name,
+        };
+      });
+
+      setOutcomes(enhanced);
+      setSelectedEnrollmentIds(new Set(enhanced.map((o) => o.enrollmentId)));
     } catch (e) {
       setError(String(e));
     } finally {
@@ -221,34 +236,77 @@ export function PromotionRunner() {
                   <tr className="border-b bg-muted/50">
                     <th className="w-8 p-2"></th>
                     <th className="text-left p-2">Student</th>
-                    <th className="text-left p-2">Grade</th>
-                    <th className="text-left p-2">Division</th>
+                    <th className="text-left p-2">Current standard</th>
+                    <th className="text-left p-2">Current division</th>
+                    <th className="text-left p-2">Next standard</th>
+                    <th className="text-left p-2">Next division</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredOutcomes.map((o) => (
-                    <tr key={o.enrollmentId} className="border-b">
-                      <td className="p-2">
-                        <Checkbox
-                          checked={selectedEnrollmentIds.has(o.enrollmentId)}
-                          onCheckedChange={(checked) =>
-                            setSelectedEnrollmentIds((prev) => {
-                              const next = new Set(prev);
-                              if (checked) {
-                                next.add(o.enrollmentId);
-                              } else {
-                                next.delete(o.enrollmentId);
+                  {filteredOutcomes.map((o) => {
+                    const nextDivisions =
+                      o.nextGradeId && divisions.length
+                        ? divisions.filter((d) => d.standard_id === o.nextGradeId)
+                        : [];
+                    return (
+                      <tr key={o.enrollmentId} className="border-b">
+                        <td className="p-2">
+                          <Checkbox
+                            checked={selectedEnrollmentIds.has(o.enrollmentId)}
+                            onCheckedChange={(checked) =>
+                              setSelectedEnrollmentIds((prev) => {
+                                const next = new Set(prev);
+                                if (checked) {
+                                  next.add(o.enrollmentId);
+                                } else {
+                                  next.delete(o.enrollmentId);
+                                }
+                                return next;
+                              })
+                            }
+                          />
+                        </td>
+                        <td className="p-2">{o.studentName}</td>
+                        <td className="p-2">{o.gradeName}</td>
+                        <td className="p-2">{o.divisionName}</td>
+                        <td className="p-2">{o.nextGradeName ?? "—"}</td>
+                        <td className="p-2">
+                          {o.nextGradeId && nextDivisions.length > 0 ? (
+                            <Select
+                              value={o.nextDivisionId ?? undefined}
+                              onValueChange={(val) =>
+                                setOutcomes((prev) =>
+                                  prev.map((row) =>
+                                    row.enrollmentId === o.enrollmentId
+                                      ? {
+                                          ...row,
+                                          nextDivisionId: val,
+                                          nextDivisionName:
+                                            nextDivisions.find((d) => d.id === val)?.name ?? row.nextDivisionName,
+                                        }
+                                      : row
+                                  )
+                                )
                               }
-                              return next;
-                            })
-                          }
-                        />
-                      </td>
-                      <td className="p-2">{o.studentName}</td>
-                      <td className="p-2">{o.gradeName}</td>
-                      <td className="p-2">{o.divisionName}</td>
-                    </tr>
-                  ))}
+                            >
+                              <SelectTrigger className="h-8 w-full">
+                                <SelectValue placeholder="Select division" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {nextDivisions.map((d) => (
+                                  <SelectItem key={d.id} value={d.id}>
+                                    {d.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
