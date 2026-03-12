@@ -58,33 +58,58 @@ export async function getPromotionCandidates(academicYearId: string): Promise<En
 
   if (!enrollments?.length) return [];
 
+  // Batch-load all related data and next-grade mapping to avoid N+1 queries
+  const studentIds = Array.from(new Set(enrollments.map((e) => e.student_id)));
+  const divisionIds = Array.from(new Set(enrollments.map((e) => e.division_id)));
+
+  const [{ data: standards }, { data: divisions }, { data: students }] = await Promise.all([
+    supabase.from("standards").select("id, name, sort_order").order("sort_order"),
+    supabase.from("divisions").select("id, name").in("id", divisionIds),
+    supabase.from("students").select("id, full_name").in("id", studentIds),
+  ]);
+
+  const standardsList = standards ?? [];
+  const divisionsById = new Map((divisions ?? []).map((d) => [d.id, d]));
+  const studentsById = new Map((students ?? []).map((s) => [s.id, s]));
+  const standardsById = new Map(standardsList.map((s) => [s.id, s]));
+
+  // Pre-compute next-grade mapping and highest grade
+  let maxSortOrder = -Infinity;
+  const nextGradeById = new Map<string, string | null>();
+  for (let i = 0; i < standardsList.length; i++) {
+    const current = standardsList[i];
+    maxSortOrder = Math.max(maxSortOrder, current.sort_order ?? 0);
+    const next = standardsList[i + 1];
+    nextGradeById.set(current.id, next ? next.id : null);
+  }
+
   const outcomes: EnrollmentOutcome[] = [];
   for (const e of enrollments) {
-    const [g, d, s] = await Promise.all([
-      supabase.from("standards").select("name").eq("id", e.standard_id).single(),
-      supabase.from("divisions").select("name").eq("id", e.division_id).single(),
-      supabase.from("students").select("full_name").eq("id", e.student_id).single(),
-    ]);
+    const std = standardsById.get(e.standard_id);
+    const div = divisionsById.get(e.division_id);
+    const stu = studentsById.get(e.student_id);
 
     const gradeId = e.standard_id;
-    const gradeName = (g.data?.name as string) ?? "";
-    const divisionName = (d.data?.name as string) ?? "";
-    const studentName = (s.data?.full_name as string) ?? "";
+    const gradeName = (std?.name as string) ?? "";
+    const divisionName = (div?.name as string) ?? "";
+    const studentName = (stu?.full_name as string) ?? "";
+
+    const sortOrder = (std?.sort_order as number | null) ?? null;
+    const isHighest = sortOrder !== null && sortOrder >= maxSortOrder;
 
     let status: EnrollmentOutcome["status"];
     let nextGradeId: string | null = null;
     let nextGradeName: string | null = null;
 
-    const highest = await isHighestGrade(gradeId);
-    if (highest) {
+    if (isHighest) {
       status = "graduated";
     } else {
       status = "promoted";
-      const nid = await getNextGradeId(gradeId);
+      const nid = nextGradeById.get(gradeId) ?? null;
       if (nid) {
         nextGradeId = nid;
-        const { data: nextStandard } = await supabase.from("standards").select("name").eq("id", nid).single();
-        nextGradeName = (nextStandard?.name as string) ?? null;
+        const nextStd = standardsById.get(nid);
+        nextGradeName = (nextStd?.name as string) ?? null;
       }
     }
 
