@@ -222,17 +222,10 @@ export async function runPromotion(
       .maybeSingle();
     if (existing) continue;
 
-    let divisionId = o.nextDivisionId ?? null;
+    const divisionId = o.nextDivisionId ?? null;
     if (!divisionId) {
-      const { data: divisions } = await supabase
-        .from("divisions")
-        .select("id")
-        .eq("standard_id", o.nextGradeId)
-        .order("sort_order")
-        .limit(1);
-      divisionId = divisions?.[0]?.id ?? null;
+      return { ok: false, error: `Next division is not set for student ${o.studentName}.` };
     }
-    if (!divisionId) return { ok: false, error: `No division for grade ${o.nextGradeName}.` };
 
     const { error: insertErr } = await supabase.from("student_enrollments").insert({
       student_id: o.studentId,
@@ -255,8 +248,5 @@ export async function runPromotion(
     if (studentErr) return { ok: false, error: studentErr.message };
   }
 
-  // Update statuses: current year -> closed, next year -> active, others -> closed/future based on order
-  await supabase.from("academic_years").update({ status: "closed" }).eq("id", academicYearId);
-  await supabase.from("academic_years").update({ status: "active" }).eq("id", nextYearId);
   return { ok: true };
 }
