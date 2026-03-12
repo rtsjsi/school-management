@@ -238,15 +238,5 @@ export async function runPromotion(
     if (insertErr) return { ok: false, error: insertErr.message };
   }
 
-  // Update student master with new standard (grade) and division (section)
-  for (const o of outcomes) {
-    if (!o.nextGradeName || !o.nextDivisionName) continue;
-    const { error: studentErr } = await supabase
-      .from("students")
-      .update({ grade: o.nextGradeName, section: o.nextDivisionName })
-      .eq("id", o.studentId);
-    if (studentErr) return { ok: false, error: studentErr.message };
-  }
-
   return { ok: true };
 }
