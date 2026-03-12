@@ -312,7 +312,7 @@ export function PromotionRunner() {
             </div>
           </div>
           <Button onClick={handleRun} disabled={running || selectedEnrollmentIds.size === 0}>
-            {running ? "Running…" : "Run promotion (close year & create next enrollments)"}
+            {running ? "Running…" : "Run Promotion"}
           </Button>
         </div>
       )}
