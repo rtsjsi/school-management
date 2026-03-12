@@ -73,14 +73,23 @@ export function PromotionRunner() {
 
   const divisionOptions = useMemo(() => {
     if (!selectedGrade) return [];
+
+    // Primary source: divisions master filtered by selected standard
     const std = standards.find((s) => s.name === selectedGrade);
-    if (!std) return [];
-    return divisions
-      .filter((d) => d.standard_id === std.id)
-      .map((d) => d.name)
+    let names: string[] = [];
+    if (std) {
+      names = divisions.filter((d) => d.standard_id === std.id).map((d) => d.name);
+    }
+
+    // Fallback: if no master divisions are found, infer from loaded enrollments
+    if (!names.length) {
+      names = outcomes.filter((o) => o.gradeName === selectedGrade).map((o) => o.divisionName);
+    }
+
+    return names
       .filter((value, index, self) => self.indexOf(value) === index)
       .sort((a, b) => a.localeCompare(b));
-  }, [divisions, standards, selectedGrade]);
+  }, [divisions, standards, outcomes, selectedGrade]);
 
   const filteredOutcomes = useMemo(
     () =>
