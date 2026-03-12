@@ -18,6 +18,7 @@ import { getPromotionCandidates, runPromotion, type EnrollmentOutcome } from "@/
 export function PromotionRunner() {
   const router = useRouter();
   const [years, setYears] = useState<{ id: string; name: string }[]>([]);
+  const [standards, setStandards] = useState<{ id: string; name: string }[]>([]);
   const [selectedYearId, setSelectedYearId] = useState<string>("");
   const [outcomes, setOutcomes] = useState<EnrollmentOutcome[]>([]);
   const [selectedEnrollmentIds, setSelectedEnrollmentIds] = useState<Set<string>>(new Set());
@@ -29,18 +30,23 @@ export function PromotionRunner() {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase
-      .from("academic_years")
-      .select("id, name, status")
-      .order("sort_order")
-      .then(({ data }) => {
-        const list = (data ?? []) as { id: string; name: string; status?: string | null }[];
-        const activeOnly = list.filter((y) => y.status === "active");
-        setYears(activeOnly.length > 0 ? activeOnly : []);
-        if (activeOnly.length === 1) {
-          setSelectedYearId(activeOnly[0].id);
-        }
-      });
+    async function load() {
+      const [{ data: yearData }, { data: standardData }] = await Promise.all([
+        supabase.from("academic_years").select("id, name, status").order("sort_order"),
+        supabase.from("standards").select("id, name").order("sort_order"),
+      ]);
+
+      const list = (yearData ?? []) as { id: string; name: string; status?: string | null }[];
+      const activeOnly = list.filter((y) => y.status === "active");
+      setYears(activeOnly.length > 0 ? activeOnly : []);
+      if (activeOnly.length === 1) {
+        setSelectedYearId(activeOnly[0].id);
+      }
+
+      setStandards((standardData ?? []) as { id: string; name: string }[]);
+    }
+
+    load();
   }, []);
 
   const handleLoad = async () => {
@@ -60,10 +66,7 @@ export function PromotionRunner() {
     }
   };
 
-  const gradeOptions = useMemo(
-    () => Array.from(new Set(outcomes.map((o) => o.gradeName))).sort((a, b) => a.localeCompare(b)),
-    [outcomes]
-  );
+  const gradeOptions = useMemo(() => standards.map((s) => s.name), [standards]);
 
   const divisionOptions = useMemo(() => {
     const filtered = selectedGrade ? outcomes.filter((o) => o.gradeName === selectedGrade) : [];
