@@ -178,7 +178,11 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
         .single();
 
       if (structErr || !structure) {
-        setError(structErr?.message ?? "Failed to create structure");
+        const message =
+          (structErr as { code?: string; message?: string } | null)?.code === "23505"
+            ? "A fee structure already exists for this Standard and Academic Year. Please edit the existing structure instead of creating another."
+            : structErr?.message ?? "Failed to create structure";
+        setError(message);
         return;
       }
 
