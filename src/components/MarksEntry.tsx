@@ -30,7 +30,7 @@ type Exam = {
   id: string;
   name: string;
   exam_type: string;
-  grade: string | null;
+  standard: string | null;
   held_at: string;
   academic_years: { id: string; name: string } | { id: string; name: string }[] | null;
 };
@@ -198,7 +198,7 @@ export default function MarksEntry() {
       }
       setMarks(initial);
     })().finally(() => setLoading(false));
-  }, [selectedExamId, exam?.grade, gradeFilter, divisionFilter, subjects]);
+  }, [selectedExamId, exam?.standard, gradeFilter, divisionFilter, subjects]);
 
   useEffect(() => {
     if (!selectedExamId || subjects.length === 0) {
