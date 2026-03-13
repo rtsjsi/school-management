@@ -30,7 +30,8 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
   });
   const [quarterAmounts, setQuarterAmounts] = useState<Record<string, Record<number, string>>>({});
   const [classes, setClasses] = useState<{ id: string; name: string; sort_order: number }[]>([]);
-  const [feeTypes, setFeeTypes] = useState<string[]>([]);
+  const [feeTypes, setFeeTypes] = useState<string[]>([]); // available options
+  const [rowFeeTypes, setRowFeeTypes] = useState<string[]>([]); // selected per row
 
   useEffect(() => {
     createClient().from("standards").select("id, name, sort_order").order("sort_order").then(({ data }) => setClasses(data ?? []));
@@ -42,7 +43,9 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
       .order("name")
       .then(({ data }) => {
         const names = (data ?? []).map((t: { name: string }) => t.name);
-        setFeeTypes(names.length > 0 ? names : ["tuition"]);
+        const effective = names.length > 0 ? names : ["tuition"];
+        setFeeTypes(effective);
+        setRowFeeTypes(effective);
       });
   }, []);
 
@@ -70,11 +73,16 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
         academic_year: structure.academic_year,
       });
       const amounts: Record<string, Record<number, string>> = {};
+      const usedFeeTypes = new Set<string>();
       for (const item of items ?? []) {
         if (!amounts[item.fee_type]) amounts[item.fee_type] = {};
         amounts[item.fee_type][item.quarter] = String(item.amount);
+        usedFeeTypes.add(item.fee_type);
       }
       setQuarterAmounts(amounts);
+      if (usedFeeTypes.size > 0) {
+        setRowFeeTypes(Array.from(usedFeeTypes));
+      }
       setLoadingData(false);
     };
     load();
@@ -92,6 +100,37 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
 
   const getAmount = (feeType: string, quarter: number) => quarterAmounts[feeType]?.[quarter] ?? "";
 
+  const handleRowFeeTypeChange = (index: number, newType: string) => {
+    setRowFeeTypes((prev) => {
+      const oldType = prev[index];
+      if (!oldType || oldType === newType) return prev;
+      // Prevent duplicate fee types in rows
+      if (prev.includes(newType)) return prev;
+      const next = [...prev];
+      next[index] = newType;
+      // Move any entered amounts from old key to new key
+      setQuarterAmounts((prevAmounts) => {
+        const copy = { ...prevAmounts };
+        if (copy[oldType]) {
+          copy[newType] = copy[oldType];
+        }
+        delete copy[oldType];
+        return copy;
+      });
+      return next;
+    });
+  };
+
+  const handleAddRow = () => {
+    const remaining = feeTypes.filter((ft) => !rowFeeTypes.includes(ft));
+    if (remaining.length === 0) return;
+    setRowFeeTypes((prev) => [...prev, remaining[0]]);
+  };
+
+  const handleRemoveRow = (index: number) => {
+    setRowFeeTypes((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -101,7 +140,7 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
     }
 
     const items: { fee_type: string; quarter: number; amount: number }[] = [];
-    for (const feeType of feeTypes) {
+    for (const feeType of rowFeeTypes) {
       for (let q = 1; q <= 4; q++) {
         const val = getAmount(feeType, q);
         if (val && !isNaN(parseFloat(val)) && parseFloat(val) > 0) {
@@ -233,12 +272,29 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
                     <th className="text-left py-2 px-2">Q2</th>
                     <th className="text-left py-2 px-2">Q3</th>
                     <th className="text-left py-2 px-2">Q4</th>
+                    <th className="w-10"></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {feeTypes.map((ft) => (
-                    <tr key={ft} className="border-b">
-                      <td className="py-2 pr-4">{getFeeTypeLabel(ft)}</td>
+                  {rowFeeTypes.map((ft, index) => (
+                    <tr key={`${ft}-${index}`} className="border-b">
+                      <td className="py-2 pr-4">
+                        <Select
+                          value={ft}
+                          onValueChange={(v) => handleRowFeeTypeChange(index, v)}
+                        >
+                          <SelectTrigger className="w-40">
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {feeTypes.map((opt) => (
+                              <SelectItem key={opt} value={opt}>
+                                {getFeeTypeLabel(opt)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </td>
                       {[1, 2, 3, 4].map((q) => (
                         <td key={q} className="py-1 px-2">
                           <Input
@@ -252,12 +308,33 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
                           />
                         </td>
                       ))}
+                      <td className="py-1 px-2 text-right">
+                        {rowFeeTypes.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleRemoveRow(index)}
+                            aria-label="Remove fee type"
+                          >
+                            ×
+                          </Button>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           </div>
+
+          {feeTypes.length > rowFeeTypes.length && (
+            <div className="mt-3">
+              <Button type="button" variant="secondary" size="sm" onClick={handleAddRow}>
+                Add Fee Type Row
+              </Button>
+            </div>
+          )}
 
           <div className="flex gap-2 justify-start">
             {onCancel && (
