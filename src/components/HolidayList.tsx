@@ -21,12 +21,15 @@ export async function HolidayList() {
 
   const activeYearId = activeYear?.id ?? null;
 
-  const { data: holidays } = await supabase
+  let holidaysQuery = supabase
     .from("holidays")
     .select("id, date, name, type")
-    .modify((q) => (activeYearId ? q.eq("academic_year_id", activeYearId) : q))
     .order("date", { ascending: false })
     .limit(50);
+  if (activeYearId) {
+    holidaysQuery = holidaysQuery.eq("academic_year_id", activeYearId);
+  }
+  const { data: holidays } = await holidaysQuery;
 
   if (!holidays || holidays.length === 0) {
     return (
