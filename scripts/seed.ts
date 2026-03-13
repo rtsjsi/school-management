@@ -298,28 +298,50 @@ async function seedFeeStructures() {
 
 async function seedExams() {
   console.log("Seeding exams...");
-  const exams = [
-    { name: "Mid-Term 1", exam_type: "midterm", standard: "5", held_at: new Date().toISOString().slice(0, 10), description: "First mid-term" },
-    { name: "Final Exam", exam_type: "final", standard: "All", held_at: new Date(new Date().getFullYear(), 2, 15).toISOString().slice(0, 10), description: "Annual final" },
-  ];
-  const { data: inserted } = await supabase.from("exams").insert(exams).select("id, standard");
-  if (inserted?.length) {
-    const examWithStandard = inserted.find((e) => (e as { standard?: string }).standard && (e as { standard: string }).standard !== "All") as
-      | { id: string; standard: string }
-      | undefined;
-    if (examWithStandard) {
-      const { data: standardRow } = await supabase.from("standards").select("id").eq("name", examWithStandard.standard).maybeSingle();
-      if (standardRow?.id) {
-        const { data: subs } = await supabase.from("subjects").select("id, evaluation_type").eq("standard_id", standardRow.id);
+  const { data: activeYear } = await supabase
+    .from("academic_years")
+    .select("id")
+    .eq("status", "active")
+    .maybeSingle();
+  if (!activeYear?.id) {
+    console.log("  No active academic year, skipping exams.");
+    return;
+  }
+
+  const { data: standards } = await supabase.from("standards").select("id, name").order("sort_order");
+  if (!standards?.length) {
+    console.log("  No standards, skipping exams.");
+    return;
+  }
+
+  const currentYear = new Date().getFullYear();
+  const midTermDate = `${currentYear}-10-15`;
+  const finalDate = `${currentYear + 1}-03-15`;
+
+  let examCount = 0;
+  let subjectLinkCount = 0;
+
+  for (const st of standards) {
+    const examsToInsert = [
+      { name: `Mid-Term - ${st.name}`, exam_type: "midterm", standard: st.name, held_at: midTermDate, description: `Mid-term exam for ${st.name}`, academic_year_id: activeYear.id },
+      { name: `Final Exam - ${st.name}`, exam_type: "final", standard: st.name, held_at: finalDate, description: `Final exam for ${st.name}`, academic_year_id: activeYear.id },
+    ];
+    const { data: inserted } = await supabase.from("exams").insert(examsToInsert).select("id, standard");
+    if (inserted?.length) {
+      examCount += inserted.length;
+      const { data: subs } = await supabase.from("subjects").select("id, evaluation_type").eq("standard_id", st.id);
+      for (const exam of inserted) {
         for (const sub of subs ?? []) {
           if (sub.evaluation_type === "mark") {
-            await supabase.from("exam_subjects").insert({ exam_id: examWithStandard.id, subject_id: sub.id, max_marks: 100 });
+            await supabase.from("exam_subjects").insert({ exam_id: exam.id, subject_id: sub.id, max_marks: 100 });
+            subjectLinkCount++;
           }
         }
-        console.log(`  Added exam_subjects for ${examWithStandard.standard}`);
       }
     }
   }
+
+  console.log(`  Added ${examCount} exams for ${standards.length} standards, ${subjectLinkCount} exam_subjects.`);
 }
 
 // 20 employees with full variety: roles, departments, designations, types, statuses
