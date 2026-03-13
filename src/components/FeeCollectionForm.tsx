@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { generateReceiptPDF, amountInWords } from "@/lib/receipt-pdf";
 import { AcademicYearSelect } from "@/components/AcademicYearSelect";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
+import { useToast } from "@/hooks/use-toast";
 
 const PAYMENT_MODES = ["cash", "cheque", "online"] as const;
 const FEE_TYPE = "tuition";
@@ -30,6 +31,7 @@ export default function FeeCollectionForm({
   receivedBy?: string;
 }) {
   const router = useRouter();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [receiptNumber, setReceiptNumber] = useState<string>("");
@@ -122,16 +124,35 @@ export default function FeeCollectionForm({
     e.preventDefault();
     setError(null);
     if (!form.student_id) {
-      setError("Please select a student.");
+      const message = "Please select a student.";
+      setError(message);
+      toast({
+        variant: "destructive",
+        title: "Missing student",
+        description: message,
+      });
       return;
     }
     const amount = parseFloat(form.amount);
     if (isNaN(amount) || amount < 0) {
-      setError("Amount is required. Ensure fee structure exists for this student's standard and quarter.");
+      const message =
+        "Amount is required. Ensure fee structure exists for this student's standard and quarter.";
+      setError(message);
+      toast({
+        variant: "destructive",
+        title: "Invalid amount",
+        description: message,
+      });
       return;
     }
     if (form.payment_mode === "cheque" && !form.cheque_number?.trim()) {
-      setError("Cheque number is required for cheque payment.");
+      const message = "Cheque number is required for cheque payment.";
+      setError(message);
+      toast({
+        variant: "destructive",
+        title: "Missing cheque details",
+        description: message,
+      });
       return;
     }
 
@@ -169,7 +190,14 @@ export default function FeeCollectionForm({
         .limit(1);
 
       if (existingCollections && existingCollections.length > 0) {
-        setError("Fees for this quarter and academic year have already been collected for this student.");
+        const message =
+          "Fees for this quarter and academic year have already been collected for this student.";
+        setError(message);
+        toast({
+          variant: "destructive",
+          title: "Duplicate collection",
+          description: message,
+        });
         setLoading(false);
         return;
       }
@@ -201,6 +229,11 @@ export default function FeeCollectionForm({
 
       if (err) {
         setError(err.message);
+        toast({
+          variant: "destructive",
+          title: "Could not collect fee",
+          description: err.message,
+        });
         return;
       }
 
@@ -299,7 +332,13 @@ export default function FeeCollectionForm({
       window.dispatchEvent(new CustomEvent("fee-collection-added"));
       router.refresh();
     } catch {
-      setError("Something went wrong.");
+      const message = "Something went wrong.";
+      setError(message);
+      toast({
+        variant: "destructive",
+        title: "Unexpected error",
+        description: message,
+      });
     } finally {
       setLoading(false);
     }

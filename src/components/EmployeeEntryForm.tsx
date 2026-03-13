@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
 
 const ROLES = ["teacher", "staff", "admin", "other"] as const;
 const EMPLOYEE_TYPES = ["full_time", "part_time", "contract", "temporary"] as const;
@@ -22,6 +23,7 @@ type ShiftOption = { id: string; name: string };
 
 export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] }) {
   const router = useRouter();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -77,7 +79,13 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
       const value = form[key];
       const str = typeof value === "string" ? value.trim() : "";
       if (!str) {
-        setError(`${label} is required.`);
+        const message = `${label} is required.`;
+        setError(message);
+        toast({
+          variant: "destructive",
+          title: "Please check the form",
+          description: message,
+        });
         return;
       }
     }
@@ -116,7 +124,13 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
         .single();
 
       if (empErr || !emp) {
-        setError(empErr?.message ?? "Failed to add employee");
+        const message = empErr?.message ?? "Failed to add employee";
+        setError(message);
+        toast({
+          variant: "destructive",
+          title: "Could not add employee",
+          description: message,
+        });
         return;
       }
 
@@ -129,7 +143,13 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
       });
       router.refresh();
     } catch {
-      setError("Something went wrong.");
+      const message = "Something went wrong.";
+      setError(message);
+      toast({
+        variant: "destructive",
+        title: "Unexpected error",
+        description: message,
+      });
     } finally {
       setLoading(false);
     }
