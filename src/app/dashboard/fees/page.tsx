@@ -1,11 +1,9 @@
-import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getUser, isAdminOrAbove, canViewFinance } from "@/lib/auth";
 import { DollarSign } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TableSkeleton } from "@/components/skeletons/TableSkeleton";
 import FeeStructureForm from "@/components/FeeStructureForm";
-import { FeeStructureList } from "@/components/FeeStructureList";
+import { FeeStructureListWithFilters } from "@/components/FeeStructureListWithFilters";
 import FeeCollectionForm from "@/components/FeeCollectionForm";
 import FeeCollectionList from "@/components/FeeCollectionList";
 import OutstandingReport from "@/components/OutstandingReport";
@@ -51,9 +49,7 @@ export default async function FeesPage() {
 
         <TabsContent value="structure" className="space-y-6">
           {canEdit && <FeeStructureForm />}
-          <Suspense fallback={<TableSkeleton rows={3} columns={4} />}>
-            <FeeStructureList canEdit={canEdit} />
-          </Suspense>
+          <FeeStructureListWithFilters canEdit={canEdit} />
         </TabsContent>
 
         {canEdit && (
