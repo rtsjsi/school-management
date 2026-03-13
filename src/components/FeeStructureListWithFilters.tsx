@@ -142,12 +142,15 @@ export function FeeStructureListWithFilters({ canEdit = false }: { canEdit?: boo
         <div className="flex flex-wrap gap-3 items-end">
           <div className="space-y-1.5">
             <span className="text-xs font-medium text-muted-foreground">Standard</span>
-            <Select value={standardFilter} onValueChange={setStandardFilter}>
+            <Select
+              value={standardFilter || "__all__"}
+              onValueChange={(v) => setStandardFilter(v === "__all__" ? "" : v)}
+            >
               <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="All" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All</SelectItem>
+                <SelectItem value="__all__">All</SelectItem>
                 {standards.map((s) => (
                   <SelectItem key={s.id} value={s.id}>
                     {s.name}
