@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getUser, canViewFinance } from "@/lib/auth";
+import { shouldApplyClassFilter, getStudentIdsForAllowedClasses } from "@/lib/class-access";
 import { createClient } from "@/lib/supabase/server";
 import { ROLES } from "@/types/auth";
 import {
@@ -24,6 +25,8 @@ export default async function DashboardPage() {
   if (!user) return null;
 
   const supabase = await createClient();
+  const applyClassFilter = shouldApplyClassFilter(user);
+  const allowedStudentIds = applyClassFilter ? await getStudentIdsForAllowedClasses(user.id) : null;
 
   const now = new Date();
   const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10) + "T00:00:00";
@@ -39,27 +42,43 @@ export default async function DashboardPage() {
     .maybeSingle();
   const activeYearName = activeYear?.name ?? null;
 
+  const studentIdFilter = allowedStudentIds && allowedStudentIds.size > 0 ? Array.from(allowedStudentIds) : null;
+  const restrictToZeroStudents = applyClassFilter && allowedStudentIds !== null && allowedStudentIds.size === 0;
+  const studentCountQuery = (opts: { count: "exact"; head: true }, extra?: Record<string, unknown>) => {
+    if (restrictToZeroStudents) return Promise.resolve({ count: 0 });
+    let q = supabase.from("students").select("*", opts);
+    if (studentIdFilter && studentIdFilter.length > 0) q = q.in("id", studentIdFilter);
+    if (extra) {
+      for (const [k, v] of Object.entries(extra)) {
+        q = q.eq(k, v);
+      }
+    }
+    return q;
+  };
+
   const newAdmissionsPromise = activeYearName
-    ? supabase.from("students").select("*", { count: "exact", head: true }).eq("academic_year", activeYearName)
+    ? (applyClassFilter
+        ? studentCountQuery({ count: "exact", head: true }, { academic_year: activeYearName })
+        : supabase.from("students").select("*", { count: "exact", head: true }).eq("academic_year", activeYearName))
     : Promise.resolve({ count: null } as { count: number | null });
 
   const [
-    { count: studentsCount },
-    { count: activeStudentsCount },
-    { count: employeesCount },
-    { count: standardsCount },
-    { count: rteStudentsCount },
-    { count: newAdmissionsCount },
-    { count: studentsWithPendingFeesCount },
+    studentsCountRes,
+    activeStudentsCountRes,
+    employeesCountRes,
+    standardsCountRes,
+    rteStudentsCountRes,
+    newAdmissionsCountRes,
+    studentsWithPendingFeesCountRes,
     feeCollectedResult,
     pendingFeesResult,
     expensesResult,
   ] = await Promise.all([
-    supabase.from("students").select("*", { count: "exact", head: true }),
-    supabase.from("students").select("*", { count: "exact", head: true }).eq("status", "active"),
+    studentCountQuery({ count: "exact", head: true }),
+    studentCountQuery({ count: "exact", head: true }, { status: "active" }),
     supabase.from("employees").select("*", { count: "exact", head: true }),
     supabase.from("standards").select("*", { count: "exact", head: true }),
-    supabase.from("students").select("*", { count: "exact", head: true }).eq("status", "active").eq("is_rte_quota", true),
+    studentCountQuery({ count: "exact", head: true }, { status: "active", is_rte_quota: true }),
     newAdmissionsPromise,
     supabase
       .from("fees")
@@ -80,6 +99,14 @@ export default async function DashboardPage() {
       .gte("expense_date", monthStart)
       .lte("expense_date", monthEnd),
   ]);
+
+  const studentsCount = studentsCountRes.count ?? 0;
+  const activeStudentsCount = activeStudentsCountRes.count ?? 0;
+  const employeesCount = employeesCountRes.count ?? 0;
+  const standardsCount = standardsCountRes.count ?? 0;
+  const rteStudentsCount = rteStudentsCountRes.count ?? 0;
+  const newAdmissionsCount = newAdmissionsCountRes.count ?? 0;
+  const studentsWithPendingFeesCount = studentsWithPendingFeesCountRes.count ?? 0;
 
   const feeCollected = (feeCollectedResult.data ?? []).reduce((sum, r) => sum + Number(r.amount ?? 0), 0);
   const pendingFees = (pendingFeesResult.data ?? []).reduce(

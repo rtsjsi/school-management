@@ -14,7 +14,9 @@ type Student = { id: string; full_name: string; grade: string | null; division: 
 type Subject = { id: string; name: string; evaluation_type?: string; max_marks?: number | null };
 type ExamResultSubject = { student_id: string; subject_id: string; score: number | null; max_score: number | null; grade: string | null; is_absent: boolean };
 
-export default function ReportCardGenerator() {
+type AllowedClassNames = { gradeName: string; divisionName: string }[];
+
+export default function ReportCardGenerator({ allowedClassNames }: { allowedClassNames?: AllowedClassNames } = {}) {
   const [exams, setExams] = useState<Exam[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedExamId, setSelectedExamId] = useState("");
@@ -24,23 +26,33 @@ export default function ReportCardGenerator() {
 
   const supabase = createClient();
   const school = useSchoolSettings();
+  const allowedGradeSet = allowedClassNames?.length ? new Set(allowedClassNames.map((p) => p.gradeName)) : null;
+  const allowedPairSet = allowedClassNames?.length ? new Set(allowedClassNames.map((p) => `${p.gradeName}\0${p.divisionName}`)) : null;
 
   useEffect(() => {
     supabase
       .from("exams")
       .select("id, name, exam_type, standard, held_at")
       .order("held_at", { ascending: false })
-      .then(({ data }) => setExams(data ?? []));
-  }, [supabase]);
+      .then(({ data }) => {
+        let list = (data ?? []) as Exam[];
+        if (allowedGradeSet) list = list.filter((e) => e.standard && allowedGradeSet.has(e.standard));
+        setExams(list);
+      });
+  }, [supabase, allowedGradeSet?.size]);
 
   useEffect(() => {
     supabase
       .from("students")
-      .select("id, full_name, grade, section, roll_number, student_id, academic_year")
+      .select("id, full_name, grade, division, roll_number, student_id, academic_year")
       .eq("status", "active")
       .order("full_name")
-      .then(({ data }) => setStudents((data ?? []) as unknown as Student[]));
-  }, [supabase]);
+      .then(({ data }) => {
+        let list = (data ?? []) as unknown as Student[];
+        if (allowedPairSet) list = list.filter((s) => allowedPairSet.has(`${s.grade ?? ""}\0${s.division ?? ""}`));
+        setStudents(list);
+      });
+  }, [supabase, allowedPairSet?.size]);
 
   const handleGenerate = async () => {
     if (!selectedExamId || !selectedStudentId) {

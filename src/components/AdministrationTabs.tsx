@@ -15,6 +15,7 @@ import { ROLES } from "@/types/auth";
 import type { UserRole } from "@/types/auth";
 import CreateUserForm from "@/components/CreateUserForm";
 import { UserResetPasswordDialog } from "@/components/UserResetPasswordDialog";
+import { UserClassAccessDialog } from "@/components/UserClassAccessDialog";
 import { SchoolSettingsForm } from "@/components/SchoolSettingsForm";
 import { AcademicYearsManager } from "@/components/AcademicYearsManager";
 
@@ -76,7 +77,11 @@ export function AdministrationTabs({
                         <TableCell>
                           <Badge variant="secondary">{ROLES[(p.role as UserRole) ?? "teacher"]}</Badge>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right flex items-center justify-end gap-1">
+                          <UserClassAccessDialog
+                            profileId={p.id}
+                            displayName={p.full_name || p.email || "User"}
+                          />
                           <UserResetPasswordDialog userId={p.id} userEmail={p.email ?? "—"} />
                         </TableCell>
                       </TableRow>

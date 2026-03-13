@@ -389,7 +389,15 @@ function StudentExitDialog({
   );
 }
 
-export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
+type AllowedClassNames = { gradeName: string; divisionName: string }[];
+
+export function ManageStudentsList({
+  canEdit = true,
+  allowedClassNames,
+}: {
+  canEdit?: boolean;
+  allowedClassNames?: AllowedClassNames;
+}) {
   const [students, setStudents] = useState<StudentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -403,10 +411,18 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
   const [reloadKey, setReloadKey] = useState(0);
 
   const supabase = createClient();
+  const restrictByClass = allowedClassNames !== undefined;
+  const allowedGradeNames = restrictByClass && allowedClassNames.length > 0 ? Array.from(new Set(allowedClassNames.map((p) => p.gradeName))) : [];
+  const allowedDivisionNames = restrictByClass && allowedClassNames.length > 0 ? Array.from(new Set(allowedClassNames.map((p) => p.divisionName))) : [];
 
   useEffect(() => {
-    fetchStandards().then(setGrades);
-    fetchAllDivisions().then(setDivisions);
+    if (restrictByClass) {
+      setGrades(allowedGradeNames.map((name) => ({ id: name, name })));
+      setDivisions(allowedDivisionNames.map((name) => ({ id: name, name })));
+    } else {
+      fetchStandards().then(setGrades);
+      fetchAllDivisions().then(setDivisions);
+    }
     supabase
       .from("academic_years")
       .select("name")
@@ -415,7 +431,7 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
       .then(({ data }) => {
         if (data?.name) setActiveYearName(data.name as string);
       });
-  }, []);
+  }, [restrictByClass, allowedGradeNames.join(","), allowedDivisionNames.join(",")]);
 
   useEffect(() => {
     let q = supabase
@@ -432,10 +448,15 @@ export function ManageStudentsList({ canEdit = true }: { canEdit?: boolean }) {
 
     (async () => {
       const { data } = await q;
-      setStudents((data ?? []) as StudentRow[]);
+      let rows = (data ?? []) as StudentRow[];
+      if (restrictByClass && allowedClassNames && allowedClassNames.length > 0) {
+        const set = new Set(allowedClassNames.map((p) => `${p.gradeName}\0${p.divisionName}`));
+        rows = rows.filter((s) => set.has(`${s.grade ?? ""}\0${s.division ?? ""}`));
+      }
+      setStudents(rows);
       setLoading(false);
     })();
-  }, [search, gradeFilter, divisionFilter, statusFilter, reloadKey]);
+  }, [search, gradeFilter, divisionFilter, statusFilter, reloadKey, restrictByClass, allowedClassNames?.length]);
 
   const getStatusBadge = (status: string) => {
     const map: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
