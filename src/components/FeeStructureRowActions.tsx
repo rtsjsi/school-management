@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,7 +18,6 @@ type Structure = {
 };
 
 export function FeeStructureRowActions({ structure }: { structure: Structure }) {
-  const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
 
   return (
