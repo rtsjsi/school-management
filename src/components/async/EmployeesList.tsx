@@ -12,6 +12,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { UserPlus } from "lucide-react";
 
 export async function EmployeesList() {
   const user = await getUser();
@@ -21,7 +31,9 @@ export async function EmployeesList() {
   const supabase = await createClient();
   const { data: employees } = await supabase
     .from("employees")
-    .select("id, employee_id, full_name, email, phone_number, role, department, designation, employee_type, joining_date, status, monthly_salary, shifts(name)")
+    .select(
+      "id, employee_id, full_name, email, phone_number, address, aadhaar, pan, role, department, designation, employee_type, joining_date, status, monthly_salary, degree, institution, year_passed, bank_name, account_number, ifsc_code, account_holder_name, shifts(name)"
+    )
     .order("created_at", { ascending: false })
     .limit(50);
 
@@ -36,7 +48,27 @@ export async function EmployeesList() {
   return (
     <>
       {canEdit && (
-        <EmployeeEntryForm shifts={shiftList} />
+        <div className="flex justify-end">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button className="gap-1">
+                <UserPlus className="h-4 w-4" />
+                Add employee
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-5xl">
+              <DialogHeader>
+                <DialogTitle className="text-base">Add new employee</DialogTitle>
+                <DialogDescription>
+                  Fill in the form to create a new employee record.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="max-h-[70vh] overflow-y-auto pr-1">
+                <EmployeeEntryForm shifts={shiftList} />
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       )}
 
       <Card>
