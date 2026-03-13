@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge";
 type FeeTypeRow = {
   id: string;
   name: string;
-  code: string | null;
   sort_order: number;
   is_active: boolean;
 };
@@ -19,7 +18,6 @@ type FeeTypeRow = {
 export function FeeTypesManager() {
   const [types, setTypes] = useState<FeeTypeRow[]>([]);
   const [name, setName] = useState("");
-  const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,7 +26,7 @@ export function FeeTypesManager() {
   const load = () => {
     supabase
       .from("fee_types")
-      .select("id, name, code, sort_order, is_active")
+      .select("id, name, sort_order, is_active")
       .order("is_active", { ascending: false })
       .order("sort_order")
       .order("name")
@@ -52,7 +50,6 @@ export function FeeTypesManager() {
     const nextSort = (types[types.length - 1]?.sort_order ?? 0) + 1;
     const { error: err } = await supabase.from("fee_types").insert({
       name: trimmedName,
-      code: code.trim() || null,
       sort_order: nextSort,
       is_active: true,
     });
@@ -62,7 +59,6 @@ export function FeeTypesManager() {
       return;
     }
     setName("");
-    setCode("");
     load();
   };
 
@@ -78,7 +74,7 @@ export function FeeTypesManager() {
   return (
     <Card>
       <CardContent className="space-y-4 pt-6">
-        <form onSubmit={handleAdd} className="grid grid-cols-1 sm:grid-cols-[2fr,1.5fr,auto] gap-3 items-end">
+        <form onSubmit={handleAdd} className="grid grid-cols-1 sm:grid-cols-[2fr,auto] gap-3 items-end">
           <div className="space-y-1.5">
             <Label htmlFor="fee-type-name">Fee type name *</Label>
             <Input
@@ -87,15 +83,6 @@ export function FeeTypesManager() {
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Tuition, Transport"
               required
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="fee-type-code">Code</Label>
-            <Input
-              id="fee-type-code"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder="Optional short code (e.g. TUIT)"
             />
           </div>
           <div className="space-y-1.5">
@@ -122,7 +109,6 @@ export function FeeTypesManager() {
                   className={t.is_active ? "" : "opacity-60"}
                 >
                   {t.name}
-                  {t.code ? ` (${t.code})` : ""}
                 </Badge>
               </button>
             ))}
