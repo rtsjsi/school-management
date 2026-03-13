@@ -44,7 +44,7 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
       const supabase = createClient();
       const { data: structure, error: structErr } = await supabase
         .from("fee_structures")
-        .select("id, grade_from, academic_year")
+        .select("id, standard_id, academic_year")
         .eq("id", structureId)
         .single();
       if (structErr || !structure) {
@@ -57,7 +57,7 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
         .select("fee_type, quarter, amount")
         .eq("fee_structure_id", structureId);
       setForm({
-        standard: structure.grade_from,
+        standard: structure.standard_id,
         academic_year: structure.academic_year,
       });
       const amounts: Record<string, Record<number, string>> = {};
@@ -103,10 +103,10 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
 
     setLoading(true);
     try {
-      const standardName = form.standard.trim();
+      const standardId = form.standard.trim();
       if (structureId) {
         const result = await updateFeeStructure(structureId, {
-          standard: standardName,
+          standardId,
           academic_year: form.academic_year.trim(),
           items,
         });
@@ -123,10 +123,7 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
       const { data: structure, error: structErr } = await supabase
         .from("fee_structures")
         .insert({
-          // Keep legacy columns for compatibility, but derive them from the selected standard
-          name: standardName,
-          grade_from: standardName,
-          grade_to: standardName,
+          standard_id: standardId,
           academic_year: form.academic_year.trim(),
         })
         .select("id")

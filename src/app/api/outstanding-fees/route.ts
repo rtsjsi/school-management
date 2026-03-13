@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { isGradeInRange } from "@/lib/grade-utils";
 import { getActiveAcademicYearName } from "@/lib/enrollment";
 
 export async function GET(request: NextRequest) {
@@ -29,8 +28,7 @@ export async function GET(request: NextRequest) {
       .from("fee_structures")
       .select(`
         id,
-        grade_from,
-        grade_to,
+        standards(name),
         fee_structure_items(fee_type, quarter, amount)
       `)
       .eq("academic_year", ay);
@@ -68,9 +66,12 @@ export async function GET(request: NextRequest) {
       if (division && (s.division ?? "") !== division) continue;
 
       const studentGrade = s.grade ?? "";
-      const structure = (structures ?? []).find((st) =>
-        isGradeInRange(studentGrade, st.grade_from, st.grade_to)
-      );
+      const structure = (structures ?? []).find((st: { standards?: { name?: string } | { name?: string }[] | null }) => {
+        const std = Array.isArray(st.standards)
+          ? (st.standards[0] as { name?: string })?.name
+          : (st.standards as { name?: string } | null)?.name;
+        return std && std === studentGrade;
+      });
       if (!structure) continue;
 
       const items = (structure.fee_structure_items as { fee_type: string; quarter: number; amount: number }[]) ?? [];

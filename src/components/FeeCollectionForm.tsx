@@ -10,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { generateReceiptPDF, amountInWords } from "@/lib/receipt-pdf";
 import { AcademicYearSelect } from "@/components/AcademicYearSelect";
-import { isGradeInRange } from "@/lib/grade-utils";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 
 const PAYMENT_MODES = ["cash", "cheque", "online"] as const;
@@ -90,11 +89,14 @@ export default function FeeCollectionForm({
     (async () => {
       const { data: structures } = await supabase
         .from("fee_structures")
-        .select("id, grade_from, grade_to, fee_structure_items(fee_type, quarter, amount)")
+        .select("id, standards(name), fee_structure_items(fee_type, quarter, amount)")
         .eq("academic_year", form.academic_year);
-      const structure = (structures ?? []).find((st) =>
-        isGradeInRange(selectedStudent.grade ?? "", st.grade_from, st.grade_to)
-      );
+      const structure = (structures ?? []).find((st: { standards?: { name?: string } | { name?: string }[] | null }) => {
+        const std = Array.isArray(st.standards)
+          ? (st.standards[0] as { name?: string })?.name
+          : (st.standards as { name?: string } | null)?.name;
+        return std && std === (selectedStudent.grade ?? "");
+      });
       if (!structure) {
         setStructureAmount(null);
         return;
@@ -215,11 +217,14 @@ export default function FeeCollectionForm({
       let outstandingAfterPayment: number | undefined;
       const { data: structures } = await supabase
         .from("fee_structures")
-        .select("id, grade_from, grade_to, fee_structure_items(quarter, amount)")
+        .select("id, standards(name), fee_structure_items(quarter, amount)")
         .eq("academic_year", form.academic_year);
-      const structure = (structures ?? []).find((st) =>
-        isGradeInRange(selectedStudent?.grade ?? "", st.grade_from, st.grade_to)
-      );
+      const structure = (structures ?? []).find((st: { standards?: { name?: string } | { name?: string }[] | null }) => {
+        const std = Array.isArray(st.standards)
+          ? (st.standards[0] as { name?: string })?.name
+          : (st.standards as { name?: string } | null)?.name;
+        return std && std === (selectedStudent?.grade ?? "");
+      });
       if (structure) {
         const items = (structure.fee_structure_items as { quarter: number; amount: number }[]) ?? [];
         const totalDues = items.reduce((s, i) => s + Number(i.amount), 0);

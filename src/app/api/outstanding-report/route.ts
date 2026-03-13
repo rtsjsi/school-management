@@ -2,18 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveAcademicYearName } from "@/lib/enrollment";
 
-function isGradeInRange(grade: string, from: string, to: string): boolean {
-  const GRADE_ORDER: Record<string, number> = {
-    "Jr KG": 0, "Sr KG": 1, "1": 2, "2": 3, "3": 4, "4": 5, "5": 6,
-    "6": 7, "7": 8, "8": 9, "9": 10, "10": 11, "11": 12, "12": 13,
-  };
-  const g = GRADE_ORDER[grade] ?? -1;
-  const f = GRADE_ORDER[from] ?? -1;
-  const t = GRADE_ORDER[to] ?? -1;
-  if (g < 0 || f < 0 || t < 0) return false;
-  return g >= f && g <= t;
-}
-
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -36,7 +24,7 @@ export async function GET(request: NextRequest) {
 
     const { data: structures } = await supabase
       .from("fee_structures")
-      .select("id, grade_from, grade_to, fee_structure_items(fee_type, quarter, amount)")
+      .select("id, standards(name), fee_structure_items(fee_type, quarter, amount)")
       .eq("academic_year", ay);
 
     const { data: collections } = await supabase
@@ -74,9 +62,12 @@ export async function GET(request: NextRequest) {
       const studentGrade = s.grade ?? "";
       if (grade && studentGrade !== grade) continue;
 
-      const structure = (structures ?? []).find((st) =>
-        isGradeInRange(studentGrade, st.grade_from, st.grade_to)
-      );
+      const structure = (structures ?? []).find((st: { standards?: { name?: string } | { name?: string }[] | null }) => {
+        const std = Array.isArray(st.standards)
+          ? (st.standards[0] as { name?: string })?.name
+          : (st.standards as { name?: string } | null)?.name;
+        return std && std === studentGrade;
+      });
       if (!structure) continue;
 
       const items = (structure.fee_structure_items as { fee_type: string; quarter: number; amount: number }[]) ?? [];

@@ -15,7 +15,7 @@ import { Pencil, Trash2 } from "lucide-react";
 
 type Structure = {
   id: string;
-  grade_from: string;
+  standardName: string;
   academic_year: string;
 };
 
@@ -25,7 +25,7 @@ export function FeeStructureRowActions({ structure }: { structure: Structure }) 
   const [deleting, setDeleting] = useState(false);
 
   const handleDelete = async () => {
-    if (!confirm(`Delete fee structure for standard "${structure.grade_from}" (${structure.academic_year})? This will remove all associated fee items.`)) return;
+    if (!confirm(`Delete fee structure for standard "${structure.standardName}" (${structure.academic_year})? This will remove all associated fee items.`)) return;
     setDeleting(true);
     const result = await deleteFeeStructure(structure.id);
     setDeleting(false);
