@@ -73,7 +73,6 @@ async function deleteAllData() {
   // Order: child tables first (FK constraints)
   const tables = [
     "exam_result_subjects",
-    "exam_results",
     "fee_collections",
     "fees",
     "student_photos",
