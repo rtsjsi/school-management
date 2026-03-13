@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 
-type Exam = { id: string; name: string; exam_type: string; grade: string | null; held_at: string };
+type Exam = { id: string; name: string; exam_type: string; standard: string | null; held_at: string };
 type Student = { id: string; full_name: string; grade: string | null; division: string | null };
 type Subject = { id: string; name: string; code: string | null; evaluation_type: string };
 type CellState = { score: string; max_score: string; grade: string; is_absent: boolean };
@@ -43,7 +43,7 @@ export default function MultipleSubjectwiseMarksEntry() {
   useEffect(() => {
     supabase
       .from("exams")
-      .select("id, name, exam_type, grade, held_at")
+      .select("id, name, exam_type, standard, held_at")
       .order("held_at", { ascending: false })
       .then(({ data }) => setExams(data ?? []));
     supabase
@@ -57,8 +57,8 @@ export default function MultipleSubjectwiseMarksEntry() {
   const effectiveGrade =
     gradeFilter && gradeFilter !== "all"
       ? gradeFilter
-      : exam?.grade && exam.grade !== "All"
-        ? exam.grade
+      : exam?.standard && exam.standard !== "All"
+        ? exam.standard
         : null;
 
   useEffect(() => {
@@ -116,7 +116,7 @@ export default function MultipleSubjectwiseMarksEntry() {
         .order("full_name");
       if (gradeFilter && gradeFilter !== "all") query = query.eq("grade", gradeFilter);
       if (divisionFilter && divisionFilter !== "all") query = query.eq("division", divisionFilter);
-      if (exam?.grade && exam.grade !== "All" && (!gradeFilter || gradeFilter === "all")) query = query.eq("grade", exam.grade);
+      if (exam?.standard && exam.standard !== "All" && (!gradeFilter || gradeFilter === "all")) query = query.eq("grade", exam.standard);
       const { data: st } = await query;
       const studentList = (st ?? []) as Student[];
       setStudents(studentList);

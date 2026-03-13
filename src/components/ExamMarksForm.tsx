@@ -17,7 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-type Exam = { id: string; name: string; exam_type: string; grade: string | null; held_at: string };
+type Exam = { id: string; name: string; exam_type: string; standard: string | null; held_at: string };
 type Student = { id: string; full_name: string; grade: string };
 type ExamResult = { student_id: string; score: number | null; max_score: number | null };
 
@@ -33,7 +33,7 @@ export default function ExamMarksForm() {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.from("exams").select("id, name, exam_type, grade, held_at").order("held_at", { ascending: false }).then(({ data }) => setExams(data ?? []));
+    supabase.from("exams").select("id, name, exam_type, standard, held_at").order("held_at", { ascending: false }).then(({ data }) => setExams(data ?? []));
   }, []);
 
   useEffect(() => {
@@ -47,8 +47,8 @@ export default function ExamMarksForm() {
     const exam = exams.find((e) => e.id === selectedExamId);
     (async () => {
       let query = supabase.from("students").select("id, full_name, grade").eq("status", "active").order("full_name");
-      if (exam?.grade && exam.grade !== "All") {
-        query = query.eq("grade", exam.grade);
+      if (exam?.standard && exam.standard !== "All") {
+        query = query.eq("grade", exam.standard);
       }
       const { data: st } = await query;
       setStudents(st ?? []);

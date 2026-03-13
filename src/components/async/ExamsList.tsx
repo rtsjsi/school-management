@@ -22,7 +22,7 @@ export async function ExamsList() {
   const supabase = await createClient();
   let query = supabase
     .from("exams")
-    .select("id, name, exam_type, subject, grade, held_at")
+    .select("id, name, exam_type, standard, held_at")
     .order("held_at", { ascending: false });
   if (activeYearId) query = query.eq("academic_year_id", activeYearId);
   const { data: exams } = await query;
@@ -60,11 +60,11 @@ export async function ExamsList() {
                       <TableCell>
                         <Badge variant="secondary">{exam.exam_type}</Badge>
                       </TableCell>
-                      <TableCell>{exam.grade ?? "—"}</TableCell>
+                      <TableCell>{exam.standard ?? "—"}</TableCell>
                       <TableCell>{exam.held_at ? new Date(exam.held_at).toLocaleDateString() : "—"}</TableCell>
                       {canEdit && (
                         <TableCell>
-                          <ExamEditDialog exam={{ id: exam.id, name: exam.name, exam_type: exam.exam_type, grade: exam.grade, held_at: exam.held_at }} />
+                          <ExamEditDialog exam={{ id: exam.id, name: exam.name, exam_type: exam.exam_type, standard: exam.standard, held_at: exam.held_at }} />
                         </TableCell>
                       )}
                     </TableRow>

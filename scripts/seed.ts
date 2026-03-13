@@ -300,22 +300,24 @@ async function seedFeeStructures() {
 async function seedExams() {
   console.log("Seeding exams...");
   const exams = [
-    { name: "Mid-Term 1", exam_type: "midterm", subject: "All", grade: "5", held_at: new Date().toISOString().slice(0, 10), description: "First mid-term" },
-    { name: "Final Exam", exam_type: "final", subject: "All", grade: "All", held_at: new Date(new Date().getFullYear(), 2, 15).toISOString().slice(0, 10), description: "Annual final" },
+    { name: "Mid-Term 1", exam_type: "midterm", standard: "5", held_at: new Date().toISOString().slice(0, 10), description: "First mid-term" },
+    { name: "Final Exam", exam_type: "final", standard: "All", held_at: new Date(new Date().getFullYear(), 2, 15).toISOString().slice(0, 10), description: "Annual final" },
   ];
-  const { data: inserted } = await supabase.from("exams").insert(exams).select("id, grade");
+  const { data: inserted } = await supabase.from("exams").insert(exams).select("id, standard");
   if (inserted?.length) {
-    const examWithGrade = inserted.find((e) => e.grade && e.grade !== "All");
-    if (examWithGrade) {
-      const { data: standardRow } = await supabase.from("standards").select("id").eq("name", examWithGrade.grade).maybeSingle();
+    const examWithStandard = inserted.find((e) => (e as { standard?: string }).standard && (e as { standard: string }).standard !== "All") as
+      | { id: string; standard: string }
+      | undefined;
+    if (examWithStandard) {
+      const { data: standardRow } = await supabase.from("standards").select("id").eq("name", examWithStandard.standard).maybeSingle();
       if (standardRow?.id) {
         const { data: subs } = await supabase.from("subjects").select("id, evaluation_type").eq("standard_id", standardRow.id);
         for (const sub of subs ?? []) {
           if (sub.evaluation_type === "mark") {
-            await supabase.from("exam_subjects").insert({ exam_id: examWithGrade.id, subject_id: sub.id, max_marks: 100 });
+            await supabase.from("exam_subjects").insert({ exam_id: examWithStandard.id, subject_id: sub.id, max_marks: 100 });
           }
         }
-        console.log(`  Added exam_subjects for ${examWithGrade.grade}`);
+        console.log(`  Added exam_subjects for ${examWithStandard.standard}`);
       }
     }
   }

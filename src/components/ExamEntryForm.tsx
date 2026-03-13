@@ -120,7 +120,7 @@ export default function ExamEntryForm() {
         exam_type: form.exam_type,
         held_at: form.held_at,
         description: form.description.trim() || null,
-        grade: standardName,
+        standard: standardName,
         academic_year_id: form.academicYearId,
         subjectMaxMarks,
       });
