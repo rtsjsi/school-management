@@ -11,6 +11,7 @@ import FeeCollectionList from "@/components/FeeCollectionList";
 import OutstandingReport from "@/components/OutstandingReport";
 import FeeCollectionReport from "@/components/FeeCollectionReport";
 import { createClient } from "@/lib/supabase/server";
+import { FeeTypesManager } from "@/components/FeeTypesManager";
 
 export default async function FeesPage() {
   const user = await getUser();
@@ -48,6 +49,7 @@ export default async function FeesPage() {
         </TabsList>
 
         <TabsContent value="structure" className="space-y-6">
+          {canEdit && <FeeTypesManager />}
           {canEdit && <FeeStructureForm />}
           <Suspense fallback={<TableSkeleton rows={3} columns={4} />}>
             <FeeStructureList canEdit={canEdit} />

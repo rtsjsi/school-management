@@ -13,8 +13,6 @@ import { AcademicYearSelect } from "@/components/AcademicYearSelect";
 import { Button } from "@/components/ui/button";
 import { getFeeTypeLabel } from "@/lib/utils";
 
-const FEE_TYPES = ["tuition"] as const; // Education fees only
-
 type FeeStructureFormProps = {
   structureId?: string;
   onSuccess?: () => void;
@@ -32,9 +30,20 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
   });
   const [quarterAmounts, setQuarterAmounts] = useState<Record<string, Record<number, string>>>({});
   const [classes, setClasses] = useState<{ id: string; name: string; sort_order: number }[]>([]);
+  const [feeTypes, setFeeTypes] = useState<string[]>([]);
 
   useEffect(() => {
     createClient().from("standards").select("id, name, sort_order").order("sort_order").then(({ data }) => setClasses(data ?? []));
+    createClient()
+      .from("fee_types")
+      .select("name")
+      .eq("is_active", true)
+      .order("sort_order")
+      .order("name")
+      .then(({ data }) => {
+        const names = (data ?? []).map((t: { name: string }) => t.name);
+        setFeeTypes(names.length > 0 ? names : ["tuition"]);
+      });
   }, []);
 
   useEffect(() => {
@@ -92,7 +101,7 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
     }
 
     const items: { fee_type: string; quarter: number; amount: number }[] = [];
-    for (const feeType of FEE_TYPES) {
+    for (const feeType of feeTypes) {
       for (let q = 1; q <= 4; q++) {
         const val = getAmount(feeType, q);
         if (val && !isNaN(parseFloat(val)) && parseFloat(val) > 0) {
@@ -227,7 +236,7 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
                   </tr>
                 </thead>
                 <tbody>
-                  {FEE_TYPES.map((ft) => (
+                  {feeTypes.map((ft) => (
                     <tr key={ft} className="border-b">
                       <td className="py-2 pr-4">{getFeeTypeLabel(ft)}</td>
                       {[1, 2, 3, 4].map((q) => (
