@@ -159,16 +159,16 @@ export default function FeeCollectionForm({
         enrollmentId = enrollRow?.id ?? null;
       }
 
-      const { data: existingCollection } = await supabase
+      const { data: existingCollections } = await supabase
         .from("fee_collections")
         .select("id")
         .eq("student_id", form.student_id)
         .eq("academic_year", form.academic_year)
         .eq("quarter", parseInt(form.quarter))
         .eq("fee_type", FEE_TYPE)
-        .maybeSingle();
+        .limit(1);
 
-      if (existingCollection) {
+      if (existingCollections && existingCollections.length > 0) {
         setError("Fees for this quarter and academic year have already been collected for this student.");
         setLoading(false);
         return;
