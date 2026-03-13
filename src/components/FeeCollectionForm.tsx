@@ -144,7 +144,11 @@ export default function FeeCollectionForm({
         : new Date().toISOString();
 
       let enrollmentId: string | null = null;
-      const { data: ayRow } = await supabase.from("academic_years").select("id").eq("name", form.academic_year).maybeSingle();
+      const { data: ayRow } = await supabase
+        .from("academic_years")
+        .select("id")
+        .eq("name", form.academic_year)
+        .maybeSingle();
       if (ayRow?.id) {
         const { data: enrollRow } = await supabase
           .from("student_enrollments")
@@ -153,6 +157,21 @@ export default function FeeCollectionForm({
           .eq("academic_year_id", ayRow.id)
           .maybeSingle();
         enrollmentId = enrollRow?.id ?? null;
+      }
+
+      const { data: existingCollection } = await supabase
+        .from("fee_collections")
+        .select("id")
+        .eq("student_id", form.student_id)
+        .eq("academic_year", form.academic_year)
+        .eq("quarter", parseInt(form.quarter))
+        .eq("fee_type", FEE_TYPE)
+        .maybeSingle();
+
+      if (existingCollection) {
+        setError("Fees for this quarter and academic year have already been collected for this student.");
+        setLoading(false);
+        return;
       }
 
       const { data: collection, error: err } = await supabase
