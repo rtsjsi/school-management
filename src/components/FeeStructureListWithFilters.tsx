@@ -91,8 +91,12 @@ export function FeeStructureListWithFilters({ canEdit = false }: { canEdit?: boo
     }
     const byType: Record<string, Record<number, number>> = {};
     for (const it of list) {
+      const rawAmount = (it as unknown as { amount: number | string }).amount;
+      const amountNumber =
+        typeof rawAmount === "number" ? rawAmount : Number.parseFloat(String(rawAmount));
+      if (!Number.isFinite(amountNumber)) continue;
       if (!byType[it.fee_type]) byType[it.fee_type] = {};
-      byType[it.fee_type][it.quarter] = it.amount;
+      byType[it.fee_type][it.quarter] = amountNumber;
     }
     const feeTypes = Object.keys(byType).sort();
     return (
