@@ -24,7 +24,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
 
 type YearRow = { id: string; name: string; sort_order: number; status?: string | null };
 
@@ -90,13 +90,6 @@ export function AcademicYearsManager() {
     router.refresh();
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this academic year?")) return;
-    await supabase.from("academic_years").delete().eq("id", id);
-    loadYears();
-    router.refresh();
-  };
-
   return (
     <Card>
       <CardContent className="space-y-4 pt-6">
@@ -156,7 +149,6 @@ export function AcademicYearsManager() {
                 <TableRow>
                   <TableHead>Year</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="w-24"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -177,16 +169,6 @@ export function AcademicYearsManager() {
                           <option value="closed">Closed</option>
                           <option value="future">Future</option>
                         </select>
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-destructive"
-                          onClick={() => handleDelete(y.id)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
                       </TableCell>
                     </TableRow>
                   );

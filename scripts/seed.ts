@@ -1,6 +1,5 @@
 /**
- * Seed script: Flush all app data and insert clean test data.
- * 5 students + 10 employees with full variety.
+ * Seed script: Flush all app data and insert dummy data in all active/used tables with proper linking.
  * Run: npm run seed
  */
 
@@ -73,7 +72,6 @@ async function deleteAllData() {
   // Order: child tables first (FK constraints)
   const tables = [
     "exam_result_subjects",
-    "exam_results",
     "fee_collections",
     "fees",
     "student_photos",
@@ -84,21 +82,23 @@ async function deleteAllData() {
     "attendance_manual",
     "attendance_punches",
     "employee_salaries",
-    "employee_bank_accounts",
-    "employee_qualifications",
     "fee_structure_items",
     "expenses",
+    "expense_budgets",
     "student_enrollments",
     "divisions",
+    "standard_divisions",
     "standards",
     "students",
     "employees",
     "subjects",
+    "exam_subjects",
     "exams",
     "fee_structures",
     "holidays",
     "shifts",
-    "standards",
+    "academic_years",
+    "expense_heads",
   ];
   for (const t of tables) {
     try {
@@ -111,13 +111,7 @@ async function deleteAllData() {
 }
 
 async function seedAcademicYears() {
-  console.log("Ensuring academic years...");
-  const { data: existing } = await supabase.from("academic_years").select("id").limit(1);
-  if (existing && existing.length > 0) {
-    console.log("  academic_years already present, skipping creation.");
-    return;
-  }
-
+  console.log("Seeding academic years...");
   const currentYear = new Date().getFullYear();
   const prevName = `${currentYear - 1}-${currentYear}`;
   const curName = `${currentYear}-${currentYear + 1}`;
@@ -149,6 +143,7 @@ async function main() {
   await seedStandards();
   await seedStandardDivisionsAndDivisions();
   await seedShifts();
+  await seedExpenseHeads();
   await seedHolidays();
   await seedSubjects();
   await seedFeeStructures();
@@ -157,6 +152,7 @@ async function main() {
   await seedStudents();
   await seedFeeCollections();
   await seedExpenses();
+  await seedExpenseBudgets();
   await seedAttendance();
 
   console.log("Seed completed successfully!");
@@ -225,14 +221,34 @@ async function seedShifts() {
   await supabase.from("shifts").insert(shifts);
 }
 
+const EXPENSE_HEAD_NAMES = [
+  { name: "Stationary", sort_order: 1 },
+  { name: "Maintenance", sort_order: 2 },
+  { name: "Entertainment", sort_order: 3 },
+  { name: "Christmas", sort_order: 4 },
+  { name: "Medicines", sort_order: 5 },
+  { name: "Science Lab", sort_order: 6 },
+  { name: "Salary", sort_order: 7 },
+  { name: "Utilities", sort_order: 8 },
+  { name: "Transport", sort_order: 9 },
+  { name: "Other", sort_order: 99 },
+];
+
+async function seedExpenseHeads() {
+  console.log("Seeding expense heads...");
+  await supabase.from("expense_heads").insert(EXPENSE_HEAD_NAMES);
+  console.log(`  Inserted ${EXPENSE_HEAD_NAMES.length} expense heads`);
+}
+
 async function seedHolidays() {
   console.log("Seeding holidays...");
+  const { data: activeYear } = await supabase.from("academic_years").select("id").eq("status", "active").maybeSingle();
   const year = new Date().getFullYear();
   const holidays = [
-    { date: `${year}-01-26`, name: "Republic Day", type: "public" },
-    { date: `${year}-08-15`, name: "Independence Day", type: "public" },
-    { date: `${year}-10-02`, name: "Gandhi Jayanti", type: "public" },
-    { date: `${year}-12-25`, name: "Christmas", type: "public" },
+    { date: `${year}-01-26`, name: "Republic Day", type: "public", academic_year_id: activeYear?.id ?? null },
+    { date: `${year}-08-15`, name: "Independence Day", type: "public", academic_year_id: activeYear?.id ?? null },
+    { date: `${year}-10-02`, name: "Gandhi Jayanti", type: "public", academic_year_id: activeYear?.id ?? null },
+    { date: `${year}-12-25`, name: "Christmas", type: "public", academic_year_id: activeYear?.id ?? null },
   ];
   await supabase.from("holidays").insert(holidays);
 }
@@ -301,26 +317,50 @@ async function seedFeeStructures() {
 
 async function seedExams() {
   console.log("Seeding exams...");
-  const exams = [
-    { name: "Mid-Term 1", exam_type: "midterm", subject: "All", grade: "5", held_at: new Date().toISOString().slice(0, 10), description: "First mid-term" },
-    { name: "Final Exam", exam_type: "final", subject: "All", grade: "All", held_at: new Date(new Date().getFullYear(), 2, 15).toISOString().slice(0, 10), description: "Annual final" },
-  ];
-  const { data: inserted } = await supabase.from("exams").insert(exams).select("id, grade");
-  if (inserted?.length) {
-    const examWithGrade = inserted.find((e) => e.grade && e.grade !== "All");
-    if (examWithGrade) {
-      const { data: standardRow } = await supabase.from("standards").select("id").eq("name", examWithGrade.grade).maybeSingle();
-      if (standardRow?.id) {
-        const { data: subs } = await supabase.from("subjects").select("id, evaluation_type").eq("standard_id", standardRow.id);
+  const { data: activeYear } = await supabase
+    .from("academic_years")
+    .select("id")
+    .eq("status", "active")
+    .maybeSingle();
+  if (!activeYear?.id) {
+    console.log("  No active academic year, skipping exams.");
+    return;
+  }
+
+  const { data: standards } = await supabase.from("standards").select("id, name").order("sort_order");
+  if (!standards?.length) {
+    console.log("  No standards, skipping exams.");
+    return;
+  }
+
+  const currentYear = new Date().getFullYear();
+  const midTermDate = `${currentYear}-10-15`;
+  const finalDate = `${currentYear + 1}-03-15`;
+
+  let examCount = 0;
+  let subjectLinkCount = 0;
+
+  for (const st of standards) {
+    const examsToInsert = [
+      { name: `Mid-Term - ${st.name}`, exam_type: "midterm", standard: st.name, held_at: midTermDate, description: `Mid-term exam for ${st.name}`, academic_year_id: activeYear.id },
+      { name: `Final Exam - ${st.name}`, exam_type: "final", standard: st.name, held_at: finalDate, description: `Final exam for ${st.name}`, academic_year_id: activeYear.id },
+    ];
+    const { data: inserted } = await supabase.from("exams").insert(examsToInsert).select("id, standard");
+    if (inserted?.length) {
+      examCount += inserted.length;
+      const { data: subs } = await supabase.from("subjects").select("id, evaluation_type").eq("standard_id", st.id);
+      for (const exam of inserted) {
         for (const sub of subs ?? []) {
           if (sub.evaluation_type === "mark") {
-            await supabase.from("exam_subjects").insert({ exam_id: examWithGrade.id, subject_id: sub.id, max_marks: 100 });
+            await supabase.from("exam_subjects").insert({ exam_id: exam.id, subject_id: sub.id, max_marks: 100 });
+            subjectLinkCount++;
           }
         }
-        console.log(`  Added exam_subjects for ${examWithGrade.grade}`);
       }
     }
   }
+
+  console.log(`  Added ${examCount} exams for ${standards.length} standards, ${subjectLinkCount} exam_subjects.`);
 }
 
 // 20 employees with full variety: roles, departments, designations, types, statuses
@@ -364,19 +404,18 @@ async function seedEmployees() {
     });
   }
 
-  const { data: emps } = await supabase.from("employees").insert(employees).select("id, full_name");
-  if (emps) {
-    for (const e of emps) {
-      await supabase.from("employee_bank_accounts").insert({
-        employee_id: e.id,
-        bank_name: pick(["State Bank", "HDFC Bank", "ICICI Bank", "SBI", "Axis Bank"]),
-        account_number: `1234567${String(emps.indexOf(e)).padStart(5, "0")}`,
-        ifsc_code: pick(["SBIN0001234", "HDFC0001234", "ICIC0001234"]),
-        account_holder_name: e.full_name,
-        is_primary: true,
-      });
-    }
-  }
+  const { data: emps } = await supabase.from("employees").insert(
+    employees.map((e, idx) => ({
+      ...e,
+      bank_name: pick(["State Bank", "HDFC Bank", "ICICI Bank", "SBI", "Axis Bank"]),
+      account_number: `1234567${String(idx).padStart(5, "0")}`,
+      ifsc_code: pick(["SBIN0001234", "HDFC0001234", "ICIC0001234"]),
+      account_holder_name: e.full_name,
+      degree: pick(["B.Ed", "M.Ed", "M.Sc", "B.Sc", "B.A"]),
+      institution: pick(["State University", "Central University", "Private College"]),
+      year_passed: 2000 + randomInt(0, 20),
+    }))
+  ).select("id");
   console.log(`  Inserted ${emps?.length ?? 0} employees`);
 }
 
@@ -517,7 +556,12 @@ async function seedFeeCollections() {
   const { data: students } = await supabase.from("students").select("id, grade, is_rte_quota").eq("status", "active");
   const nonRte = (students ?? []).filter((s) => !(s as { is_rte_quota?: boolean }).is_rte_quota);
 
-  const GRADE_ORDER: Record<string, number> = { "Jr KG": 0, "Sr KG": 1, "1": 2, "2": 3, "3": 4, "4": 5, "5": 6, "6": 7, "7": 8, "8": 9, "9": 10, "10": 11, "11": 12, "12": 13 };
+  const GRADE_ORDER: Record<string, number> = {
+    Nursery: 0,
+    "Junior KG (LKG)": 1,
+    "Senior KG (UKG)": 2,
+    "1": 3, "2": 4, "3": 5, "4": 6, "5": 7, "6": 8, "7": 9, "8": 10, "9": 11, "10": 12, "11": 13, "12": 14,
+  };
   const inRange = (g: string, f: string, t: string) => (GRADE_ORDER[g] ?? -1) >= (GRADE_ORDER[f] ?? -1) && (GRADE_ORDER[g] ?? -1) <= (GRADE_ORDER[t] ?? -1);
 
   let receiptNum = 1000;
@@ -550,14 +594,34 @@ async function seedFeeCollections() {
 
 async function seedExpenses() {
   console.log("Seeding expenses...");
+  const { data: heads } = await supabase.from("expense_heads").select("id, name");
+  const headById = (heads ?? []).reduce((acc, h) => ({ ...acc, [h.name.toLowerCase()]: h.id }), {} as Record<string, string>);
   const today = new Date().toISOString().slice(0, 10);
-  const expenses = [
-    { category: "salary", amount: 250000, description: "Monthly salaries", expense_date: today },
-    { category: "utilities", amount: 12000, description: "Electricity", expense_date: today },
-    { category: "supplies", amount: 8000, description: "Stationery", expense_date: today },
-    { category: "maintenance", amount: 5000, description: "Building repair", expense_date: today },
+  const rows = [
+    { expense_head_id: headById["salary"] ?? null, amount: 250000, description: "Monthly salaries", expense_date: today },
+    { expense_head_id: headById["utilities"] ?? null, amount: 12000, description: "Electricity", expense_date: today },
+    { expense_head_id: headById["stationary"] ?? null, amount: 8000, description: "Stationery", expense_date: today },
+    { expense_head_id: headById["maintenance"] ?? null, amount: 5000, description: "Building repair", expense_date: today },
   ];
-  await supabase.from("expenses").insert(expenses);
+  await supabase.from("expenses").insert(rows);
+  console.log(`  Inserted ${rows.length} expenses`);
+}
+
+async function seedExpenseBudgets() {
+  console.log("Seeding expense budgets...");
+  const { data: activeYear } = await supabase.from("academic_years").select("id").eq("status", "active").maybeSingle();
+  const { data: heads } = await supabase.from("expense_heads").select("id");
+  if (!activeYear?.id || !heads?.length) {
+    console.log("  Skipping (no active year or expense heads)");
+    return;
+  }
+  const rows = (heads as { id: string }[]).map((h) => ({
+    expense_head_id: h.id,
+    academic_year_id: activeYear.id,
+    amount: 10000 + randomInt(0, 90000),
+  }));
+  await supabase.from("expense_budgets").insert(rows);
+  console.log(`  Inserted ${rows.length} expense budgets for active year`);
 }
 
 async function seedAttendance() {

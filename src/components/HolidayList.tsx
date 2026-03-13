@@ -11,17 +11,33 @@ import {
 
 export async function HolidayList() {
   const supabase = await createClient();
-  const { data: holidays } = await supabase
+  const { data: activeYear } = await supabase
+    .from("academic_years")
+    .select("id, name")
+    .eq("status", "active")
+    .order("sort_order")
+    .limit(1)
+    .maybeSingle();
+
+  const activeYearId = activeYear?.id ?? null;
+
+  let holidaysQuery = supabase
     .from("holidays")
     .select("id, date, name, type")
     .order("date", { ascending: false })
     .limit(50);
+  if (activeYearId) {
+    holidaysQuery = holidaysQuery.eq("academic_year_id", activeYearId);
+  }
+  const { data: holidays } = await holidaysQuery;
 
   if (!holidays || holidays.length === 0) {
     return (
       <Card>
         <CardContent className="pt-6">
-          <p className="text-sm text-muted-foreground">No holidays added.</p>
+          <p className="text-sm text-muted-foreground">
+            {activeYearId ? "No holidays added for the active academic year." : "No holidays added."}
+          </p>
         </CardContent>
       </Card>
     );

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth";
 import { AppSidebar } from "@/components/AppSidebar";
 import { DashboardHeader } from "@/components/DashboardHeader";
+import { InactivitySignOut } from "@/components/InactivitySignOut";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="h-screen flex flex-col lg:flex-row bg-muted/30 overflow-hidden">
+      <InactivitySignOut />
       <AppSidebar user={user} />
       <main className="flex flex-col flex-1 min-w-0 min-h-0 lg:ml-64 overflow-hidden bg-background border-l border-border/80">
         <DashboardHeader user={user} />

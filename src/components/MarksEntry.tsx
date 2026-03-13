@@ -30,7 +30,7 @@ type Exam = {
   id: string;
   name: string;
   exam_type: string;
-  grade: string | null;
+  standard: string | null;
   held_at: string;
   academic_years: { id: string; name: string } | { id: string; name: string }[] | null;
 };
@@ -60,8 +60,8 @@ export default function MarksEntry() {
   const effectiveGrade =
     gradeFilter && gradeFilter !== "all"
       ? gradeFilter
-      : exam?.grade
-        ? exam.grade
+      : exam?.standard
+        ? exam.standard
         : null;
 
   // Load current academic year exams and class names
@@ -75,7 +75,7 @@ export default function MarksEntry() {
         .maybeSingle();
       let query = supabase
         .from("exams")
-        .select("id, name, exam_type, grade, held_at, academic_years(id, name)")
+        .select("id, name, exam_type, standard, held_at, academic_years(id, name)")
         .order("held_at", { ascending: false });
       if (ay?.id) query = query.eq("academic_year_id", ay.id);
       const { data: examData } = await query;
@@ -90,14 +90,14 @@ export default function MarksEntry() {
 
   // When exam changes, reset filters to exam's standard
   useEffect(() => {
-    if (exam?.grade) {
-      setGradeFilter(exam.grade);
+    if (exam?.standard) {
+      setGradeFilter(exam.standard);
       setDivisionFilter("all");
     } else {
       setGradeFilter("all");
       setDivisionFilter("all");
     }
-  }, [selectedExamId, exam?.grade]);
+  }, [selectedExamId, exam?.standard]);
 
   // Load subjects for effective grade
   useEffect(() => {
@@ -155,7 +155,7 @@ export default function MarksEntry() {
         .order("full_name");
       // When exam is for a specific standard, always filter by that standard (ignore other selections)
       const gradeToUse =
-        exam?.grade && exam.grade.trim() !== "" ? exam.grade : gradeFilter;
+        exam?.standard && exam.standard.trim() !== "" ? exam.standard : gradeFilter;
       if (gradeToUse && gradeToUse !== "all") query = query.eq("grade", gradeToUse);
       if (divisionFilter && divisionFilter !== "all") query = query.eq("division", divisionFilter);
 
@@ -198,7 +198,7 @@ export default function MarksEntry() {
       }
       setMarks(initial);
     })().finally(() => setLoading(false));
-  }, [selectedExamId, exam?.grade, gradeFilter, divisionFilter, subjects]);
+  }, [selectedExamId, exam?.standard, gradeFilter, divisionFilter, subjects]);
 
   useEffect(() => {
     if (!selectedExamId || subjects.length === 0) {
@@ -287,8 +287,8 @@ export default function MarksEntry() {
 
   // When exam is for a specific standard, only allow that standard (no other standards like Jr KG)
   const gradesForFilter =
-    exam?.grade && exam.grade.trim() !== ""
-      ? [exam.grade]
+    exam?.standard && exam.standard.trim() !== ""
+      ? [exam.standard]
       : classNames.length > 0
         ? classNames
         : (Array.from(new Set(students.map((s) => s.grade).filter(Boolean))) as string[]);
@@ -315,7 +315,7 @@ export default function MarksEntry() {
                 <SelectContent>
                   {exams.map((e) => {
                     const dateStr = e.held_at ? new Date(e.held_at).toLocaleDateString() : "";
-                    const label = [e.name, e.exam_type, e.grade ?? "All", dateStr].filter(Boolean).join(" · ");
+                    const label = [e.name, e.exam_type, e.standard ?? "All", dateStr].filter(Boolean).join(" · ");
                     return (
                       <SelectItem key={e.id} value={e.id}>
                         {label}
@@ -330,13 +330,13 @@ export default function MarksEntry() {
               <Select
                 value={gradeFilter}
                 onValueChange={setGradeFilter}
-                disabled={!!(exam?.grade && exam.grade.trim() !== "")}
+                disabled={!!(exam?.standard && exam.standard.trim() !== "")}
               >
                 <SelectTrigger className="w-[120px]">
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
-                  {!(exam?.grade && exam.grade.trim() !== "") && (
+                  {!(exam?.standard && exam.standard.trim() !== "") && (
                     <SelectItem value="all">All</SelectItem>
                   )}
                   {gradesForFilter.map((g) => (
@@ -346,7 +346,7 @@ export default function MarksEntry() {
                   ))}
                 </SelectContent>
               </Select>
-              {exam?.grade && exam.grade.trim() !== "" && (
+              {exam?.standard && exam.standard.trim() !== "" && (
                 <p className="text-xs text-muted-foreground">Exam is for this standard only</p>
               )}
             </div>

@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Settings2 } from "lucide-react";
 
-type Exam = { id: string; name: string; grade: string | null };
+type Exam = { id: string; name: string; standard: string | null };
 type Subject = { id: string; name: string; code: string | null; evaluation_type: string };
 
 export function ExamSubjectsConfig({ exam }: { exam: Exam }) {
@@ -24,10 +24,10 @@ export function ExamSubjectsConfig({ exam }: { exam: Exam }) {
   const supabase = createClient();
 
   useEffect(() => {
-    if (!open || !exam.grade || exam.grade === "All") return;
+    if (!open || !exam.standard || exam.standard === "All") return;
     setLoading(true);
     (async () => {
-      const { data: standardRow } = await supabase.from("standards").select("id").eq("name", exam.grade).maybeSingle();
+      const { data: standardRow } = await supabase.from("standards").select("id").eq("name", exam.standard).maybeSingle();
       if (!standardRow?.id) {
         setSubjects([]);
         setLoading(false);
@@ -53,7 +53,7 @@ export function ExamSubjectsConfig({ exam }: { exam: Exam }) {
       });
       setMaxMarks(map);
     })().finally(() => setLoading(false));
-  }, [open, exam.id, exam.grade]);
+  }, [open, exam.id, exam.standard]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -99,8 +99,8 @@ export function ExamSubjectsConfig({ exam }: { exam: Exam }) {
             <CardContent className="space-y-4">
               {loading ? (
                 <p className="text-sm text-muted-foreground">Loading…</p>
-              ) : !exam.grade || exam.grade === "All" ? (
-                <p className="text-sm text-muted-foreground">Select a specific grade for the exam to set max marks.</p>
+              ) : !exam.standard || exam.standard === "All" ? (
+                <p className="text-sm text-muted-foreground">Select a specific standard for the exam to set max marks.</p>
               ) : markBasedSubjects.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No mark-based subjects for this standard.</p>
               ) : (

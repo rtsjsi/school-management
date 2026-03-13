@@ -26,7 +26,7 @@ import {
 
 const EXAM_TYPES = ["midterm", "final", "quiz", "assignment"] as const;
 
-type ExamRow = { id: string; name: string; exam_type: string; grade: string | null; held_at: string };
+type ExamRow = { id: string; name: string; exam_type: string; standard: string | null; held_at: string };
 
 export function ExamEditDialog({ exam }: { exam: ExamRow }) {
   const router = useRouter();
@@ -50,12 +50,12 @@ export function ExamEditDialog({ exam }: { exam: ExamRow }) {
       setForm({
         name: exam.name,
         exam_type: exam.exam_type,
-        standardId: standardsList.find((s) => s.name === exam.grade)?.id ?? "",
+        standardId: standardsList.find((s) => s.name === exam.standard)?.id ?? "",
         held_at: exam.held_at ? exam.held_at.slice(0, 10) : "",
       });
       setError(null);
     }
-  }, [open, exam.name, exam.exam_type, exam.grade, exam.held_at, standardsList]);
+  }, [open, exam.name, exam.exam_type, exam.standard, exam.held_at, standardsList]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,13 +68,13 @@ export function ExamEditDialog({ exam }: { exam: ExamRow }) {
       setError("Start date is required.");
       return;
     }
-    const gradeName = standardsList.find((s) => s.id === form.standardId)?.name ?? null;
+    const standardName = standardsList.find((s) => s.id === form.standardId)?.name ?? null;
     setSaving(true);
     try {
       const result = await updateExam(exam.id, {
         name: form.name.trim(),
         exam_type: form.exam_type,
-        grade: gradeName,
+        standard: standardName,
         held_at: form.held_at,
       });
       if (!result.ok) {

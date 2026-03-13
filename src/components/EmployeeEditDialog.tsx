@@ -32,6 +32,13 @@ interface EmployeeEditDialogProps {
     shift_id?: string;
     status?: string;
     monthly_salary?: number | null;
+    degree?: string | null;
+    institution?: string | null;
+    year_passed?: number | null;
+    bank_name?: string | null;
+    account_number?: string | null;
+    ifsc_code?: string | null;
+    account_holder_name?: string | null;
   };
   shifts: { id: string; name: string }[];
 }
@@ -56,6 +63,13 @@ export function EmployeeEditDialog({ employee, shifts }: EmployeeEditDialogProps
     shift_id: employee.shift_id || "",
     status: employee.status || "active",
     monthly_salary: employee.monthly_salary?.toString() || "",
+    degree: employee.degree || "",
+    institution: employee.institution || "",
+    year_passed: employee.year_passed ? String(employee.year_passed) : "",
+    bank_name: employee.bank_name || "",
+    account_number: employee.account_number || "",
+    ifsc_code: employee.ifsc_code || "",
+    account_holder_name: employee.account_holder_name || "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -85,6 +99,13 @@ export function EmployeeEditDialog({ employee, shifts }: EmployeeEditDialogProps
           shift_id: form.shift_id || null,
           status: form.status,
           monthly_salary: form.monthly_salary ? parseFloat(form.monthly_salary) : null,
+          degree: form.degree.trim() || null,
+          institution: form.institution.trim() || null,
+          year_passed: form.year_passed ? parseInt(form.year_passed) : null,
+          bank_name: form.bank_name.trim() || null,
+          account_number: form.account_number.trim() || null,
+          ifsc_code: form.ifsc_code.trim() || null,
+          account_holder_name: form.account_holder_name.trim() || form.full_name.trim(),
         })
         .eq("id", employee.id);
       if (err) {
@@ -205,6 +226,71 @@ export function EmployeeEditDialog({ employee, shifts }: EmployeeEditDialogProps
                 <SelectItem value="terminated">Terminated</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-4 pt-4 border-t">
+            <h4 className="text-sm font-semibold">Qualification</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Degree</Label>
+                <Input
+                  value={form.degree}
+                  onChange={(e) => setForm((p) => ({ ...p, degree: e.target.value }))}
+                  placeholder="e.g. B.Ed"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Institution</Label>
+                <Input
+                  value={form.institution}
+                  onChange={(e) => setForm((p) => ({ ...p, institution: e.target.value }))}
+                  placeholder="College/University"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Year Passed</Label>
+                <Input
+                  type="number"
+                  value={form.year_passed}
+                  onChange={(e) => setForm((p) => ({ ...p, year_passed: e.target.value }))}
+                  placeholder="2020"
+                />
+              </div>
+            </div>
+            <h4 className="text-sm font-semibold">Bank Account (Salary)</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Bank Name</Label>
+                <Input
+                  value={form.bank_name}
+                  onChange={(e) => setForm((p) => ({ ...p, bank_name: e.target.value }))}
+                  placeholder="Bank name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Account Number</Label>
+                <Input
+                  value={form.account_number}
+                  onChange={(e) => setForm((p) => ({ ...p, account_number: e.target.value }))}
+                  placeholder="Account number"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>IFSC Code</Label>
+                <Input
+                  value={form.ifsc_code}
+                  onChange={(e) => setForm((p) => ({ ...p, ifsc_code: e.target.value }))}
+                  placeholder="IFSC"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Account Holder Name</Label>
+                <Input
+                  value={form.account_holder_name}
+                  onChange={(e) => setForm((p) => ({ ...p, account_holder_name: e.target.value }))}
+                  placeholder="As per bank"
+                />
+              </div>
+            </div>
           </div>
           <div className="flex gap-2 justify-end pt-4">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>

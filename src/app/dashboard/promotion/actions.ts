@@ -1,7 +1,6 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { getNextGradeId, isHighestGrade } from "@/lib/enrollment";
 
 export type EnrollmentOutcome = {
   enrollmentId: string;
@@ -16,8 +15,6 @@ export type EnrollmentOutcome = {
   nextDivisionId?: string | null;
   nextDivisionName?: string | null;
 };
-
-const PASS_PERCENTAGE = 40;
 
 export async function getEnrollmentsForYear(academicYearId: string): Promise<EnrollmentOutcome[]> {
   const supabase = await createClient();
@@ -129,54 +126,6 @@ export async function getPromotionCandidates(academicYearId: string): Promise<En
   }
 
   return outcomes;
-}
-
-export async function computeOutcomesFromExam(
-  academicYearId: string,
-  examId: string
-): Promise<EnrollmentOutcome[]> {
-  const supabase = await createClient();
-  const { data: examRows } = await supabase
-    .from("exam_result_subjects")
-    .select("student_id, score, max_score, is_absent")
-    .eq("exam_id", examId);
-
-  const byStudent = new Map<string, { total: number; max: number; absent: boolean }>();
-  for (const r of examRows ?? []) {
-    const cur = byStudent.get(r.student_id) ?? { total: 0, max: 0, absent: false };
-    cur.total += Number(r.score) || 0;
-    cur.max += Number(r.max_score) || 0;
-    if (r.is_absent) cur.absent = true;
-    byStudent.set(r.student_id, cur);
-  }
-
-  const enrollments = await getEnrollmentsForYear(academicYearId);
-  const results: EnrollmentOutcome[] = [];
-  for (const o of enrollments) {
-    const marks = byStudent.get(o.studentId);
-    const highest = await isHighestGrade(o.gradeId);
-    if (highest && marks && marks.max > 0 && marks.total / marks.max >= PASS_PERCENTAGE / 100 && !marks.absent) {
-      o.status = "graduated";
-      o.nextGradeId = null;
-      o.nextGradeName = null;
-    } else if (marks && marks.max > 0 && marks.total / marks.max >= PASS_PERCENTAGE / 100 && !marks.absent) {
-      o.status = "promoted";
-      const nextId = await getNextGradeId(o.gradeId);
-      let nextName: string | null = null;
-      if (nextId) {
-        const { data } = await supabase.from("standards").select("name").eq("id", nextId).single();
-        nextName = data?.name ?? null;
-      }
-      o.nextGradeId = nextId;
-      o.nextGradeName = nextName;
-    } else {
-      o.status = "detained";
-      o.nextGradeId = o.gradeId;
-      o.nextGradeName = o.gradeName;
-    }
-    results.push(o);
-  }
-  return results;
 }
 
 export type RunPromotionResult = { ok: true } | { ok: false; error: string };

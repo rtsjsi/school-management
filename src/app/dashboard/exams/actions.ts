@@ -28,7 +28,7 @@ export async function createExamWithSubjects(
     exam_type: string;
     held_at: string;
     description?: string | null;
-    grade: string | null;
+    standard: string | null;
     academic_year_id: string;
     subjectMaxMarks: { subjectId: string; maxMarks: number }[];
   }
@@ -43,8 +43,7 @@ export async function createExamWithSubjects(
     .insert({
       name: payload.name.trim(),
       exam_type: payload.exam_type,
-      subject: null,
-      grade: payload.grade?.trim() || null,
+      standard: payload.standard?.trim() || null,
       held_at: payload.held_at,
       description: payload.description?.trim() || null,
       academic_year_id: payload.academic_year_id.trim(),
@@ -68,7 +67,7 @@ export type UpdateExamResult = { ok: true } | { ok: false; error: string };
 
 export async function updateExam(
   examId: string,
-  payload: { name: string; exam_type: string; grade: string | null; held_at: string }
+  payload: { name: string; exam_type: string; standard: string | null; held_at: string }
 ): Promise<UpdateExamResult> {
   const supabase = await createClient();
   if (!payload.name.trim()) return { ok: false, error: "Exam name is required." };
@@ -79,7 +78,7 @@ export async function updateExam(
     .update({
       name: payload.name.trim(),
       exam_type: payload.exam_type,
-      grade: payload.grade?.trim() || null,
+      standard: payload.standard?.trim() || null,
       held_at: payload.held_at,
       updated_at: new Date().toISOString(),
     })

@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { generateReportCardPDF } from "@/lib/report-card-pdf";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 
-type Exam = { id: string; name: string; exam_type: string; grade: string | null; held_at: string };
+type Exam = { id: string; name: string; exam_type: string; standard: string | null; held_at: string };
 type Student = { id: string; full_name: string; grade: string | null; division: string | null; roll_number?: number; student_id?: string; academic_year?: string };
 type Subject = { id: string; name: string; evaluation_type?: string; max_marks?: number | null };
 type ExamResultSubject = { student_id: string; subject_id: string; score: number | null; max_score: number | null; grade: string | null; is_absent: boolean };
@@ -28,7 +28,7 @@ export default function ReportCardGenerator() {
   useEffect(() => {
     supabase
       .from("exams")
-      .select("id, name, exam_type, grade, held_at")
+      .select("id, name, exam_type, standard, held_at")
       .order("held_at", { ascending: false })
       .then(({ data }) => setExams(data ?? []));
   }, [supabase]);
