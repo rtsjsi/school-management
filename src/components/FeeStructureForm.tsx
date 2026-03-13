@@ -179,10 +179,20 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
             <div className="space-y-2">
               <Label htmlFor="standard">Standard *</Label>
               {classes.length > 0 ? (
-                <Select value={form.standard} onValueChange={(v) => setForm((p) => ({ ...p, standard: v }))} required>
-                  <SelectTrigger id="standard"><SelectValue placeholder="Select" /></SelectTrigger>
+                <Select
+                  value={form.standard}
+                  onValueChange={(v) => setForm((p) => ({ ...p, standard: v }))}
+                  required
+                >
+                  <SelectTrigger id="standard">
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
                   <SelectContent>
-                    {classes.map((c) => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+                    {classes.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               ) : (
