@@ -136,17 +136,6 @@ export default function FeeCollectionForm({
     try {
       const supabase = createClient();
 
-      const { data: existingFee } = await supabase
-        .from("fees")
-        .select("id, amount, paid_amount, discount_percent, discount_amount")
-        .eq("student_id", form.student_id)
-        .eq("quarter", parseInt(form.quarter))
-        .eq("academic_year", form.academic_year)
-        .eq("fee_type", FEE_TYPE)
-        .or("status.eq.pending,status.eq.partial,status.eq.overdue")
-        .limit(1)
-        .maybeSingle();
-
       const collectedAt = form.collection_date
         ? new Date(form.collection_date + "T12:00:00").toISOString()
         : new Date().toISOString();
@@ -181,7 +170,6 @@ export default function FeeCollectionForm({
           online_transaction_ref: form.payment_mode === "online" ? form.online_transaction_ref.trim() || null : null,
           receipt_number: receiptNumber,
           notes: form.notes.trim() || null,
-          fee_id: existingFee?.id ?? null,
           collected_at: collectedAt,
           collected_by: receivedBy ?? null,
           enrollment_id: enrollmentId,
@@ -192,20 +180,6 @@ export default function FeeCollectionForm({
       if (err) {
         setError(err.message);
         return;
-      }
-
-      if (existingFee) {
-        const prevPaid = Number((existingFee as { paid_amount?: number }).paid_amount ?? 0);
-        const newPaid = prevPaid + amount;
-        const baseAmount = Number(existingFee.amount);
-        const discountPct = Number((existingFee as { discount_percent?: number }).discount_percent ?? 0);
-        const discountAmt = Number((existingFee as { discount_amount?: number }).discount_amount ?? 0);
-        const total = Math.max(0, baseAmount - baseAmount * (discountPct / 100) - discountAmt);
-        const status = newPaid >= total ? "paid" : "partial";
-        await supabase
-          .from("fees")
-          .update({ paid_amount: newPaid, status, paid_at: new Date().toISOString() })
-          .eq("id", existingFee.id);
       }
 
       const studentName = Array.isArray(collection?.students)

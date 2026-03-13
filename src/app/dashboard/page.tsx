@@ -69,9 +69,7 @@ export default async function DashboardPage() {
     standardsCountRes,
     rteStudentsCountRes,
     newAdmissionsCountRes,
-    studentsWithPendingFeesCountRes,
     feeCollectedResult,
-    pendingFeesResult,
     expensesResult,
   ] = await Promise.all([
     studentCountQuery({ count: "exact", head: true }),
@@ -81,18 +79,10 @@ export default async function DashboardPage() {
     studentCountQuery({ count: "exact", head: true }, { status: "active", is_rte_quota: true }),
     newAdmissionsPromise,
     supabase
-      .from("fees")
-      .select("student_id", { count: "exact", head: true })
-      .in("status", ["pending", "overdue"]),
-    supabase
       .from("fee_collections")
       .select("amount")
       .gte("collected_at", thisMonthStart)
       .lte("collected_at", thisMonthEnd),
-    supabase
-      .from("fees")
-      .select("amount, paid_amount")
-      .in("status", ["pending", "overdue"]),
     supabase
       .from("expenses")
       .select("amount")
@@ -106,11 +96,9 @@ export default async function DashboardPage() {
   const standardsCount = standardsCountRes.count ?? 0;
   const rteStudentsCount = rteStudentsCountRes.count ?? 0;
   const newAdmissionsCount = newAdmissionsCountRes.count ?? 0;
-  const studentsWithPendingFeesCount = studentsWithPendingFeesCountRes.count ?? 0;
 
-  const feeCollected = (feeCollectedResult.data ?? []).reduce((sum, r) => sum + Number(r.amount ?? 0), 0);
-  const pendingFees = (pendingFeesResult.data ?? []).reduce(
-    (sum, r) => sum + Math.max(0, Number(r.amount ?? 0) - Number(r.paid_amount ?? 0)),
+  const feeCollected = (feeCollectedResult.data ?? []).reduce(
+    (sum, r) => sum + Number(r.amount ?? 0),
     0
   );
   const expensesThisMonth = (expensesResult.data ?? []).reduce((sum, r) => sum + Number(r.amount ?? 0), 0);
@@ -154,20 +142,6 @@ export default async function DashboardPage() {
             value: formatCurrency(feeCollected),
             description: "Collections this month",
             icon: IndianRupee,
-            href: "/dashboard/fees",
-          },
-          {
-            title: "Pending fees (amount)",
-            value: formatCurrency(pendingFees),
-            description: "Outstanding amount",
-            icon: AlertCircle,
-            href: "/dashboard/fees",
-          },
-          {
-            title: "Students with pending fees",
-            value: String(studentsWithPendingFeesCount ?? 0),
-            description: "Students having dues",
-            icon: GraduationCap,
             href: "/dashboard/fees",
           },
           {
