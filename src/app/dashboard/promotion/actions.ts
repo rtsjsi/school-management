@@ -1,7 +1,6 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { getNextGradeId, isHighestGrade } from "@/lib/enrollment";
 
 export type EnrollmentOutcome = {
   enrollmentId: string;
