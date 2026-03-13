@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { SubmitButton } from "@/components/ui/SubmitButton";
@@ -8,28 +8,43 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
+import { fetchAcademicYears, type AcademicYearOption } from "@/lib/lov";
 
 export default function HolidayForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
+    academic_year_id: "",
     date: "",
     name: "",
     type: "public",
   });
+  const [years, setYears] = useState<AcademicYearOption[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      const all = await fetchAcademicYears();
+      const active = all.filter((y) => y.status === "active");
+      setYears(all);
+      if (active.length === 1) {
+        setForm((p) => ({ ...p, academic_year_id: active[0].id }));
+      }
+    })();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!form.date || !form.name.trim()) {
-      setError("Date and name are required.");
+    if (!form.academic_year_id || !form.date || !form.name.trim()) {
+      setError("Academic year, date and name are required.");
       return;
     }
     setLoading(true);
     try {
       const supabase = createClient();
       const { error: err } = await supabase.from("holidays").insert({
+        academic_year_id: form.academic_year_id,
         date: form.date,
         name: form.name.trim(),
         type: form.type,
@@ -38,7 +53,7 @@ export default function HolidayForm() {
         setError(err.message);
         return;
       }
-      setForm({ date: "", name: "", type: "public" });
+      setForm({ academic_year_id: form.academic_year_id, date: "", name: "", type: "public" });
       router.refresh();
     } catch {
       setError("Something went wrong.");
@@ -52,7 +67,26 @@ export default function HolidayForm() {
       <CardContent className="pt-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>Academic Year *</Label>
+              <Select
+                value={form.academic_year_id}
+                onValueChange={(v) => setForm((p) => ({ ...p, academic_year_id: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select AY" />
+                </SelectTrigger>
+                <SelectContent>
+                  {years.map((y) => (
+                    <SelectItem key={y.id} value={y.id}>
+                      {y.name}
+                      {y.status === "active" ? " (Active)" : y.status === "future" ? " (Future)" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-2">
               <Label>Date *</Label>
               <Input type="date" value={form.date} onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))} required />
