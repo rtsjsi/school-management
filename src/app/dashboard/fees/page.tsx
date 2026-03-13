@@ -43,18 +43,24 @@ export default async function FeesPage() {
       <Tabs defaultValue="structure" className="space-y-6">
         <TabsList className="flex flex-nowrap gap-1 w-full">
           <TabsTrigger value="structure">Fee Structure</TabsTrigger>
+          {canEdit && <TabsTrigger value="types">Fee Types</TabsTrigger>}
           <TabsTrigger value="collection">Fee Collection</TabsTrigger>
           <TabsTrigger value="outstanding">Outstanding</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
         </TabsList>
 
         <TabsContent value="structure" className="space-y-6">
-          {canEdit && <FeeTypesManager />}
           {canEdit && <FeeStructureForm />}
           <Suspense fallback={<TableSkeleton rows={3} columns={4} />}>
             <FeeStructureList canEdit={canEdit} />
           </Suspense>
         </TabsContent>
+
+        {canEdit && (
+          <TabsContent value="types" className="space-y-6">
+            <FeeTypesManager />
+          </TabsContent>
+        )}
 
         <TabsContent value="collection" className="space-y-6">
           {canEdit && students && students.length > 0 && (
