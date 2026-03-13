@@ -28,6 +28,7 @@ import {
   type PendingDocuments,
 } from "@/lib/student-uploads";
 import { upsertCurrentEnrollment } from "@/app/dashboard/students/actions";
+import { useToast } from "@/hooks/use-toast";
 
 const PHOTO_ROLES = ["student"] as const;
 const PHOTO_LABELS: Record<(typeof PHOTO_ROLES)[number], string> = {
@@ -110,6 +111,7 @@ export default function StudentEntryForm({
   defaultAcademicYear?: string;
 } = {}) {
   const router = useRouter();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const getDefaultFormWithYear = () => ({
@@ -152,7 +154,13 @@ export default function StudentEntryForm({
       const val = form[key];
       const str = typeof val === "string" ? val.trim() : "";
       if (!str) {
-        setError(`${label} is required.`);
+        const message = `${label} is required.`;
+        setError(message);
+        toast({
+          variant: "destructive",
+          title: "Please check the form",
+          description: message,
+        });
         return;
       }
     }
@@ -230,13 +238,24 @@ export default function StudentEntryForm({
 
       if (err) {
         setError(err.message);
+        toast({
+          variant: "destructive",
+          title: "Could not add student",
+          description: err.message,
+        });
         return;
       }
 
       if (inserted?.id) {
         const enrollResult = await upsertCurrentEnrollment(inserted.id, form.grade, form.division);
         if (!enrollResult.ok) {
-          setError(`Student created but enrollment failed: ${enrollResult.error}`);
+          const message = `Student created but enrollment failed: ${enrollResult.error}`;
+          setError(message);
+          toast({
+            variant: "destructive",
+            title: "Enrollment issue",
+            description: message,
+          });
           return;
         }
         const hasPending = Object.keys(pendingPhotos).length > 0 || Object.keys(pendingDocuments).length > 0;
@@ -248,7 +267,13 @@ export default function StudentEntryForm({
             pendingDocuments
           );
           if (uploadErr) {
-            setError(`Student created but upload failed: ${uploadErr}`);
+            const message = `Student created but upload failed: ${uploadErr}`;
+            setError(message);
+            toast({
+              variant: "destructive",
+              title: "Upload issue",
+              description: message,
+            });
           }
         }
         setCreatedStudentId(inserted.id);
@@ -259,7 +284,13 @@ export default function StudentEntryForm({
       }
       router.refresh();
     } catch {
-      setError("Something went wrong.");
+      const message = "Something went wrong.";
+      setError(message);
+      toast({
+        variant: "destructive",
+        title: "Unexpected error",
+        description: message,
+      });
     } finally {
       setLoading(false);
     }

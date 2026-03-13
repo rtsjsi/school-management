@@ -39,9 +39,17 @@ type Student = { id: string; full_name: string; grade: string | null; division: 
 type Subject = { id: string; name: string; code: string | null; evaluation_type: string };
 type CellState = { score: string; max_score: string; grade: string; is_absent: boolean };
 
-export default function MarksEntry() {
+type AllowedClassNames = { gradeName: string; divisionName: string }[];
+
+export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: AllowedClassNames } = {}) {
   const router = useRouter();
   const supabase = createClient();
+  const allowedGradeSet = allowedClassNames && allowedClassNames.length > 0
+    ? new Set(allowedClassNames.map((p) => p.gradeName))
+    : null;
+  const allowedPairSet = allowedClassNames && allowedClassNames.length > 0
+    ? new Set(allowedClassNames.map((p) => `${p.gradeName}\0${p.divisionName}`))
+    : null;
 
   const [exams, setExams] = useState<Exam[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -79,14 +87,20 @@ export default function MarksEntry() {
         .order("held_at", { ascending: false });
       if (ay?.id) query = query.eq("academic_year_id", ay.id);
       const { data: examData } = await query;
-      setExams((examData ?? []) as unknown as Exam[]);
+      let list = (examData ?? []) as unknown as Exam[];
+      if (allowedGradeSet) list = list.filter((e) => e.standard && allowedGradeSet.has(e.standard));
+      setExams(list);
     })();
-    supabase
-      .from("standards")
-      .select("name")
-      .order("sort_order")
-      .then(({ data }) => setClassNames((data ?? []).map((c: { name: string }) => c.name)));
-  }, []);
+    if (allowedGradeSet) {
+      setClassNames(Array.from(allowedGradeSet));
+    } else {
+      supabase
+        .from("standards")
+        .select("name")
+        .order("sort_order")
+        .then(({ data }) => setClassNames((data ?? []).map((c: { name: string }) => c.name)));
+    }
+  }, [allowedGradeSet ? Array.from(allowedGradeSet).join(",") : "all"]);
 
   // When exam changes, reset filters to exam's standard
   useEffect(() => {
@@ -160,7 +174,12 @@ export default function MarksEntry() {
       if (divisionFilter && divisionFilter !== "all") query = query.eq("division", divisionFilter);
 
       const { data: st } = await query;
-      const studentList = (st ?? []) as Student[];
+      let studentList = (st ?? []) as Student[];
+      if (allowedPairSet) {
+        studentList = studentList.filter((s) =>
+          allowedPairSet.has(`${s.grade ?? ""}\0${s.division ?? ""}`)
+        );
+      }
       setStudents(studentList);
 
       const initial: Record<string, Record<string, CellState>> = {};
@@ -198,7 +217,7 @@ export default function MarksEntry() {
       }
       setMarks(initial);
     })().finally(() => setLoading(false));
-  }, [selectedExamId, exam?.standard, gradeFilter, divisionFilter, subjects]);
+  }, [selectedExamId, exam?.standard, gradeFilter, divisionFilter, subjects, allowedPairSet?.size ?? 0]);
 
   useEffect(() => {
     if (!selectedExamId || subjects.length === 0) {

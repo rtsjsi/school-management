@@ -14,7 +14,7 @@ export async function AttendanceDailyRegister() {
   const today = new Date().toISOString().split("T")[0];
 
   const { data: manual } = await supabase
-    .from("attendance_manual")
+    .from("attendance_daily")
     .select("employee_id, attendance_date, status, in_time, out_time, employees(full_name)")
     .eq("attendance_date", today);
 

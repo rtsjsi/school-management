@@ -10,8 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { generateReceiptPDF, amountInWords } from "@/lib/receipt-pdf";
 import { AcademicYearSelect } from "@/components/AcademicYearSelect";
-import { isGradeInRange } from "@/lib/grade-utils";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
+import { useToast } from "@/hooks/use-toast";
 
 const PAYMENT_MODES = ["cash", "cheque", "online"] as const;
 const FEE_TYPE = "tuition";
@@ -31,6 +31,7 @@ export default function FeeCollectionForm({
   receivedBy?: string;
 }) {
   const router = useRouter();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [receiptNumber, setReceiptNumber] = useState<string>("");
@@ -90,18 +91,24 @@ export default function FeeCollectionForm({
     (async () => {
       const { data: structures } = await supabase
         .from("fee_structures")
-        .select("id, grade_from, grade_to, fee_structure_items(fee_type, quarter, amount)")
+        .select("id, standards(name), fee_structure_items(quarter, amount)")
         .eq("academic_year", form.academic_year);
-      const structure = (structures ?? []).find((st) =>
-        isGradeInRange(selectedStudent.grade ?? "", st.grade_from, st.grade_to)
-      );
+      const structure = (structures ?? []).find((st: { standards?: { name?: string } | { name?: string }[] | null }) => {
+        const std = Array.isArray(st.standards)
+          ? (st.standards[0] as { name?: string })?.name
+          : (st.standards as { name?: string } | null)?.name;
+        return std && std === (selectedStudent.grade ?? "");
+      });
       if (!structure) {
         setStructureAmount(null);
         return;
       }
-      const items = (structure.fee_structure_items as { fee_type: string; quarter: number; amount: number }[]) ?? [];
-      const item = items.find((i) => i.fee_type === FEE_TYPE && i.quarter === parseInt(form.quarter));
-      setStructureAmount(item ? Number(item.amount) : null);
+      const items = (structure.fee_structure_items as { quarter: number; amount: number }[]) ?? [];
+      const quarterNum = parseInt(form.quarter);
+      const totalForQuarter = items
+        .filter((i) => i.quarter === quarterNum)
+        .reduce((sum, i) => sum + Number(i.amount ?? 0), 0);
+      setStructureAmount(totalForQuarter > 0 ? totalForQuarter : null);
     })();
   }, [selectedStudent?.grade, form.quarter, form.academic_year]);
 
@@ -117,16 +124,35 @@ export default function FeeCollectionForm({
     e.preventDefault();
     setError(null);
     if (!form.student_id) {
-      setError("Please select a student.");
+      const message = "Please select a student.";
+      setError(message);
+      toast({
+        variant: "destructive",
+        title: "Missing student",
+        description: message,
+      });
       return;
     }
     const amount = parseFloat(form.amount);
     if (isNaN(amount) || amount < 0) {
-      setError("Amount is required. Ensure fee structure exists for this student's standard and quarter.");
+      const message =
+        "Amount is required. Ensure fee structure exists for this student's standard and quarter.";
+      setError(message);
+      toast({
+        variant: "destructive",
+        title: "Invalid amount",
+        description: message,
+      });
       return;
     }
     if (form.payment_mode === "cheque" && !form.cheque_number?.trim()) {
-      setError("Cheque number is required for cheque payment.");
+      const message = "Cheque number is required for cheque payment.";
+      setError(message);
+      toast({
+        variant: "destructive",
+        title: "Missing cheque details",
+        description: message,
+      });
       return;
     }
 
@@ -134,23 +160,16 @@ export default function FeeCollectionForm({
     try {
       const supabase = createClient();
 
-      const { data: existingFee } = await supabase
-        .from("fees")
-        .select("id, amount, paid_amount, discount_percent, discount_amount")
-        .eq("student_id", form.student_id)
-        .eq("quarter", parseInt(form.quarter))
-        .eq("academic_year", form.academic_year)
-        .eq("fee_type", FEE_TYPE)
-        .or("status.eq.pending,status.eq.partial,status.eq.overdue")
-        .limit(1)
-        .maybeSingle();
-
       const collectedAt = form.collection_date
         ? new Date(form.collection_date + "T12:00:00").toISOString()
         : new Date().toISOString();
 
       let enrollmentId: string | null = null;
-      const { data: ayRow } = await supabase.from("academic_years").select("id").eq("name", form.academic_year).maybeSingle();
+      const { data: ayRow } = await supabase
+        .from("academic_years")
+        .select("id")
+        .eq("name", form.academic_year)
+        .maybeSingle();
       if (ayRow?.id) {
         const { data: enrollRow } = await supabase
           .from("student_enrollments")
@@ -159,6 +178,28 @@ export default function FeeCollectionForm({
           .eq("academic_year_id", ayRow.id)
           .maybeSingle();
         enrollmentId = enrollRow?.id ?? null;
+      }
+
+      const { data: existingCollections } = await supabase
+        .from("fee_collections")
+        .select("id")
+        .eq("student_id", form.student_id)
+        .eq("academic_year", form.academic_year)
+        .eq("quarter", parseInt(form.quarter))
+        .eq("fee_type", FEE_TYPE)
+        .limit(1);
+
+      if (existingCollections && existingCollections.length > 0) {
+        const message =
+          "Fees for this quarter and academic year have already been collected for this student.";
+        setError(message);
+        toast({
+          variant: "destructive",
+          title: "Duplicate collection",
+          description: message,
+        });
+        setLoading(false);
+        return;
       }
 
       const { data: collection, error: err } = await supabase
@@ -179,7 +220,6 @@ export default function FeeCollectionForm({
           online_transaction_ref: form.payment_mode === "online" ? form.online_transaction_ref.trim() || null : null,
           receipt_number: receiptNumber,
           notes: form.notes.trim() || null,
-          fee_id: existingFee?.id ?? null,
           collected_at: collectedAt,
           collected_by: receivedBy ?? null,
           enrollment_id: enrollmentId,
@@ -189,21 +229,12 @@ export default function FeeCollectionForm({
 
       if (err) {
         setError(err.message);
+        toast({
+          variant: "destructive",
+          title: "Could not collect fee",
+          description: err.message,
+        });
         return;
-      }
-
-      if (existingFee) {
-        const prevPaid = Number((existingFee as { paid_amount?: number }).paid_amount ?? 0);
-        const newPaid = prevPaid + amount;
-        const baseAmount = Number(existingFee.amount);
-        const discountPct = Number((existingFee as { discount_percent?: number }).discount_percent ?? 0);
-        const discountAmt = Number((existingFee as { discount_amount?: number }).discount_amount ?? 0);
-        const total = Math.max(0, baseAmount - baseAmount * (discountPct / 100) - discountAmt);
-        const status = newPaid >= total ? "paid" : "partial";
-        await supabase
-          .from("fees")
-          .update({ paid_amount: newPaid, status, paid_at: new Date().toISOString() })
-          .eq("id", existingFee.id);
       }
 
       const studentName = Array.isArray(collection?.students)
@@ -215,11 +246,14 @@ export default function FeeCollectionForm({
       let outstandingAfterPayment: number | undefined;
       const { data: structures } = await supabase
         .from("fee_structures")
-        .select("id, grade_from, grade_to, fee_structure_items(quarter, amount)")
+        .select("id, standards(name), fee_structure_items(quarter, amount)")
         .eq("academic_year", form.academic_year);
-      const structure = (structures ?? []).find((st) =>
-        isGradeInRange(selectedStudent?.grade ?? "", st.grade_from, st.grade_to)
-      );
+      const structure = (structures ?? []).find((st: { standards?: { name?: string } | { name?: string }[] | null }) => {
+        const std = Array.isArray(st.standards)
+          ? (st.standards[0] as { name?: string })?.name
+          : (st.standards as { name?: string } | null)?.name;
+        return std && std === (selectedStudent?.grade ?? "");
+      });
       if (structure) {
         const items = (structure.fee_structure_items as { quarter: number; amount: number }[]) ?? [];
         const totalDues = items.reduce((s, i) => s + Number(i.amount), 0);
@@ -298,7 +332,13 @@ export default function FeeCollectionForm({
       window.dispatchEvent(new CustomEvent("fee-collection-added"));
       router.refresh();
     } catch {
-      setError("Something went wrong.");
+      const message = "Something went wrong.";
+      setError(message);
+      toast({
+        variant: "destructive",
+        title: "Unexpected error",
+        description: message,
+      });
     } finally {
       setLoading(false);
     }
@@ -312,30 +352,28 @@ export default function FeeCollectionForm({
             <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <Label>Receipt No.</Label>
+              <Input value={receiptNumber} readOnly className="bg-muted font-mono" />
+            </div>
+            <div className="space-y-1.5">
               <Label>Collected By</Label>
               <Input value={receivedBy ?? "—"} readOnly className="bg-muted" />
             </div>
-            <div className="space-y-2 w-full min-w-0 sm:w-[180px]">
+            <div className="space-y-1.5">
               <Label htmlFor="collection_date">Collection Date *</Label>
               <Input
                 id="collection_date"
                 type="date"
                 value={form.collection_date}
                 onChange={(e) => setForm((p) => ({ ...p, collection_date: e.target.value }))}
-                className="w-full"
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Receipt No.</Label>
-            <Input value={receiptNumber} readOnly className="bg-muted font-mono" />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-1.5">
               <Label>Standard</Label>
               <Select value={classFilter} onValueChange={setClassFilter}>
                 <SelectTrigger>
@@ -344,12 +382,14 @@ export default function FeeCollectionForm({
                 <SelectContent>
                   <SelectItem value="all">All</SelectItem>
                   {classes.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Division</Label>
               <Select value={divisionFilter} onValueChange={setDivisionFilter}>
                 <SelectTrigger>
@@ -358,33 +398,47 @@ export default function FeeCollectionForm({
                 <SelectContent>
                   <SelectItem value="all">All</SelectItem>
                   {divisions.map((d) => (
-                    <SelectItem key={d} value={d}>{d}</SelectItem>
+                    <SelectItem key={d} value={d}>
+                      {d}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="student">Student *</Label>
+              <Select
+                value={form.student_id}
+                onValueChange={(v) => setForm((p) => ({ ...p, student_id: v }))}
+              >
+                <SelectTrigger id="student">
+                  <SelectValue placeholder="Select student" />
+                </SelectTrigger>
+                <SelectContent>
+                  {filteredStudents.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.full_name}{" "}
+                      {s.grade ? `(${s.grade}${s.division ? "-" + s.division : ""})` : ""}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="student">Student *</Label>
-            <Select value={form.student_id} onValueChange={(v) => setForm((p) => ({ ...p, student_id: v }))}>
-              <SelectTrigger id="student">
-                <SelectValue placeholder="Select student" />
-              </SelectTrigger>
-              <SelectContent>
-                {filteredStudents.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.full_name} {s.grade ? `(${s.grade}${s.division ? "-" + s.division : ""})` : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <AcademicYearSelect
+              value={form.academic_year}
+              onChange={(v) => setForm((p) => ({ ...p, academic_year: v }))}
+              id="academic_year"
+              label="Academic Year *"
+            />
+            <div className="space-y-1.5">
               <Label htmlFor="quarter">Quarter *</Label>
-              <Select value={form.quarter} onValueChange={(v) => setForm((p) => ({ ...p, quarter: v }))}>
+              <Select
+                value={form.quarter}
+                onValueChange={(v) => setForm((p) => ({ ...p, quarter: v }))}
+              >
                 <SelectTrigger id="quarter">
                   <SelectValue />
                 </SelectTrigger>
@@ -396,104 +450,117 @@ export default function FeeCollectionForm({
                 </SelectContent>
               </Select>
             </div>
-            <AcademicYearSelect
-              value={form.academic_year}
-              onChange={(v) => setForm((p) => ({ ...p, academic_year: v }))}
-              id="academic_year"
-              label="Academic Year *"
-            />
+            <div className="space-y-1.5">
+              <Label htmlFor="amount">Amount (from fee structure) *</Label>
+              <Input
+                id="amount"
+                type="number"
+                min={0}
+                step={0.01}
+                value={form.amount}
+                readOnly
+                className="bg-muted"
+                placeholder={
+                  structureAmount === null && selectedStudent
+                    ? "No structure for this standard / quarter"
+                    : "0.00"
+                }
+              />
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="amount">Amount (from fee structure) *</Label>
-            <Input
-              id="amount"
-              type="number"
-              min={0}
-              step={0.01}
-              value={form.amount}
-              readOnly
-              className="bg-muted"
-              placeholder={structureAmount === null && selectedStudent ? "No structure for this standard" : "0.00"}
-            />
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="payment_mode">Payment Mode *</Label>
+              <Select
+                value={form.payment_mode}
+                onValueChange={(v) => setForm((p) => ({ ...p, payment_mode: v }))}
+              >
+                <SelectTrigger id="payment_mode">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAYMENT_MODES.map((m) => (
+                    <SelectItem key={m} value={m}>
+                      {m.charAt(0).toUpperCase() + m.slice(1)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="payment_mode">Payment Mode *</Label>
-            <Select value={form.payment_mode} onValueChange={(v) => setForm((p) => ({ ...p, payment_mode: v }))}>
-              <SelectTrigger id="payment_mode">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PAYMENT_MODES.map((m) => (
-                  <SelectItem key={m} value={m}>{m.charAt(0).toUpperCase() + m.slice(1)}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {form.payment_mode === "cheque" && (
-            <div className="space-y-4 p-4 border rounded-lg">
-              <h4 className="text-sm font-semibold">Cheque Details</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
+            {form.payment_mode === "cheque" && (
+              <>
+                <div className="space-y-1.5">
                   <Label htmlFor="cheque_number">Cheque Number *</Label>
                   <Input
                     id="cheque_number"
                     value={form.cheque_number}
-                    onChange={(e) => setForm((p) => ({ ...p, cheque_number: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, cheque_number: e.target.value }))
+                    }
                     placeholder="e.g. 123456"
                   />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label htmlFor="cheque_bank">Bank</Label>
                   <Input
                     id="cheque_bank"
                     value={form.cheque_bank}
-                    onChange={(e) => setForm((p) => ({ ...p, cheque_bank: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, cheque_bank: e.target.value }))
+                    }
                     placeholder="Bank name"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="cheque_date">Cheque Date</Label>
-                  <Input
-                    id="cheque_date"
-                    type="date"
-                    value={form.cheque_date}
-                    onChange={(e) => setForm((p) => ({ ...p, cheque_date: e.target.value }))}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
+              </>
+            )}
 
-          {form.payment_mode === "online" && (
-            <div className="space-y-4 p-4 border rounded-lg">
-              <h4 className="text-sm font-semibold">Online Transaction Details</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
+            {form.payment_mode === "online" && (
+              <>
+                <div className="space-y-1.5">
                   <Label htmlFor="online_txn_id">Transaction ID</Label>
                   <Input
                     id="online_txn_id"
                     value={form.online_transaction_id}
-                    onChange={(e) => setForm((p) => ({ ...p, online_transaction_id: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, online_transaction_id: e.target.value }))
+                    }
                     placeholder="Txn ID"
                   />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label htmlFor="online_txn_ref">Reference</Label>
                   <Input
                     id="online_txn_ref"
                     value={form.online_transaction_ref}
-                    onChange={(e) => setForm((p) => ({ ...p, online_transaction_ref: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, online_transaction_ref: e.target.value }))
+                    }
                     placeholder="Reference no"
                   />
                 </div>
+              </>
+            )}
+          </div>
+
+          {form.payment_mode === "cheque" && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-1.5 md:col-start-2 md:col-span-1">
+                <Label htmlFor="cheque_date">Cheque Date</Label>
+                <Input
+                  id="cheque_date"
+                  type="date"
+                  value={form.cheque_date}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, cheque_date: e.target.value }))
+                  }
+                />
               </div>
             </div>
           )}
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="notes">Notes</Label>
             <Input
               id="notes"
@@ -504,10 +571,10 @@ export default function FeeCollectionForm({
           </div>
 
           <div className="flex justify-start">
-          <SubmitButton loading={loading} loadingLabel="Saving & printing receipt…">
-            Collect Fee & Print Receipt
-          </SubmitButton>
-        </div>
+            <SubmitButton loading={loading} loadingLabel="Saving & printing receipt…">
+              Collect Fee & Print Receipt
+            </SubmitButton>
+          </div>
         </form>
       </CardContent>
     </Card>

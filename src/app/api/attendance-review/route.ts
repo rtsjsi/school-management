@@ -30,8 +30,8 @@ export async function GET(request: NextRequest) {
     const holidayDates = new Set((holidays ?? []).map((h) => h.date));
 
     const { data: manual } = await supabase
-      .from("attendance_manual")
-      .select("employee_id, attendance_date, status, in_time, out_time")
+      .from("attendance_daily")
+      .select("employee_id, attendance_date, status, in_time, out_time, is_approved")
       .gte("attendance_date", start)
       .lte("attendance_date", end);
 
@@ -42,9 +42,10 @@ export async function GET(request: NextRequest) {
       .lte("punch_date", end);
 
     const { data: approved } = await supabase
-      .from("attendance_approved")
+      .from("attendance_daily")
       .select("employee_id, attendance_date, status, in_time, out_time")
-      .eq("month_year", monthYear);
+      .eq("month_year", monthYear)
+      .eq("is_approved", true);
 
     const { data: monthApproval } = await supabase
       .from("attendance_month_approvals")
@@ -100,7 +101,7 @@ export async function GET(request: NextRequest) {
             out_time = approvedEntry.out_time;
             source = "approved";
           } else {
-            const manEntry = (manual ?? []).find((m) => m.employee_id === emp.id && m.attendance_date === dStr);
+            const manEntry = (manual ?? []).find((m) => m.employee_id === emp.id && m.attendance_date === dStr && !m.is_approved);
             if (manEntry) {
               status = manEntry.status;
               in_time = manEntry.in_time ?? undefined;
@@ -184,7 +185,7 @@ export async function POST(request: NextRequest) {
 
     if (action === "save" && Array.isArray(updates)) {
       for (const u of updates) {
-        await supabase.from("attendance_approved").upsert(
+        await supabase.from("attendance_daily").upsert(
           {
             employee_id: u.employee_id,
             attendance_date: u.attendance_date,
@@ -192,7 +193,10 @@ export async function POST(request: NextRequest) {
             in_time: u.in_time || null,
             out_time: u.out_time || null,
             month_year: monthYear,
+            source: "approved",
+            is_approved: true,
             approved_by: user.id,
+            approved_at: new Date().toISOString(),
             remarks: remarks || null,
           },
           { onConflict: "employee_id,attendance_date" }

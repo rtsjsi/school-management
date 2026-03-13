@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { deleteFeeStructure } from "@/app/dashboard/fees/actions";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,30 +9,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import FeeStructureForm from "@/components/FeeStructureForm";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil } from "lucide-react";
 
 type Structure = {
   id: string;
-  grade_from: string;
+  standardName: string;
   academic_year: string;
 };
 
 export function FeeStructureRowActions({ structure }: { structure: Structure }) {
-  const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-
-  const handleDelete = async () => {
-    if (!confirm(`Delete fee structure for standard "${structure.grade_from}" (${structure.academic_year})? This will remove all associated fee items.`)) return;
-    setDeleting(true);
-    const result = await deleteFeeStructure(structure.id);
-    setDeleting(false);
-    if (result.ok) {
-      router.refresh();
-    } else {
-      alert(result.error);
-    }
-  };
 
   return (
     <>
@@ -43,20 +27,9 @@ export function FeeStructureRowActions({ structure }: { structure: Structure }) 
           size="sm"
           variant="ghost"
           onClick={() => setEditOpen(true)}
-          disabled={deleting}
           aria-label="Edit"
         >
           <Pencil className="h-3 w-3" />
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="text-destructive hover:text-destructive"
-          onClick={handleDelete}
-          disabled={deleting}
-          aria-label="Delete"
-        >
-          <Trash2 className="h-3 w-3" />
         </Button>
       </div>
       <Dialog open={editOpen} onOpenChange={setEditOpen}>

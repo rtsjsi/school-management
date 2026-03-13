@@ -16,12 +16,13 @@ export async function FeeStructureList({ canEdit = false }: { canEdit?: boolean 
     .from("fee_structures")
     .select(`
       id,
-      grade_from,
+      standard_id,
+      standards(name),
       academic_year,
       fee_structure_items(fee_type, quarter, amount)
     `)
     .order("academic_year", { ascending: false })
-    .order("name");
+    .order("standard_id");
 
   if (!structures || structures.length === 0) {
     return (
@@ -47,11 +48,15 @@ export async function FeeStructureList({ canEdit = false }: { canEdit?: boolean 
           </TableHeader>
           <TableBody>
             {structures.map((s) => {
-              const items = (s.fee_structure_items as { fee_type: string; quarter: number; amount: number }[]) ?? [];
+              const items = s.fee_structure_items ?? [];
               const itemCount = items.length;
+              const standardName =
+                (Array.isArray(s.standards)
+                  ? (s.standards[0] as { name?: string })?.name
+                  : (s.standards as { name?: string } | null)?.name) ?? "—";
               return (
                 <TableRow key={s.id}>
-                  <TableCell className="font-medium">{s.grade_from}</TableCell>
+                  <TableCell className="font-medium">{standardName}</TableCell>
                   <TableCell>{s.academic_year}</TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {itemCount} items
@@ -61,7 +66,7 @@ export async function FeeStructureList({ canEdit = false }: { canEdit?: boolean 
                       <FeeStructureRowActions
                         structure={{
                           id: s.id,
-                          grade_from: s.grade_from,
+                          standardName,
                           academic_year: s.academic_year,
                         }}
                       />
