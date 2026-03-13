@@ -32,13 +32,8 @@ export async function GET(request: NextRequest) {
 
     const { data: employees } = await supabase
       .from("employees")
-      .select("id, full_name, monthly_salary")
+      .select("id, full_name, monthly_salary, bank_name, account_number, ifsc_code, account_holder_name")
       .eq("status", "active");
-
-    const { data: bankAccounts } = await supabase
-      .from("employee_bank_accounts")
-      .select("employee_id, account_number, ifsc_code, account_holder_name, bank_name")
-      .eq("is_primary", true);
 
     const { data: holidays } = await supabase
       .from("holidays")
@@ -78,12 +73,13 @@ export async function GET(request: NextRequest) {
     })();
 
     const bankMap = new Map<string, { account_number: string; ifsc_code: string; account_holder_name: string; bank_name: string }>();
-    (bankAccounts ?? []).forEach((b) => {
-      bankMap.set(b.employee_id, {
-        account_number: b.account_number,
-        ifsc_code: b.ifsc_code ?? "",
-        account_holder_name: b.account_holder_name ?? "",
-        bank_name: b.bank_name ?? "",
+    (employees ?? []).forEach((e) => {
+      if (!e.account_number || !e.bank_name) return;
+      bankMap.set(e.id, {
+        account_number: e.account_number,
+        ifsc_code: e.ifsc_code ?? "",
+        account_holder_name: e.account_holder_name ?? e.full_name,
+        bank_name: e.bank_name ?? "",
       });
     });
 

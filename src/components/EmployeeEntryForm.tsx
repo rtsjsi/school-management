@@ -104,6 +104,13 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
           shift_id: form.shift_id || null,
           employee_id: empId,
           monthly_salary: form.monthly_salary ? parseFloat(form.monthly_salary) : null,
+          degree: form.degree.trim() || null,
+          institution: form.institution?.trim() || null,
+          year_passed: form.year_passed ? parseInt(form.year_passed) : null,
+          bank_name: form.bank_name.trim() || null,
+          account_number: form.account_number.trim() || null,
+          ifsc_code: form.ifsc_code?.trim() || null,
+          account_holder_name: form.account_holder_name?.trim() || form.full_name.trim(),
         })
         .select("id")
         .single();
@@ -111,25 +118,6 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
       if (empErr || !emp) {
         setError(empErr?.message ?? "Failed to add employee");
         return;
-      }
-
-      if (form.degree?.trim()) {
-        await supabase.from("employee_qualifications").insert({
-          employee_id: emp.id,
-          degree: form.degree.trim(),
-          institution: form.institution?.trim() || null,
-          year_passed: form.year_passed ? parseInt(form.year_passed) : null,
-        });
-      }
-
-      if (form.bank_name?.trim() && form.account_number?.trim()) {
-        await supabase.from("employee_bank_accounts").insert({
-          employee_id: emp.id,
-          bank_name: form.bank_name.trim(),
-          account_number: form.account_number.trim(),
-          ifsc_code: form.ifsc_code?.trim() || null,
-          account_holder_name: form.account_holder_name?.trim() || form.full_name.trim(),
-        });
       }
 
       setForm({

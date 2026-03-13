@@ -84,8 +84,6 @@ async function deleteAllData() {
     "attendance_manual",
     "attendance_punches",
     "employee_salaries",
-    "employee_bank_accounts",
-    "employee_qualifications",
     "fee_structure_items",
     "expenses",
     "student_enrollments",
@@ -364,19 +362,18 @@ async function seedEmployees() {
     });
   }
 
-  const { data: emps } = await supabase.from("employees").insert(employees).select("id, full_name");
-  if (emps) {
-    for (const e of emps) {
-      await supabase.from("employee_bank_accounts").insert({
-        employee_id: e.id,
-        bank_name: pick(["State Bank", "HDFC Bank", "ICICI Bank", "SBI", "Axis Bank"]),
-        account_number: `1234567${String(emps.indexOf(e)).padStart(5, "0")}`,
-        ifsc_code: pick(["SBIN0001234", "HDFC0001234", "ICIC0001234"]),
-        account_holder_name: e.full_name,
-        is_primary: true,
-      });
-    }
-  }
+  const { data: emps } = await supabase.from("employees").insert(
+    employees.map((e, idx) => ({
+      ...e,
+      bank_name: pick(["State Bank", "HDFC Bank", "ICICI Bank", "SBI", "Axis Bank"]),
+      account_number: `1234567${String(idx).padStart(5, "0")}`,
+      ifsc_code: pick(["SBIN0001234", "HDFC0001234", "ICIC0001234"]),
+      account_holder_name: e.full_name,
+      degree: pick(["B.Ed", "M.Ed", "M.Sc", "B.Sc", "B.A"]),
+      institution: pick(["State University", "Central University", "Private College"]),
+      year_passed: 2000 + randomInt(0, 20),
+    }))
+  ).select("id");
   console.log(`  Inserted ${emps?.length ?? 0} employees`);
 }
 
