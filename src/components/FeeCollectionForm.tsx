@@ -21,7 +21,7 @@ const DEFAULT_POLICY_NOTES = [
   "(3) Cheque payment subject to realisation.",
 ];
 
-type StudentOption = { id: string; full_name: string; grade?: string; division?: string; roll_number?: number; student_id?: string };
+type StudentOption = { id: string; full_name: string; standard?: string; division?: string; roll_number?: number; student_id?: string };
 
 export default function FeeCollectionForm({
   students,
@@ -110,7 +110,7 @@ export default function FeeCollectionForm({
         .reduce((sum, i) => sum + Number(i.amount ?? 0), 0);
       setStructureAmount(totalForQuarter > 0 ? totalForQuarter : null);
     })();
-  }, [selectedStudent?.grade, form.quarter, form.academic_year]);
+  }, [selectedStudent?.standard, form.quarter, form.academic_year]);
 
   useEffect(() => {
     if (structureAmount != null) {
@@ -252,7 +252,7 @@ export default function FeeCollectionForm({
         const std = Array.isArray(st.standards)
           ? (st.standards[0] as { name?: string })?.name
           : (st.standards as { name?: string } | null)?.name;
-        return std && std === (selectedStudent?.grade ?? "");
+        return std && std === (selectedStudent?.standard ?? "");
       });
       if (structure) {
         const items = (structure.fee_structure_items as { quarter: number; amount: number }[]) ?? [];
