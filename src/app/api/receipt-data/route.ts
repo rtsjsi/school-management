@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
         id, student_id, receipt_number, amount, fee_type, quarter, academic_year, payment_mode,
         collected_at, collected_by, cheque_number, cheque_bank, cheque_date,
         online_transaction_id, online_transaction_ref,
-        students(full_name, grade, division, roll_number, student_id)
+        students(full_name, standard, division, roll_number, student_id)
       `)
       .eq("id", id)
       .single();
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
       const std = Array.isArray(st.standards)
         ? (st.standards[0] as { name?: string })?.name
         : (st.standards as { name?: string } | null)?.name;
-      return std && std === (student?.grade ?? "");
+      return std && std === (student?.standard ?? "");
     });
     if (structure) {
       const items = (structure.fee_structure_items as { quarter: number; amount: number }[]) ?? [];
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
       chequeDate: c.cheque_date,
       onlineTransactionId: c.online_transaction_id,
       onlineTransactionRef: c.online_transaction_ref,
-      grade: student?.grade,
+      standard: student?.standard,
       division: student?.division,
       rollNumber: student?.roll_number,
       grNo: student?.student_id,

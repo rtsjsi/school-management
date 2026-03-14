@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 
     const { data: students } = await supabase
       .from("students")
-      .select("id, full_name, grade, division, roll_number, student_id")
+      .select("id, full_name, standard, division, roll_number, student_id")
       .eq("status", "active")
       .order("full_name");
 
@@ -62,10 +62,10 @@ export async function GET(request: NextRequest) {
       if ((s as { is_rte_quota?: boolean }).is_rte_quota) continue;
 
       if (studentId && s.id !== studentId) continue;
-      if (grade && (s.grade ?? "") !== grade) continue;
+      if (standard && (s.standard ?? "") !== standard) continue;
       if (division && (s.division ?? "") !== division) continue;
 
-      const studentGrade = s.grade ?? "";
+      const studentStandard = s.standard ?? "";
       const structure = (structures ?? []).find((st: { standards?: { name?: string } | { name?: string }[] | null }) => {
         const std = Array.isArray(st.standards)
           ? (st.standards[0] as { name?: string })?.name
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
           defaulters.push({
             student_id: s.id,
             full_name: s.full_name,
-            grade: s.grade ?? "—",
+            standard: s.standard ?? "—",
             division: s.division ?? "",
             roll_number: (s as { roll_number?: number }).roll_number,
             student_id_display: (s as { student_id?: string }).student_id,
@@ -103,8 +103,8 @@ export async function GET(request: NextRequest) {
     defaulters.sort((a, b) => {
       const nameCmp = a.full_name.localeCompare(b.full_name);
       if (nameCmp !== 0) return nameCmp;
-      const gradeCmp = (a.grade ?? "").localeCompare(b.grade ?? "");
-      if (gradeCmp !== 0) return gradeCmp;
+      const standardCmp = (a.standard ?? "").localeCompare(b.standard ?? "");
+      if (standardCmp !== 0) return standardCmp;
       return a.quarter - b.quarter;
     });
 

@@ -38,7 +38,7 @@ interface StudentEditDialogProps {
     gender?: string;
     blood_group?: string;
     address?: string;
-    grade?: string;
+    standard?: string;
     division?: string;
     roll_number?: number;
     admission_date?: string;
@@ -66,7 +66,7 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
     gender: student.gender || "",
     blood_group: student.blood_group || "",
     address: student.address || "",
-    standard: student.grade || "",
+    standard: student.standard || "",
     division: student.division || "",
     roll_number: student.roll_number?.toString() || "",
     admission_date: student.admission_date || "",
@@ -105,7 +105,7 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
         gender: form.gender || null,
         blood_group: form.blood_group || null,
         address: form.address.trim() || null,
-        grade: form.standard.trim() || null,
+        standard: form.standard.trim() || null,
         division: form.division.trim() || null,
         roll_number: form.roll_number ? parseInt(form.roll_number) : null,
         admission_date: form.admission_date || null,

@@ -11,7 +11,7 @@ export type AllowedClassesResult = {
   pairs: AllowedClass[];
 };
 
-/** Pairs as standard/division names for filtering students table (students.grade, students.division). */
+/** Pairs as standard/division names for filtering students table (students.standard, students.division). */
 export type AllowedClassNames = { standardName: string; divisionName: string }[];
 
 /** True if the user's data access should be restricted by allowed classes (teacher, auditor). */

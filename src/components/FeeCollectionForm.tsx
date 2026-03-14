@@ -53,8 +53,8 @@ export default function FeeCollectionForm({
 
   const school = useSchoolSettings();
   const classes = useMemo(() => {
-    const grades = Array.from(new Set(students.map((s) => s.grade).filter(Boolean))) as string[];
-    return grades.sort((a, b) => a.localeCompare(b));
+    const standards = Array.from(new Set(students.map((s) => s.standard).filter(Boolean))) as string[];
+    return standards.sort((a, b) => a.localeCompare(b));
   }, [students]);
 
   const divisions = useMemo(() => {
@@ -67,7 +67,7 @@ export default function FeeCollectionForm({
 
   const filteredStudents = useMemo(() => {
     return students.filter((s) => {
-      if (classFilter !== "all" && s.grade !== classFilter) return false;
+      if (classFilter !== "all" && s.standard !== classFilter) return false;
       if (divisionFilter !== "all" && s.division !== divisionFilter) return false;
       return true;
     });
@@ -83,7 +83,7 @@ export default function FeeCollectionForm({
   const selectedStudent = students.find((s) => s.id === form.student_id);
 
   useEffect(() => {
-    if (!selectedStudent?.grade || !form.academic_year) {
+    if (!selectedStudent?.standard || !form.academic_year) {
       setStructureAmount(null);
       return;
     }
@@ -97,7 +97,7 @@ export default function FeeCollectionForm({
         const std = Array.isArray(st.standards)
           ? (st.standards[0] as { name?: string })?.name
           : (st.standards as { name?: string } | null)?.name;
-        return std && std === (selectedStudent.grade ?? "");
+        return std && std === (selectedStudent.standard ?? "");
       });
       if (!structure) {
         setStructureAmount(null);
@@ -286,7 +286,7 @@ export default function FeeCollectionForm({
         onlineTransactionRef: form.payment_mode === "online" ? form.online_transaction_ref : undefined,
         schoolName: school.name,
         schoolAddress: school.address,
-        grade: selectedStudent?.grade,
+        standard: selectedStudent?.standard,
         division: selectedStudent?.division,
         rollNumber: selectedStudent?.roll_number,
         grNo: selectedStudent?.student_id ?? selectedStudent?.id?.slice(0, 8),
@@ -418,7 +418,7 @@ export default function FeeCollectionForm({
                   {filteredStudents.map((s) => (
                     <SelectItem key={s.id} value={s.id}>
                       {s.full_name}{" "}
-                      {s.grade ? `(${s.grade}${s.division ? "-" + s.division : ""})` : ""}
+                      {s.standard ? `(${s.standard}${s.division ? "-" + s.division : ""})` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>

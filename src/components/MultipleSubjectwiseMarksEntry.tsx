@@ -111,10 +111,10 @@ export default function MultipleSubjectwiseMarksEntry() {
     (async () => {
       let query = supabase
         .from("students")
-        .select("id, full_name, grade, division")
+        .select("id, full_name, standard, division")
         .eq("status", "active")
         .order("full_name");
-      if (gradeFilter && gradeFilter !== "all") query = query.eq("grade", gradeFilter);
+      if (gradeFilter && gradeFilter !== "all") query = query.eq("standard", gradeFilter);
       if (divisionFilter && divisionFilter !== "all") query = query.eq("division", divisionFilter);
       if (exam?.standard && exam.standard !== "All" && (!gradeFilter || gradeFilter === "all")) query = query.eq("grade", exam.standard);
       const { data: st } = await query;
@@ -233,7 +233,7 @@ export default function MultipleSubjectwiseMarksEntry() {
     }
   };
 
-  const grades = classNames.length > 0 ? classNames : Array.from(new Set(students.map((s) => s.grade).filter(Boolean))) as string[];
+  const grades = classNames.length > 0 ? classNames : Array.from(new Set(students.map((s) => s.standard).filter(Boolean))) as string[];
   const divisions = Array.from(new Set(students.map((s) => s.division).filter(Boolean))) as string[];
 
   return (
@@ -316,7 +316,7 @@ export default function MultipleSubjectwiseMarksEntry() {
                         {s.full_name}
                       </TableCell>
                       <TableCell className="sticky left-[140px] z-10 bg-background text-muted-foreground">
-                        {s.grade ?? "—"} / {s.division ?? "—"}
+                        {s.standard ?? "—"} / {s.division ?? "—"}
                       </TableCell>
                       {subjects.map((sub) => {
                         const cell = marks[s.id]?.[sub.id] ?? { score: "", max_score: "", grade: "", is_absent: false };

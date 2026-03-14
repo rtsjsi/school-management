@@ -42,7 +42,7 @@ type StudentRow = {
   full_name: string;
   email?: string;
   phone_number?: string;
-  grade?: string;
+  standard?: string;
   division?: string;
   roll_number?: number;
   status?: string;
@@ -439,7 +439,7 @@ export function ManageStudentsList({
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (standardFilter && standardFilter !== "all") q = q.eq("grade", standardFilter);
+    if (standardFilter && standardFilter !== "all") q = q.eq("standard", standardFilter);
     if (divisionFilter && divisionFilter !== "all") q = q.eq("division", divisionFilter);
     if (statusFilter && statusFilter !== "all") q = q.eq("status", statusFilter);
     if (search.trim()) {
@@ -451,7 +451,7 @@ export function ManageStudentsList({
       let rows = (data ?? []) as StudentRow[];
       if (restrictByClass && allowedClassNames && allowedClassNames.length > 0) {
         const set = new Set(allowedClassNames.map((p) => `${p.standardName}\0${p.divisionName}`));
-        rows = rows.filter((s) => set.has(`${s.grade ?? ""}\0${s.division ?? ""}`));
+        rows = rows.filter((s) => set.has(`${s.standard ?? ""}\0${s.division ?? ""}`));
       }
       setStudents(rows);
       setLoading(false);
@@ -582,7 +582,7 @@ export function ManageStudentsList({
                     <TableCell>
                       {s.is_rte_quota ? <Badge variant="secondary">RTE</Badge> : "—"}
                     </TableCell>
-                    <TableCell>{s.grade ?? "—"}</TableCell>
+                    <TableCell>{s.standard ?? "—"}</TableCell>
                     <TableCell>{s.division ?? "—"}</TableCell>
                     <TableCell className="text-center">{s.roll_number ?? "—"}</TableCell>
                     <TableCell>

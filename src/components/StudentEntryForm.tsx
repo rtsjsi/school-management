@@ -177,7 +177,7 @@ export default function StudentEntryForm({
         blood_group: form.blood_group || null,
         address: form.address.trim() || null,
         district: form.district.trim() || null,
-        grade: form.grade.trim() || null,
+        standard: form.standard.trim() || null,
         division: form.division.trim() || null,
         roll_number: form.roll_number ? parseInt(form.roll_number) : null,
         admission_date: form.admission_date || null,

@@ -192,7 +192,7 @@ export async function runPromotion(
     if (!o.nextStandardName || !o.nextDivisionName) continue;
     const { error: studentErr } = await supabase
       .from("students")
-      .update({ grade: o.nextStandardName, division: o.nextDivisionName })
+      .update({ standard: o.nextStandardName, division: o.nextDivisionName })
       .eq("id", o.studentId);
     if (studentErr) return { ok: false, error: studentErr.message };
   }

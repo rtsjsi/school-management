@@ -3,6 +3,8 @@
 This document lists every migration that uses the keyword **grade** and whether it is correct (exam grade A/B/C) or refers to class/level (standard).  
 **Reference:** all occurrences below include `supabase/migrations/<file>:<line>`.
 
+**Update:** Migration `20260314100000_rename_students_grade_to_standard.sql` renames `students.grade` → `students.standard` and updates the sync trigger. Application code and APIs now use the `standard` column.
+
 ---
 
 ## Correct use of "grade" (exam grade or evaluation type)

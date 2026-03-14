@@ -44,12 +44,12 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
   useEffect(() => {
     supabase
       .from("students")
-      .select("id, full_name, grade, division, roll_number, student_id, academic_year")
+      .select("id, full_name, standard, division, roll_number, student_id, academic_year")
       .eq("status", "active")
       .order("full_name")
       .then(({ data }) => {
         let list = (data ?? []) as unknown as Student[];
-        if (allowedPairSet) list = list.filter((s) => allowedPairSet.has(`${s.grade ?? ""}\0${s.division ?? ""}`));
+        if (allowedPairSet) list = list.filter((s) => allowedPairSet.has(`${s.standard ?? ""}\0${s.division ?? ""}`));
         setStudents(list);
       });
   }, [supabase, allowedPairSet?.size]);
@@ -121,7 +121,7 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
         schoolName: school.name,
         schoolAddress: school.address,
         studentName: student.full_name,
-        grade: student.grade ?? undefined,
+        standard: student.standard ?? undefined,
         division: student.division ?? undefined,
         rollNumber: student.roll_number,
         studentId: student.student_id,
@@ -177,7 +177,7 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
               <SelectContent>
                 {students.map((s) => (
                   <SelectItem key={s.id} value={s.id}>
-                    {s.full_name} {s.grade && s.division ? `(${s.grade} ${s.division})` : ""}
+                    {s.full_name} {s.standard && s.division ? `(${s.standard} ${s.division})` : ""}
                   </SelectItem>
                 ))}
               </SelectContent>

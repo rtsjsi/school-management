@@ -35,7 +35,7 @@ type Exam = {
   academic_years: { id: string; name: string } | { id: string; name: string }[] | null;
 };
 
-type Student = { id: string; full_name: string; grade: string | null; division: string | null };
+type Student = { id: string; full_name: string; standard: string | null; division: string | null };
 type Subject = { id: string; name: string; code: string | null; evaluation_type: string };
 type CellState = { score: string; max_score: string; grade: string; is_absent: boolean };
 
@@ -164,20 +164,20 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
     (async () => {
       let query = supabase
         .from("students")
-        .select("id, full_name, grade, division")
+        .select("id, full_name, standard, division")
         .eq("status", "active")
         .order("full_name");
       // When exam is for a specific standard, always filter by that standard (ignore other selections)
       const standardToUse =
         exam?.standard && exam.standard.trim() !== "" ? exam.standard : standardFilter;
-      if (standardToUse && standardToUse !== "all") query = query.eq("grade", standardToUse);
+      if (standardToUse && standardToUse !== "all") query = query.eq("standard", standardToUse);
       if (divisionFilter && divisionFilter !== "all") query = query.eq("division", divisionFilter);
 
       const { data: st } = await query;
       let studentList = (st ?? []) as Student[];
       if (allowedPairSet) {
         studentList = studentList.filter((s) =>
-          allowedPairSet.has(`${s.grade ?? ""}\0${s.division ?? ""}`)
+          allowedPairSet.has(`${s.standard ?? ""}\0${s.division ?? ""}`)
         );
       }
       setStudents(studentList);
@@ -310,7 +310,7 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
       ? [exam.standard]
       : classNames.length > 0
         ? classNames
-        : (Array.from(new Set(students.map((s) => s.grade).filter(Boolean))) as string[]);
+        : (Array.from(new Set(students.map((s) => s.standard).filter(Boolean))) as string[]);
   const divisions = Array.from(new Set(students.map((s) => s.division).filter(Boolean))) as string[];
   return (
     <Card>
@@ -420,7 +420,7 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
                           {s.full_name}
                         </TableCell>
                         <TableCell className="sticky left-[140px] z-10 bg-background text-muted-foreground text-sm">
-                          {s.grade ?? "—"} / {s.division ?? "—"}
+                          {s.standard ?? "—"} / {s.division ?? "—"}
                         </TableCell>
                         {subjects.map((sub) => {
                           const cell = marks[s.id]?.[sub.id] ?? { score: "", max_score: "", grade: "", is_absent: false };

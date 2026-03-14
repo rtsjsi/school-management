@@ -13,7 +13,7 @@ export interface ReportCardData {
   schoolName?: string;
   schoolAddress?: string;
   studentName: string;
-  grade?: string;
+  standard?: string;
   division?: string;
   rollNumber?: number | string;
   studentId?: string;
@@ -71,7 +71,7 @@ export function generateReportCardPDF(data: ReportCardData): Blob {
     doc.text(line, colLeft + labelW, y + i * lh);
   });
   doc.text("Standard:", colRight, y);
-  doc.text(data.grade ?? "—", colRight + labelW, y);
+  doc.text(data.standard ?? "—", colRight + labelW, y);
   y += Math.max(lh * nameLines.length, lh);
 
   doc.text("Division:", colLeft, y);

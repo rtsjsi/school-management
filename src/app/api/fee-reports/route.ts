@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const quarter = searchParams.get("quarter");
     const paymentMode = searchParams.get("paymentMode");
     const studentId = searchParams.get("studentId");
-    const grade = searchParams.get("grade");
+    const standard = searchParams.get("standard");
     const limit = searchParams.get("limit");
 
     const supabase = await createClient();
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     // Build base query with student join for grade/name
     let query = supabase
       .from("fee_collections")
-      .select("id, receipt_number, amount, fee_type, quarter, academic_year, payment_mode, collected_at, collected_by, cheque_number, cheque_bank, cheque_date, online_transaction_id, online_transaction_ref, students(full_name, grade, division, roll_number, student_id)");
+      .select("id, receipt_number, amount, fee_type, quarter, academic_year, payment_mode, collected_at, collected_by, cheque_number, cheque_bank, cheque_date, online_transaction_id, online_transaction_ref, students(full_name, standard, division, roll_number, student_id)");
 
     // Date range
     if (dateFrom) {
@@ -50,24 +50,24 @@ export async function GET(request: NextRequest) {
     }
     const { data: rows } = await q;
 
-    // Filter by grade in memory (student.grade comes from join)
+    // Filter by standard in memory (student.standard comes from join)
     let filtered = rows ?? [];
-    if (grade) {
+    if (standard) {
       filtered = filtered.filter((row) => {
         const s = row.students;
-        const studentGrade = Array.isArray(s) ? (s[0] as { grade?: string })?.grade : (s as { grade?: string } | null)?.grade;
-        return studentGrade === grade;
+        const studentStandard = Array.isArray(s) ? (s[0] as { standard?: string })?.standard : (s as { standard?: string } | null)?.standard;
+        return studentStandard === standard;
       });
     }
 
     const result = filtered.map((row) => {
       const s = Array.isArray(row.students) ? row.students[0] : row.students;
-      const student = s as { full_name?: string; grade?: string; division?: string; roll_number?: number; student_id?: string } | null;
+      const student = s as { full_name?: string; standard?: string; division?: string; roll_number?: number; student_id?: string } | null;
       return {
         id: row.id,
         receipt_number: row.receipt_number,
         student_name: student?.full_name,
-        student_grade: student?.grade,
+        student_standard: student?.standard,
         student_division: student?.division,
         student_roll_number: student?.roll_number,
         student_gr_no: student?.student_id,
