@@ -10,7 +10,7 @@ import { generateReportCardPDF } from "@/lib/report-card-pdf";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 
 type Exam = { id: string; name: string; exam_type: string; standard: string | null; held_at: string };
-type Student = { id: string; full_name: string; grade: string | null; division: string | null; roll_number?: number; student_id?: string; academic_year?: string };
+type Student = { id: string; full_name: string; standard: string | null; division: string | null; roll_number?: number; student_id?: string; academic_year?: string };
 type Subject = { id: string; name: string; evaluation_type?: string; max_marks?: number | null };
 type ExamResultSubject = { student_id: string; subject_id: string; score: number | null; max_score: number | null; grade: string | null; is_absent: boolean };
 
@@ -69,13 +69,13 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
         return;
       }
 
-      const studentGrade = student.grade;
+      const studentStandard = student.standard;
       let subjectList: Subject[] = [];
-      if (studentGrade) {
+      if (studentStandard) {
         const { data: classRow } = await supabase
           .from("standards")
           .select("id")
-          .eq("name", studentGrade)
+          .eq("name", studentStandard)
           .maybeSingle();
         if (classRow?.id) {
           const { data: subData } = await supabase
