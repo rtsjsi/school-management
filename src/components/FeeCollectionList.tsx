@@ -19,7 +19,7 @@ type CollectionRow = {
   id: string;
   receipt_number: string;
   student_name?: string;
-  student_grade?: string;
+  student_standard?: string;
   student_division?: string;
   student_roll_number?: number;
   student_gr_no?: string;
@@ -76,7 +76,7 @@ function printReceipt(row: CollectionRow, school: SchoolInfo) {
       onlineTransactionRef: data.onlineTransactionRef,
       schoolName: school.name,
       schoolAddress: school.address,
-      grade: data.grade,
+      standard: data.standard,
       division: data.division,
       rollNumber: data.rollNumber,
       grNo: data.grNo,
@@ -109,7 +109,7 @@ function generateAndPrintFallback(row: CollectionRow, school: SchoolInfo) {
     onlineTransactionRef: row.online_transaction_ref,
     schoolName: school.name,
     schoolAddress: school.address,
-    grade: row.student_grade,
+    standard: row.student_standard,
     division: row.student_division,
     rollNumber: row.student_roll_number,
     grNo: row.student_gr_no,
@@ -145,7 +145,7 @@ function downloadReceipt(row: CollectionRow, school: SchoolInfo) {
       onlineTransactionRef: data.onlineTransactionRef,
       schoolName: school.name,
       schoolAddress: school.address,
-      grade: data.grade,
+      standard: data.standard,
       division: data.division,
       rollNumber: data.rollNumber,
       grNo: data.grNo,
@@ -180,7 +180,7 @@ function downloadFallback(row: CollectionRow, school: SchoolInfo) {
     onlineTransactionRef: row.online_transaction_ref,
     schoolName: school.name,
     schoolAddress: school.address,
-    grade: row.student_grade,
+    standard: row.student_standard,
     division: row.student_division,
     rollNumber: row.student_roll_number,
     grNo: row.student_gr_no,

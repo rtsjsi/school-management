@@ -28,7 +28,7 @@ const QUARTERS = [1, 2, 3, 4] as const;
 type OutstandingRow = {
   student_id: string;
   full_name: string;
-  grade: string;
+  standard: string;
   division: string;
   roll_number?: number;
   student_id_display?: string;
@@ -44,7 +44,7 @@ type Summary = {
   totalOutstanding: number;
   defaulterCount: number;
   studentCount: number;
-  byGrade: { grade: string; count: number; total: number }[];
+  byStandard: { standard: string; count: number; total: number }[];
 };
 
 export default function OutstandingReport() {
@@ -53,9 +53,9 @@ export default function OutstandingReport() {
 
   const [academicYear, setAcademicYear] = useState("");
   const [quarter, setQuarter] = useState("");
-  const [grade, setGrade] = useState("");
+  const [standardFilter, setStandardFilter] = useState("");
   const [studentId, setStudentId] = useState("");
-  const [students, setStudents] = useState<{ id: string; full_name: string; grade?: string }[]>([]);
+  const [students, setStudents] = useState<{ id: string; full_name: string; standard?: string }[]>([]);
   const [standards, setStandards] = useState<{ id: string; name: string }[]>([]);
   const [years, setYears] = useState<{ id: string; name: string }[]>([]);
   const [data, setData] = useState<OutstandingRow[] | null>(null);
@@ -92,7 +92,7 @@ export default function OutstandingReport() {
     const params = new URLSearchParams();
     params.set("academicYear", academicYear);
     if (quarter) params.set("quarter", quarter);
-    if (grade) params.set("grade", grade);
+    if (standardFilter) params.set("standard", standardFilter);
     if (studentId) params.set("studentId", studentId);
 
     fetch(`/api/outstanding-report?${params}`)
@@ -164,12 +164,12 @@ export default function OutstandingReport() {
             </div>
             <div className="space-y-2">
               <Label>Standard</Label>
-              <Select value={grade || "all"} onValueChange={(v) => setGrade(v === "all" ? "" : v)}>
+              <Select value={standardFilter || "all"} onValueChange={(v) => setStandardFilter(v === "all" ? "" : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All grades</SelectItem>
+                  <SelectItem value="all">All standards</SelectItem>
                   {standards.map((c) => (
                     <SelectItem key={c.id} value={c.name}>
                       {c.name}
@@ -188,7 +188,7 @@ export default function OutstandingReport() {
                   <SelectItem value="all">All students</SelectItem>
                   {students.map((s) => (
                     <SelectItem key={s.id} value={s.id}>
-                      {s.full_name} {s.grade ? `(${s.grade})` : ""}
+                      {s.full_name} {s.standard ? `(${s.standard})` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -214,11 +214,11 @@ export default function OutstandingReport() {
                 <span>
                   <strong>{summary.studentCount}</strong> student(s) with dues
                 </span>
-                {summary.byGrade.length > 0 && (
+                {summary.byStandard.length > 0 && (
                   <span className="text-sm">
-                    By grade:{" "}
-                    {summary.byGrade
-                      .map((g) => `${g.grade}: ₹${g.total.toLocaleString()} (${g.count})`)
+                    By standard:{" "}
+                    {summary.byStandard
+                      .map((g) => `${g.standard}: ₹${g.total.toLocaleString()} (${g.count})`)
                       .join(" | ")}
                   </span>
                 )}
@@ -250,7 +250,7 @@ export default function OutstandingReport() {
                           {row.full_name}
                         </TableCell>
                         <TableCell className="font-mono text-xs">{row.student_id_display ?? "—"}</TableCell>
-                        <TableCell>{row.grade}</TableCell>
+                        <TableCell>{row.standard}</TableCell>
                         <TableCell>{row.division || "—"}</TableCell>
                         <TableCell>{row.quarter_label ?? `Q${row.quarter}`}</TableCell>
                         <TableCell>{getFeeTypeLabel(row.fee_type)}</TableCell>

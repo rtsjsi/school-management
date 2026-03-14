@@ -25,7 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
 import { StudentDocumentsPhotos } from "@/components/StudentDocumentsPhotos";
-import { GradeDivisionYearSelects } from "@/components/GradeDivisionYearSelects";
+import { StandardDivisionYearSelects } from "@/components/StandardDivisionYearSelects";
 import { AcademicYearSelect } from "@/components/AcademicYearSelect";
 import { upsertCurrentEnrollment } from "@/app/dashboard/students/actions";
 
@@ -38,7 +38,7 @@ interface StudentEditDialogProps {
     gender?: string;
     blood_group?: string;
     address?: string;
-    grade?: string;
+    standard?: string;
     division?: string;
     roll_number?: number;
     admission_date?: string;
@@ -66,7 +66,7 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
     gender: student.gender || "",
     blood_group: student.blood_group || "",
     address: student.address || "",
-    grade: student.grade || "",
+    standard: student.standard || "",
     division: student.division || "",
     roll_number: student.roll_number?.toString() || "",
     admission_date: student.admission_date || "",
@@ -105,7 +105,7 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
         gender: form.gender || null,
         blood_group: form.blood_group || null,
         address: form.address.trim() || null,
-        grade: form.grade.trim() || null,
+        standard: form.standard.trim() || null,
         division: form.division.trim() || null,
         roll_number: form.roll_number ? parseInt(form.roll_number) : null,
         admission_date: form.admission_date || null,
@@ -137,7 +137,7 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
         return;
       }
 
-      const enrollResult = await upsertCurrentEnrollment(student.id, form.grade, form.division);
+      const enrollResult = await upsertCurrentEnrollment(student.id, form.standard, form.division);
       if (!enrollResult.ok) {
         setError(`Student updated but enrollment failed: ${enrollResult.error}`);
         return;
@@ -227,13 +227,13 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <GradeDivisionYearSelects
-              grade={form.grade}
+            <StandardDivisionYearSelects
+              standard={form.standard}
               division={form.division}
-              onGradeChange={(v) => setForm((p) => ({ ...p, grade: v, division: "" }))}
+              onStandardChange={(v) => setForm((p) => ({ ...p, standard: v, division: "" }))}
               onDivisionChange={(v) => setForm((p) => ({ ...p, division: v }))}
               showAcademicYear={false}
-              gradeRequired
+              standardRequired
               divisionRequired
             />
           </div>

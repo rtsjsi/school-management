@@ -10,11 +10,11 @@ import { generateReportCardPDF } from "@/lib/report-card-pdf";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 
 type Exam = { id: string; name: string; exam_type: string; standard: string | null; held_at: string };
-type Student = { id: string; full_name: string; grade: string | null; division: string | null; roll_number?: number; student_id?: string; academic_year?: string };
+type Student = { id: string; full_name: string; standard: string | null; division: string | null; roll_number?: number; student_id?: string; academic_year?: string };
 type Subject = { id: string; name: string; evaluation_type?: string; max_marks?: number | null };
 type ExamResultSubject = { student_id: string; subject_id: string; score: number | null; max_score: number | null; grade: string | null; is_absent: boolean };
 
-type AllowedClassNames = { gradeName: string; divisionName: string }[];
+type AllowedClassNames = { standardName: string; divisionName: string }[];
 
 export default function ReportCardGenerator({ allowedClassNames }: { allowedClassNames?: AllowedClassNames } = {}) {
   const [exams, setExams] = useState<Exam[]>([]);
@@ -26,8 +26,8 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
 
   const supabase = createClient();
   const school = useSchoolSettings();
-  const allowedGradeSet = allowedClassNames?.length ? new Set(allowedClassNames.map((p) => p.gradeName)) : null;
-  const allowedPairSet = allowedClassNames?.length ? new Set(allowedClassNames.map((p) => `${p.gradeName}\0${p.divisionName}`)) : null;
+  const allowedStandardSet = allowedClassNames?.length ? new Set(allowedClassNames.map((p) => p.standardName)) : null;
+  const allowedPairSet = allowedClassNames?.length ? new Set(allowedClassNames.map((p) => `${p.standardName}\0${p.divisionName}`)) : null;
 
   useEffect(() => {
     supabase
@@ -36,20 +36,20 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
       .order("held_at", { ascending: false })
       .then(({ data }) => {
         let list = (data ?? []) as Exam[];
-        if (allowedGradeSet) list = list.filter((e) => e.standard && allowedGradeSet.has(e.standard));
+        if (allowedStandardSet) list = list.filter((e) => e.standard && allowedStandardSet.has(e.standard));
         setExams(list);
       });
-  }, [supabase, allowedGradeSet?.size]);
+  }, [supabase, allowedStandardSet?.size]);
 
   useEffect(() => {
     supabase
       .from("students")
-      .select("id, full_name, grade, division, roll_number, student_id, academic_year")
+      .select("id, full_name, standard, division, roll_number, student_id, academic_year")
       .eq("status", "active")
       .order("full_name")
       .then(({ data }) => {
         let list = (data ?? []) as unknown as Student[];
-        if (allowedPairSet) list = list.filter((s) => allowedPairSet.has(`${s.grade ?? ""}\0${s.division ?? ""}`));
+        if (allowedPairSet) list = list.filter((s) => allowedPairSet.has(`${s.standard ?? ""}\0${s.division ?? ""}`));
         setStudents(list);
       });
   }, [supabase, allowedPairSet?.size]);
@@ -69,13 +69,13 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
         return;
       }
 
-      const studentGrade = student.grade;
+      const studentStandard = student.standard;
       let subjectList: Subject[] = [];
-      if (studentGrade) {
+      if (studentStandard) {
         const { data: classRow } = await supabase
           .from("standards")
           .select("id")
-          .eq("name", studentGrade)
+          .eq("name", studentStandard)
           .maybeSingle();
         if (classRow?.id) {
           const { data: subData } = await supabase
@@ -121,7 +121,7 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
         schoolName: school.name,
         schoolAddress: school.address,
         studentName: student.full_name,
-        grade: student.grade ?? undefined,
+        standard: student.standard ?? undefined,
         division: student.division ?? undefined,
         rollNumber: student.roll_number,
         studentId: student.student_id,
@@ -177,7 +177,7 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
               <SelectContent>
                 {students.map((s) => (
                   <SelectItem key={s.id} value={s.id}>
-                    {s.full_name} {s.grade && s.division ? `(${s.grade} ${s.division})` : ""}
+                    {s.full_name} {s.standard && s.division ? `(${s.standard} ${s.division})` : ""}
                   </SelectItem>
                 ))}
               </SelectContent>

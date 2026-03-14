@@ -336,7 +336,7 @@ async function main() {
       father_name: row.FatherName || null,
       mother_name: row.MotherName || null,
       parent_name: row.FatherName || row.MotherName || null,
-      grade: row.Standard || null,
+      standard: row.Standard || null,
       division: row.Division || null,
       roll_number: Number.isFinite(rollNum) ? rollNum : null,
       status: "active",

@@ -27,7 +27,7 @@ import {
   type StudentFormState,
 } from "@/lib/student-form";
 import { StudentDocumentsPhotos } from "@/components/StudentDocumentsPhotos";
-import { GradeDivisionYearSelects } from "@/components/GradeDivisionYearSelects";
+import { StandardDivisionYearSelects } from "@/components/StandardDivisionYearSelects";
 
 interface StudentEditFormProps {
   student: Record<string, unknown> & { id: string; full_name: string };
@@ -55,7 +55,7 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
     { key: "mother_name", label: "Mother name" },
     { key: "parent_contact", label: "Parent contact" },
     { key: "whatsapp_no", label: "WhatsApp no" },
-    { key: "grade", label: "Grade" },
+    { key: "standard", label: "Standard" },
     { key: "division", label: "Division" },
     { key: "admission_type", label: "Admission type" },
     { key: "admission_date", label: "Admission date" },
@@ -395,17 +395,17 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
                   required
                 />
               </div>
-              <GradeDivisionYearSelects
-                grade={form.grade}
+              <StandardDivisionYearSelects
+                standard={form.standard}
                 division={form.division}
                 academicYear={form.academic_year}
-                onGradeChange={(v) => {
-                  set("grade", v);
+                onStandardChange={(v) => {
+                  set("standard", v);
                   set("division", "");
                 }}
                 onDivisionChange={(v) => set("division", v)}
                 onAcademicYearChange={(v) => set("academic_year", v)}
-                gradeRequired
+                standardRequired
                 divisionRequired
                 academicYearRequired
               />

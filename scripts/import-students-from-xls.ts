@@ -250,7 +250,7 @@ async function main() {
       admission_type: "regular",
       academic_year: academicYearName,
       roll_number: parseInt(row.gr, 10) || null,
-      grade: row.grade,
+      standard: row.grade,
       division: row.division,
       status: "active",
       admission_date: null,

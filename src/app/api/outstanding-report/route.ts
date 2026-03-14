@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const academicYear = searchParams.get("academicYear");
     const quarter = searchParams.get("quarter");
-    const grade = searchParams.get("grade");
+    const standard = searchParams.get("standard");
     const studentId = searchParams.get("studentId");
 
     const supabase = await createClient();
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
     const { data: students } = await supabase
       .from("students")
-      .select("id, full_name, grade, division, roll_number, student_id")
+      .select("id, full_name, standard, division, roll_number, student_id")
       .eq("status", "active");
 
     const { data: structures } = await supabase
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     type Defaulter = {
       student_id: string;
       full_name: string;
-      grade: string;
+      standard: string;
       division: string;
       roll_number?: number;
       student_id_display?: string;
@@ -59,14 +59,14 @@ export async function GET(request: NextRequest) {
       if ((s as { is_rte_quota?: boolean }).is_rte_quota) continue;
       if (studentId && s.id !== studentId) continue;
 
-      const studentGrade = s.grade ?? "";
-      if (grade && studentGrade !== grade) continue;
+      const studentStandard = s.standard ?? "";
+      if (standard && studentStandard !== standard) continue;
 
       const structure = (structures ?? []).find((st: { standards?: { name?: string } | { name?: string }[] | null }) => {
         const std = Array.isArray(st.standards)
           ? (st.standards[0] as { name?: string })?.name
           : (st.standards as { name?: string } | null)?.name;
-        return std && std === studentGrade;
+        return std && std === studentStandard;
       });
       if (!structure) continue;
 
@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
             defaulters.push({
               student_id: s.id,
               full_name: s.full_name ?? "—",
-              grade: studentGrade || "—",
+              standard: studentStandard || "—",
               division: s.division ?? "",
               roll_number: s.roll_number,
               student_id_display: (s as { student_id?: string }).student_id,
@@ -118,7 +118,7 @@ export async function GET(request: NextRequest) {
             defaulters.push({
               student_id: s.id,
               full_name: s.full_name ?? "—",
-              grade: studentGrade || "—",
+              standard: studentStandard || "—",
               division: s.division ?? "",
               roll_number: s.roll_number,
               student_id_display: (s as { student_id?: string }).student_id,
@@ -135,18 +135,18 @@ export async function GET(request: NextRequest) {
     }
 
     defaulters.sort((a, b) =>
-      a.full_name.localeCompare(b.full_name) || a.quarter - b.quarter || a.grade.localeCompare(b.grade)
+      a.full_name.localeCompare(b.full_name) || a.quarter - b.quarter || a.standard.localeCompare(b.standard)
     );
 
     const totalOutstanding = defaulters.reduce((sum, d) => sum + d.outstanding, 0);
     const studentCount = new Set(defaulters.map((d) => d.student_id)).size;
 
-    const byGrade: Record<string, { count: number; total: number }> = {};
+    const byStandard: Record<string, { count: number; total: number }> = {};
     for (const d of defaulters) {
-      const g = d.grade || "—";
-      if (!byGrade[g]) byGrade[g] = { count: 0, total: 0 };
-      byGrade[g].count += 1;
-      byGrade[g].total += d.outstanding;
+      const g = d.standard || "—";
+      if (!byStandard[g]) byStandard[g] = { count: 0, total: 0 };
+      byStandard[g].count += 1;
+      byStandard[g].total += d.outstanding;
     }
 
     return NextResponse.json({
@@ -155,14 +155,14 @@ export async function GET(request: NextRequest) {
         totalOutstanding,
         defaulterCount: defaulters.length,
         studentCount,
-        byGrade: Object.entries(byGrade).map(([g, v]) => ({ grade: g, count: v.count, total: v.total })),
+        byStandard: Object.entries(byStandard).map(([g, v]) => ({ standard: g, count: v.count, total: v.total })),
       },
       academicYear: ay,
     });
   } catch {
     return NextResponse.json({
       data: [],
-      summary: { totalOutstanding: 0, defaulterCount: 0, studentCount: 0, byGrade: [] },
+      summary: { totalOutstanding: 0, defaulterCount: 0, studentCount: 0, byStandard: [] },
       academicYear: "",
     });
   }

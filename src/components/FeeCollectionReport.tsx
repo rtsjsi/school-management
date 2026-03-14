@@ -42,7 +42,7 @@ type ReportRow = {
   id: string;
   receipt_number: string;
   student_name?: string;
-  student_grade?: string;
+  student_standard?: string;
   student_division?: string;
   student_roll_number?: number;
   student_gr_no?: string;
@@ -84,8 +84,8 @@ export default function FeeCollectionReport() {
   const [quarter, setQuarter] = useState("");
   const [paymentMode, setPaymentMode] = useState("");
   const [studentId, setStudentId] = useState("");
-  const [grade, setGrade] = useState("");
-  const [students, setStudents] = useState<{ id: string; full_name: string; grade?: string }[]>([]);
+  const [standardFilter, setStandardFilter] = useState("");
+  const [students, setStudents] = useState<{ id: string; full_name: string; standard?: string }[]>([]);
   const [standards, setStandards] = useState<{ id: string; name: string }[]>([]);
   const [years, setYears] = useState<{ id: string; name: string }[]>([]);
   const [data, setData] = useState<ReportRow[] | null>(null);
@@ -131,7 +131,7 @@ export default function FeeCollectionReport() {
     if (quarter) params.set("quarter", quarter);
     if (paymentMode) params.set("paymentMode", paymentMode);
     if (studentId) params.set("studentId", studentId);
-    if (grade) params.set("grade", grade);
+    if (standardFilter) params.set("standard", standardFilter);
 
     fetch(`/api/fee-reports?${params}`)
       .then((r) => r.json())
@@ -182,7 +182,7 @@ export default function FeeCollectionReport() {
         chequeDate: row.cheque_date,
         onlineTransactionId: row.online_transaction_id,
         onlineTransactionRef: row.online_transaction_ref,
-        grade: row.student_grade,
+        standard: row.student_standard,
         division: row.student_division,
         rollNumber: row.student_roll_number,
         grNo: row.student_gr_no,
@@ -206,7 +206,7 @@ export default function FeeCollectionReport() {
         onlineTransactionRef: d.onlineTransactionRef,
         schoolName: school.name,
         schoolAddress: school.address,
-        grade: d.grade,
+        standard: d.standard,
         division: d.division,
         rollNumber: d.rollNumber,
         grNo: d.grNo,
@@ -236,7 +236,7 @@ export default function FeeCollectionReport() {
         chequeDate: row.cheque_date,
         onlineTransactionId: row.online_transaction_id,
         onlineTransactionRef: row.online_transaction_ref,
-        grade: row.student_grade,
+        standard: row.student_standard,
         division: row.student_division,
         rollNumber: row.student_roll_number,
         grNo: row.student_gr_no,
@@ -260,7 +260,7 @@ export default function FeeCollectionReport() {
         onlineTransactionRef: d.onlineTransactionRef,
         schoolName: school.name,
         schoolAddress: school.address,
-        grade: d.grade,
+        standard: d.standard,
         division: d.division,
         rollNumber: d.rollNumber,
         grNo: d.grNo,
@@ -385,8 +385,8 @@ export default function FeeCollectionReport() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Grade</Label>
-              <Select value={grade || "all"} onValueChange={(v) => setGrade(v === "all" ? "" : v)}>
+              <Label>Standard</Label>
+              <Select value={standardFilter || "all"} onValueChange={(v) => setStandardFilter(v === "all" ? "" : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
@@ -413,7 +413,7 @@ export default function FeeCollectionReport() {
                   <SelectItem value="all">All students</SelectItem>
                   {students.map((s) => (
                     <SelectItem key={s.id} value={s.id}>
-                      {s.full_name} {s.grade ? `(${s.grade})` : ""}
+                      {s.full_name} {s.standard ? `(${s.standard})` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -453,7 +453,7 @@ export default function FeeCollectionReport() {
                     <TableRow>
                       <TableHead>Receipt</TableHead>
                       <TableHead>Student</TableHead>
-                      <TableHead>Grade</TableHead>
+                      <TableHead>Standard</TableHead>
                       <TableHead>Amount</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead>Qtr</TableHead>
@@ -469,7 +469,7 @@ export default function FeeCollectionReport() {
                         <TableCell className="font-mono text-xs">{row.receipt_number}</TableCell>
                         <TableCell className="font-medium">{row.student_name ?? "—"}</TableCell>
                         <TableCell>
-                          {[row.student_grade, row.student_division].filter(Boolean).join(" ") || "—"}
+                          {[row.student_standard, row.student_division].filter(Boolean).join(" ") || "—"}
                         </TableCell>
                         <TableCell>{Number(row.amount).toLocaleString()}</TableCell>
                         <TableCell>{getFeeTypeLabel(row.fee_type)}</TableCell>

@@ -60,7 +60,7 @@ export interface ReceiptData {
   policyNotes?: string[];
   schoolName?: string;
   schoolAddress?: string;
-  grade?: string;
+  standard?: string;
   division?: string;
   rollNumber?: number | string;
   grNo?: string;
@@ -105,7 +105,7 @@ export function generateReceiptPDF(data: ReceiptData): Blob {
   const colRight = w / 2 + 5;
   const labelW = PDF_LAYOUT.labelWidth;
   const dateStr = data.collectedAt ? new Date(data.collectedAt).toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
-  const stdDiv = [data.grade, data.division].filter(Boolean).join(" ") || "—";
+  const stdDiv = [data.standard, data.division].filter(Boolean).join(" ") || "—";
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(PDF_LAYOUT.fontSizeBody);

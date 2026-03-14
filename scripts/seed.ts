@@ -552,7 +552,7 @@ async function seedFeeCollections() {
     .from("fee_structures")
     .select("id, grade_from, grade_to, fee_structure_items(fee_type, quarter, amount)")
     .eq("academic_year", ay);
-  const { data: students } = await supabase.from("students").select("id, grade, is_rte_quota").eq("status", "active");
+  const { data: students } = await supabase.from("students").select("id, standard, is_rte_quota").eq("status", "active");
   const nonRte = (students ?? []).filter((s) => !(s as { is_rte_quota?: boolean }).is_rte_quota);
 
   const GRADE_ORDER: Record<string, number> = {
@@ -567,7 +567,7 @@ async function seedFeeCollections() {
   const collections: { student_id: string; amount: number; quarter: number; academic_year: string; fee_type: string; payment_mode: string; receipt_number: string }[] = [];
 
   for (const s of nonRte.slice(0, 12)) {
-    const structure = (structures ?? []).find((st) => inRange(s.grade ?? "", st.grade_from, st.grade_to));
+    const structure = (structures ?? []).find((st) => inRange(s.standard ?? "", st.grade_from, st.grade_to));
     if (!structure) continue;
     const items = (structure.fee_structure_items as { fee_type: string; quarter: number; amount: number }[]) ?? [];
     for (const item of items.slice(0, 3)) {
