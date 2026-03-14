@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     const defaulters: {
       student_id: string;
       full_name: string;
-      grade: string;
+      standard: string;
       division: string;
       roll_number?: number;
       student_id_display?: string;
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
       if ((s as { is_rte_quota?: boolean }).is_rte_quota) continue;
 
       if (studentId && s.id !== studentId) continue;
-      if (standard && (s.standard ?? "") !== standard) continue;
+      if (grade && (s.standard ?? "") !== grade) continue;
       if (division && (s.division ?? "") !== division) continue;
 
       const studentStandard = s.standard ?? "";
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
         const std = Array.isArray(st.standards)
           ? (st.standards[0] as { name?: string })?.name
           : (st.standards as { name?: string } | null)?.name;
-        return std && std === studentGrade;
+        return std && std === studentStandard;
       });
       if (!structure) continue;
 
