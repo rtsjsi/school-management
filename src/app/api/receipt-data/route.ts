@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     if (error || !c) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     const s = Array.isArray(c.students) ? c.students[0] : c.students;
-    const student = s as { full_name?: string; grade?: string; division?: string; roll_number?: number; student_id?: string } | null;
+    const student = s as { full_name?: string; standard?: string; division?: string; roll_number?: number; student_id?: string } | null;
     const studentId = (c as { student_id?: string }).student_id;
     if (!studentId) return NextResponse.json({ error: "Invalid collection" }, { status: 400 });
 
