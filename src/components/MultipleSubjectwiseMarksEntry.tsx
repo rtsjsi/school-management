@@ -19,7 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 
 type Exam = { id: string; name: string; exam_type: string; standard: string | null; held_at: string };
-type Student = { id: string; full_name: string; grade: string | null; division: string | null };
+type Student = { id: string; full_name: string; standard: string | null; division: string | null };
 type Subject = { id: string; name: string; code: string | null; evaluation_type: string };
 type CellState = { score: string; max_score: string; grade: string; is_absent: boolean };
 
@@ -116,7 +116,7 @@ export default function MultipleSubjectwiseMarksEntry() {
         .order("full_name");
       if (gradeFilter && gradeFilter !== "all") query = query.eq("standard", gradeFilter);
       if (divisionFilter && divisionFilter !== "all") query = query.eq("division", divisionFilter);
-      if (exam?.standard && exam.standard !== "All" && (!gradeFilter || gradeFilter === "all")) query = query.eq("grade", exam.standard);
+      if (exam?.standard && exam.standard !== "All" && (!gradeFilter || gradeFilter === "all")) query = query.eq("standard", exam.standard);
       const { data: st } = await query;
       const studentList = (st ?? []) as Student[];
       setStudents(studentList);
