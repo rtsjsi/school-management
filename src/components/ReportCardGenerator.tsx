@@ -14,7 +14,7 @@ type Student = { id: string; full_name: string; grade: string | null; division: 
 type Subject = { id: string; name: string; evaluation_type?: string; max_marks?: number | null };
 type ExamResultSubject = { student_id: string; subject_id: string; score: number | null; max_score: number | null; grade: string | null; is_absent: boolean };
 
-type AllowedClassNames = { gradeName: string; divisionName: string }[];
+type AllowedClassNames = { standardName: string; divisionName: string }[];
 
 export default function ReportCardGenerator({ allowedClassNames }: { allowedClassNames?: AllowedClassNames } = {}) {
   const [exams, setExams] = useState<Exam[]>([]);
@@ -26,8 +26,8 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
 
   const supabase = createClient();
   const school = useSchoolSettings();
-  const allowedGradeSet = allowedClassNames?.length ? new Set(allowedClassNames.map((p) => p.gradeName)) : null;
-  const allowedPairSet = allowedClassNames?.length ? new Set(allowedClassNames.map((p) => `${p.gradeName}\0${p.divisionName}`)) : null;
+  const allowedStandardSet = allowedClassNames?.length ? new Set(allowedClassNames.map((p) => p.standardName)) : null;
+  const allowedPairSet = allowedClassNames?.length ? new Set(allowedClassNames.map((p) => `${p.standardName}\0${p.divisionName}`)) : null;
 
   useEffect(() => {
     supabase
@@ -36,10 +36,10 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
       .order("held_at", { ascending: false })
       .then(({ data }) => {
         let list = (data ?? []) as Exam[];
-        if (allowedGradeSet) list = list.filter((e) => e.standard && allowedGradeSet.has(e.standard));
+        if (allowedStandardSet) list = list.filter((e) => e.standard && allowedStandardSet.has(e.standard));
         setExams(list);
       });
-  }, [supabase, allowedGradeSet?.size]);
+  }, [supabase, allowedStandardSet?.size]);
 
   useEffect(() => {
     supabase

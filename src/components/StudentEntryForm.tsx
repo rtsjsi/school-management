@@ -18,7 +18,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StudentDocumentsPhotos } from "@/components/StudentDocumentsPhotos";
 import { CameraCaptureButton } from "@/components/CameraCapture";
-import { GradeDivisionYearSelects } from "@/components/GradeDivisionYearSelects";
+import { StandardDivisionYearSelects } from "@/components/StandardDivisionYearSelects";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Upload, FileText, ImageIcon } from "lucide-react";
@@ -54,7 +54,7 @@ const defaultForm = () => ({
   blood_group: "",
   address: "",
   district: "",
-  grade: "",
+  standard: "",
   division: "",
   roll_number: "",
   admission_date: "",
@@ -134,7 +134,7 @@ export default function StudentEntryForm({
     { key: "mother_name", label: "Mother name" },
     { key: "parent_contact", label: "Parent contact" },
     { key: "whatsapp_no", label: "WhatsApp no" },
-    { key: "grade", label: "Grade" },
+    { key: "standard", label: "Standard" },
     { key: "division", label: "Division" },
     { key: "admission_type", label: "Admission type" },
     { key: "admission_date", label: "Admission date" },
@@ -247,7 +247,7 @@ export default function StudentEntryForm({
       }
 
       if (inserted?.id) {
-        const enrollResult = await upsertCurrentEnrollment(inserted.id, form.grade, form.division);
+        const enrollResult = await upsertCurrentEnrollment(inserted.id, form.standard, form.division);
         if (!enrollResult.ok) {
           const message = `Student created but enrollment failed: ${enrollResult.error}`;
           setError(message);
@@ -534,7 +534,7 @@ export default function StudentEntryForm({
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Admission & Academic Details</CardTitle>
-            <CardDescription>Grade, division, admission type, and previous school.</CardDescription>
+            <CardDescription>Standard, division, admission type, and previous school.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -553,17 +553,17 @@ export default function StudentEntryForm({
                   <Label htmlFor="admission_date">Admission date *</Label>
                   <Input id="admission_date" type="date" value={form.admission_date} onChange={(e) => set("admission_date", e.target.value)} required />
                 </div>
-                <GradeDivisionYearSelects
-                  grade={form.grade}
+                <StandardDivisionYearSelects
+                  standard={form.standard}
                   division={form.division}
                   academicYear={form.academic_year}
-                  onGradeChange={(v) => {
-                    set("grade", v);
+                  onStandardChange={(v) => {
+                    set("standard", v);
                     set("division", "");
                   }}
                   onDivisionChange={(v) => set("division", v)}
                   onAcademicYearChange={(v) => set("academic_year", v)}
-                  gradeRequired
+                  standardRequired
                   divisionRequired
                   academicYearRequired
                 />

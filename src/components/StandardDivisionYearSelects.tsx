@@ -9,33 +9,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { fetchStandards, fetchDivisionsByGrade, fetchAcademicYears } from "@/lib/lov";
+import { fetchStandards, fetchDivisionsByStandard, fetchAcademicYears } from "@/lib/lov";
 
-interface GradeDivisionYearSelectsProps {
-  grade: string;
+interface StandardDivisionYearSelectsProps {
+  standard: string;
   division: string;
   academicYear?: string;
-  onGradeChange: (v: string) => void;
+  onStandardChange: (v: string) => void;
   onDivisionChange: (v: string) => void;
   onAcademicYearChange?: (v: string) => void;
-  gradeRequired?: boolean;
+  standardRequired?: boolean;
   divisionRequired?: boolean;
   showAcademicYear?: boolean;
   academicYearRequired?: boolean;
 }
 
-export function GradeDivisionYearSelects({
-  grade,
+export function StandardDivisionYearSelects({
+  standard,
   division,
   academicYear,
-  onGradeChange,
+  onStandardChange,
   onDivisionChange,
   onAcademicYearChange,
-  gradeRequired,
+  standardRequired,
   divisionRequired,
   showAcademicYear = true,
   academicYearRequired,
-}: GradeDivisionYearSelectsProps) {
+}: StandardDivisionYearSelectsProps) {
   const [standards, setStandards] = useState<{ id: string; name: string }[]>([]);
   const [divisions, setDivisions] = useState<{ id: string; name: string }[]>([]);
   const [years, setYears] = useState<{ id: string; name: string; status?: string | null }[]>([]);
@@ -52,8 +52,8 @@ export function GradeDivisionYearSelects({
   }, []);
 
   useEffect(() => {
-    if (grade) {
-      fetchDivisionsByGrade(grade).then((data) => {
+    if (standard) {
+      fetchDivisionsByStandard(standard).then((data) => {
         const list = [...data];
         if (division && !list.some((d) => d.name === division)) {
           list.push({ id: `existing-${division}`, name: division });
@@ -63,13 +63,13 @@ export function GradeDivisionYearSelects({
     } else {
       setDivisions([]);
     }
-  }, [grade, division]);
+  }, [standard, division]);
 
   return (
     <>
       <div className="space-y-2">
         <Label>Standard *</Label>
-        <Select value={grade || " "} onValueChange={(v) => onGradeChange(v === " " ? "" : v)} required={gradeRequired}>
+        <Select value={standard || " "} onValueChange={(v) => onStandardChange(v === " " ? "" : v)} required={standardRequired}>
           <SelectTrigger>
             <SelectValue placeholder="Select standard" />
           </SelectTrigger>
@@ -88,10 +88,10 @@ export function GradeDivisionYearSelects({
           value={division || " "}
           onValueChange={(v) => onDivisionChange(v === " " ? "" : v)}
           required={divisionRequired}
-          disabled={!grade}
+          disabled={!standard}
         >
           <SelectTrigger>
-            <SelectValue placeholder={grade ? "Select division" : "Select standard first"} />
+            <SelectValue placeholder={standard ? "Select division" : "Select standard first"} />
           </SelectTrigger>
           <SelectContent>
             {divisions.map((d) => (

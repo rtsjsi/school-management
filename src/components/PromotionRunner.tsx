@@ -23,7 +23,7 @@ export function PromotionRunner() {
   const [selectedYearId, setSelectedYearId] = useState<string>("");
   const [outcomes, setOutcomes] = useState<EnrollmentOutcome[]>([]);
   const [selectedEnrollmentIds, setSelectedEnrollmentIds] = useState<Set<string>>(new Set());
-  const [selectedGrade, setSelectedGrade] = useState<string>("");
+  const [selectedStandard, setSelectedStandard] = useState<string>("");
   const [selectedDivision, setSelectedDivision] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [running, setRunning] = useState(false);
@@ -53,18 +53,18 @@ export function PromotionRunner() {
   }, []);
 
   const handleLoad = async () => {
-    if (!selectedYearId || !selectedGrade || !selectedDivision) return;
+    if (!selectedYearId || !selectedStandard || !selectedDivision) return;
     setLoading(true);
     setError(null);
     try {
       const list = await getPromotionCandidates(selectedYearId);
       const filteredBase = list.filter(
-        (o) => o.gradeName === selectedGrade && o.divisionName === selectedDivision
+        (o) => o.standardName === selectedStandard && o.divisionName === selectedDivision
       );
 
       const enhanced: EnrollmentOutcome[] = filteredBase.map((o) => {
-        if (!o.nextGradeId) return o;
-        const nextDivs = divisions.filter((d) => d.standard_id === o.nextGradeId);
+        if (!o.nextStandardId) return o;
+        const nextDivs = divisions.filter((d) => d.standard_id === o.nextStandardId);
         if (!nextDivs.length) return o;
 
         // Prefer same division name if it exists in next standard, else first division
@@ -85,31 +85,31 @@ export function PromotionRunner() {
     }
   };
 
-  const gradeOptions = useMemo(() => standards.map((s) => s.name), [standards]);
+  const standardOptions = useMemo(() => standards.map((s) => s.name), [standards]);
 
   const divisionOptions = useMemo(() => {
-    if (!selectedGrade) return [];
-    const std = standards.find((s) => s.name === selectedGrade);
+    if (!selectedStandard) return [];
+    const std = standards.find((s) => s.name === selectedStandard);
     if (!std) return [];
     return divisions
       .filter((d) => d.standard_id === std.id)
       .map((d) => d.name)
       .filter((value, index, self) => self.indexOf(value) === index)
       .sort((a, b) => a.localeCompare(b));
-  }, [divisions, standards, selectedGrade]);
+  }, [divisions, standards, selectedStandard]);
 
   const filteredOutcomes = useMemo(
     () =>
       outcomes.filter(
         (o) =>
-          (!selectedGrade || o.gradeName === selectedGrade) &&
+          (!selectedStandard || o.standardName === selectedStandard) &&
           (!selectedDivision || o.divisionName === selectedDivision)
       ),
-    [outcomes, selectedGrade, selectedDivision]
+    [outcomes, selectedStandard, selectedDivision]
   );
 
   const handleRun = async () => {
-    if (!selectedYearId || !selectedGrade || !selectedDivision || selectedEnrollmentIds.size === 0) return;
+    if (!selectedYearId || !selectedStandard || !selectedDivision || selectedEnrollmentIds.size === 0) return;
     const selected = outcomes.filter((o) => selectedEnrollmentIds.has(o.enrollmentId));
     if (selected.length === 0) return;
     setRunning(true);
@@ -159,9 +159,9 @@ export function PromotionRunner() {
         <div className="space-y-2">
           <Label>Standard *</Label>
           <Select
-            value={selectedGrade}
+            value={selectedStandard}
             onValueChange={(v) => {
-              setSelectedGrade(v);
+              setSelectedStandard(v);
               setSelectedDivision("");
             }}
           >
@@ -169,7 +169,7 @@ export function PromotionRunner() {
               <SelectValue placeholder="Select standard to promote" />
             </SelectTrigger>
             <SelectContent>
-              {gradeOptions.map((g) => (
+              {standardOptions.map((g) => (
                 <SelectItem key={g} value={g}>
                   {g}
                 </SelectItem>
@@ -182,10 +182,10 @@ export function PromotionRunner() {
           <Select
             value={selectedDivision}
             onValueChange={setSelectedDivision}
-            disabled={!selectedGrade}
+            disabled={!selectedStandard}
           >
             <SelectTrigger>
-              <SelectValue placeholder={selectedGrade ? "Select division" : "Select standard first"} />
+              <SelectValue placeholder={selectedStandard ? "Select division" : "Select standard first"} />
             </SelectTrigger>
             <SelectContent>
               {divisionOptions.map((d) => (
@@ -200,7 +200,7 @@ export function PromotionRunner() {
       <div className="flex gap-2">
         <Button
           onClick={handleLoad}
-          disabled={!selectedYearId || !selectedGrade || !selectedDivision || loading}
+          disabled={!selectedYearId || !selectedStandard || !selectedDivision || loading}
         >
           {loading ? "Loading…" : "Load enrollments"}
         </Button>
@@ -245,8 +245,8 @@ export function PromotionRunner() {
                 <tbody>
                   {filteredOutcomes.map((o) => {
                     const nextDivisions =
-                      o.nextGradeId && divisions.length
-                        ? divisions.filter((d) => d.standard_id === o.nextGradeId)
+                      o.nextStandardId && divisions.length
+                        ? divisions.filter((d) => d.standard_id === o.nextStandardId)
                         : [];
                     return (
                       <tr key={o.enrollmentId} className="border-b">
@@ -267,19 +267,19 @@ export function PromotionRunner() {
                           />
                         </td>
                         <td className="p-2">{o.studentName}</td>
-                        <td className="p-2">{o.gradeName}</td>
+                        <td className="p-2">{o.standardName}</td>
                         <td className="p-2">{o.divisionName}</td>
                         <td className="p-2">
-                          {o.nextGradeName ? (
+                          {o.nextStandardName ? (
                             <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
-                              {o.nextGradeName}
+                              {o.nextStandardName}
                             </span>
                           ) : (
                             "—"
                           )}
                         </td>
                         <td className="p-2">
-                          {o.nextGradeId && nextDivisions.length > 0 ? (
+                          {o.nextStandardId && nextDivisions.length > 0 ? (
                             <Select
                               value={o.nextDivisionId ?? undefined}
                               onValueChange={(val) =>

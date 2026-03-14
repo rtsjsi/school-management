@@ -5,13 +5,13 @@ import { createClient } from "@/lib/supabase/server";
 export type EnrollmentOutcome = {
   enrollmentId: string;
   studentId: string;
-  gradeId: string;
+  standardId: string;
   studentName: string;
-  gradeName: string;
+  standardName: string;
   divisionName: string;
   status: "promoted" | "detained" | "graduated" | "manual";
-  nextGradeId: string | null;
-  nextGradeName: string | null;
+  nextStandardId: string | null;
+  nextStandardName: string | null;
   nextDivisionId?: string | null;
   nextDivisionName?: string | null;
 };
@@ -35,13 +35,13 @@ export async function getEnrollmentsForYear(academicYearId: string): Promise<Enr
     outcomes.push({
       enrollmentId: e.id,
       studentId: e.student_id,
-      gradeId: e.standard_id,
+      standardId: e.standard_id,
       studentName: (s.data?.full_name as string) ?? "",
-      gradeName: (g.data?.name as string) ?? "",
+      standardName: (g.data?.name as string) ?? "",
       divisionName: (d.data?.name as string) ?? "",
       status: "manual",
-      nextGradeId: null,
-      nextGradeName: null,
+      nextStandardId: null,
+      nextStandardName: null,
     });
   }
   return outcomes;
@@ -72,14 +72,14 @@ export async function getPromotionCandidates(academicYearId: string): Promise<En
   const studentsById = new Map((students ?? []).map((s) => [s.id, s]));
   const standardsById = new Map(standardsList.map((s) => [s.id, s]));
 
-  // Pre-compute next-grade mapping and highest grade
+  // Pre-compute next-standard mapping and highest standard
   let maxSortOrder = -Infinity;
-  const nextGradeById = new Map<string, string | null>();
+  const nextStandardById = new Map<string, string | null>();
   for (let i = 0; i < standardsList.length; i++) {
     const current = standardsList[i];
     maxSortOrder = Math.max(maxSortOrder, current.sort_order ?? 0);
     const next = standardsList[i + 1];
-    nextGradeById.set(current.id, next ? next.id : null);
+    nextStandardById.set(current.id, next ? next.id : null);
   }
 
   const outcomes: EnrollmentOutcome[] = [];
@@ -88,8 +88,8 @@ export async function getPromotionCandidates(academicYearId: string): Promise<En
     const div = divisionsById.get(e.division_id);
     const stu = studentsById.get(e.student_id);
 
-    const gradeId = e.standard_id;
-    const gradeName = (std?.name as string) ?? "";
+    const standardId = e.standard_id;
+    const standardName = (std?.name as string) ?? "";
     const divisionName = (div?.name as string) ?? "";
     const studentName = (stu?.full_name as string) ?? "";
 
@@ -97,31 +97,31 @@ export async function getPromotionCandidates(academicYearId: string): Promise<En
     const isHighest = sortOrder !== null && sortOrder >= maxSortOrder;
 
     let status: EnrollmentOutcome["status"];
-    let nextGradeId: string | null = null;
-    let nextGradeName: string | null = null;
+    let nextStandardId: string | null = null;
+    let nextStandardName: string | null = null;
 
     if (isHighest) {
       status = "graduated";
     } else {
       status = "promoted";
-      const nid = nextGradeById.get(gradeId) ?? null;
+      const nid = nextStandardById.get(standardId) ?? null;
       if (nid) {
-        nextGradeId = nid;
+        nextStandardId = nid;
         const nextStd = standardsById.get(nid);
-        nextGradeName = (nextStd?.name as string) ?? null;
+        nextStandardName = (nextStd?.name as string) ?? null;
       }
     }
 
     outcomes.push({
       enrollmentId: e.id,
       studentId: e.student_id,
-      gradeId,
+      standardId,
       studentName,
-      gradeName,
+      standardName,
       divisionName,
       status,
-      nextGradeId,
-      nextGradeName,
+      nextStandardId,
+      nextStandardName,
     });
   }
 
@@ -161,7 +161,7 @@ export async function runPromotion(
     if (updateErr) return { ok: false, error: updateErr.message };
   }
 
-  const toCreate = outcomes.filter((o) => (o.status === "promoted" || o.status === "detained") && o.nextGradeId);
+  const toCreate = outcomes.filter((o) => (o.status === "promoted" || o.status === "detained") && o.nextStandardId);
   for (const o of toCreate) {
     const { data: existing } = await supabase
       .from("student_enrollments")
@@ -179,7 +179,7 @@ export async function runPromotion(
     const { error: insertErr } = await supabase.from("student_enrollments").insert({
       student_id: o.studentId,
       academic_year_id: nextYearId,
-      standard_id: o.nextGradeId,
+      standard_id: o.nextStandardId,
       division_id: divisionId,
       status: "active",
       promoted_from_enrollment_id: o.enrollmentId,
@@ -187,12 +187,12 @@ export async function runPromotion(
     if (insertErr) return { ok: false, error: insertErr.message };
   }
 
-  // Update student master with new standard (grade) and division (division)
+  // Update student master with new standard and division
   for (const o of outcomes) {
-    if (!o.nextGradeName || !o.nextDivisionName) continue;
+    if (!o.nextStandardName || !o.nextDivisionName) continue;
     const { error: studentErr } = await supabase
       .from("students")
-      .update({ grade: o.nextGradeName, division: o.nextDivisionName })
+      .update({ grade: o.nextStandardName, division: o.nextDivisionName })
       .eq("id", o.studentId);
     if (studentErr) return { ok: false, error: studentErr.message };
   }

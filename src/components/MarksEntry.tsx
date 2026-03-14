@@ -39,23 +39,23 @@ type Student = { id: string; full_name: string; grade: string | null; division: 
 type Subject = { id: string; name: string; code: string | null; evaluation_type: string };
 type CellState = { score: string; max_score: string; grade: string; is_absent: boolean };
 
-type AllowedClassNames = { gradeName: string; divisionName: string }[];
+type AllowedClassNames = { standardName: string; divisionName: string }[];
 
 export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: AllowedClassNames } = {}) {
   const router = useRouter();
   const supabase = createClient();
-  const allowedGradeSet = allowedClassNames && allowedClassNames.length > 0
-    ? new Set(allowedClassNames.map((p) => p.gradeName))
+  const allowedStandardSet = allowedClassNames && allowedClassNames.length > 0
+    ? new Set(allowedClassNames.map((p) => p.standardName))
     : null;
   const allowedPairSet = allowedClassNames && allowedClassNames.length > 0
-    ? new Set(allowedClassNames.map((p) => `${p.gradeName}\0${p.divisionName}`))
+    ? new Set(allowedClassNames.map((p) => `${p.standardName}\0${p.divisionName}`))
     : null;
 
   const [exams, setExams] = useState<Exam[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedExamId, setSelectedExamId] = useState("");
-  const [gradeFilter, setGradeFilter] = useState<string>("all");
+  const [standardFilter, setStandardFilter] = useState<string>("all");
   const [divisionFilter, setDivisionFilter] = useState<string>("all");
   const [marks, setMarks] = useState<Record<string, Record<string, CellState>>>({});
   const [loading, setLoading] = useState(false);
@@ -65,9 +65,9 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
   const [examSubjectMaxMarks, setExamSubjectMaxMarks] = useState<Record<string, number>>({});
 
   const exam = exams.find((e) => e.id === selectedExamId);
-  const effectiveGrade =
-    gradeFilter && gradeFilter !== "all"
-      ? gradeFilter
+  const effectiveStandard =
+    standardFilter && standardFilter !== "all"
+      ? standardFilter
       : exam?.standard
         ? exam.standard
         : null;
@@ -88,11 +88,11 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
       if (ay?.id) query = query.eq("academic_year_id", ay.id);
       const { data: examData } = await query;
       let list = (examData ?? []) as unknown as Exam[];
-      if (allowedGradeSet) list = list.filter((e) => e.standard && allowedGradeSet.has(e.standard));
+      if (allowedStandardSet) list = list.filter((e) => e.standard && allowedStandardSet.has(e.standard));
       setExams(list);
     })();
-    if (allowedGradeSet) {
-      setClassNames(Array.from(allowedGradeSet));
+    if (allowedStandardSet) {
+      setClassNames(Array.from(allowedStandardSet));
     } else {
       supabase
         .from("standards")
@@ -100,29 +100,29 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
         .order("sort_order")
         .then(({ data }) => setClassNames((data ?? []).map((c: { name: string }) => c.name)));
     }
-  }, [allowedGradeSet ? Array.from(allowedGradeSet).join(",") : "all"]);
+  }, [allowedStandardSet ? Array.from(allowedStandardSet).join(",") : "all"]);
 
   // When exam changes, reset filters to exam's standard
   useEffect(() => {
     if (exam?.standard) {
-      setGradeFilter(exam.standard);
+      setStandardFilter(exam.standard);
       setDivisionFilter("all");
     } else {
-      setGradeFilter("all");
+      setStandardFilter("all");
       setDivisionFilter("all");
     }
   }, [selectedExamId, exam?.standard]);
 
   // Load subjects for effective grade
   useEffect(() => {
-    if (!effectiveGrade) {
+    if (!effectiveStandard) {
       setSubjects([]);
       return;
     }
     supabase
       .from("standards")
       .select("id")
-      .eq("name", effectiveGrade)
+      .eq("name", effectiveStandard)
       .maybeSingle()
       .then(({ data: classRow }) => {
         if (!classRow?.id) {
@@ -136,7 +136,7 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
           .order("sort_order")
           .then(({ data }) => setSubjects((data ?? []) as Subject[]));
       });
-  }, [effectiveGrade]);
+  }, [effectiveStandard]);
 
   // Load max marks per subject for selected exam
   useEffect(() => {
@@ -168,9 +168,9 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
         .eq("status", "active")
         .order("full_name");
       // When exam is for a specific standard, always filter by that standard (ignore other selections)
-      const gradeToUse =
-        exam?.standard && exam.standard.trim() !== "" ? exam.standard : gradeFilter;
-      if (gradeToUse && gradeToUse !== "all") query = query.eq("grade", gradeToUse);
+      const standardToUse =
+        exam?.standard && exam.standard.trim() !== "" ? exam.standard : standardFilter;
+      if (standardToUse && standardToUse !== "all") query = query.eq("grade", standardToUse);
       if (divisionFilter && divisionFilter !== "all") query = query.eq("division", divisionFilter);
 
       const { data: st } = await query;
@@ -217,7 +217,7 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
       }
       setMarks(initial);
     })().finally(() => setLoading(false));
-  }, [selectedExamId, exam?.standard, gradeFilter, divisionFilter, subjects, allowedPairSet?.size ?? 0]);
+  }, [selectedExamId, exam?.standard, standardFilter, divisionFilter, subjects, allowedPairSet?.size ?? 0]);
 
   useEffect(() => {
     if (!selectedExamId || subjects.length === 0) {
@@ -226,7 +226,7 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
       return;
     }
     loadStudentsAndMarks();
-  }, [selectedExamId, subjects.length, gradeFilter, divisionFilter, loadStudentsAndMarks]);
+  }, [selectedExamId, subjects.length, standardFilter, divisionFilter, loadStudentsAndMarks]);
 
   const setCell = (studentId: string, subjectId: string, patch: Partial<CellState>) => {
     setMarks((prev) => {
@@ -305,7 +305,7 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
   };
 
   // When exam is for a specific standard, only allow that standard (no other standards like Jr KG)
-  const gradesForFilter =
+  const standardsForFilter =
     exam?.standard && exam.standard.trim() !== ""
       ? [exam.standard]
       : classNames.length > 0
@@ -347,8 +347,8 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
             <div className="space-y-2">
               <Label>Standard</Label>
               <Select
-                value={gradeFilter}
-                onValueChange={setGradeFilter}
+                value={standardFilter}
+                onValueChange={setStandardFilter}
                 disabled={!!(exam?.standard && exam.standard.trim() !== "")}
               >
                 <SelectTrigger className="w-[120px]">
@@ -358,7 +358,7 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
                   {!(exam?.standard && exam.standard.trim() !== "") && (
                     <SelectItem value="all">All</SelectItem>
                   )}
-                  {gradesForFilter.map((g) => (
+                  {standardsForFilter.map((g) => (
                     <SelectItem key={g} value={g}>
                       {g}
                     </SelectItem>
@@ -495,7 +495,7 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
 
           {selectedExamId && subjects.length === 0 && !loading && (
             <p className="text-sm text-muted-foreground">
-              {effectiveGrade
+              {effectiveStandard
                 ? "No subjects for this standard. Add subjects in Standard management → Subject management."
                 : "Select a standard to load subjects."}
             </p>

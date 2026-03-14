@@ -389,7 +389,7 @@ function StudentExitDialog({
   );
 }
 
-type AllowedClassNames = { gradeName: string; divisionName: string }[];
+type AllowedClassNames = { standardName: string; divisionName: string }[];
 
 export function ManageStudentsList({
   canEdit = true,
@@ -401,10 +401,10 @@ export function ManageStudentsList({
   const [students, setStudents] = useState<StudentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [gradeFilter, setGradeFilter] = useState("all");
+  const [standardFilter, setStandardFilter] = useState("all");
   const [divisionFilter, setDivisionFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [grades, setGrades] = useState<{ id: string; name: string }[]>([]);
+  const [standards, setStandards] = useState<{ id: string; name: string }[]>([]);
   const [divisions, setDivisions] = useState<{ id: string; name: string }[]>([]);
   const [activeYearName, setActiveYearName] = useState<string | undefined>(undefined);
   const [addOpen, setAddOpen] = useState(false);
@@ -412,15 +412,15 @@ export function ManageStudentsList({
 
   const supabase = createClient();
   const restrictByClass = allowedClassNames !== undefined;
-  const allowedGradeNames = restrictByClass && allowedClassNames.length > 0 ? Array.from(new Set(allowedClassNames.map((p) => p.gradeName))) : [];
+  const allowedStandardNames = restrictByClass && allowedClassNames.length > 0 ? Array.from(new Set(allowedClassNames.map((p) => p.standardName))) : [];
   const allowedDivisionNames = restrictByClass && allowedClassNames.length > 0 ? Array.from(new Set(allowedClassNames.map((p) => p.divisionName))) : [];
 
   useEffect(() => {
     if (restrictByClass) {
-      setGrades(allowedGradeNames.map((name) => ({ id: name, name })));
+      setStandards(allowedStandardNames.map((name) => ({ id: name, name })));
       setDivisions(allowedDivisionNames.map((name) => ({ id: name, name })));
     } else {
-      fetchStandards().then(setGrades);
+      fetchStandards().then(setStandards);
       fetchAllDivisions().then(setDivisions);
     }
     supabase
@@ -431,7 +431,7 @@ export function ManageStudentsList({
       .then(({ data }) => {
         if (data?.name) setActiveYearName(data.name as string);
       });
-  }, [restrictByClass, allowedGradeNames.join(","), allowedDivisionNames.join(",")]);
+  }, [restrictByClass, allowedStandardNames.join(","), allowedDivisionNames.join(",")]);
 
   useEffect(() => {
     let q = supabase
@@ -439,7 +439,7 @@ export function ManageStudentsList({
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (gradeFilter && gradeFilter !== "all") q = q.eq("grade", gradeFilter);
+    if (standardFilter && standardFilter !== "all") q = q.eq("grade", standardFilter);
     if (divisionFilter && divisionFilter !== "all") q = q.eq("division", divisionFilter);
     if (statusFilter && statusFilter !== "all") q = q.eq("status", statusFilter);
     if (search.trim()) {
@@ -450,13 +450,13 @@ export function ManageStudentsList({
       const { data } = await q;
       let rows = (data ?? []) as StudentRow[];
       if (restrictByClass && allowedClassNames && allowedClassNames.length > 0) {
-        const set = new Set(allowedClassNames.map((p) => `${p.gradeName}\0${p.divisionName}`));
+        const set = new Set(allowedClassNames.map((p) => `${p.standardName}\0${p.divisionName}`));
         rows = rows.filter((s) => set.has(`${s.grade ?? ""}\0${s.division ?? ""}`));
       }
       setStudents(rows);
       setLoading(false);
     })();
-  }, [search, gradeFilter, divisionFilter, statusFilter, reloadKey, restrictByClass, allowedClassNames?.length]);
+  }, [search, standardFilter, divisionFilter, statusFilter, reloadKey, restrictByClass, allowedClassNames?.length]);
 
   const getStatusBadge = (status: string) => {
     const map: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -484,11 +484,11 @@ export function ManageStudentsList({
             </div>
             <div className="space-y-2 w-28">
               <Label>Standard</Label>
-              <Select value={gradeFilter} onValueChange={setGradeFilter}>
+              <Select value={standardFilter} onValueChange={setStandardFilter}>
                 <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All</SelectItem>
-                  {grades.map((g) => (
+                  {standards.map((g) => (
                     <SelectItem key={g.id} value={g.name}>{g.name}</SelectItem>
                   ))}
                 </SelectContent>

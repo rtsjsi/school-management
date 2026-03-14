@@ -26,22 +26,11 @@ export async function fetchGrades(): Promise<GradeOption[]> {
   return (data ?? []) as GradeOption[];
 }
 
-export async function fetchDivisionsByGradeId(gradeId: string): Promise<DivisionOption[]> {
-  if (!gradeId) return [];
-  const supabase = createClient();
-  const { data } = await supabase
-    .from("divisions")
-    .select("id, name")
-    .eq("standard_id", gradeId)
-    .order("sort_order");
-  return (data ?? []) as DivisionOption[];
-}
-
 export async function fetchDivisionsByStandardId(standardId: string): Promise<DivisionOption[]> {
   if (!standardId) return [];
   const supabase = createClient();
   const { data } = await supabase
-    .from("standard_divisions")
+    .from("divisions")
     .select("id, name")
     .eq("standard_id", standardId)
     .order("sort_order");
@@ -49,15 +38,18 @@ export async function fetchDivisionsByStandardId(standardId: string): Promise<Di
 }
 
 /** @deprecated Use fetchDivisionsByStandardId */
+export const fetchDivisionsByGradeId = fetchDivisionsByStandardId;
+
+/** @deprecated Use fetchDivisionsByStandardId with standard name lookup */
 export const fetchDivisionsByClassId = fetchDivisionsByStandardId;
 
-export async function fetchDivisionsByGrade(grade: string): Promise<DivisionOption[]> {
-  if (!grade.trim()) return [];
+export async function fetchDivisionsByStandard(standardName: string): Promise<DivisionOption[]> {
+  if (!standardName.trim()) return [];
   const supabase = createClient();
   const { data: standardRow } = await supabase
     .from("standards")
     .select("id")
-    .eq("name", grade.trim())
+    .eq("name", standardName.trim())
     .maybeSingle();
   if (!standardRow) return [];
   return fetchDivisionsByStandardId(standardRow.id);
@@ -66,7 +58,7 @@ export async function fetchDivisionsByGrade(grade: string): Promise<DivisionOpti
 export async function fetchAllDivisions(): Promise<DivisionOption[]> {
   const supabase = createClient();
   const { data } = await supabase
-    .from("standard_divisions")
+    .from("divisions")
     .select("id, name")
     .order("name");
   const seen = new Set<string>();

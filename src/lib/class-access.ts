@@ -11,8 +11,8 @@ export type AllowedClassesResult = {
   pairs: AllowedClass[];
 };
 
-/** Pairs as grade/division names for filtering students table (students.grade, students.division). */
-export type AllowedClassNames = { gradeName: string; divisionName: string }[];
+/** Pairs as standard/division names for filtering students table (students.grade, students.division). */
+export type AllowedClassNames = { standardName: string; divisionName: string }[];
 
 /** True if the user's data access should be restricted by allowed classes (teacher, auditor). */
 export function shouldApplyClassFilter(user: AuthUser | null): boolean {
@@ -45,7 +45,7 @@ export const getAllowedClasses = cache(async (profileId: string): Promise<Allowe
   };
 });
 
-/** Get allowed classes as (gradeName, divisionName) for filtering students. Cached. */
+/** Get allowed classes as (standardName, divisionName) for filtering students. Cached. */
 export const getAllowedClassNames = cache(async (profileId: string): Promise<AllowedClassNames | null> => {
   const allowed = await getAllowedClasses(profileId);
   if (allowed.pairs.length === 0) return null;
@@ -59,9 +59,9 @@ export const getAllowedClassNames = cache(async (profileId: string): Promise<All
   const stdMap = (stdRes.data ?? []).reduce((acc, s) => ({ ...acc, [s.id]: s.name }), {} as Record<string, string>);
   const divMap = (divRes.data ?? []).reduce((acc, d) => ({ ...acc, [d.id]: d.name }), {} as Record<string, string>);
   return allowed.pairs.map((p) => ({
-    gradeName: stdMap[p.standardId] ?? "",
+    standardName: stdMap[p.standardId] ?? "",
     divisionName: divMap[p.divisionId] ?? "",
-  })).filter((n) => n.gradeName && n.divisionName);
+  })).filter((n) => n.standardName && n.divisionName);
 });
 
 /** Student IDs that belong to allowed classes in the active academic year. Returns null = no filter (all). Empty Set = no access. */
