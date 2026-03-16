@@ -282,9 +282,11 @@ function StudentExitDialog({
         return;
       }
 
+      const enrollmentStatus = form.reason === "transfer" ? "transferred" : "withdrawn";
+
       await supabase
         .from("student_enrollments")
-        .update({ status: "inactive" })
+        .update({ status: enrollmentStatus })
         .eq("student_id", studentId)
         .eq("status", "active");
 
@@ -340,10 +342,7 @@ function StudentExitDialog({
                 <SelectValue placeholder="Select reason" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="completed">Completed course / graduated</SelectItem>
                 <SelectItem value="transfer">Transferred to another school</SelectItem>
-                <SelectItem value="fee_default">Fee default / non-payment</SelectItem>
-                <SelectItem value="personal">Personal reasons</SelectItem>
                 <SelectItem value="other">Other</SelectItem>
               </SelectContent>
             </Select>
