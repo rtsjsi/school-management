@@ -12,8 +12,8 @@ TRUNCATE TABLE public.fee_structure_items RESTART IDENTITY CASCADE;
 TRUNCATE TABLE public.fee_structures      RESTART IDENTITY CASCADE;
 
 -- 3) Attendance data (attendance_approved was dropped after being merged)
-TRUNCATE TABLE public.employee_attendance_daily  RESTART IDENTITY CASCADE;
-TRUNCATE TABLE public.attendance_month_approvals RESTART IDENTITY CASCADE;
+TRUNCATE TABLE public.employee_attendance_daily      RESTART IDENTITY CASCADE;
+TRUNCATE TABLE public.employee_attendance_approvals  RESTART IDENTITY CASCADE;
 
 -- 4) Student-related data
 TRUNCATE TABLE public.student_photos      RESTART IDENTITY CASCADE;

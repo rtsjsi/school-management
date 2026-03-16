@@ -1,5 +1,5 @@
 -- Merge attendance_manual and attendance_approved into a single daily employee attendance table.
--- Keep employee_attendance_punches (raw punches) and attendance_month_approvals (per-month approval) as-is.
+-- Keep employee_attendance_punches (raw punches) and employee_attendance_approvals (per-month approval) as-is.
 
 CREATE TABLE IF NOT EXISTS public.employee_attendance_daily (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -39,7 +39,7 @@ CREATE INDEX IF NOT EXISTS idx_employee_attendance_daily_month_year
   ON public.employee_attendance_daily(month_year);
 
 COMMENT ON TABLE public.employee_attendance_daily IS
-  'Merged daily employee attendance (manual + approved). Raw punches remain in employee_attendance_punches; month approvals in attendance_month_approvals.';
+  'Merged daily employee attendance (manual + approved). Raw punches remain in employee_attendance_punches; month approvals in employee_attendance_approvals.';
 
 -- Backfill from attendance_approved (final snapshot).
 INSERT INTO public.employee_attendance_daily (

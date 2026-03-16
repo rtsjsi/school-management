@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient();
 
     const { data: approval } = await supabase
-      .from("attendance_month_approvals")
+      .from("employee_attendance_approvals")
       .select("id")
       .eq("month_year", monthYear)
       .maybeSingle();

@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
       .eq("is_approved", true);
 
     const { data: monthApproval } = await supabase
-      .from("attendance_month_approvals")
+      .from("employee_attendance_approvals")
       .select("id, approved_at")
       .eq("month_year", monthYear)
       .maybeSingle();
@@ -206,7 +206,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === "approve") {
-      const { error } = await supabase.from("attendance_month_approvals").upsert(
+      const { error } = await supabase.from("employee_attendance_approvals").upsert(
         {
           month_year: monthYear,
           approved_by: user.id,

@@ -77,7 +77,7 @@ async function deleteAllData() {
     "student_photos",
     "student_documents",
     "admission_enquiries",
-    "attendance_month_approvals",
+    "employee_attendance_approvals",
     "employee_attendance_daily",
     "employee_attendance_punches",
     "employee_salaries",

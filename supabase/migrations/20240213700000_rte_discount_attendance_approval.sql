@@ -13,8 +13,8 @@ ADD COLUMN IF NOT EXISTS discount_amount NUMERIC(12, 2) DEFAULT 0 CHECK (discoun
 COMMENT ON COLUMN public.fees.discount_percent IS 'Percentage discount on fee (0-100)';
 COMMENT ON COLUMN public.fees.discount_amount IS 'Fixed amount discount on fee';
 
--- Attendance approval: admin must approve attendance before NEFT generation
-CREATE TABLE IF NOT EXISTS public.attendance_month_approvals (
+-- Employee attendance approval: admin must approve employee attendance before NEFT generation
+CREATE TABLE IF NOT EXISTS public.employee_attendance_approvals (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   month_year TEXT NOT NULL UNIQUE,
   approved_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
@@ -23,12 +23,12 @@ CREATE TABLE IF NOT EXISTS public.attendance_month_approvals (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-ALTER TABLE public.attendance_month_approvals ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Authenticated can read attendance_month_approvals" ON public.attendance_month_approvals FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Authenticated can manage attendance_month_approvals" ON public.attendance_month_approvals FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE INDEX IF NOT EXISTS idx_attendance_month_approvals_month ON public.attendance_month_approvals(month_year);
+ALTER TABLE public.employee_attendance_approvals ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Authenticated can read employee_attendance_approvals" ON public.employee_attendance_approvals FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated can manage employee_attendance_approvals" ON public.employee_attendance_approvals FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE INDEX IF NOT EXISTS idx_employee_attendance_approvals_month ON public.employee_attendance_approvals(month_year);
 
-COMMENT ON TABLE public.attendance_month_approvals IS 'Admin approval of attendance for a month - required before NEFT file generation';
+COMMENT ON TABLE public.employee_attendance_approvals IS 'Admin approval of employee attendance for a month - required before NEFT file generation';
 
 -- Approved attendance snapshot: final attendance used for NEFT (after admin review/edits)
 CREATE TABLE IF NOT EXISTS public.attendance_approved (
@@ -86,6 +86,6 @@ COMMENT ON COLUMN public.employees.monthly_salary IS 'Base monthly salary for NE
 
 ANALYZE public.students;
 ANALYZE public.fees;
-ANALYZE public.attendance_month_approvals;
+ANALYZE public.employee_attendance_approvals;
 ANALYZE public.attendance_approved;
 ANALYZE public.employee_salaries;
