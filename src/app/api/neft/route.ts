@@ -43,19 +43,19 @@ export async function GET(request: NextRequest) {
     const holidayDates = new Set((holidays ?? []).map((h) => h.date));
 
     const { data: manual } = await supabase
-      .from("attendance_daily")
+      .from("employee_attendance_daily")
       .select("employee_id, attendance_date, status, is_approved")
       .gte("attendance_date", start)
       .lte("attendance_date", end);
 
     const { data: punches } = await supabase
-      .from("attendance_punches")
+      .from("employee_attendance_punches")
       .select("employee_id, punch_date, punch_type")
       .gte("punch_date", start)
       .lte("punch_date", end);
 
     const { data: approved } = await supabase
-      .from("attendance_daily")
+      .from("employee_attendance_daily")
       .select("employee_id, attendance_date, status")
       .eq("month_year", monthYear)
       .eq("is_approved", true);

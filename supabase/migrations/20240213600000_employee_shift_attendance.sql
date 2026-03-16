@@ -81,8 +81,8 @@ CREATE POLICY "Authenticated can read holidays" ON public.holidays FOR SELECT TO
 CREATE POLICY "Authenticated can manage holidays" ON public.holidays FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE INDEX idx_holidays_date ON public.holidays(date);
 
--- Attendance punches (IN/OUT from biometric or manual)
-CREATE TABLE public.attendance_punches (
+-- Employee attendance punches (IN/OUT from biometric or manual)
+CREATE TABLE public.employee_attendance_punches (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   employee_id UUID NOT NULL REFERENCES public.employees(id) ON DELETE CASCADE,
   punch_date DATE NOT NULL,
@@ -96,11 +96,11 @@ CREATE TABLE public.attendance_punches (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-ALTER TABLE public.attendance_punches ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Authenticated can read attendance_punches" ON public.attendance_punches FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Authenticated can manage attendance_punches" ON public.attendance_punches FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE INDEX idx_attendance_punches_employee_date ON public.attendance_punches(employee_id, punch_date);
-CREATE INDEX idx_attendance_punches_date ON public.attendance_punches(punch_date);
+ALTER TABLE public.employee_attendance_punches ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Authenticated can read employee_attendance_punches" ON public.employee_attendance_punches FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated can manage employee_attendance_punches" ON public.employee_attendance_punches FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE INDEX idx_employee_attendance_punches_employee_date ON public.employee_attendance_punches(employee_id, punch_date);
+CREATE INDEX idx_employee_attendance_punches_date ON public.employee_attendance_punches(punch_date);
 
 -- Manual attendance override (for special cases)
 CREATE TABLE public.attendance_manual (
@@ -124,5 +124,5 @@ CREATE INDEX idx_attendance_manual_employee_date ON public.attendance_manual(emp
 ANALYZE public.employees;
 ANALYZE public.shifts;
 ANALYZE public.holidays;
-ANALYZE public.attendance_punches;
+ANALYZE public.employee_attendance_punches;
 ANALYZE public.attendance_manual;

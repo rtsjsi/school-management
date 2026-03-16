@@ -78,8 +78,8 @@ async function deleteAllData() {
     "student_documents",
     "admission_enquiries",
     "attendance_month_approvals",
-    "attendance_daily",
-    "attendance_punches",
+    "employee_attendance_daily",
+    "employee_attendance_punches",
     "employee_salaries",
     "fee_structure_items",
     "expenses",
@@ -652,7 +652,7 @@ async function seedAttendance() {
     }
   }
   if (punches.length > 0) {
-    await supabase.from("attendance_punches").insert(punches);
+    await supabase.from("employee_attendance_punches").insert(punches);
   }
   console.log(`  Inserted ${punches.length} attendance punches`);
 }

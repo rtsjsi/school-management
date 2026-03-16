@@ -14,12 +14,12 @@ export async function AttendanceDailyRegister() {
   const today = new Date().toISOString().split("T")[0];
 
   const { data: manual } = await supabase
-    .from("attendance_daily")
+    .from("employee_attendance_daily")
     .select("employee_id, attendance_date, status, in_time, out_time, employees(full_name)")
     .eq("attendance_date", today);
 
   const { data: punches } = await supabase
-    .from("attendance_punches")
+    .from("employee_attendance_punches")
     .select("employee_id, punch_date, punch_type, punch_time, is_late, is_early_departure, employees(full_name)")
     .eq("punch_date", today)
     .order("punch_time");

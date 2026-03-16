@@ -30,13 +30,13 @@ export async function GET(request: NextRequest) {
       const holidayDates = new Set((holidays ?? []).map((h) => h.date));
 
       const { data: manual } = await supabase
-        .from("attendance_daily")
+        .from("employee_attendance_daily")
         .select("employee_id, attendance_date, status")
         .gte("attendance_date", start)
         .lte("attendance_date", end);
 
       const { data: punches } = await supabase
-        .from("attendance_punches")
+        .from("employee_attendance_punches")
         .select("employee_id, punch_date, punch_type, is_late, is_early_departure")
         .gte("punch_date", start)
         .lte("punch_date", end);
@@ -91,12 +91,12 @@ export async function GET(request: NextRequest) {
       }
 
       const { data: manual } = await supabase
-        .from("attendance_daily")
+        .from("employee_attendance_daily")
         .select("employee_id, status, employees(full_name)")
         .eq("attendance_date", date);
 
       const { data: punches } = await supabase
-        .from("attendance_punches")
+        .from("employee_attendance_punches")
         .select("employee_id, punch_type, is_late, is_early_departure, employees(full_name)")
         .eq("punch_date", date);
 

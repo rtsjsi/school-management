@@ -30,19 +30,19 @@ export async function GET(request: NextRequest) {
     const holidayDates = new Set((holidays ?? []).map((h) => h.date));
 
     const { data: manual } = await supabase
-      .from("attendance_daily")
+      .from("employee_attendance_daily")
       .select("employee_id, attendance_date, status, in_time, out_time, is_approved")
       .gte("attendance_date", start)
       .lte("attendance_date", end);
 
     const { data: punches } = await supabase
-      .from("attendance_punches")
+      .from("employee_attendance_punches")
       .select("employee_id, punch_date, punch_type, punch_time, is_late, is_early_departure")
       .gte("punch_date", start)
       .lte("punch_date", end);
 
     const { data: approved } = await supabase
-      .from("attendance_daily")
+      .from("employee_attendance_daily")
       .select("employee_id, attendance_date, status, in_time, out_time")
       .eq("month_year", monthYear)
       .eq("is_approved", true);
@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
 
     if (action === "save" && Array.isArray(updates)) {
       for (const u of updates) {
-        await supabase.from("attendance_daily").upsert(
+        await supabase.from("employee_attendance_daily").upsert(
           {
             employee_id: u.employee_id,
             attendance_date: u.attendance_date,
