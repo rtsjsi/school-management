@@ -30,7 +30,7 @@ export async function fetchDivisionsByStandardId(standardId: string): Promise<Di
   if (!standardId) return [];
   const supabase = createClient();
   const { data } = await supabase
-    .from("divisions")
+    .from("standard_divisions")
     .select("id, name")
     .eq("standard_id", standardId)
     .order("sort_order");
@@ -58,7 +58,7 @@ export async function fetchDivisionsByStandard(standardName: string): Promise<Di
 export async function fetchAllDivisions(): Promise<DivisionOption[]> {
   const supabase = createClient();
   const { data } = await supabase
-    .from("divisions")
+    .from("standard_divisions")
     .select("id, name")
     .order("name");
   const seen = new Set<string>();

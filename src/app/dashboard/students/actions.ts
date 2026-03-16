@@ -22,7 +22,7 @@ export async function upsertCurrentEnrollment(
   if (!standardRow) return { ok: false, error: `Standard "${standard}" not found.` };
 
   const { data: divisionRow } = await supabase
-    .from("divisions")
+    .from("standard_divisions")
     .select("id")
     .eq("standard_id", standardRow.id)
     .eq("name", division)

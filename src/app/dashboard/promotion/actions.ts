@@ -29,7 +29,7 @@ export async function getEnrollmentsForYear(academicYearId: string): Promise<Enr
   for (const e of enrollments) {
     const [g, d, s] = await Promise.all([
       supabase.from("standards").select("name").eq("id", e.standard_id).single(),
-      supabase.from("divisions").select("name").eq("id", e.division_id).single(),
+      supabase.from("standard_divisions").select("name").eq("id", e.division_id).single(),
       supabase.from("students").select("full_name").eq("id", e.student_id).single(),
     ]);
     outcomes.push({
@@ -63,7 +63,7 @@ export async function getPromotionCandidates(academicYearId: string): Promise<En
 
   const [{ data: standards }, { data: divisions }, { data: students }] = await Promise.all([
     supabase.from("standards").select("id, name, sort_order").order("sort_order"),
-    supabase.from("divisions").select("id, name").in("id", divisionIds),
+    supabase.from("standard_divisions").select("id, name").in("id", divisionIds),
     supabase.from("students").select("id, full_name").in("id", studentIds),
   ]);
 

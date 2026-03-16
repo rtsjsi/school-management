@@ -46,7 +46,7 @@ export async function getCurrentEnrollment(studentId: string): Promise<CurrentEn
   if (!data) return null;
   const [g, d, ay] = await Promise.all([
     supabase.from("standards").select("name").eq("id", data.standard_id).maybeSingle(),
-    supabase.from("divisions").select("name").eq("id", data.division_id).maybeSingle(),
+    supabase.from("standard_divisions").select("name").eq("id", data.division_id).maybeSingle(),
     supabase.from("academic_years").select("name").eq("id", data.academic_year_id).maybeSingle(),
   ]);
   return {

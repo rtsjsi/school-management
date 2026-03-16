@@ -251,7 +251,7 @@ async function main() {
   const { data: standards } = await supabase.from("standards").select("id, name");
   const standardByName = new Map<string, string>((standards ?? []).map((s) => [s.name, s.id]));
 
-  const { data: allDivisions } = await supabase.from("divisions").select("id, standard_id, name");
+  const { data: allDivisions } = await supabase.from("standard_divisions").select("id, standard_id, name");
   const divisionByStdAndName = new Map<string, string>();
   for (const d of allDivisions ?? []) {
     divisionByStdAndName.set(`${d.standard_id}:${d.name}`, d.id);

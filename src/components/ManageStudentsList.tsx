@@ -116,7 +116,7 @@ function StudentEnrolmentsDialog({
           ? supabase.from("standards").select("id, name").in("id", stdIds)
           : Promise.resolve({ data: [] } as { data: { id: string; name: string }[] | null }),
         divIds.length
-          ? supabase.from("divisions").select("id, name").in("id", divIds)
+          ? supabase.from("standard_divisions").select("id, name").in("id", divIds)
           : Promise.resolve({ data: [] } as { data: { id: string; name: string }[] | null }),
       ]);
 

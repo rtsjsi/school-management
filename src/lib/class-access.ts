@@ -54,7 +54,7 @@ export const getAllowedClassNames = cache(async (profileId: string): Promise<All
   const divIds = Array.from(new Set(allowed.pairs.map((p) => p.divisionId)));
   const [stdRes, divRes] = await Promise.all([
     supabase.from("standards").select("id, name").in("id", stdIds),
-    supabase.from("divisions").select("id, name").in("id", divIds),
+    supabase.from("standard_divisions").select("id, name").in("id", divIds),
   ]);
   const stdMap = (stdRes.data ?? []).reduce((acc, s) => ({ ...acc, [s.id]: s.name }), {} as Record<string, string>);
   const divMap = (divRes.data ?? []).reduce((acc, d) => ({ ...acc, [d.id]: d.name }), {} as Record<string, string>);
