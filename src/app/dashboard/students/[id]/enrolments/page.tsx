@@ -49,7 +49,7 @@ export default async function StudentEnrolmentsPage({
     .select("id, name")
     .in("id", stdIds);
   const { data: divisions } = await supabase
-    .from("divisions")
+    .from("standard_divisions")
     .select("id, name")
     .in("id", divIds);
 

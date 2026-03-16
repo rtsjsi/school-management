@@ -35,7 +35,7 @@ export function PromotionRunner() {
       const [{ data: yearData }, { data: standardData }, { data: divisionData }] = await Promise.all([
         supabase.from("academic_years").select("id, name, status").order("sort_order"),
         supabase.from("standards").select("id, name").order("sort_order"),
-        supabase.from("divisions").select("id, name, standard_id").order("standard_id").order("sort_order"),
+        supabase.from("standard_divisions").select("id, name, standard_id").order("standard_id").order("sort_order"),
       ]);
 
       const list = (yearData ?? []) as { id: string; name: string; status?: string | null }[];

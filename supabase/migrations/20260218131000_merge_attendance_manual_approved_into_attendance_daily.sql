@@ -1,7 +1,7 @@
--- Merge attendance_manual and attendance_approved into a single daily attendance table.
--- Keep attendance_punches (raw punches) and attendance_month_approvals (per-month approval) as-is.
+-- Merge attendance_manual and attendance_approved into a single daily employee attendance table.
+-- Keep employee_attendance_punches (raw punches) and employee_attendance_approvals (per-month approval) as-is.
 
-CREATE TABLE IF NOT EXISTS public.attendance_daily (
+CREATE TABLE IF NOT EXISTS public.employee_attendance_daily (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   employee_id UUID NOT NULL REFERENCES public.employees(id) ON DELETE CASCADE,
   attendance_date DATE NOT NULL,
@@ -20,29 +20,29 @@ CREATE TABLE IF NOT EXISTS public.attendance_daily (
   UNIQUE(employee_id, attendance_date)
 );
 
-ALTER TABLE public.attendance_daily ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.employee_attendance_daily ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Authenticated can read attendance_daily"
-  ON public.attendance_daily FOR SELECT
+CREATE POLICY "Authenticated can read employee_attendance_daily"
+  ON public.employee_attendance_daily FOR SELECT
   TO authenticated
   USING (true);
 
-CREATE POLICY "Authenticated can manage attendance_daily"
-  ON public.attendance_daily FOR ALL
+CREATE POLICY "Authenticated can manage employee_attendance_daily"
+  ON public.employee_attendance_daily FOR ALL
   TO authenticated
   USING (true)
   WITH CHECK (true);
 
-CREATE INDEX IF NOT EXISTS idx_attendance_daily_employee_date
-  ON public.attendance_daily(employee_id, attendance_date);
-CREATE INDEX IF NOT EXISTS idx_attendance_daily_month_year
-  ON public.attendance_daily(month_year);
+CREATE INDEX IF NOT EXISTS idx_employee_attendance_daily_employee_date
+  ON public.employee_attendance_daily(employee_id, attendance_date);
+CREATE INDEX IF NOT EXISTS idx_employee_attendance_daily_month_year
+  ON public.employee_attendance_daily(month_year);
 
-COMMENT ON TABLE public.attendance_daily IS
-  'Merged daily attendance (manual + approved). Raw punches remain in attendance_punches; month approvals in attendance_month_approvals.';
+COMMENT ON TABLE public.employee_attendance_daily IS
+  'Merged daily employee attendance (manual + approved). Raw punches remain in employee_attendance_punches; month approvals in employee_attendance_approvals.';
 
 -- Backfill from attendance_approved (final snapshot).
-INSERT INTO public.attendance_daily (
+INSERT INTO public.employee_attendance_daily (
   employee_id,
   attendance_date,
   status,
@@ -77,7 +77,7 @@ FROM public.attendance_approved a
 ON CONFLICT (employee_id, attendance_date) DO NOTHING;
 
 -- Backfill from attendance_manual where there is no approved row for that day.
-INSERT INTO public.attendance_daily (
+INSERT INTO public.employee_attendance_daily (
   employee_id,
   attendance_date,
   status,

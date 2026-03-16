@@ -62,7 +62,7 @@ export function UserClassAccessDialog({
       setStandards(stds as Standard[]);
       const supabase = createClient();
       const { data: divs } = await supabase
-        .from("divisions")
+        .from("standard_divisions")
         .select("id, name, standard_id")
         .order("standard_id")
         .order("name");

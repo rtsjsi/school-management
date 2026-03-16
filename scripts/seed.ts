@@ -77,15 +77,14 @@ async function deleteAllData() {
     "student_photos",
     "student_documents",
     "admission_enquiries",
-    "attendance_month_approvals",
-    "attendance_daily",
-    "attendance_punches",
+    "employee_attendance_approvals",
+    "employee_attendance_daily",
+    "employee_attendance_punches",
     "employee_salaries",
     "fee_structure_items",
     "expenses",
     "expense_budgets",
     "student_enrollments",
-    "divisions",
     "standard_divisions",
     "standards",
     "students",
@@ -177,7 +176,7 @@ async function seedStandards() {
 }
 
 async function seedStandardDivisionsAndDivisions() {
-  console.log("Seeding standard divisions and divisions...");
+  console.log("Seeding standard divisions...");
   const { data: standards } = await supabase.from("standards").select("id, name, sort_order").order("sort_order");
   if (!standards?.length) return;
 
@@ -191,23 +190,7 @@ async function seedStandardDivisionsAndDivisions() {
     }
   }
 
-  const { data: standardDivs } = await supabase
-    .from("standard_divisions")
-    .select("id, name, standard_id, sort_order")
-    .order("standard_id")
-    .order("sort_order");
-  if (standardDivs?.length) {
-    await supabase.from("divisions").upsert(
-      standardDivs.map((cd) => ({
-        id: cd.id,
-        name: cd.name,
-        standard_id: cd.standard_id,
-        sort_order: cd.sort_order,
-      })),
-      { onConflict: "id" }
-    );
-  }
-  console.log("  Standard divisions and divisions ready");
+  console.log("  Standard divisions ready");
 }
 
 async function seedShifts() {
@@ -652,7 +635,7 @@ async function seedAttendance() {
     }
   }
   if (punches.length > 0) {
-    await supabase.from("attendance_punches").insert(punches);
+    await supabase.from("employee_attendance_punches").insert(punches);
   }
   console.log(`  Inserted ${punches.length} attendance punches`);
 }

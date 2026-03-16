@@ -116,7 +116,7 @@ function StudentEnrolmentsDialog({
           ? supabase.from("standards").select("id, name").in("id", stdIds)
           : Promise.resolve({ data: [] } as { data: { id: string; name: string }[] | null }),
         divIds.length
-          ? supabase.from("divisions").select("id, name").in("id", divIds)
+          ? supabase.from("standard_divisions").select("id, name").in("id", divIds)
           : Promise.resolve({ data: [] } as { data: { id: string; name: string }[] | null }),
       ]);
 
@@ -282,9 +282,16 @@ function StudentExitDialog({
         return;
       }
 
+      const enrollmentStatus =
+        form.reason === "transfer"
+          ? "transferred"
+          : form.reason === "expelled"
+          ? "expelled"
+          : "withdrawn";
+
       await supabase
         .from("student_enrollments")
-        .update({ status: "inactive" })
+        .update({ status: enrollmentStatus })
         .eq("student_id", studentId)
         .eq("status", "active");
 
@@ -340,10 +347,8 @@ function StudentExitDialog({
                 <SelectValue placeholder="Select reason" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="completed">Completed course / graduated</SelectItem>
                 <SelectItem value="transfer">Transferred to another school</SelectItem>
-                <SelectItem value="fee_default">Fee default / non-payment</SelectItem>
-                <SelectItem value="personal">Personal reasons</SelectItem>
+                <SelectItem value="expelled">Expelled by school</SelectItem>
                 <SelectItem value="other">Other</SelectItem>
               </SelectContent>
             </Select>
