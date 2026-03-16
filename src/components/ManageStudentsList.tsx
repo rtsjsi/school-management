@@ -286,7 +286,7 @@ function StudentExitDialog({
         form.reason === "transfer"
           ? "transferred"
           : form.reason === "expelled"
-          ? "detained"
+          ? "expelled"
           : "withdrawn";
 
       await supabase
