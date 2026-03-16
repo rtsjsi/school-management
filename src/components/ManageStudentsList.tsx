@@ -282,7 +282,8 @@ function StudentExitDialog({
         return;
       }
 
-      const enrollmentStatus = form.reason === "transfer" ? "transferred" : "withdrawn";
+      const enrollmentStatus =
+        form.reason === "transfer" ? "transferred" : form.reason === "detained" ? "detained" : "withdrawn";
 
       await supabase
         .from("student_enrollments")
@@ -343,6 +344,7 @@ function StudentExitDialog({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="transfer">Transferred to another school</SelectItem>
+                <SelectItem value="detained">Detained by school</SelectItem>
                 <SelectItem value="other">Other</SelectItem>
               </SelectContent>
             </Select>
