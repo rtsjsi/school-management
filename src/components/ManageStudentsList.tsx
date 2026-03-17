@@ -594,7 +594,7 @@ export function ManageStudentsList({
                           </div>
                           <div className="flex justify-between gap-2">
                             <span className="text-muted-foreground">Standard</span>
-                            <span>{s.grade ?? "—"}</span>
+                            <span>{s.standard ?? "—"}</span>
                           </div>
                           <div className="flex justify-between gap-2">
                             <span className="text-muted-foreground">Division</span>
