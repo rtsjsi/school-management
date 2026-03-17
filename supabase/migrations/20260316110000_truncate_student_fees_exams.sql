@@ -12,8 +12,29 @@ TRUNCATE TABLE public.fee_structure_items RESTART IDENTITY CASCADE;
 TRUNCATE TABLE public.fee_structures      RESTART IDENTITY CASCADE;
 
 -- 3) Attendance data (attendance_approved was dropped after being merged)
-TRUNCATE TABLE public.employee_attendance_daily      RESTART IDENTITY CASCADE;
-TRUNCATE TABLE public.employee_attendance_approvals  RESTART IDENTITY CASCADE;
+-- Guard with existence checks so this migration is safe even if these
+-- tables have been renamed or dropped in some environments.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.tables
+    WHERE table_schema = 'public'
+      AND table_name = 'employee_attendance_daily'
+  ) THEN
+    EXECUTE 'TRUNCATE TABLE public.employee_attendance_daily RESTART IDENTITY CASCADE';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.tables
+    WHERE table_schema = 'public'
+      AND table_name = 'employee_attendance_approvals'
+  ) THEN
+    EXECUTE 'TRUNCATE TABLE public.employee_attendance_approvals RESTART IDENTITY CASCADE';
+  END IF;
+END
+$$;
 
 -- 4) Student-related data
 TRUNCATE TABLE public.student_photos      RESTART IDENTITY CASCADE;
