@@ -103,8 +103,8 @@ async function main() {
 
   // Load env for supabase client
   const branchFile = ".env.main";
-  const branchEnv = loadEnvFile(branchFile);
-  const localEnv = loadEnvFile(".env.local");
+  const branchEnv = loadEnvFile(repoRoot, branchFile);
+  const localEnv = loadEnvFile(repoRoot, ".env.local");
   Object.entries(branchEnv).forEach(([k, v]) => (process.env[k] = v));
   Object.entries(localEnv).forEach(([k, v]) => (process.env[k] = v));
 
@@ -132,9 +132,6 @@ async function main() {
   console.log("\n[2/5] Validate prod state");
   const { standardsTotal, divisionsTotal, activeYears } = await validateProdState(supabase);
   console.log("standards:", standardsTotal, "standard_divisions:", divisionsTotal);
-  if ((standardsTotal ?? 0) !== 0 || (divisionsTotal ?? 0) !== 0) {
-    throw new Error(`Expected standards/standard_divisions to be empty in prod. Found standards=${standardsTotal}, standard_divisions=${divisionsTotal}.`);
-  }
   if ((activeYears ?? []).length === 0) {
     throw new Error("Expected an academic year with status='active' in prod, but none found.");
   }
@@ -142,15 +139,21 @@ async function main() {
 
   // 3) Insert standards + divisions (manual SQL)
   if (!dryRun) {
-    console.log("\n[3/5] Insert standards + standard_divisions");
-    execSync(
-      "node scripts/by-branch.js db query --linked -f supabase/manual/insert_standards_prod.sql -o table",
-      { stdio: "inherit", cwd: repoRoot }
-    );
-    execSync(
-      "node scripts/by-branch.js db query --linked -f supabase/manual/insert_standard_divisions_prod.sql -o table",
-      { stdio: "inherit", cwd: repoRoot }
-    );
+    const shouldInsertMasterData = (standardsTotal ?? 0) === 0 && (divisionsTotal ?? 0) === 0;
+    if (shouldInsertMasterData) {
+      console.log("\n[3/5] Insert standards + standard_divisions (tables empty)");
+      execSync(
+        "node scripts/by-branch.js db query --linked -f supabase/manual/insert_standards_prod.sql -o table",
+        { stdio: "inherit", cwd: repoRoot }
+      );
+      execSync(
+        "node scripts/by-branch.js db query --linked -f supabase/manual/insert_standard_divisions_prod.sql -o table",
+        { stdio: "inherit", cwd: repoRoot }
+      );
+    } else {
+      console.log("\n[3/5] Skip inserting standards/divisions (already present).");
+      console.log("  standards:", standardsTotal, "standard_divisions:", divisionsTotal);
+    }
   }
 
   // 4) Import subjects from Reportcard
