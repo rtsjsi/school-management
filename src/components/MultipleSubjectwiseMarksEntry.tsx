@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 
-type Exam = { id: string; name: string; exam_type: string; standard: string | null; held_at: string };
+type Exam = { id: string; name: string; standard: string | null; held_at: string };
 type Student = { id: string; full_name: string; standard: string | null; division: string | null };
 type Subject = { id: string; name: string; code: string | null; evaluation_type: string };
 type CellState = { score: string; max_score: string; grade: string; is_absent: boolean };
@@ -43,7 +43,7 @@ export default function MultipleSubjectwiseMarksEntry() {
   useEffect(() => {
     supabase
       .from("exams")
-      .select("id, name, exam_type, standard, held_at")
+      .select("id, name, standard, held_at")
       .order("held_at", { ascending: false })
       .then(({ data }) => setExams(data ?? []));
     supabase
@@ -254,7 +254,7 @@ export default function MultipleSubjectwiseMarksEntry() {
                 <SelectContent>
                   {exams.map((e) => (
                     <SelectItem key={e.id} value={e.id}>
-                      {e.name} ({e.exam_type}) – {e.held_at ? new Date(e.held_at).toLocaleDateString() : ""}
+                      {e.name} – {e.held_at ? new Date(e.held_at).toLocaleDateString() : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>

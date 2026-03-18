@@ -24,9 +24,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-const EXAM_TYPES = ["midterm", "final", "quiz", "assignment"] as const;
-
-type ExamRow = { id: string; name: string; exam_type: string; standard: string | null; held_at: string };
+type ExamRow = { id: string; name: string; standard: string | null; held_at: string };
 
 export function ExamEditDialog({ exam }: { exam: ExamRow }) {
   const router = useRouter();
@@ -36,7 +34,6 @@ export function ExamEditDialog({ exam }: { exam: ExamRow }) {
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: exam.name,
-    exam_type: exam.exam_type,
     standardId: "",
     held_at: exam.held_at ? exam.held_at.slice(0, 10) : "",
   });
@@ -49,13 +46,12 @@ export function ExamEditDialog({ exam }: { exam: ExamRow }) {
     if (open) {
       setForm({
         name: exam.name,
-        exam_type: exam.exam_type,
         standardId: standardsList.find((s) => s.name === exam.standard)?.id ?? "",
         held_at: exam.held_at ? exam.held_at.slice(0, 10) : "",
       });
       setError(null);
     }
-  }, [open, exam.name, exam.exam_type, exam.standard, exam.held_at, standardsList]);
+  }, [open, exam.name, exam.standard, exam.held_at, standardsList]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +69,6 @@ export function ExamEditDialog({ exam }: { exam: ExamRow }) {
     try {
       const result = await updateExam(exam.id, {
         name: form.name.trim(),
-        exam_type: form.exam_type,
         standard: standardName,
         held_at: form.held_at,
       });
@@ -112,33 +107,13 @@ export function ExamEditDialog({ exam }: { exam: ExamRow }) {
               placeholder="e.g. Final Exam"
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Type</Label>
-              <Select
-                value={form.exam_type}
-                onValueChange={(v) => setForm((p) => ({ ...p, exam_type: v }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {EXAM_TYPES.map((t) => (
-                    <SelectItem key={t} value={t}>
-                      {t.charAt(0).toUpperCase() + t.slice(1)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Start date *</Label>
-              <Input
-                type="date"
-                value={form.held_at}
-                onChange={(e) => setForm((p) => ({ ...p, held_at: e.target.value }))}
-              />
-            </div>
+          <div className="space-y-2">
+            <Label>Start date *</Label>
+            <Input
+              type="date"
+              value={form.held_at}
+              onChange={(e) => setForm((p) => ({ ...p, held_at: e.target.value }))}
+            />
           </div>
           <div className="space-y-2">
             <Label>Standard</Label>

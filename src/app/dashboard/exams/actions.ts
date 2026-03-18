@@ -25,7 +25,6 @@ export type CreateExamResult = { ok: true; examId: string } | { ok: false; error
 export async function createExamWithSubjects(
   payload: {
     name: string;
-    exam_type: string;
     held_at: string;
     description?: string | null;
     standard: string | null;
@@ -42,7 +41,6 @@ export async function createExamWithSubjects(
     .from("exams")
     .insert({
       name: payload.name.trim(),
-      exam_type: payload.exam_type,
       standard: payload.standard?.trim() || null,
       held_at: payload.held_at,
       description: payload.description?.trim() || null,
@@ -67,7 +65,7 @@ export type UpdateExamResult = { ok: true } | { ok: false; error: string };
 
 export async function updateExam(
   examId: string,
-  payload: { name: string; exam_type: string; standard: string | null; held_at: string }
+  payload: { name: string; standard: string | null; held_at: string }
 ): Promise<UpdateExamResult> {
   const supabase = await createClient();
   if (!payload.name.trim()) return { ok: false, error: "Exam name is required." };
@@ -77,7 +75,6 @@ export async function updateExam(
     .from("exams")
     .update({
       name: payload.name.trim(),
-      exam_type: payload.exam_type,
       standard: payload.standard?.trim() || null,
       held_at: payload.held_at,
       updated_at: new Date().toISOString(),

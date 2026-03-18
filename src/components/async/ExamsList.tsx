@@ -12,7 +12,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 
 export async function ExamsList() {
   const user = await getUser();
@@ -22,7 +21,7 @@ export async function ExamsList() {
   const supabase = await createClient();
   let query = supabase
     .from("exams")
-    .select("id, name, exam_type, standard, held_at")
+    .select("id, name, standard, held_at")
     .order("held_at", { ascending: false });
   if (activeYearId) query = query.eq("academic_year_id", activeYearId);
   const { data: exams } = await query;
@@ -47,7 +46,6 @@ export async function ExamsList() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Exam name</TableHead>
-                    <TableHead>Type</TableHead>
                     <TableHead>Standard</TableHead>
                     <TableHead>Start date</TableHead>
                     {canEdit && <TableHead className="w-24">Edit</TableHead>}
@@ -57,14 +55,18 @@ export async function ExamsList() {
                   {exams.map((exam) => (
                     <TableRow key={exam.id}>
                       <TableCell className="font-medium">{exam.name}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{exam.exam_type}</Badge>
-                      </TableCell>
                       <TableCell>{exam.standard ?? "—"}</TableCell>
                       <TableCell>{exam.held_at ? new Date(exam.held_at).toLocaleDateString() : "—"}</TableCell>
                       {canEdit && (
                         <TableCell>
-                          <ExamEditDialog exam={{ id: exam.id, name: exam.name, exam_type: exam.exam_type, standard: exam.standard, held_at: exam.held_at }} />
+                          <ExamEditDialog
+                            exam={{
+                              id: exam.id,
+                              name: exam.name,
+                              standard: exam.standard,
+                              held_at: exam.held_at,
+                            }}
+                          />
                         </TableCell>
                       )}
                     </TableRow>

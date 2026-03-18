@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { generateReportCardPDF } from "@/lib/report-card-pdf";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 
-type Exam = { id: string; name: string; exam_type: string; standard: string | null; held_at: string };
+type Exam = { id: string; name: string; standard: string | null; held_at: string };
 type Student = { id: string; full_name: string; standard: string | null; division: string | null; roll_number?: number; student_id?: string; academic_year?: string };
 type Subject = { id: string; name: string; evaluation_type?: string; max_marks?: number | null };
 type ExamResultSubject = { student_id: string; subject_id: string; score: number | null; max_score: number | null; grade: string | null; is_absent: boolean };
@@ -32,7 +32,7 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
   useEffect(() => {
     supabase
       .from("exams")
-      .select("id, name, exam_type, standard, held_at")
+      .select("id, name, standard, held_at")
       .order("held_at", { ascending: false })
       .then(({ data }) => {
         let list = (data ?? []) as Exam[];
@@ -127,7 +127,6 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
         studentId: student.student_id,
         academicYear: student.academic_year as string | undefined,
         examName: exam.name,
-        examType: exam.exam_type,
         heldAt: exam.held_at,
         subjects: reportSubjects,
       });
@@ -162,7 +161,7 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
               <SelectContent>
                 {exams.map((e) => (
                   <SelectItem key={e.id} value={e.id}>
-                    {e.name} ({e.exam_type}) – {e.held_at ? new Date(e.held_at).toLocaleDateString() : ""}
+                    {e.name} – {e.held_at ? new Date(e.held_at).toLocaleDateString() : ""}
                   </SelectItem>
                 ))}
               </SelectContent>

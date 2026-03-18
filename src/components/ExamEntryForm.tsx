@@ -117,7 +117,6 @@ export default function ExamEntryForm() {
     try {
       const result = await createExamWithSubjects({
         name: form.name.trim(),
-        exam_type: "final",
         held_at: form.held_at,
         description: form.description.trim() || null,
         standard: standardName,
