@@ -29,7 +29,7 @@ import {
 } from "@/lib/student-uploads";
 import { upsertCurrentEnrollment } from "@/app/dashboard/students/actions";
 import { useToast } from "@/hooks/use-toast";
-import { IN_STATES, stringifyAddress } from "@/lib/student-form";
+import { IN_STATES } from "@/lib/student-form";
 
 const PHOTO_ROLES = ["student"] as const;
 const PHOTO_LABELS: Record<(typeof PHOTO_ROLES)[number], string> = {
@@ -301,12 +301,6 @@ export default function StudentEntryForm({
       payload.permanent_state = permanent.state.trim() || null;
       payload.permanent_pincode = permanent.pincode.trim() || null;
       payload.permanent_country = (permanent.country || "India").trim() || "India";
-
-      // Legacy compatibility
-      payload.address = stringifyAddress(present) || null;
-      payload.permanent_address = stringifyAddress(permanent) || null;
-      payload.district = (present.district || "").trim() || null;
-      payload.state = (present.state || "").trim() || null;
 
       const { data: inserted, error: err } = await supabase
         .from("students")
