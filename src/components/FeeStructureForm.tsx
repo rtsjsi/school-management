@@ -13,6 +13,8 @@ import { AcademicYearSelect } from "@/components/AcademicYearSelect";
 import { Button } from "@/components/ui/button";
 import { getFeeTypeLabel } from "@/lib/utils";
 
+const FEE_TYPE_OPTIONS = ["education_fee"] as const;
+
 type FeeStructureFormProps = {
   structureId?: string;
   onSuccess?: () => void;
@@ -30,23 +32,11 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
   });
   const [quarterAmounts, setQuarterAmounts] = useState<Record<string, Record<number, string>>>({});
   const [classes, setClasses] = useState<{ id: string; name: string; sort_order: number }[]>([]);
-  const [feeTypes, setFeeTypes] = useState<string[]>([]); // available options
-  const [rowFeeTypes, setRowFeeTypes] = useState<string[]>([]); // selected per row
+  const [feeTypes, setFeeTypes] = useState<string[]>(Array.from(FEE_TYPE_OPTIONS)); // available options
+  const [rowFeeTypes, setRowFeeTypes] = useState<string[]>(Array.from(FEE_TYPE_OPTIONS)); // selected per row
 
   useEffect(() => {
     createClient().from("standards").select("id, name, sort_order").order("sort_order").then(({ data }) => setClasses(data ?? []));
-    createClient()
-      .from("fee_types")
-      .select("name")
-      .eq("is_active", true)
-      .order("sort_order")
-      .order("name")
-      .then(({ data }) => {
-        const names = (data ?? []).map((t: { name: string }) => t.name);
-        const effective = names.length > 0 ? names : ["tuition"];
-        setFeeTypes(effective);
-        setRowFeeTypes(effective);
-      });
   }, []);
 
   useEffect(() => {

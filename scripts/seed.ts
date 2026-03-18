@@ -53,7 +53,7 @@ console.log("Using Supabase project from", branch ? `${branch} (${branchFile})` 
 
 const supabase = createClient(url, serviceKey, { auth: { persistSession: false } });
 
-const FEE_TYPES = ["tuition", "transport", "library", "lab", "sports"] as const;
+const FEE_TYPES = ["education_fee"] as const;
 
 function pick<T>(arr: readonly T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];

@@ -7,7 +7,9 @@ export function cn(...inputs: ClassValue[]) {
 
 /** Display label for fee types. Defaults to a title-cased version of the raw code. */
 export const FEE_TYPE_LABELS: Record<string, string> = {
-  // Keep empty for now so UI shows the configured fee type name (e.g. "tuition" -> "Tuition").
+  education_fee: "Education Fee",
+  // Backward compatibility for older rows
+  tuition: "Education Fee",
 };
 
 export function getFeeTypeLabel(feeType: string): string {

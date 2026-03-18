@@ -14,7 +14,7 @@ import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 import { useToast } from "@/hooks/use-toast";
 
 const PAYMENT_MODES = ["cash", "cheque", "online"] as const;
-const FEE_TYPE = "tuition";
+const FEE_TYPE = "education_fee";
 const DEFAULT_POLICY_NOTES = [
   "(1) Fees will not be refunded in any case.",
   "(2) Fees are not transferable.",
