@@ -27,7 +27,6 @@ export default function ExamEntryForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [standardsList, setStandardsList] = useState<StandardOption[]>([]);
-  const [academicYears, setAcademicYears] = useState<AcademicYearOption[]>([]);
   const [subjects, setSubjects] = useState<SubjectRow[]>([]);
   const [form, setForm] = useState({
     name: "",
@@ -41,7 +40,6 @@ export default function ExamEntryForm() {
   useEffect(() => {
     fetchStandards().then(setStandardsList);
     fetchAcademicYears().then((list) => {
-      setAcademicYears(list);
       const active = list.find((y) => y.status === "active") ?? list[0];
       if (active) {
         setForm((p) => (p.academicYearId ? p : { ...p, academicYearId: active.id }));
