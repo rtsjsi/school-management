@@ -16,7 +16,9 @@
     "seed": "npx tsx scripts/seed.ts",
     "student-import-maps": "npx tsx scripts/student-import-maps.ts",
     "import-students-from-csv": "npx tsx scripts/import-students-from-csv.ts",
-    "import-students-from-aems-xls": "npx tsx scripts/import-students-from-aems-xls-direct.ts"
+    "import-students-from-aems-xls": "npx tsx scripts/import-students-from-aems-xls-direct.ts",
+    "import-subjects-from-reportcard": "npx tsx scripts/import-subjects-from-reportcard.ts",
+    "setup:prod-from-data-files": "npx tsx scripts/setup-prod-from-data-files.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
