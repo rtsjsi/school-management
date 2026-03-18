@@ -33,7 +33,6 @@ export default function ExamEntryForm() {
     name: "",
     standardId: "",
     academicYearId: "",
-    held_at: "",
     term: "Term-1" as string,
     description: "",
   });
@@ -80,10 +79,6 @@ export default function ExamEntryForm() {
       setError("Exam name is required.");
       return;
     }
-    if (!form.held_at) {
-      setError("Start date is required.");
-      return;
-    }
     if (!form.standardId) {
       setError("Standard is required.");
       return;
@@ -117,7 +112,7 @@ export default function ExamEntryForm() {
     try {
       const result = await createExamWithSubjects({
         name: form.name.trim(),
-        held_at: form.held_at,
+        term: form.term,
         description: form.description.trim() || null,
         standard: standardName,
         academic_year_id: form.academicYearId,
@@ -133,7 +128,6 @@ export default function ExamEntryForm() {
         name: "",
         standardId: "",
         academicYearId: "",
-        held_at: "",
         term: "Term-1",
         description: "",
       });
@@ -161,36 +155,6 @@ export default function ExamEntryForm() {
           onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
           placeholder="e.g. Math Midterm"
         />
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="exam-ay">Academic year *</Label>
-          <Select
-            value={form.academicYearId || "_none"}
-            onValueChange={(v) => setForm((p) => ({ ...p, academicYearId: v === "_none" ? "" : v }))}
-          >
-            <SelectTrigger id="exam-ay" className="w-full">
-              <SelectValue placeholder="Select academic year" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="_none">Select academic year</SelectItem>
-              {academicYears.map((ay) => (
-                <SelectItem key={ay.id} value={ay.id}>
-                  {ay.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="exam-held">Start date *</Label>
-          <Input
-            id="exam-held"
-            type="date"
-            value={form.held_at}
-            onChange={(e) => setForm((p) => ({ ...p, held_at: e.target.value }))}
-          />
-        </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">

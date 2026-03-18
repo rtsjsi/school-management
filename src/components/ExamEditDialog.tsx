@@ -24,7 +24,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-type ExamRow = { id: string; name: string; standard: string | null; held_at: string };
+type ExamRow = { id: string; name: string; standard: string | null; term: string | null };
 
 export function ExamEditDialog({ exam }: { exam: ExamRow }) {
   const router = useRouter();
@@ -35,7 +35,7 @@ export function ExamEditDialog({ exam }: { exam: ExamRow }) {
   const [form, setForm] = useState({
     name: exam.name,
     standardId: "",
-    held_at: exam.held_at ? exam.held_at.slice(0, 10) : "",
+    term: exam.term ?? "Term-1",
   });
 
   useEffect(() => {
@@ -47,11 +47,11 @@ export function ExamEditDialog({ exam }: { exam: ExamRow }) {
       setForm({
         name: exam.name,
         standardId: standardsList.find((s) => s.name === exam.standard)?.id ?? "",
-        held_at: exam.held_at ? exam.held_at.slice(0, 10) : "",
+        term: exam.term ?? "Term-1",
       });
       setError(null);
     }
-  }, [open, exam.name, exam.standard, exam.held_at, standardsList]);
+  }, [open, exam.name, exam.standard, exam.term, standardsList]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,17 +60,13 @@ export function ExamEditDialog({ exam }: { exam: ExamRow }) {
       setError("Exam name is required.");
       return;
     }
-    if (!form.held_at) {
-      setError("Start date is required.");
-      return;
-    }
     const standardName = standardsList.find((s) => s.id === form.standardId)?.name ?? null;
     setSaving(true);
     try {
       const result = await updateExam(exam.id, {
         name: form.name.trim(),
         standard: standardName,
-        held_at: form.held_at,
+        term: form.term,
       });
       if (!result.ok) {
         setError(result.error);
@@ -105,14 +101,6 @@ export function ExamEditDialog({ exam }: { exam: ExamRow }) {
               value={form.name}
               onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
               placeholder="e.g. Final Exam"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Start date *</Label>
-            <Input
-              type="date"
-              value={form.held_at}
-              onChange={(e) => setForm((p) => ({ ...p, held_at: e.target.value }))}
             />
           </div>
           <div className="space-y-2">

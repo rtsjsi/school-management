@@ -316,16 +316,14 @@ async function seedExams() {
   }
 
   const currentYear = new Date().getFullYear();
-  const midTermDate = `${currentYear}-10-15`;
-  const finalDate = `${currentYear + 1}-03-15`;
 
   let examCount = 0;
   let subjectLinkCount = 0;
 
   for (const st of standards) {
     const examsToInsert = [
-      { name: `Mid-Term - ${st.name}`, standard: st.name, held_at: midTermDate, description: `Mid-term exam for ${st.name}`, academic_year_id: activeYear.id },
-      { name: `Final Exam - ${st.name}`, standard: st.name, held_at: finalDate, description: `Final exam for ${st.name}`, academic_year_id: activeYear.id },
+      { name: `Mid-Term - ${st.name}`, standard: st.name, term: "Term-1", description: `Mid-term exam for ${st.name}`, academic_year_id: activeYear.id },
+      { name: `Final Exam - ${st.name}`, standard: st.name, term: "Term-2", description: `Final exam for ${st.name}`, academic_year_id: activeYear.id },
     ];
     const { data: inserted } = await supabase.from("exams").insert(examsToInsert).select("id, standard");
     if (inserted?.length) {

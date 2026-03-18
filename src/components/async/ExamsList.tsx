@@ -21,8 +21,8 @@ export async function ExamsList() {
   const supabase = await createClient();
   let query = supabase
     .from("exams")
-    .select("id, name, standard, held_at")
-    .order("held_at", { ascending: false });
+    .select("id, name, standard, term")
+    .order("created_at", { ascending: false });
   if (activeYearId) query = query.eq("academic_year_id", activeYearId);
   const { data: exams } = await query;
 
@@ -47,7 +47,7 @@ export async function ExamsList() {
                   <TableRow>
                     <TableHead>Exam name</TableHead>
                     <TableHead>Standard</TableHead>
-                    <TableHead>Start date</TableHead>
+                    <TableHead>Term</TableHead>
                     {canEdit && <TableHead className="w-24">Edit</TableHead>}
                   </TableRow>
                 </TableHeader>
@@ -56,7 +56,7 @@ export async function ExamsList() {
                     <TableRow key={exam.id}>
                       <TableCell className="font-medium">{exam.name}</TableCell>
                       <TableCell>{exam.standard ?? "—"}</TableCell>
-                      <TableCell>{exam.held_at ? new Date(exam.held_at).toLocaleDateString() : "—"}</TableCell>
+                      <TableCell>{exam.term ?? "—"}</TableCell>
                       {canEdit && (
                         <TableCell>
                           <ExamEditDialog
@@ -64,7 +64,7 @@ export async function ExamsList() {
                               id: exam.id,
                               name: exam.name,
                               standard: exam.standard,
-                              held_at: exam.held_at,
+                              term: exam.term ?? null,
                             }}
                           />
                         </TableCell>

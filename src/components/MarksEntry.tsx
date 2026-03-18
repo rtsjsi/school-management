@@ -30,7 +30,6 @@ type Exam = {
   id: string;
   name: string;
   standard: string | null;
-  held_at: string;
   academic_years: { id: string; name: string } | { id: string; name: string }[] | null;
 };
 
@@ -82,8 +81,8 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
         .maybeSingle();
       let query = supabase
         .from("exams")
-        .select("id, name, standard, held_at, academic_years(id, name)")
-        .order("held_at", { ascending: false });
+        .select("id, name, standard, academic_years(id, name)")
+        .order("created_at", { ascending: false });
       if (ay?.id) query = query.eq("academic_year_id", ay.id);
       const { data: examData } = await query;
       let list = (examData ?? []) as unknown as Exam[];
@@ -332,8 +331,7 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
                 </SelectTrigger>
                 <SelectContent>
                   {exams.map((e) => {
-                    const dateStr = e.held_at ? new Date(e.held_at).toLocaleDateString() : "";
-                    const label = [e.name, e.standard ?? "All", dateStr].filter(Boolean).join(" · ");
+                    const label = [e.name, e.standard ?? "All"].filter(Boolean).join(" · ");
                     return (
                       <SelectItem key={e.id} value={e.id}>
                         {label}

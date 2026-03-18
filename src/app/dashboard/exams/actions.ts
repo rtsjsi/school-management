@@ -25,7 +25,7 @@ export type CreateExamResult = { ok: true; examId: string } | { ok: false; error
 export async function createExamWithSubjects(
   payload: {
     name: string;
-    held_at: string;
+    term: string | null;
     description?: string | null;
     standard: string | null;
     academic_year_id: string;
@@ -34,15 +34,14 @@ export async function createExamWithSubjects(
 ): Promise<CreateExamResult> {
   const supabase = await createClient();
   if (!payload.name.trim()) return { ok: false, error: "Exam name is required." };
-  if (!payload.held_at) return { ok: false, error: "Start date is required." };
   if (!payload.academic_year_id?.trim()) return { ok: false, error: "Academic year is required." };
 
   const { data: exam, error: examErr } = await supabase
     .from("exams")
     .insert({
       name: payload.name.trim(),
+      term: payload.term,
       standard: payload.standard?.trim() || null,
-      held_at: payload.held_at,
       description: payload.description?.trim() || null,
       academic_year_id: payload.academic_year_id.trim(),
     })
@@ -65,18 +64,17 @@ export type UpdateExamResult = { ok: true } | { ok: false; error: string };
 
 export async function updateExam(
   examId: string,
-  payload: { name: string; standard: string | null; held_at: string }
+  payload: { name: string; standard: string | null; term: string | null }
 ): Promise<UpdateExamResult> {
   const supabase = await createClient();
   if (!payload.name.trim()) return { ok: false, error: "Exam name is required." };
-  if (!payload.held_at) return { ok: false, error: "Start date is required." };
 
   const { error } = await supabase
     .from("exams")
     .update({
       name: payload.name.trim(),
       standard: payload.standard?.trim() || null,
-      held_at: payload.held_at,
+      term: payload.term,
       updated_at: new Date().toISOString(),
     })
     .eq("id", examId);
