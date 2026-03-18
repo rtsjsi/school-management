@@ -406,7 +406,6 @@ const STUDENT_LAST = ["Sharma", "Patel", "Singh", "Kumar", "Gupta", "Reddy", "Ra
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"] as const;
 const STUDENT_STATUSES = ["active", "active", "active", "active", "inactive", "transferred", "graduated", "suspended"] as const;
 const CATEGORIES = ["general", "obc", "sc", "st", "other"] as const;
-const ADMISSION_TYPES = ["regular", "transfer", "re-admission"] as const;
 const GENDERS = ["male", "female", "other"] as const;
 const RELIGIONS = ["Hindu", "Muslim", "Christian", "Sikh", "Buddhist", "Jain", "Other", null];
 const DISTRICTS = ["Mumbai", "Pune", "Thane", "Nashik", "Nagpur", "Ahmedabad", "Surat", "Vadodara", "Bangalore", "Chennai", null];
@@ -460,7 +459,6 @@ async function seedStudents() {
     usedNames.add(name);
     const status = pick(STUDENT_STATUSES);
     const category = pick(CATEGORIES);
-    const admissionType = pick(ADMISSION_TYPES);
     const gender = pick(GENDERS);
     const dob = randomDate(new Date(2008, 0, 1), new Date(2018, 11, 31)).toISOString().slice(0, 10);
     const yearForStudent =
@@ -473,7 +471,6 @@ async function seedStudents() {
       blood_group: BLOOD_GROUPS[i % BLOOD_GROUPS.length],
       status,
       category,
-      admission_type: admissionType,
       admission_date: randomDate(new Date(2020, 0, 1), new Date(2024, 5, 1)).toISOString().slice(0, 10),
       academic_year: yearForStudent.name,
       roll_number: (i % 50) + 1,
@@ -488,7 +485,7 @@ async function seedStudents() {
       religion: pick(RELIGIONS),
       caste: category === "sc" || category === "st" ? "ST/SC" : null,
       birth_place: i % 4 === 0 ? "City Hospital" : null,
-      last_school: admissionType === "transfer" ? "Previous School" : null,
+      last_school: null,
       aadhar_no: i % 2 === 0 ? `9999${String(8000000000 + i).slice(-8)}` : null,
       notes: i % 10 === 0 ? "Sample note" : null,
     });

@@ -21,7 +21,6 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import {
   CATEGORIES,
-  ADMISSION_TYPES,
   studentFormFromRecord,
   formToPayload,
   type StudentFormState,
@@ -57,7 +56,6 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
     { key: "whatsapp_no", label: "WhatsApp no" },
     { key: "standard", label: "Standard" },
     { key: "division", label: "Division" },
-    { key: "admission_type", label: "Admission type" },
     { key: "admission_date", label: "Admission date" },
     { key: "academic_year", label: "Academic year" },
     { key: "roll_number", label: "Roll number" },
@@ -371,21 +369,10 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Admission & Academic Details</CardTitle>
-            <CardDescription>Grade, division, admission type, and previous school.</CardDescription>
+            <CardDescription>Grade, division, and previous school.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Admission type *</Label>
-                <Select value={form.admission_type} onValueChange={(v) => set("admission_type", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {ADMISSION_TYPES.map((t) => (
-                      <SelectItem key={t} value={t}>{t}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
               <div className="space-y-2">
                 <Label>Admission date *</Label>
                 <Input

@@ -45,7 +45,6 @@ const DOC_LABELS: Record<(typeof DOC_TYPES)[number], string> = {
 };
 
 const CATEGORIES = ["general", "obc", "sc", "st", "other"] as const;
-const ADMISSION_TYPES = ["regular", "transfer", "re-admission"] as const;
 
 const defaultForm = () => ({
   full_name: "",
@@ -58,7 +57,6 @@ const defaultForm = () => ({
   division: "",
   roll_number: "",
   admission_date: "",
-  admission_type: "regular",
   academic_year: "",
   status: "active",
   category: "",
@@ -136,7 +134,6 @@ export default function StudentEntryForm({
     { key: "whatsapp_no", label: "WhatsApp no" },
     { key: "standard", label: "Standard" },
     { key: "division", label: "Division" },
-    { key: "admission_type", label: "Admission type" },
     { key: "admission_date", label: "Admission date" },
     { key: "academic_year", label: "Academic year" },
     { key: "roll_number", label: "Roll number" },
@@ -181,7 +178,6 @@ export default function StudentEntryForm({
         division: form.division.trim() || null,
         roll_number: form.roll_number ? parseInt(form.roll_number) : null,
         admission_date: form.admission_date || null,
-        admission_type: form.admission_type || null,
         academic_year: form.academic_year.trim() || null,
         status: form.status,
         student_id,
@@ -534,21 +530,10 @@ export default function StudentEntryForm({
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Admission & Academic Details</CardTitle>
-            <CardDescription>Standard, division, admission type, and previous school.</CardDescription>
+            <CardDescription>Standard, division, and previous school.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Admission type *</Label>
-                  <Select value={form.admission_type} onValueChange={(v) => set("admission_type", v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {ADMISSION_TYPES.map((t) => (
-                        <SelectItem key={t} value={t}>{t}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
                 <div className="space-y-2">
                   <Label htmlFor="admission_date">Admission date *</Label>
                   <Input id="admission_date" type="date" value={form.admission_date} onChange={(e) => set("admission_date", e.target.value)} required />

@@ -331,7 +331,6 @@ async function main() {
       second_language: row.SecondLanguage || null,
       notes: row.Notes || null,
       academic_year: row.AcademicYear || activeYear.name,
-      admission_type: row.AdmissionType || "regular",
       admission_date: row.AdmissionDate || null,
       father_name: row.FatherName || null,
       mother_name: row.MotherName || null,

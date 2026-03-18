@@ -247,7 +247,6 @@ async function main() {
       whatsapp_no: row.mobile || row.mobile2 || null,
       parent_contact: row.mobile || null,
       mother_contact: row.mobile2 || null,
-      admission_type: "regular",
       academic_year: academicYearName,
       roll_number: parseInt(row.gr, 10) || null,
       standard: row.grade,
