@@ -120,22 +120,17 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
       )}
 
       <div className="space-y-6">
+        {/* 1. Personal & Identity */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Basic Information</CardTitle>
-            <CardDescription>Student name, contact, and identity details.</CardDescription>
+            <CardTitle className="text-base">Personal & Identity</CardTitle>
+            <CardDescription>Name, date of birth, gender, category, and identity document numbers.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="full_name">Full name *</Label>
-                <Input
-                  id="full_name"
-                  value={form.full_name}
-                  onChange={(e) => set("full_name", e.target.value)}
-                  placeholder="Student full name"
-                  required
-                />
+                <Input id="full_name" value={form.full_name} onChange={(e) => set("full_name", e.target.value)} placeholder="Student full name" required />
               </div>
               <div className="space-y-2">
                 <Label>Gender *</Label>
@@ -150,12 +145,7 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
               </div>
               <div className="space-y-2">
                 <Label>Date of birth *</Label>
-                <Input
-                  type="date"
-                  value={form.date_of_birth}
-                  onChange={(e) => set("date_of_birth", e.target.value)}
-                  required
-                />
+                <Input type="date" value={form.date_of_birth} onChange={(e) => set("date_of_birth", e.target.value)} required />
               </div>
               <div className="space-y-2">
                 <Label>Blood group *</Label>
@@ -188,75 +178,13 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
                 <Label>Caste</Label>
                 <Input value={form.caste} onChange={(e) => set("caste", e.target.value)} />
               </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label>Present Address *</Label>
-                <Input
-                  value={form.address}
-                  onChange={(e) => set("address", e.target.value)}
-                  placeholder="Full address"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>State</Label>
-                <Input value={form.state} onChange={(e) => set("state", e.target.value)} placeholder="e.g. Gujarat" />
-              </div>
-              <div className="space-y-2">
-                <Label>Mother tongue</Label>
-                <Input value={form.mother_tongue} onChange={(e) => set("mother_tongue", e.target.value)} placeholder="e.g. Gujarati" />
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label>Permanent address</Label>
-                <Input value={form.permanent_address} onChange={(e) => set("permanent_address", e.target.value)} placeholder="Permanent address" />
-              </div>
-              <div className="space-y-2">
-                <Label>District</Label>
-                <Input value={form.district} onChange={(e) => set("district", e.target.value)} />
-              </div>
               <div className="space-y-2">
                 <Label>Birth place</Label>
                 <Input value={form.birth_place} onChange={(e) => set("birth_place", e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Aadhar No *</Label>
-                <Input
-                  value={form.aadhar_no}
-                  onChange={(e) => set("aadhar_no", e.target.value)}
-                  placeholder="12-digit"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>PEN No *</Label>
-                <Input
-                  value={form.pen_no}
-                  onChange={(e) => set("pen_no", e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>APAR ID *</Label>
-                <Input
-                  value={form.apaar_id}
-                  onChange={(e) => set("apaar_id", e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>UDISE ID *</Label>
-                <Input
-                  value={form.udise_id}
-                  onChange={(e) => set("udise_id", e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>GR Number *</Label>
-                <Input
-                  value={form.gr_number}
-                  onChange={(e) => set("gr_number", e.target.value)}
-                  required
-                />
+                <Label>Mother tongue</Label>
+                <Input value={form.mother_tongue} onChange={(e) => set("mother_tongue", e.target.value)} placeholder="e.g. Gujarati" />
               </div>
               <div className="space-y-2">
                 <Label>Second Language</Label>
@@ -268,41 +196,81 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label>Birth certificate number</Label>
+                <Input value={form.birth_certificate_number} onChange={(e) => set("birth_certificate_number", e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Aadhar No *</Label>
+                <Input value={form.aadhar_no} onChange={(e) => set("aadhar_no", e.target.value)} placeholder="12-digit" required />
+              </div>
+              <div className="space-y-2">
+                <Label>PEN No *</Label>
+                <Input value={form.pen_no} onChange={(e) => set("pen_no", e.target.value)} required />
+              </div>
+              <div className="space-y-2">
+                <Label>APAR ID *</Label>
+                <Input value={form.apaar_id} onChange={(e) => set("apaar_id", e.target.value)} required />
+              </div>
+              <div className="space-y-2">
+                <Label>UDISE ID *</Label>
+                <Input value={form.udise_id} onChange={(e) => set("udise_id", e.target.value)} required />
+              </div>
+              <div className="space-y-2">
+                <Label>GR Number *</Label>
+                <Input value={form.gr_number} onChange={(e) => set("gr_number", e.target.value)} required />
+              </div>
             </div>
           </CardContent>
         </Card>
 
+        {/* 2. Addresses */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Parent & Guardian Details</CardTitle>
-            <CardDescription>Father, mother, and guardian information.</CardDescription>
+            <CardTitle className="text-base">Addresses</CardTitle>
+            <CardDescription>Present address, permanent address, district, and state.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Present Address *</Label>
+                <Input value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="Full present address" required />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Permanent address</Label>
+                <Input value={form.permanent_address} onChange={(e) => set("permanent_address", e.target.value)} placeholder="Permanent address" />
+              </div>
+              <div className="space-y-2">
+                <Label>District</Label>
+                <Input value={form.district} onChange={(e) => set("district", e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>State</Label>
+                <Input value={form.state} onChange={(e) => set("state", e.target.value)} placeholder="e.g. Gujarat" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 3. Parent & Guardian */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Parent & Guardian</CardTitle>
+            <CardDescription>Father, mother, contacts, and guardian information.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Father name *</Label>
-                <Input
-                  value={form.father_name}
-                  onChange={(e) => set("father_name", e.target.value)}
-                  required
-                />
+                <Input value={form.father_name} onChange={(e) => set("father_name", e.target.value)} required />
               </div>
               <div className="space-y-2">
                 <Label>Mother name *</Label>
-                <Input
-                  value={form.mother_name}
-                  onChange={(e) => set("mother_name", e.target.value)}
-                  required
-                />
+                <Input value={form.mother_name} onChange={(e) => set("mother_name", e.target.value)} required />
               </div>
               <div className="space-y-2">
                 <Label>Parent contact *</Label>
-                <Input
-                  type="tel"
-                  value={form.parent_contact}
-                  onChange={(e) => set("parent_contact", e.target.value)}
-                  required
-                />
+                <Input type="tel" value={form.parent_contact} onChange={(e) => set("parent_contact", e.target.value)} required />
               </div>
               <div className="space-y-2">
                 <Label>Mother contact</Label>
@@ -314,29 +282,15 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
               </div>
               <div className="space-y-2">
                 <Label>WhatsApp no *</Label>
-                <Input
-                  type="tel"
-                  value={form.whatsapp_no}
-                  onChange={(e) => set("whatsapp_no", e.target.value)}
-                  required
-                />
+                <Input type="tel" value={form.whatsapp_no} onChange={(e) => set("whatsapp_no", e.target.value)} required />
               </div>
               <div className="space-y-2">
                 <Label>Emergency contact name</Label>
-                <Input
-                  value={form.emergency_contact_name}
-                  onChange={(e) => set("emergency_contact_name", e.target.value)}
-                  placeholder="Person to call in emergency"
-                />
+                <Input value={form.emergency_contact_name} onChange={(e) => set("emergency_contact_name", e.target.value)} placeholder="Person to call in emergency" />
               </div>
               <div className="space-y-2">
                 <Label>Emergency contact mobile</Label>
-                <Input
-                  type="tel"
-                  value={form.emergency_contact_number}
-                  onChange={(e) => set("emergency_contact_number", e.target.value)}
-                  placeholder="Emergency phone number"
-                />
+                <Input type="tel" value={form.emergency_contact_number} onChange={(e) => set("emergency_contact_number", e.target.value)} placeholder="Emergency phone number" />
               </div>
               <div className="space-y-2">
                 <Label>Father education</Label>
@@ -378,21 +332,17 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
           </CardContent>
         </Card>
 
+        {/* 4. Admission & Academic */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Admission & Academic Details</CardTitle>
-            <CardDescription>Grade, division, and previous school.</CardDescription>
+            <CardTitle className="text-base">Admission & Academic</CardTitle>
+            <CardDescription>Standard, division, academic year, roll number, and RTE quota.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Admission date *</Label>
-                <Input
-                  type="date"
-                  value={form.admission_date}
-                  onChange={(e) => set("admission_date", e.target.value)}
-                  required
-                />
+                <Input type="date" value={form.admission_date} onChange={(e) => set("admission_date", e.target.value)} required />
               </div>
               <StandardDivisionYearSelects
                 standard={form.standard}
@@ -410,31 +360,9 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
               />
               <div className="space-y-2">
                 <Label>Roll number *</Label>
-                <Input
-                  type="number"
-                  value={form.roll_number}
-                  onChange={(e) => set("roll_number", e.target.value)}
-                  min={0}
-                  required
-                />
+                <Input type="number" value={form.roll_number} onChange={(e) => set("roll_number", e.target.value)} min={0} required />
               </div>
-              <div className="space-y-2">
-                <Label>Previous school</Label>
-                <Input value={form.last_school} onChange={(e) => set("last_school", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Previous school address</Label>
-                <Input value={form.previous_school_address} onChange={(e) => set("previous_school_address", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Previous school State Unique ID</Label>
-                <Input value={form.previous_school_state_unique_id} onChange={(e) => set("previous_school_state_unique_id", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Birth certificate number</Label>
-                <Input value={form.birth_certificate_number} onChange={(e) => set("birth_certificate_number", e.target.value)} />
-              </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 sm:col-span-2">
                 <Checkbox id="rte" checked={form.is_rte_quota} onCheckedChange={(c) => set("is_rte_quota", !!c)} />
                 <Label htmlFor="rte" className="font-normal">RTE (Right to Education) Quota</Label>
               </div>
@@ -442,42 +370,31 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
           </CardContent>
         </Card>
 
+        {/* 5. Previous School */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Other Details</CardTitle>
-            <CardDescription>Physical, medical, and miscellaneous information.</CardDescription>
+            <CardTitle className="text-base">Previous School</CardTitle>
+            <CardDescription>School name, address, and state unique ID from last attended school.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>Height</Label>
-                <Input value={form.height} onChange={(e) => set("height", e.target.value)} placeholder="e.g. 160cm" />
+                <Label>Previous school</Label>
+                <Input value={form.last_school} onChange={(e) => set("last_school", e.target.value)} placeholder="Name of last school" />
               </div>
-              <div className="space-y-2">
-                <Label>Weight</Label>
-                <Input value={form.weight} onChange={(e) => set("weight", e.target.value)} placeholder="e.g. 60Kg" />
-              </div>
-              <div className="space-y-2">
-                <Label>Hobby</Label>
-                <Input value={form.hobby} onChange={(e) => set("hobby", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Sign of identity</Label>
-                <Input value={form.sign_of_identity} onChange={(e) => set("sign_of_identity", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Refer name</Label>
-                <Input value={form.refer_name} onChange={(e) => set("refer_name", e.target.value)} />
-              </div>
-              <div className="flex flex-wrap gap-4 items-center" />
               <div className="space-y-2 sm:col-span-2">
-                <Label>Notes</Label>
-                <Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={2} />
+                <Label>Previous school address</Label>
+                <Input value={form.previous_school_address} onChange={(e) => set("previous_school_address", e.target.value)} placeholder="Full address of previous school" />
+              </div>
+              <div className="space-y-2">
+                <Label>Previous school State Unique ID</Label>
+                <Input value={form.previous_school_state_unique_id} onChange={(e) => set("previous_school_state_unique_id", e.target.value)} />
               </div>
             </div>
           </CardContent>
         </Card>
 
+        {/* 6. Fee Concession & Bank */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Fee Concession & Bank Details</CardTitle>
@@ -512,6 +429,42 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
               <div className="space-y-2">
                 <Label>Account no</Label>
                 <Input value={form.account_no} onChange={(e) => set("account_no", e.target.value)} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 7. Other Details */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Other Details</CardTitle>
+            <CardDescription>Physical, hobby, and notes.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Height</Label>
+                <Input value={form.height} onChange={(e) => set("height", e.target.value)} placeholder="e.g. 160cm" />
+              </div>
+              <div className="space-y-2">
+                <Label>Weight</Label>
+                <Input value={form.weight} onChange={(e) => set("weight", e.target.value)} placeholder="e.g. 60Kg" />
+              </div>
+              <div className="space-y-2">
+                <Label>Hobby</Label>
+                <Input value={form.hobby} onChange={(e) => set("hobby", e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Sign of identity</Label>
+                <Input value={form.sign_of_identity} onChange={(e) => set("sign_of_identity", e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Refer name</Label>
+                <Input value={form.refer_name} onChange={(e) => set("refer_name", e.target.value)} />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Notes</Label>
+                <Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={2} />
               </div>
             </div>
           </CardContent>
