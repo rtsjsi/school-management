@@ -6,7 +6,6 @@ const path = require("path");
 const fs = require("fs");
 
 const repoRoot = process.cwd();
-const configPath = path.join(repoRoot, "supabase", "branch-projects.json");
 
 function getCurrentBranch() {
   try {
@@ -22,6 +21,22 @@ function getCurrentBranch() {
 function getEnvFileName(branch) {
   if (branch === "main") return ".env.main";
   return ".env.development";
+}
+
+function parseEnvFile(filePath) {
+  if (!fs.existsSync(filePath)) return {};
+  const out = {};
+  const content = fs.readFileSync(filePath, "utf8");
+  content.split("\n").forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) return;
+    const m = trimmed.match(/^([^#=]+)=(.*)$/);
+    if (!m) return;
+    const key = m[1].trim();
+    const value = m[2].trim().replace(/^["']|["']$/g, "");
+    out[key] = value;
+  });
+  return out;
 }
 
 function syncEnv(branch) {
@@ -42,13 +57,13 @@ function syncEnv(branch) {
   fs.copyFileSync(srcPath, destPath);
 }
 
-function getProjectRef(branch) {
-  if (!fs.existsSync(configPath)) {
-    console.error("Missing supabase/branch-projects.json");
-    process.exit(1);
-  }
-  const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-  return config[branch] ?? config.development ?? config.main ?? null;
+function getProjectRefFromEnv(branch) {
+  // Prefer branch env file, fallback to .env.local if user maintains only that.
+  const branchEnvPath = path.join(repoRoot, getEnvFileName(branch));
+  const localEnvPath = path.join(repoRoot, ".env.local");
+  const branchEnv = parseEnvFile(branchEnvPath);
+  const localEnv = parseEnvFile(localEnvPath);
+  return branchEnv.SUPABASE_PROJECT_REF || localEnv.SUPABASE_PROJECT_REF || null;
 }
 
 const branch = getCurrentBranch();
@@ -66,9 +81,9 @@ if (args.length === 0) {
 }
 
 // 2. Supabase CLI: link to branch project, then run given command
-const ref = getProjectRef(branch);
+const ref = getProjectRefFromEnv(branch);
 if (!ref) {
-  console.error("No project ref for branch:", branch);
+  console.error("Missing SUPABASE_PROJECT_REF in", getEnvFileName(branch), "or .env.local (see docs/supabase-branches.md).");
   process.exit(1);
 }
 

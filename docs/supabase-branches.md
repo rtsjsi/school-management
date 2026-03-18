@@ -23,7 +23,12 @@ No manual linking or env switching is required; the current branch controls whic
    - **Production** ([project lmevpzxbwojrzfxtxxgy](https://supabase.com/dashboard/project/lmevpzxbwojrzfxtxxgy)): copy **Project URL**, **anon public** key, and **service_role** key into `.env.main`.
    - **Development** ([project cvbnrkdimglcthtusomw](https://supabase.com/dashboard/project/cvbnrkdimglcthtusomw)): copy the same into `.env.development`.
 
-   Both files are in `.gitignore` and must never be committed.
+  Also set `SUPABASE_PROJECT_REF` in each env file:
+
+  - `.env.main` → `SUPABASE_PROJECT_REF=lmevpzxbwojrzfxtxxgy`
+  - `.env.development` → `SUPABASE_PROJECT_REF=cvbnrkdimglcthtusomw`
+
+  Both files are in `.gitignore` and must never be committed.
 
 **Production deployment (e.g. Vercel):** Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` for the main project. Optionally set `SUPABASE_SERVICE_ROLE_KEY` for server-side admin operations (e.g. listing all profiles in Administration). Auth uses the standard flow: profile is read by user id from the `profiles` table.
 
