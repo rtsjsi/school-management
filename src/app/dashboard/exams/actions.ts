@@ -68,12 +68,14 @@ export async function updateExam(
 ): Promise<UpdateExamResult> {
   const supabase = await createClient();
   if (!payload.name.trim()) return { ok: false, error: "Exam name is required." };
+  if (!payload.standard?.trim()) return { ok: false, error: "Standard is required." };
+  if (!payload.term) return { ok: false, error: "Term is required." };
 
   const { error } = await supabase
     .from("exams")
     .update({
       name: payload.name.trim(),
-      standard: payload.standard?.trim() || null,
+      standard: payload.standard.trim(),
       term: payload.term,
       updated_at: new Date().toISOString(),
     })

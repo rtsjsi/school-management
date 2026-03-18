@@ -60,6 +60,14 @@ export function ExamEditDialog({ exam }: { exam: ExamRow }) {
       setError("Exam name is required.");
       return;
     }
+    if (!form.standardId) {
+      setError("Standard is required.");
+      return;
+    }
+    if (!form.term) {
+      setError("Term is required.");
+      return;
+    }
     const standardName = standardsList.find((s) => s.id === form.standardId)?.name ?? null;
     setSaving(true);
     try {
@@ -104,7 +112,7 @@ export function ExamEditDialog({ exam }: { exam: ExamRow }) {
             />
           </div>
           <div className="space-y-2">
-            <Label>Standard</Label>
+            <Label>Standard *</Label>
             <Select
               value={form.standardId || "_none"}
               onValueChange={(v) => setForm((p) => ({ ...p, standardId: v === "_none" ? "" : v }))}
@@ -119,6 +127,21 @@ export function ExamEditDialog({ exam }: { exam: ExamRow }) {
                     {s.name}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Term *</Label>
+            <Select
+              value={form.term}
+              onValueChange={(v) => setForm((p) => ({ ...p, term: v }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select term" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Term-1">Term-1</SelectItem>
+                <SelectItem value="Term-2">Term-2</SelectItem>
               </SelectContent>
             </Select>
           </div>

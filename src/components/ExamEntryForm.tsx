@@ -84,6 +84,10 @@ export default function ExamEntryForm() {
       setError("Academic year is required.");
       return;
     }
+    if (!form.term) {
+      setError("Term is required.");
+      return;
+    }
 
     const markBasedSubjects = subjects.filter((s) => s.evaluation_type === "mark");
     for (const sub of markBasedSubjects) {
@@ -174,7 +178,7 @@ export default function ExamEntryForm() {
           </Select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="exam-term">Term</Label>
+          <Label htmlFor="exam-term">Term *</Label>
           <Select
             value={form.term}
             onValueChange={(v) => setForm((p) => ({ ...p, term: v }))}
