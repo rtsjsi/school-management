@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import {
@@ -131,7 +131,6 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Personal & Identity</CardTitle>
-            <CardDescription>Name, date of birth, gender, category, and identity document numbers.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -235,7 +234,6 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Addresses</CardTitle>
-          <CardDescription>Structured address details (recommended for accurate records).</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
@@ -257,10 +255,6 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
                 placeholder="Landmark / Additional details"
                 rows={2}
               />
-            </div>
-            <div className="space-y-2">
-              <Label>Present landmark</Label>
-              <Input value={form.present_landmark} onChange={(e) => set("present_landmark", e.target.value)} placeholder="Near..." />
             </div>
             <div className="space-y-2">
               <Label>Present city *</Label>
@@ -313,7 +307,6 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
                   if (checked) {
                     set("permanent_address_line1", form.present_address_line1);
                     set("permanent_address_line2", form.present_address_line2);
-                    set("permanent_landmark", form.present_landmark);
                     set("permanent_city", form.present_city);
                     set("permanent_taluka", form.present_taluka);
                     set("permanent_district", form.present_district);
@@ -347,10 +340,6 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
                 rows={2}
                 disabled={form.permanent_same_as_present}
               />
-            </div>
-            <div className="space-y-2">
-              <Label>Permanent landmark</Label>
-              <Input value={form.permanent_landmark} onChange={(e) => set("permanent_landmark", e.target.value)} disabled={form.permanent_same_as_present} />
             </div>
             <div className="space-y-2">
               <Label>Permanent city</Label>
@@ -402,7 +391,6 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Parent & Guardian</CardTitle>
-            <CardDescription>Father, mother, contacts, and guardian information.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -482,7 +470,6 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Admission & Academic</CardTitle>
-            <CardDescription>Standard, division, academic year, roll number, and RTE quota.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -520,7 +507,6 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Previous School</CardTitle>
-            <CardDescription>School name, address, and state unique ID from last attended school.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -544,7 +530,6 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Fee Concession & Bank Details</CardTitle>
-            <CardDescription>Fee concession and bank account for refunds.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -584,7 +569,6 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Other Details</CardTitle>
-            <CardDescription>Physical, hobby, and notes.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -619,7 +603,6 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Documents & Photos</CardTitle>
-            <CardDescription>Upload Aadhar card, photographs, and other documents.</CardDescription>
           </CardHeader>
           <CardContent>
             <StudentDocumentsPhotos studentId={student.id} />

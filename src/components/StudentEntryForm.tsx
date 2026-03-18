@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StudentDocumentsPhotos } from "@/components/StudentDocumentsPhotos";
 import { CameraCaptureButton } from "@/components/CameraCapture";
 import { StandardDivisionYearSelects } from "@/components/StandardDivisionYearSelects";
@@ -54,7 +54,6 @@ const defaultForm = () => ({
   blood_group: "",
   present_address_line1: "",
   present_address_line2: "",
-  present_landmark: "",
   present_city: "",
   present_taluka: "",
   present_district: "",
@@ -64,7 +63,6 @@ const defaultForm = () => ({
   permanent_same_as_present: false,
   permanent_address_line1: "",
   permanent_address_line2: "",
-  permanent_landmark: "",
   permanent_city: "",
   permanent_taluka: "",
   permanent_district: "",
@@ -259,7 +257,6 @@ export default function StudentEntryForm({
       const present = {
         line1: form.present_address_line1,
         line2: form.present_address_line2,
-        landmark: form.present_landmark,
         city: form.present_city,
         taluka: form.present_taluka,
         district: form.present_district,
@@ -273,7 +270,6 @@ export default function StudentEntryForm({
         : {
             line1: form.permanent_address_line1,
             line2: form.permanent_address_line2,
-            landmark: form.permanent_landmark,
             city: form.permanent_city,
             taluka: form.permanent_taluka,
             district: form.permanent_district,
@@ -284,7 +280,6 @@ export default function StudentEntryForm({
 
       payload.present_address_line1 = present.line1.trim() || null;
       payload.present_address_line2 = present.line2.trim() || null;
-      payload.present_landmark = present.landmark.trim() || null;
       payload.present_city = present.city.trim() || null;
       payload.present_taluka = present.taluka.trim() || null;
       payload.present_district = present.district.trim() || null;
@@ -294,7 +289,6 @@ export default function StudentEntryForm({
 
       payload.permanent_address_line1 = permanent.line1.trim() || null;
       payload.permanent_address_line2 = permanent.line2.trim() || null;
-      payload.permanent_landmark = permanent.landmark.trim() || null;
       payload.permanent_city = permanent.city.trim() || null;
       payload.permanent_taluka = permanent.taluka.trim() || null;
       payload.permanent_district = permanent.district.trim() || null;
@@ -403,7 +397,6 @@ export default function StudentEntryForm({
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Personal & Identity</CardTitle>
-            <CardDescription>Name, date of birth, gender, category, and identity document numbers.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -506,7 +499,6 @@ export default function StudentEntryForm({
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Addresses</CardTitle>
-          <CardDescription>Structured address details (recommended for accurate records).</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
@@ -527,14 +519,6 @@ export default function StudentEntryForm({
                 onChange={(e) => set("present_address_line2", e.target.value)}
                 placeholder="Landmark / Additional details"
                 rows={2}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Present landmark</Label>
-              <Input
-                value={form.present_landmark}
-                onChange={(e) => set("present_landmark", e.target.value)}
-                placeholder="Near..."
               />
             </div>
             <div className="space-y-2">
@@ -588,7 +572,6 @@ export default function StudentEntryForm({
                   if (checked) {
                     set("permanent_address_line1", form.present_address_line1);
                     set("permanent_address_line2", form.present_address_line2);
-                    set("permanent_landmark", form.present_landmark);
                     set("permanent_city", form.present_city);
                     set("permanent_taluka", form.present_taluka);
                     set("permanent_district", form.present_district);
@@ -622,10 +605,6 @@ export default function StudentEntryForm({
                 rows={2}
                 disabled={form.permanent_same_as_present}
               />
-            </div>
-            <div className="space-y-2">
-              <Label>Permanent landmark</Label>
-              <Input value={form.permanent_landmark} onChange={(e) => set("permanent_landmark", e.target.value)} disabled={form.permanent_same_as_present} />
             </div>
             <div className="space-y-2">
               <Label>Permanent city</Label>
@@ -677,7 +656,6 @@ export default function StudentEntryForm({
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Parent & Guardian</CardTitle>
-            <CardDescription>Father, mother, contacts, and guardian information.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -757,7 +735,6 @@ export default function StudentEntryForm({
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Admission & Academic</CardTitle>
-            <CardDescription>Standard, division, academic year, roll number, and RTE quota.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -795,7 +772,6 @@ export default function StudentEntryForm({
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Previous School</CardTitle>
-            <CardDescription>School name, address, and state unique ID from last attended school.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -819,7 +795,6 @@ export default function StudentEntryForm({
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Fee Concession & Bank Details</CardTitle>
-            <CardDescription>Fee concession and bank account for refunds.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -859,7 +834,6 @@ export default function StudentEntryForm({
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Other Details</CardTitle>
-            <CardDescription>Physical, hobby, and notes.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -894,7 +868,6 @@ export default function StudentEntryForm({
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Documents & Photos</CardTitle>
-            <CardDescription>Upload Aadhar card, photographs, and other documents.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
               <div>

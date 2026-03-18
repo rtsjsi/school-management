@@ -42,7 +42,6 @@ export const IN_STATES = [
 export type StructuredAddress = {
   line1: string;
   line2: string;
-  landmark: string;
   city: string;
   taluka: string;
   district: string;
@@ -55,7 +54,6 @@ export function stringifyAddress(a: Partial<StructuredAddress>): string {
   const parts = [
     a.line1,
     a.line2,
-    a.landmark,
     a.city,
     a.taluka,
     a.district,
@@ -75,7 +73,6 @@ export type StudentFormState = {
   blood_group: string;
   present_address_line1: string;
   present_address_line2: string;
-  present_landmark: string;
   present_city: string;
   present_taluka: string;
   present_district: string;
@@ -85,7 +82,6 @@ export type StudentFormState = {
   permanent_same_as_present: boolean;
   permanent_address_line1: string;
   permanent_address_line2: string;
-  permanent_landmark: string;
   permanent_city: string;
   permanent_taluka: string;
   permanent_district: string;
@@ -154,7 +150,6 @@ export function studentFormFromRecord(r: Record<string, unknown>): StudentFormSt
     blood_group: (r.blood_group as string) || "",
     present_address_line1: (r.present_address_line1 as string) || "",
     present_address_line2: (r.present_address_line2 as string) || "",
-    present_landmark: (r.present_landmark as string) || "",
     present_city: (r.present_city as string) || "",
     present_taluka: (r.present_taluka as string) || "",
     present_district: (r.present_district as string) || "",
@@ -164,7 +159,6 @@ export function studentFormFromRecord(r: Record<string, unknown>): StudentFormSt
     permanent_same_as_present: false,
     permanent_address_line1: (r.permanent_address_line1 as string) || "",
     permanent_address_line2: (r.permanent_address_line2 as string) || "",
-    permanent_landmark: (r.permanent_landmark as string) || "",
     permanent_city: (r.permanent_city as string) || "",
     permanent_taluka: (r.permanent_taluka as string) || "",
     permanent_district: (r.permanent_district as string) || "",
@@ -230,7 +224,6 @@ export function formToPayload(form: StudentFormState): Record<string, unknown> {
   const present: StructuredAddress = {
     line1: form.present_address_line1,
     line2: form.present_address_line2,
-    landmark: form.present_landmark,
     city: form.present_city,
     taluka: form.present_taluka,
     district: form.present_district,
@@ -244,7 +237,6 @@ export function formToPayload(form: StudentFormState): Record<string, unknown> {
     : ({
         line1: form.permanent_address_line1,
         line2: form.permanent_address_line2,
-        landmark: form.permanent_landmark,
         city: form.permanent_city,
         taluka: form.permanent_taluka,
         district: form.permanent_district,
@@ -261,7 +253,6 @@ export function formToPayload(form: StudentFormState): Record<string, unknown> {
     mother_tongue: form.mother_tongue.trim() || null,
     present_address_line1: present.line1.trim() || null,
     present_address_line2: present.line2.trim() || null,
-    present_landmark: present.landmark.trim() || null,
     present_city: present.city.trim() || null,
     present_taluka: present.taluka.trim() || null,
     present_district: present.district.trim() || null,
@@ -270,7 +261,6 @@ export function formToPayload(form: StudentFormState): Record<string, unknown> {
     present_country: (present.country || "India").trim() || "India",
     permanent_address_line1: permanentSource.line1.trim() || null,
     permanent_address_line2: permanentSource.line2.trim() || null,
-    permanent_landmark: permanentSource.landmark.trim() || null,
     permanent_city: permanentSource.city.trim() || null,
     permanent_taluka: permanentSource.taluka.trim() || null,
     permanent_district: permanentSource.district.trim() || null,
