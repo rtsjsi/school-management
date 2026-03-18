@@ -46,7 +46,7 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
   const requiredFields: { key: keyof StudentFormState; label: string }[] = [
     { key: "full_name", label: "Full name" },
     { key: "date_of_birth", label: "Date of birth" },
-    { key: "address", label: "Address" },
+    { key: "address", label: "Present Address" },
     { key: "gender", label: "Gender" },
     { key: "blood_group", label: "Blood group" },
     { key: "category", label: "Category" },
@@ -189,13 +189,25 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
                 <Input value={form.caste} onChange={(e) => set("caste", e.target.value)} />
               </div>
               <div className="space-y-2 sm:col-span-2">
-                <Label>Address *</Label>
+                <Label>Present Address *</Label>
                 <Input
                   value={form.address}
                   onChange={(e) => set("address", e.target.value)}
                   placeholder="Full address"
                   required
                 />
+              </div>
+              <div className="space-y-2">
+                <Label>State</Label>
+                <Input value={form.state} onChange={(e) => set("state", e.target.value)} placeholder="e.g. Gujarat" />
+              </div>
+              <div className="space-y-2">
+                <Label>Mother tongue</Label>
+                <Input value={form.mother_tongue} onChange={(e) => set("mother_tongue", e.target.value)} placeholder="e.g. Gujarati" />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Permanent address</Label>
+                <Input value={form.permanent_address} onChange={(e) => set("permanent_address", e.target.value)} placeholder="Permanent address" />
               </div>
               <div className="space-y-2">
                 <Label>District</Label>
@@ -407,10 +419,21 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
                 />
               </div>
               <div className="space-y-2">
-                <Label>Last school</Label>
+                <Label>Previous school</Label>
                 <Input value={form.last_school} onChange={(e) => set("last_school", e.target.value)} />
               </div>
-              <div className="space-y-2" />
+              <div className="space-y-2">
+                <Label>Previous school address</Label>
+                <Input value={form.previous_school_address} onChange={(e) => set("previous_school_address", e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Previous school State Unique ID</Label>
+                <Input value={form.previous_school_state_unique_id} onChange={(e) => set("previous_school_state_unique_id", e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Birth certificate number</Label>
+                <Input value={form.birth_certificate_number} onChange={(e) => set("birth_certificate_number", e.target.value)} />
+              </div>
               <div className="flex items-center space-x-2">
                 <Checkbox id="rte" checked={form.is_rte_quota} onCheckedChange={(c) => set("is_rte_quota", !!c)} />
                 <Label htmlFor="rte" className="font-normal">RTE (Right to Education) Quota</Label>

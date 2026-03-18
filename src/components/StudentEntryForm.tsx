@@ -52,6 +52,9 @@ const defaultForm = () => ({
   gender: "",
   blood_group: "",
   address: "",
+  permanent_address: "",
+  state: "",
+  mother_tongue: "",
   district: "",
   standard: "",
   division: "",
@@ -64,6 +67,9 @@ const defaultForm = () => ({
   caste: "",
   birth_place: "",
   last_school: "",
+  previous_school_address: "",
+  previous_school_state_unique_id: "",
+  birth_certificate_number: "",
   aadhar_no: "",
   pen_no: "",
   apaar_id: "",
@@ -124,7 +130,7 @@ export default function StudentEntryForm({
   const requiredFields: { key: keyof ReturnType<typeof defaultForm>; label: string }[] = [
     { key: "full_name", label: "Full name" },
     { key: "date_of_birth", label: "Date of birth" },
-    { key: "address", label: "Address" },
+    { key: "address", label: "Present Address" },
     { key: "gender", label: "Gender" },
     { key: "blood_group", label: "Blood group" },
     { key: "category", label: "Category" },
@@ -173,6 +179,9 @@ export default function StudentEntryForm({
         gender: form.gender || null,
         blood_group: form.blood_group || null,
         address: form.address.trim() || null,
+        permanent_address: form.permanent_address.trim() || null,
+        state: form.state.trim() || null,
+        mother_tongue: form.mother_tongue.trim() || null,
         district: form.district.trim() || null,
         standard: form.standard.trim() || null,
         division: form.division.trim() || null,
@@ -186,6 +195,9 @@ export default function StudentEntryForm({
         caste: form.caste.trim() || null,
         birth_place: form.birth_place.trim() || null,
         last_school: form.last_school.trim() || null,
+        previous_school_address: form.previous_school_address.trim() || null,
+        previous_school_state_unique_id: form.previous_school_state_unique_id.trim() || null,
+        birth_certificate_number: form.birth_certificate_number.trim() || null,
         aadhar_no: form.aadhar_no.trim() || null,
         pen_no: form.pen_no.trim() || null,
         apaar_id: form.apaar_id.trim() || null,
@@ -384,8 +396,20 @@ export default function StudentEntryForm({
                   <Input value={form.caste} onChange={(e) => set("caste", e.target.value)} />
                 </div>
                 <div className="space-y-2 sm:col-span-2">
-                  <Label htmlFor="address">Address *</Label>
+                  <Label htmlFor="address">Present Address *</Label>
                   <Input id="address" value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="Full address" required />
+                </div>
+                <div className="space-y-2">
+                  <Label>State</Label>
+                  <Input value={form.state} onChange={(e) => set("state", e.target.value)} placeholder="e.g. Gujarat" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Mother tongue</Label>
+                  <Input value={form.mother_tongue} onChange={(e) => set("mother_tongue", e.target.value)} placeholder="e.g. Gujarati" />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Permanent address</Label>
+                  <Input value={form.permanent_address} onChange={(e) => set("permanent_address", e.target.value)} placeholder="Permanent address" />
                 </div>
                 <div className="space-y-2">
                   <Label>District</Label>
@@ -563,10 +587,21 @@ export default function StudentEntryForm({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Last school</Label>
+                  <Label>Previous school</Label>
                   <Input value={form.last_school} onChange={(e) => set("last_school", e.target.value)} />
                 </div>
-                <div className="space-y-2" />
+                <div className="space-y-2">
+                  <Label>Previous school address</Label>
+                  <Input value={form.previous_school_address} onChange={(e) => set("previous_school_address", e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Previous school State Unique ID</Label>
+                  <Input value={form.previous_school_state_unique_id} onChange={(e) => set("previous_school_state_unique_id", e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Birth certificate number</Label>
+                  <Input value={form.birth_certificate_number} onChange={(e) => set("birth_certificate_number", e.target.value)} />
+                </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox id="rte" checked={form.is_rte_quota} onCheckedChange={(c) => set("is_rte_quota", !!c)} />
                   <Label htmlFor="rte" className="font-normal">RTE (Right to Education) Quota</Label>

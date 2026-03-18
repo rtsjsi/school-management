@@ -5,6 +5,9 @@ export type StudentFormState = {
   gender: string;
   blood_group: string;
   address: string;
+  permanent_address: string;
+  state: string;
+  mother_tongue: string;
   district: string;
   standard: string;
   division: string;
@@ -17,6 +20,9 @@ export type StudentFormState = {
   caste: string;
   birth_place: string;
   last_school: string;
+  previous_school_address: string;
+  previous_school_state_unique_id: string;
+  birth_certificate_number: string;
   aadhar_no: string;
   pen_no: string;
   apaar_id: string;
@@ -63,6 +69,9 @@ export function studentFormFromRecord(r: Record<string, unknown>): StudentFormSt
     gender: (r.gender as string) || "",
     blood_group: (r.blood_group as string) || "",
     address: (r.address as string) || "",
+    permanent_address: (r.permanent_address as string) || "",
+    state: (r.state as string) || "",
+    mother_tongue: (r.mother_tongue as string) || "",
     district: (r.district as string) || "",
     standard: (r.standard as string) || "",
     division: (r.division as string) || "",
@@ -75,6 +84,9 @@ export function studentFormFromRecord(r: Record<string, unknown>): StudentFormSt
     caste: (r.caste as string) || "",
     birth_place: (r.birth_place as string) || "",
     last_school: (r.last_school as string) || "",
+    previous_school_address: (r.previous_school_address as string) || "",
+    previous_school_state_unique_id: (r.previous_school_state_unique_id as string) || "",
+    birth_certificate_number: (r.birth_certificate_number as string) || "",
     aadhar_no: (r.aadhar_no as string) || "",
     pen_no: (r.pen_no as string) || "",
     apaar_id: (r.apaar_id as string) || "",
@@ -122,6 +134,9 @@ export function formToPayload(form: StudentFormState): Record<string, unknown> {
     gender: form.gender || null,
     blood_group: form.blood_group || null,
     address: form.address.trim() || null,
+    permanent_address: form.permanent_address.trim() || null,
+    state: form.state.trim() || null,
+    mother_tongue: form.mother_tongue.trim() || null,
     district: form.district.trim() || null,
     standard: form.standard.trim() || null,
     division: form.division.trim() || null,
@@ -134,6 +149,9 @@ export function formToPayload(form: StudentFormState): Record<string, unknown> {
     caste: form.caste.trim() || null,
     birth_place: form.birth_place.trim() || null,
     last_school: form.last_school.trim() || null,
+    previous_school_address: form.previous_school_address.trim() || null,
+    previous_school_state_unique_id: form.previous_school_state_unique_id.trim() || null,
+    birth_certificate_number: form.birth_certificate_number.trim() || null,
     aadhar_no: form.aadhar_no.trim() || null,
     pen_no: form.pen_no.trim() || null,
     apaar_id: form.apaar_id.trim() || null,
