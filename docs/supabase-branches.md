@@ -23,7 +23,12 @@ No manual linking or env switching is required; the current branch controls whic
    - **Production** ([project lmevpzxbwojrzfxtxxgy](https://supabase.com/dashboard/project/lmevpzxbwojrzfxtxxgy)): copy **Project URL**, **anon public** key, and **service_role** key into `.env.main`.
    - **Development** ([project cvbnrkdimglcthtusomw](https://supabase.com/dashboard/project/cvbnrkdimglcthtusomw)): copy the same into `.env.development`.
 
-   Both files are in `.gitignore` and must never be committed.
+  Also set `SUPABASE_PROJECT_REF` in each env file:
+
+  - `.env.main` → `SUPABASE_PROJECT_REF=lmevpzxbwojrzfxtxxgy`
+  - `.env.development` → `SUPABASE_PROJECT_REF=cvbnrkdimglcthtusomw`
+
+  Both files are in `.gitignore` and must never be committed.
 
 **Production deployment (e.g. Vercel):** Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` for the main project. Optionally set `SUPABASE_SERVICE_ROLE_KEY` for server-side admin operations (e.g. listing all profiles in Administration). Auth uses the standard flow: profile is read by user id from the `profiles` table.
 
@@ -32,7 +37,12 @@ No manual linking or env switching is required; the current branch controls whic
 A single script **`scripts/by-branch.js`** handles branch-based env and Supabase CLI:
 
 - **`npm run dev`** / **`npm run build`** — Sync env from the current branch into `.env.local`, then run Next.js. The app uses the correct Supabase project for that branch.
-- **`npm run db:push`** — Sync env, link the Supabase CLI to the current branch’s project, then push migrations. On `main` this targets production; on `development` (or any other branch) it targets dev.
+- **`npm run db:push`** — Sync env, link the Supabase CLI to the current branch’s project, then push migrations. On `main` this targets production; on `development` (or any other branch) it targets dev. This runs `supabase db push` with `--yes` to avoid interactive prompts.
 - **`npm run supabase:link`** — Sync env and link the Supabase CLI to the current branch’s project (no other command). Useful after cloning the repo.
 
 No manual linking or env switching is needed; branch name drives everything.
+
+### Recommendation
+
+Use **only** `npm run db:push` for migration pushes. It is branch-aware and will target the correct Supabase project automatically.
+Running `npx supabase db push` directly is fine for local experiments, but it can accidentally point at the wrong project if the CLI isn’t linked.
