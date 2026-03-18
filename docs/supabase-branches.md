@@ -32,7 +32,12 @@ No manual linking or env switching is required; the current branch controls whic
 A single script **`scripts/by-branch.js`** handles branch-based env and Supabase CLI:
 
 - **`npm run dev`** / **`npm run build`** — Sync env from the current branch into `.env.local`, then run Next.js. The app uses the correct Supabase project for that branch.
-- **`npm run db:push`** — Sync env, link the Supabase CLI to the current branch’s project, then push migrations. On `main` this targets production; on `development` (or any other branch) it targets dev.
+- **`npm run db:push`** — Sync env, link the Supabase CLI to the current branch’s project, then push migrations. On `main` this targets production; on `development` (or any other branch) it targets dev. This runs `supabase db push` with `--yes` to avoid interactive prompts.
 - **`npm run supabase:link`** — Sync env and link the Supabase CLI to the current branch’s project (no other command). Useful after cloning the repo.
 
 No manual linking or env switching is needed; branch name drives everything.
+
+### Recommendation
+
+Use **only** `npm run db:push` for migration pushes. It is branch-aware and will target the correct Supabase project automatically.
+Running `npx supabase db push` directly is fine for local experiments, but it can accidentally point at the wrong project if the CLI isn’t linked.

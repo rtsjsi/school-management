@@ -81,7 +81,14 @@ if (args[0] === "link") {
   process.exit(0);
 }
 
-execSync(`npx supabase ${args.join(" ")}`, {
+// Make db pushes non-interactive (avoid "[Y/n]" prompt in CI).
+// Only add when user didn't already pass --yes.
+const effectiveArgs = [...args];
+if (effectiveArgs[0] === "db" && effectiveArgs[1] === "push" && !effectiveArgs.includes("--yes")) {
+  effectiveArgs.push("--yes");
+}
+
+execSync(`npx supabase ${effectiveArgs.join(" ")}`, {
   stdio: "inherit",
   cwd: repoRoot,
   shell: true,
