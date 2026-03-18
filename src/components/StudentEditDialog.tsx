@@ -28,6 +28,7 @@ import { StudentDocumentsPhotos } from "@/components/StudentDocumentsPhotos";
 import { StandardDivisionYearSelects } from "@/components/StandardDivisionYearSelects";
 import { AcademicYearSelect } from "@/components/AcademicYearSelect";
 import { upsertCurrentEnrollment } from "@/app/dashboard/students/actions";
+import { IN_STATES } from "@/lib/student-form";
 
 interface StudentEditDialogProps {
   student: Record<string, unknown> & {
@@ -37,7 +38,6 @@ interface StudentEditDialogProps {
     date_of_birth?: string;
     gender?: string;
     blood_group?: string;
-    address?: string;
     standard?: string;
     division?: string;
     roll_number?: number;
@@ -49,8 +49,14 @@ interface StudentEditDialogProps {
     parent_email?: string;
     guardian_name?: string;
     guardian_contact?: string;
-    notes?: string;
     is_rte_quota?: boolean;
+
+    present_address_line1?: string;
+    present_city?: string;
+    present_district?: string;
+    present_state?: string;
+    present_pincode?: string;
+    present_country?: string;
   };
 }
 
@@ -65,7 +71,12 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
     date_of_birth: student.date_of_birth || "",
     gender: student.gender || "",
     blood_group: student.blood_group || "",
-    address: student.address || "",
+    present_address_line1: (student.present_address_line1 as string) || "",
+    present_city: (student.present_city as string) || "",
+    present_district: (student.present_district as string) || "",
+    present_state: (student.present_state as string) || "",
+    present_pincode: (student.present_pincode as string) || "",
+    present_country: (student.present_country as string) || "India",
     standard: student.standard || "",
     division: student.division || "",
     roll_number: student.roll_number?.toString() || "",
@@ -77,7 +88,6 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
     parent_email: student.parent_email || "",
     guardian_name: student.guardian_name || "",
     guardian_contact: student.guardian_contact || "",
-    notes: student.notes || "",
     is_rte_quota: student.is_rte_quota ?? false,
     father_name: (student.father_name as string) || "",
     mother_name: (student.mother_name as string) || "",
@@ -85,7 +95,6 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
     category: (student.category as string) || "",
     religion: (student.religion as string) || "",
     aadhar_no: (student.aadhar_no as string) || "",
-    district: (student.district as string) || "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -104,7 +113,6 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
         date_of_birth: form.date_of_birth || null,
         gender: form.gender || null,
         blood_group: form.blood_group || null,
-        address: form.address.trim() || null,
         standard: form.standard.trim() || null,
         division: form.division.trim() || null,
         roll_number: form.roll_number ? parseInt(form.roll_number) : null,
@@ -116,7 +124,6 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
         parent_email: form.parent_email.trim() || null,
         guardian_name: form.guardian_name.trim() || null,
         guardian_contact: form.guardian_contact.trim() || null,
-        notes: form.notes.trim() || null,
         is_rte_quota: form.is_rte_quota,
       };
       payload.father_name = form.father_name.trim() || null;
@@ -125,7 +132,12 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
       payload.category = (form.category && form.category !== "none") ? form.category : null;
       payload.religion = form.religion.trim() || null;
       payload.aadhar_no = form.aadhar_no.trim() || null;
-      payload.district = form.district.trim() || null;
+      payload.present_address_line1 = form.present_address_line1.trim() || null;
+      payload.present_city = form.present_city.trim() || null;
+      payload.present_district = form.present_district.trim() || null;
+      payload.present_state = form.present_state.trim() || null;
+      payload.present_pincode = form.present_pincode.trim() || null;
+      payload.present_country = (form.present_country.trim() || "India");
 
       const { error: err } = await supabase
         .from("students")
@@ -278,18 +290,61 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
                     min="0"
                   />
                 </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="present_address_line1">Present address line 1</Label>
+                  <Input
+                    id="present_address_line1"
+                    value={form.present_address_line1}
+                    onChange={(e) => setForm((p) => ({ ...p, present_address_line1: e.target.value }))}
+                    placeholder="House/Flat, Society/Street, Area"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="present_city">Present city</Label>
+                  <Input
+                    id="present_city"
+                    value={form.present_city}
+                    onChange={(e) => setForm((p) => ({ ...p, present_city: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="present_district">Present district</Label>
+                  <Input
+                    id="present_district"
+                    value={form.present_district}
+                    onChange={(e) => setForm((p) => ({ ...p, present_district: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="present_state">Present state</Label>
+                  <Select
+                    value={form.present_state || "none"}
+                    onValueChange={(value) => setForm((p) => ({ ...p, present_state: value === "none" ? "" : value }))}
+                  >
+                    <SelectTrigger id="present_state">
+                      <SelectValue placeholder="Select state" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">—</SelectItem>
+                      {IN_STATES.map((s) => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="present_pincode">Present pincode</Label>
+                  <Input
+                    id="present_pincode"
+                    inputMode="numeric"
+                    value={form.present_pincode}
+                    onChange={(e) => setForm((p) => ({ ...p, present_pincode: e.target.value.replace(/[^\d]/g, "").slice(0, 6) }))}
+                    placeholder="6-digit"
+                  />
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
-                <Input
-                  id="address"
-                  type="text"
-                  value={form.address}
-                  onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))}
-                  placeholder="Full residential address"
-                />
-              </div>
+              {/* Structured address fields are above */}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -417,23 +472,11 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
                     <Label>Aadhar No</Label>
                     <Input value={form.aadhar_no} onChange={(e) => setForm((p) => ({ ...p, aadhar_no: e.target.value }))} />
                   </div>
-                  <div className="space-y-2">
-                    <Label>District</Label>
-                    <Input value={form.district} onChange={(e) => setForm((p) => ({ ...p, district: e.target.value }))} />
-                  </div>
+                  {/* District is captured under structured address (Present district) */}
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
-                <Input
-                  id="notes"
-                  type="text"
-                  value={form.notes}
-                  onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
-                  placeholder="Any additional notes or remarks"
-                />
-              </div>
+              {/* Notes removed */}
             </div>
           )}
 

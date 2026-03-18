@@ -475,8 +475,12 @@ async function seedStudents() {
       academic_year: yearForStudent.name,
       roll_number: (i % 50) + 1,
       is_rte_quota: i % 5 === 0,
-      address: `${200 + i} Block, ${pick(["Sector 5", "MG Road", "Park Street", "Lake View"])}, City`,
-      district: pick(DISTRICTS),
+      present_address_line1: `${200 + i} Block, ${pick(["Sector 5", "MG Road", "Park Street", "Lake View"])}`,
+      present_city: "City",
+      present_district: pick(DISTRICTS),
+      present_state: "Gujarat",
+      present_pincode: `3${String(80000 + i).slice(-5)}`,
+      present_country: "India",
       father_name: `${name.split(" ")[0]}'s Father`,
       mother_name: `${name.split(" ")[0]}'s Mother`,
       parent_contact: `98765${String(20000 + i).padStart(5, "0")}`,
@@ -487,7 +491,7 @@ async function seedStudents() {
       birth_place: i % 4 === 0 ? "City Hospital" : null,
       last_school: null,
       aadhar_no: i % 2 === 0 ? `9999${String(8000000000 + i).slice(-8)}` : null,
-      notes: i % 10 === 0 ? "Sample note" : null,
+      // notes removed
     });
   }
 

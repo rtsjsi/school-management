@@ -328,8 +328,12 @@ async function main() {
       category: row.category,
       religion: row.religion ?? null,
       caste: row.caste || null,
-      district: null,
-      address: row.address || null,
+      present_address_line1: row.address || null,
+      present_city: null,
+      present_district: null,
+      present_state: null,
+      present_pincode: null,
+      present_country: "India",
       aadhar_no: row.aadhar_no ?? null,
       pen_no: null,
       apaar_id: null,
@@ -348,7 +352,7 @@ async function main() {
       mother_name: row.mother_name ?? null,
       fee_concession_amount: null,
       fee_concession_reason: null,
-      notes: `Imported from Student List 2025-26.xls (GR ${row.gr})`,
+      // notes removed
     };
 
     const { data: insertedRow, error } = await supabase.from("students").insert(student).select("id").single();
