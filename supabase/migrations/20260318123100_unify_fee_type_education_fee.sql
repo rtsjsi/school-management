@@ -1,7 +1,7 @@
 -- Unify fee_type across app: use 'education_fee' everywhere.
--- This keeps frontend/back-end consistent and migrates older 'tuition' data.
+-- Migrates older 'tuition' data (if present) and updates defaults.
 
--- Update existing rows
+-- Update existing rows (safe to rerun)
 UPDATE public.fees SET fee_type = 'education_fee' WHERE fee_type = 'tuition';
 UPDATE public.fee_structure_items SET fee_type = 'education_fee' WHERE fee_type = 'tuition';
 UPDATE public.fee_collections SET fee_type = 'education_fee' WHERE fee_type = 'tuition';
