@@ -32,8 +32,8 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
   });
   const [quarterAmounts, setQuarterAmounts] = useState<Record<string, Record<number, string>>>({});
   const [classes, setClasses] = useState<{ id: string; name: string; sort_order: number }[]>([]);
-  const [feeTypes, setFeeTypes] = useState<string[]>(Array.from(FEE_TYPE_OPTIONS)); // available options
   const [rowFeeTypes, setRowFeeTypes] = useState<string[]>(Array.from(FEE_TYPE_OPTIONS)); // selected per row
+  const feeTypes = Array.from(FEE_TYPE_OPTIONS); // available options
 
   useEffect(() => {
     createClient().from("standards").select("id, name, sort_order").order("sort_order").then(({ data }) => setClasses(data ?? []));
