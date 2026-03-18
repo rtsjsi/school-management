@@ -11,6 +11,7 @@
     "start": "next start",
     "lint": "next lint",
     "db:push": "node scripts/by-branch.js db push",
+    "push:db": "node scripts/push-and-db.js",
     "push:all": "git push && npm run db:push",
     "supabase:link": "node scripts/by-branch.js link",
     "seed": "npx tsx scripts/seed.ts",
