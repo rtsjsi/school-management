@@ -14,8 +14,9 @@
     "push:all": "git push && npm run db:push",
     "supabase:link": "node scripts/by-branch.js link",
     "seed": "npx tsx scripts/seed.ts",
-    "import-students": "npx tsx scripts/import-students-from-xls.ts",
-    "import-students:dry": "npx tsx scripts/import-students-from-xls.ts --dry-run"
+    "student-import-maps": "npx tsx scripts/student-import-maps.ts",
+    "import-students-from-csv": "npx tsx scripts/import-students-from-csv.ts",
+    "import-students-from-aems-xls": "npx tsx scripts/import-students-from-aems-xls-direct.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
