@@ -599,14 +599,7 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
                 <Label>Sign of identity</Label>
                 <Input value={form.sign_of_identity} onChange={(e) => set("sign_of_identity", e.target.value)} />
               </div>
-              <div className="space-y-2">
-                <Label>Refer name</Label>
-                <Input value={form.refer_name} onChange={(e) => set("refer_name", e.target.value)} />
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label>Notes</Label>
-                <Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={2} />
-              </div>
+              {/* Refer name and notes removed */}
             </div>
           </CardContent>
         </Card>

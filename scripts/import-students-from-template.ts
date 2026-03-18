@@ -320,7 +320,6 @@ async function main() {
       weight: row.Weight || null,
       hobby: row.Hobby || null,
       sign_of_identity: row.SignOfIdentity || null,
-      refer_name: row.ReferName || null,
       father_education: row.FatherEducation || null,
       father_occupation: row.FatherOccupation || null,
       mother_education: row.MotherEducation || null,
@@ -333,7 +332,7 @@ async function main() {
       guardian_education: row.GuardianEducation || null,
       guardian_occupation: row.GuardianOccupation || null,
       second_language: row.SecondLanguage || null,
-      notes: row.Notes || null,
+      // notes removed
       academic_year: row.AcademicYear || activeYear.name,
       admission_date: row.AdmissionDate || null,
       father_name: row.FatherName || null,

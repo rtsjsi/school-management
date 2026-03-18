@@ -104,7 +104,6 @@ const defaultForm = () => ({
   weight: "",
   hobby: "",
   sign_of_identity: "",
-  refer_name: "",
   father_education: "",
   father_occupation: "",
   mother_education: "",
@@ -120,7 +119,6 @@ const defaultForm = () => ({
   udise_id: "",
   gr_number: "",
   second_language: "",
-  notes: "",
   is_rte_quota: false,
 });
 
@@ -235,7 +233,6 @@ export default function StudentEntryForm({
         weight: form.weight.trim() || null,
         hobby: form.hobby.trim() || null,
         sign_of_identity: form.sign_of_identity.trim() || null,
-        refer_name: form.refer_name.trim() || null,
         father_education: form.father_education.trim() || null,
         father_occupation: form.father_occupation.trim() || null,
         mother_education: form.mother_education.trim() || null,
@@ -251,7 +248,6 @@ export default function StudentEntryForm({
         udise_id: form.udise_id.trim() || null,
         gr_number: form.gr_number.trim() || null,
         second_language: form.second_language || null,
-        notes: form.notes.trim() || null,
         is_rte_quota: form.is_rte_quota,
       };
 
@@ -864,14 +860,7 @@ export default function StudentEntryForm({
                 <Label>Sign of identity</Label>
                 <Input value={form.sign_of_identity} onChange={(e) => set("sign_of_identity", e.target.value)} />
               </div>
-              <div className="space-y-2">
-                <Label>Refer name</Label>
-                <Input value={form.refer_name} onChange={(e) => set("refer_name", e.target.value)} />
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label>Notes</Label>
-                <Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={2} />
-              </div>
+              {/* Refer name and notes removed */}
             </div>
           </CardContent>
         </Card>

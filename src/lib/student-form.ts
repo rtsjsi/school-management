@@ -122,7 +122,6 @@ export type StudentFormState = {
   weight: string;
   hobby: string;
   sign_of_identity: string;
-  refer_name: string;
   father_education: string;
   father_occupation: string;
   mother_education: string;
@@ -138,7 +137,6 @@ export type StudentFormState = {
   udise_id: string;
   gr_number: string;
   second_language: string;
-  notes: string;
   is_rte_quota: boolean;
 };
 
@@ -199,7 +197,6 @@ export function studentFormFromRecord(r: Record<string, unknown>): StudentFormSt
     weight: (r.weight as string) || "",
     hobby: (r.hobby as string) || "",
     sign_of_identity: (r.sign_of_identity as string) || "",
-    refer_name: (r.refer_name as string) || "",
     father_education: (r.father_education as string) || "",
     father_occupation: (r.father_occupation as string) || "",
     mother_education: (r.mother_education as string) || "",
@@ -215,7 +212,6 @@ export function studentFormFromRecord(r: Record<string, unknown>): StudentFormSt
     udise_id: (r.udise_id as string) || "",
     gr_number: (r.gr_number as string) || "",
     second_language: (r.second_language as string) || "",
-    notes: (r.notes as string) || "",
     is_rte_quota: (r.is_rte_quota as boolean) ?? false,
   };
 }
@@ -301,7 +297,6 @@ export function formToPayload(form: StudentFormState): Record<string, unknown> {
     weight: form.weight.trim() || null,
     hobby: form.hobby.trim() || null,
     sign_of_identity: form.sign_of_identity.trim() || null,
-    refer_name: form.refer_name.trim() || null,
     father_education: form.father_education.trim() || null,
     father_occupation: form.father_occupation.trim() || null,
     mother_education: form.mother_education.trim() || null,
@@ -317,7 +312,6 @@ export function formToPayload(form: StudentFormState): Record<string, unknown> {
     udise_id: form.udise_id.trim() || null,
     gr_number: form.gr_number.trim() || null,
     second_language: form.second_language || null,
-    notes: form.notes.trim() || null,
     is_rte_quota: form.is_rte_quota,
   };
 }

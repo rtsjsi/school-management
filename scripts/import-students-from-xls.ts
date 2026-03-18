@@ -352,7 +352,7 @@ async function main() {
       mother_name: row.mother_name ?? null,
       fee_concession_amount: null,
       fee_concession_reason: null,
-      notes: `Imported from Student List 2025-26.xls (GR ${row.gr})`,
+      // notes removed
     };
 
     const { data: insertedRow, error } = await supabase.from("students").insert(student).select("id").single();

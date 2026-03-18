@@ -491,7 +491,7 @@ async function seedStudents() {
       birth_place: i % 4 === 0 ? "City Hospital" : null,
       last_school: null,
       aadhar_no: i % 2 === 0 ? `9999${String(8000000000 + i).slice(-8)}` : null,
-      notes: i % 10 === 0 ? "Sample note" : null,
+      // notes removed
     });
   }
 

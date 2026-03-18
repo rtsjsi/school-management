@@ -49,7 +49,6 @@ interface StudentEditDialogProps {
     parent_email?: string;
     guardian_name?: string;
     guardian_contact?: string;
-    notes?: string;
     is_rte_quota?: boolean;
 
     present_address_line1?: string;
@@ -89,7 +88,6 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
     parent_email: student.parent_email || "",
     guardian_name: student.guardian_name || "",
     guardian_contact: student.guardian_contact || "",
-    notes: student.notes || "",
     is_rte_quota: student.is_rte_quota ?? false,
     father_name: (student.father_name as string) || "",
     mother_name: (student.mother_name as string) || "",
@@ -126,7 +124,6 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
         parent_email: form.parent_email.trim() || null,
         guardian_name: form.guardian_name.trim() || null,
         guardian_contact: form.guardian_contact.trim() || null,
-        notes: form.notes.trim() || null,
         is_rte_quota: form.is_rte_quota,
       };
       payload.father_name = form.father_name.trim() || null;
@@ -479,16 +476,7 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
-                <Input
-                  id="notes"
-                  type="text"
-                  value={form.notes}
-                  onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
-                  placeholder="Any additional notes or remarks"
-                />
-              </div>
+              {/* Notes removed */}
             </div>
           )}
 
