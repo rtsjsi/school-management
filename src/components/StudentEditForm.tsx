@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import {
   CATEGORIES,
+  IN_STATES,
   studentFormFromRecord,
   formToPayload,
   type StudentFormState,
@@ -46,7 +47,6 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
   const requiredFields: { key: keyof StudentFormState; label: string }[] = [
     { key: "full_name", label: "Full name" },
     { key: "date_of_birth", label: "Date of birth" },
-    { key: "address", label: "Present Address" },
     { key: "gender", label: "Gender" },
     { key: "blood_group", label: "Blood group" },
     { key: "category", label: "Category" },
@@ -64,6 +64,13 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
     { key: "apaar_id", label: "APAR ID" },
     { key: "udise_id", label: "UDISE ID" },
     { key: "gr_number", label: "GR Number" },
+
+    // Structured present address (best practice)
+    { key: "present_address_line1", label: "Present address line 1" },
+    { key: "present_city", label: "Present city" },
+    { key: "present_district", label: "Present district" },
+    { key: "present_state", label: "Present state" },
+    { key: "present_pincode", label: "Present pincode" },
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -183,6 +190,10 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
                 <Input value={form.birth_place} onChange={(e) => set("birth_place", e.target.value)} />
               </div>
               <div className="space-y-2">
+                <Label>Birth certificate number</Label>
+                <Input value={form.birth_certificate_number} onChange={(e) => set("birth_certificate_number", e.target.value)} />
+              </div>
+              <div className="space-y-2">
                 <Label>Mother tongue</Label>
                 <Input value={form.mother_tongue} onChange={(e) => set("mother_tongue", e.target.value)} placeholder="e.g. Gujarati" />
               </div>
@@ -195,10 +206,6 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
                     <SelectItem value="Hindi">Hindi</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Birth certificate number</Label>
-                <Input value={form.birth_certificate_number} onChange={(e) => set("birth_certificate_number", e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Aadhar No *</Label>
@@ -228,27 +235,166 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Addresses</CardTitle>
-            <CardDescription>Present address, permanent address, district, and state.</CardDescription>
+          <CardDescription>Structured address details (recommended for accurate records).</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2 sm:col-span-2">
-                <Label>Present Address *</Label>
-                <Input value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="Full present address" required />
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label>Permanent address</Label>
-                <Input value={form.permanent_address} onChange={(e) => set("permanent_address", e.target.value)} placeholder="Permanent address" />
-              </div>
-              <div className="space-y-2">
-                <Label>District</Label>
-                <Input value={form.district} onChange={(e) => set("district", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>State</Label>
-                <Input value={form.state} onChange={(e) => set("state", e.target.value)} placeholder="e.g. Gujarat" />
-              </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2 sm:col-span-2">
+              <Label>Present address line 1 *</Label>
+              <Textarea
+                value={form.present_address_line1}
+                onChange={(e) => set("present_address_line1", e.target.value)}
+                placeholder="House/Flat, Society/Street, Area"
+                rows={2}
+                required
+              />
             </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label>Present address line 2</Label>
+              <Textarea
+                value={form.present_address_line2}
+                onChange={(e) => set("present_address_line2", e.target.value)}
+                placeholder="Landmark / Additional details"
+                rows={2}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Present landmark</Label>
+              <Input value={form.present_landmark} onChange={(e) => set("present_landmark", e.target.value)} placeholder="Near..." />
+            </div>
+            <div className="space-y-2">
+              <Label>Present city *</Label>
+              <Input value={form.present_city} onChange={(e) => set("present_city", e.target.value)} required />
+            </div>
+            <div className="space-y-2">
+              <Label>Present taluka/tehsil</Label>
+              <Input value={form.present_taluka} onChange={(e) => set("present_taluka", e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Present district *</Label>
+              <Input value={form.present_district} onChange={(e) => set("present_district", e.target.value)} required />
+            </div>
+            <div className="space-y-2">
+              <Label>Present state *</Label>
+              <Select value={form.present_state || "none"} onValueChange={(v) => set("present_state", v === "none" ? "" : v)}>
+                <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">—</SelectItem>
+                  {IN_STATES.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Present pincode *</Label>
+              <Input
+                inputMode="numeric"
+                value={form.present_pincode}
+                onChange={(e) => set("present_pincode", e.target.value.replace(/[^\d]/g, "").slice(0, 6))}
+                placeholder="6-digit"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Present country</Label>
+              <Input value={form.present_country} onChange={(e) => set("present_country", e.target.value)} placeholder="India" />
+            </div>
+
+            <div className="sm:col-span-2 border-t pt-4" />
+
+            <div className="flex items-center space-x-2 sm:col-span-2">
+              <Checkbox
+                id="permanent_same_as_present"
+                checked={form.permanent_same_as_present}
+                onCheckedChange={(c) => {
+                  const checked = !!c;
+                  set("permanent_same_as_present", checked);
+                  if (checked) {
+                    set("permanent_address_line1", form.present_address_line1);
+                    set("permanent_address_line2", form.present_address_line2);
+                    set("permanent_landmark", form.present_landmark);
+                    set("permanent_city", form.present_city);
+                    set("permanent_taluka", form.present_taluka);
+                    set("permanent_district", form.present_district);
+                    set("permanent_state", form.present_state);
+                    set("permanent_pincode", form.present_pincode);
+                    set("permanent_country", form.present_country);
+                  }
+                }}
+              />
+              <Label htmlFor="permanent_same_as_present" className="font-normal">
+                Permanent address same as present
+              </Label>
+            </div>
+
+            <div className="space-y-2 sm:col-span-2">
+              <Label>Permanent address line 1</Label>
+              <Textarea
+                value={form.permanent_address_line1}
+                onChange={(e) => set("permanent_address_line1", e.target.value)}
+                placeholder="House/Flat, Society/Street, Area"
+                rows={2}
+                disabled={form.permanent_same_as_present}
+              />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label>Permanent address line 2</Label>
+              <Textarea
+                value={form.permanent_address_line2}
+                onChange={(e) => set("permanent_address_line2", e.target.value)}
+                placeholder="Landmark / Additional details"
+                rows={2}
+                disabled={form.permanent_same_as_present}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Permanent landmark</Label>
+              <Input value={form.permanent_landmark} onChange={(e) => set("permanent_landmark", e.target.value)} disabled={form.permanent_same_as_present} />
+            </div>
+            <div className="space-y-2">
+              <Label>Permanent city</Label>
+              <Input value={form.permanent_city} onChange={(e) => set("permanent_city", e.target.value)} disabled={form.permanent_same_as_present} />
+            </div>
+            <div className="space-y-2">
+              <Label>Permanent taluka/tehsil</Label>
+              <Input value={form.permanent_taluka} onChange={(e) => set("permanent_taluka", e.target.value)} disabled={form.permanent_same_as_present} />
+            </div>
+            <div className="space-y-2">
+              <Label>Permanent district</Label>
+              <Input value={form.permanent_district} onChange={(e) => set("permanent_district", e.target.value)} disabled={form.permanent_same_as_present} />
+            </div>
+            <div className="space-y-2">
+              <Label>Permanent state</Label>
+              <Select
+                value={form.permanent_state || "none"}
+                onValueChange={(v) => set("permanent_state", v === "none" ? "" : v)}
+                disabled={form.permanent_same_as_present}
+              >
+                <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">—</SelectItem>
+                  {IN_STATES.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Permanent pincode</Label>
+              <Input
+                inputMode="numeric"
+                value={form.permanent_pincode}
+                onChange={(e) => set("permanent_pincode", e.target.value.replace(/[^\d]/g, "").slice(0, 6))}
+                placeholder="6-digit"
+                disabled={form.permanent_same_as_present}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Permanent country</Label>
+              <Input value={form.permanent_country} onChange={(e) => set("permanent_country", e.target.value)} placeholder="India" disabled={form.permanent_same_as_present} />
+            </div>
+          </div>
           </CardContent>
         </Card>
 

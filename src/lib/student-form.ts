@@ -1,14 +1,98 @@
 export const CATEGORIES = ["general", "obc", "sc", "st", "other"] as const;
+
+export const IN_STATES = [
+  "Andhra Pradesh",
+  "Arunachal Pradesh",
+  "Assam",
+  "Bihar",
+  "Chhattisgarh",
+  "Goa",
+  "Gujarat",
+  "Haryana",
+  "Himachal Pradesh",
+  "Jharkhand",
+  "Karnataka",
+  "Kerala",
+  "Madhya Pradesh",
+  "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
+  "Odisha",
+  "Punjab",
+  "Rajasthan",
+  "Sikkim",
+  "Tamil Nadu",
+  "Telangana",
+  "Tripura",
+  "Uttar Pradesh",
+  "Uttarakhand",
+  "West Bengal",
+  "Andaman and Nicobar Islands",
+  "Chandigarh",
+  "Dadra and Nagar Haveli and Daman and Diu",
+  "Delhi",
+  "Jammu and Kashmir",
+  "Ladakh",
+  "Lakshadweep",
+  "Puducherry",
+] as const;
+
+export type StructuredAddress = {
+  line1: string;
+  line2: string;
+  landmark: string;
+  city: string;
+  taluka: string;
+  district: string;
+  state: string;
+  pincode: string;
+  country: string;
+};
+
+export function stringifyAddress(a: Partial<StructuredAddress>): string {
+  const parts = [
+    a.line1,
+    a.line2,
+    a.landmark,
+    a.city,
+    a.taluka,
+    a.district,
+    a.state,
+    a.pincode,
+    a.country,
+  ]
+    .map((p) => (typeof p === "string" ? p.trim() : ""))
+    .filter(Boolean);
+  return parts.join(", ");
+}
+
 export type StudentFormState = {
   full_name: string;
   date_of_birth: string;
   gender: string;
   blood_group: string;
-  address: string;
-  permanent_address: string;
-  state: string;
+  present_address_line1: string;
+  present_address_line2: string;
+  present_landmark: string;
+  present_city: string;
+  present_taluka: string;
+  present_district: string;
+  present_state: string;
+  present_pincode: string;
+  present_country: string;
+  permanent_same_as_present: boolean;
+  permanent_address_line1: string;
+  permanent_address_line2: string;
+  permanent_landmark: string;
+  permanent_city: string;
+  permanent_taluka: string;
+  permanent_district: string;
+  permanent_state: string;
+  permanent_pincode: string;
+  permanent_country: string;
   mother_tongue: string;
-  district: string;
   standard: string;
   division: string;
   roll_number: string;
@@ -63,16 +147,48 @@ export type StudentFormState = {
 };
 
 export function studentFormFromRecord(r: Record<string, unknown>): StudentFormState {
+  const legacyAddress = (r.address as string) || "";
+  const legacyPermanent = (r.permanent_address as string) || "";
+  const legacyDistrict = (r.district as string) || "";
+  const legacyState = (r.state as string) || "";
+
+  const present_address_line1 =
+    (r.present_address_line1 as string) || legacyAddress || "";
+  const present_district =
+    (r.present_district as string) || legacyDistrict || "";
+  const present_state = (r.present_state as string) || legacyState || "";
+
+  const permanent_address_line1 =
+    (r.permanent_address_line1 as string) || legacyPermanent || "";
+  const permanent_district =
+    (r.permanent_district as string) || legacyDistrict || "";
+  const permanent_state = (r.permanent_state as string) || legacyState || "";
+
   return {
     full_name: (r.full_name as string) || "",
     date_of_birth: (r.date_of_birth as string) || "",
     gender: (r.gender as string) || "",
     blood_group: (r.blood_group as string) || "",
-    address: (r.address as string) || "",
-    permanent_address: (r.permanent_address as string) || "",
-    state: (r.state as string) || "",
+    present_address_line1,
+    present_address_line2: (r.present_address_line2 as string) || "",
+    present_landmark: (r.present_landmark as string) || "",
+    present_city: (r.present_city as string) || "",
+    present_taluka: (r.present_taluka as string) || "",
+    present_district,
+    present_state,
+    present_pincode: (r.present_pincode as string) || "",
+    present_country: (r.present_country as string) || "India",
+    permanent_same_as_present: false,
+    permanent_address_line1,
+    permanent_address_line2: (r.permanent_address_line2 as string) || "",
+    permanent_landmark: (r.permanent_landmark as string) || "",
+    permanent_city: (r.permanent_city as string) || "",
+    permanent_taluka: (r.permanent_taluka as string) || "",
+    permanent_district,
+    permanent_state,
+    permanent_pincode: (r.permanent_pincode as string) || "",
+    permanent_country: (r.permanent_country as string) || "India",
     mother_tongue: (r.mother_tongue as string) || "",
-    district: (r.district as string) || "",
     standard: (r.standard as string) || "",
     division: (r.division as string) || "",
     roll_number: r.roll_number != null ? String(r.roll_number) : "",
@@ -128,16 +244,62 @@ export function studentFormFromRecord(r: Record<string, unknown>): StudentFormSt
 }
 
 export function formToPayload(form: StudentFormState): Record<string, unknown> {
+  const present: StructuredAddress = {
+    line1: form.present_address_line1,
+    line2: form.present_address_line2,
+    landmark: form.present_landmark,
+    city: form.present_city,
+    taluka: form.present_taluka,
+    district: form.present_district,
+    state: form.present_state,
+    pincode: form.present_pincode,
+    country: form.present_country || "India",
+  };
+
+  const permanentSource = form.permanent_same_as_present
+    ? present
+    : ({
+        line1: form.permanent_address_line1,
+        line2: form.permanent_address_line2,
+        landmark: form.permanent_landmark,
+        city: form.permanent_city,
+        taluka: form.permanent_taluka,
+        district: form.permanent_district,
+        state: form.permanent_state,
+        pincode: form.permanent_pincode,
+        country: form.permanent_country || "India",
+      } satisfies StructuredAddress);
+
   return {
     full_name: form.full_name.trim(),
     date_of_birth: form.date_of_birth || null,
     gender: form.gender || null,
     blood_group: form.blood_group || null,
-    address: form.address.trim() || null,
-    permanent_address: form.permanent_address.trim() || null,
-    state: form.state.trim() || null,
     mother_tongue: form.mother_tongue.trim() || null,
-    district: form.district.trim() || null,
+    present_address_line1: present.line1.trim() || null,
+    present_address_line2: present.line2.trim() || null,
+    present_landmark: present.landmark.trim() || null,
+    present_city: present.city.trim() || null,
+    present_taluka: present.taluka.trim() || null,
+    present_district: present.district.trim() || null,
+    present_state: present.state.trim() || null,
+    present_pincode: present.pincode.trim() || null,
+    present_country: (present.country || "India").trim() || "India",
+    permanent_address_line1: permanentSource.line1.trim() || null,
+    permanent_address_line2: permanentSource.line2.trim() || null,
+    permanent_landmark: permanentSource.landmark.trim() || null,
+    permanent_city: permanentSource.city.trim() || null,
+    permanent_taluka: permanentSource.taluka.trim() || null,
+    permanent_district: permanentSource.district.trim() || null,
+    permanent_state: permanentSource.state.trim() || null,
+    permanent_pincode: permanentSource.pincode.trim() || null,
+    permanent_country: (permanentSource.country || "India").trim() || "India",
+
+    // Legacy compatibility (used across app for printing/export/search)
+    address: stringifyAddress(present) || null,
+    permanent_address: stringifyAddress(permanentSource) || null,
+    district: (present.district || "").trim() || null,
+    state: (present.state || "").trim() || null,
     standard: form.standard.trim() || null,
     division: form.division.trim() || null,
     roll_number: form.roll_number ? parseInt(form.roll_number) : null,

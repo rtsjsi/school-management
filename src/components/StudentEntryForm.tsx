@@ -29,6 +29,7 @@ import {
 } from "@/lib/student-uploads";
 import { upsertCurrentEnrollment } from "@/app/dashboard/students/actions";
 import { useToast } from "@/hooks/use-toast";
+import { IN_STATES, stringifyAddress } from "@/lib/student-form";
 
 const PHOTO_ROLES = ["student"] as const;
 const PHOTO_LABELS: Record<(typeof PHOTO_ROLES)[number], string> = {
@@ -51,11 +52,26 @@ const defaultForm = () => ({
   date_of_birth: "",
   gender: "",
   blood_group: "",
-  address: "",
-  permanent_address: "",
-  state: "",
+  present_address_line1: "",
+  present_address_line2: "",
+  present_landmark: "",
+  present_city: "",
+  present_taluka: "",
+  present_district: "",
+  present_state: "",
+  present_pincode: "",
+  present_country: "India",
+  permanent_same_as_present: false,
+  permanent_address_line1: "",
+  permanent_address_line2: "",
+  permanent_landmark: "",
+  permanent_city: "",
+  permanent_taluka: "",
+  permanent_district: "",
+  permanent_state: "",
+  permanent_pincode: "",
+  permanent_country: "India",
   mother_tongue: "",
-  district: "",
   standard: "",
   division: "",
   roll_number: "",
@@ -130,7 +146,6 @@ export default function StudentEntryForm({
   const requiredFields: { key: keyof ReturnType<typeof defaultForm>; label: string }[] = [
     { key: "full_name", label: "Full name" },
     { key: "date_of_birth", label: "Date of birth" },
-    { key: "address", label: "Present Address" },
     { key: "gender", label: "Gender" },
     { key: "blood_group", label: "Blood group" },
     { key: "category", label: "Category" },
@@ -148,6 +163,13 @@ export default function StudentEntryForm({
     { key: "apaar_id", label: "APAR ID" },
     { key: "udise_id", label: "UDISE ID" },
     { key: "gr_number", label: "GR Number" },
+
+    // Structured present address (best practice)
+    { key: "present_address_line1", label: "Present address line 1" },
+    { key: "present_city", label: "Present city" },
+    { key: "present_district", label: "Present district" },
+    { key: "present_state", label: "Present state" },
+    { key: "present_pincode", label: "Present pincode" },
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -178,11 +200,7 @@ export default function StudentEntryForm({
         date_of_birth: form.date_of_birth || null,
         gender: form.gender || null,
         blood_group: form.blood_group || null,
-        address: form.address.trim() || null,
-        permanent_address: form.permanent_address.trim() || null,
-        state: form.state.trim() || null,
         mother_tongue: form.mother_tongue.trim() || null,
-        district: form.district.trim() || null,
         standard: form.standard.trim() || null,
         division: form.division.trim() || null,
         roll_number: form.roll_number ? parseInt(form.roll_number) : null,
@@ -237,6 +255,58 @@ export default function StudentEntryForm({
         notes: form.notes.trim() || null,
         is_rte_quota: form.is_rte_quota,
       };
+
+      const present = {
+        line1: form.present_address_line1,
+        line2: form.present_address_line2,
+        landmark: form.present_landmark,
+        city: form.present_city,
+        taluka: form.present_taluka,
+        district: form.present_district,
+        state: form.present_state,
+        pincode: form.present_pincode,
+        country: form.present_country || "India",
+      };
+
+      const permanent = form.permanent_same_as_present
+        ? present
+        : {
+            line1: form.permanent_address_line1,
+            line2: form.permanent_address_line2,
+            landmark: form.permanent_landmark,
+            city: form.permanent_city,
+            taluka: form.permanent_taluka,
+            district: form.permanent_district,
+            state: form.permanent_state,
+            pincode: form.permanent_pincode,
+            country: form.permanent_country || "India",
+          };
+
+      payload.present_address_line1 = present.line1.trim() || null;
+      payload.present_address_line2 = present.line2.trim() || null;
+      payload.present_landmark = present.landmark.trim() || null;
+      payload.present_city = present.city.trim() || null;
+      payload.present_taluka = present.taluka.trim() || null;
+      payload.present_district = present.district.trim() || null;
+      payload.present_state = present.state.trim() || null;
+      payload.present_pincode = present.pincode.trim() || null;
+      payload.present_country = (present.country || "India").trim() || "India";
+
+      payload.permanent_address_line1 = permanent.line1.trim() || null;
+      payload.permanent_address_line2 = permanent.line2.trim() || null;
+      payload.permanent_landmark = permanent.landmark.trim() || null;
+      payload.permanent_city = permanent.city.trim() || null;
+      payload.permanent_taluka = permanent.taluka.trim() || null;
+      payload.permanent_district = permanent.district.trim() || null;
+      payload.permanent_state = permanent.state.trim() || null;
+      payload.permanent_pincode = permanent.pincode.trim() || null;
+      payload.permanent_country = (permanent.country || "India").trim() || "India";
+
+      // Legacy compatibility
+      payload.address = stringifyAddress(present) || null;
+      payload.permanent_address = stringifyAddress(permanent) || null;
+      payload.district = (present.district || "").trim() || null;
+      payload.state = (present.state || "").trim() || null;
 
       const { data: inserted, error: err } = await supabase
         .from("students")
@@ -397,6 +467,10 @@ export default function StudentEntryForm({
                 <Input value={form.birth_place} onChange={(e) => set("birth_place", e.target.value)} />
               </div>
               <div className="space-y-2">
+                <Label>Birth certificate number</Label>
+                <Input value={form.birth_certificate_number} onChange={(e) => set("birth_certificate_number", e.target.value)} />
+              </div>
+              <div className="space-y-2">
                 <Label>Mother tongue</Label>
                 <Input value={form.mother_tongue} onChange={(e) => set("mother_tongue", e.target.value)} placeholder="e.g. Gujarati" />
               </div>
@@ -409,10 +483,6 @@ export default function StudentEntryForm({
                     <SelectItem value="Hindi">Hindi</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Birth certificate number</Label>
-                <Input value={form.birth_certificate_number} onChange={(e) => set("birth_certificate_number", e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Aadhar No *</Label>
@@ -442,27 +512,170 @@ export default function StudentEntryForm({
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Addresses</CardTitle>
-            <CardDescription>Present address, permanent address, district, and state.</CardDescription>
+          <CardDescription>Structured address details (recommended for accurate records).</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="address">Present Address *</Label>
-                <Input id="address" value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="Full present address" required />
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label>Permanent address</Label>
-                <Input value={form.permanent_address} onChange={(e) => set("permanent_address", e.target.value)} placeholder="Permanent address" />
-              </div>
-              <div className="space-y-2">
-                <Label>District</Label>
-                <Input value={form.district} onChange={(e) => set("district", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>State</Label>
-                <Input value={form.state} onChange={(e) => set("state", e.target.value)} placeholder="e.g. Gujarat" />
-              </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2 sm:col-span-2">
+              <Label>Present address line 1 *</Label>
+              <Textarea
+                value={form.present_address_line1}
+                onChange={(e) => set("present_address_line1", e.target.value)}
+                placeholder="House/Flat, Society/Street, Area"
+                rows={2}
+                required
+              />
             </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label>Present address line 2</Label>
+              <Textarea
+                value={form.present_address_line2}
+                onChange={(e) => set("present_address_line2", e.target.value)}
+                placeholder="Landmark / Additional details"
+                rows={2}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Present landmark</Label>
+              <Input
+                value={form.present_landmark}
+                onChange={(e) => set("present_landmark", e.target.value)}
+                placeholder="Near..."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Present city *</Label>
+              <Input value={form.present_city} onChange={(e) => set("present_city", e.target.value)} required />
+            </div>
+            <div className="space-y-2">
+              <Label>Present taluka/tehsil</Label>
+              <Input value={form.present_taluka} onChange={(e) => set("present_taluka", e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Present district *</Label>
+              <Input value={form.present_district} onChange={(e) => set("present_district", e.target.value)} required />
+            </div>
+            <div className="space-y-2">
+              <Label>Present state *</Label>
+              <Select value={form.present_state || "none"} onValueChange={(v) => set("present_state", v === "none" ? "" : v)}>
+                <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">—</SelectItem>
+                  {IN_STATES.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Present pincode *</Label>
+              <Input
+                inputMode="numeric"
+                value={form.present_pincode}
+                onChange={(e) => set("present_pincode", e.target.value.replace(/[^\d]/g, "").slice(0, 6))}
+                placeholder="6-digit"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Present country</Label>
+              <Input value={form.present_country} onChange={(e) => set("present_country", e.target.value)} placeholder="India" />
+            </div>
+
+            <div className="sm:col-span-2 border-t pt-4" />
+
+            <div className="flex items-center space-x-2 sm:col-span-2">
+              <Checkbox
+                id="permanent_same_as_present"
+                checked={form.permanent_same_as_present}
+                onCheckedChange={(c) => {
+                  const checked = !!c;
+                  set("permanent_same_as_present", checked);
+                  if (checked) {
+                    set("permanent_address_line1", form.present_address_line1);
+                    set("permanent_address_line2", form.present_address_line2);
+                    set("permanent_landmark", form.present_landmark);
+                    set("permanent_city", form.present_city);
+                    set("permanent_taluka", form.present_taluka);
+                    set("permanent_district", form.present_district);
+                    set("permanent_state", form.present_state);
+                    set("permanent_pincode", form.present_pincode);
+                    set("permanent_country", form.present_country);
+                  }
+                }}
+              />
+              <Label htmlFor="permanent_same_as_present" className="font-normal">
+                Permanent address same as present
+              </Label>
+            </div>
+
+            <div className="space-y-2 sm:col-span-2">
+              <Label>Permanent address line 1</Label>
+              <Textarea
+                value={form.permanent_address_line1}
+                onChange={(e) => set("permanent_address_line1", e.target.value)}
+                placeholder="House/Flat, Society/Street, Area"
+                rows={2}
+                disabled={form.permanent_same_as_present}
+              />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label>Permanent address line 2</Label>
+              <Textarea
+                value={form.permanent_address_line2}
+                onChange={(e) => set("permanent_address_line2", e.target.value)}
+                placeholder="Landmark / Additional details"
+                rows={2}
+                disabled={form.permanent_same_as_present}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Permanent landmark</Label>
+              <Input value={form.permanent_landmark} onChange={(e) => set("permanent_landmark", e.target.value)} disabled={form.permanent_same_as_present} />
+            </div>
+            <div className="space-y-2">
+              <Label>Permanent city</Label>
+              <Input value={form.permanent_city} onChange={(e) => set("permanent_city", e.target.value)} disabled={form.permanent_same_as_present} />
+            </div>
+            <div className="space-y-2">
+              <Label>Permanent taluka/tehsil</Label>
+              <Input value={form.permanent_taluka} onChange={(e) => set("permanent_taluka", e.target.value)} disabled={form.permanent_same_as_present} />
+            </div>
+            <div className="space-y-2">
+              <Label>Permanent district</Label>
+              <Input value={form.permanent_district} onChange={(e) => set("permanent_district", e.target.value)} disabled={form.permanent_same_as_present} />
+            </div>
+            <div className="space-y-2">
+              <Label>Permanent state</Label>
+              <Select
+                value={form.permanent_state || "none"}
+                onValueChange={(v) => set("permanent_state", v === "none" ? "" : v)}
+                disabled={form.permanent_same_as_present}
+              >
+                <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">—</SelectItem>
+                  {IN_STATES.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Permanent pincode</Label>
+              <Input
+                inputMode="numeric"
+                value={form.permanent_pincode}
+                onChange={(e) => set("permanent_pincode", e.target.value.replace(/[^\d]/g, "").slice(0, 6))}
+                placeholder="6-digit"
+                disabled={form.permanent_same_as_present}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Permanent country</Label>
+              <Input value={form.permanent_country} onChange={(e) => set("permanent_country", e.target.value)} placeholder="India" disabled={form.permanent_same_as_present} />
+            </div>
+          </div>
           </CardContent>
         </Card>
 
