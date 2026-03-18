@@ -28,6 +28,7 @@ import {
 } from "@/lib/student-form";
 import { StudentDocumentsPhotos } from "@/components/StudentDocumentsPhotos";
 import { StandardDivisionYearSelects } from "@/components/StandardDivisionYearSelects";
+import { AcademicYearSelect } from "@/components/AcademicYearSelect";
 
 interface StudentEditFormProps {
   student: Record<string, unknown> & { id: string; full_name: string };
@@ -225,6 +226,16 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
               <div className="space-y-2">
                 <Label>GR Number *</Label>
                 <Input value={form.gr_number} onChange={(e) => set("gr_number", e.target.value)} required />
+              </div>
+              <div className="space-y-2">
+                <Label>Roll number *</Label>
+                <Input
+                  type="number"
+                  value={form.roll_number}
+                  onChange={(e) => set("roll_number", e.target.value)}
+                  min={0}
+                  required
+                />
               </div>
             </div>
           </CardContent>
@@ -477,6 +488,10 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
                 <Label>Admission date *</Label>
                 <Input type="date" value={form.admission_date} onChange={(e) => set("admission_date", e.target.value)} required />
               </div>
+              <AcademicYearSelect
+                value={form.academic_year}
+                onChange={(v) => set("academic_year", v)}
+              />
               <StandardDivisionYearSelects
                 standard={form.standard}
                 division={form.division}
@@ -489,12 +504,8 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
                 onAcademicYearChange={(v) => set("academic_year", v)}
                 standardRequired
                 divisionRequired
-                academicYearRequired
+                showAcademicYear={false}
               />
-              <div className="space-y-2">
-                <Label>Roll number *</Label>
-                <Input type="number" value={form.roll_number} onChange={(e) => set("roll_number", e.target.value)} min={0} required />
-              </div>
               <div className="flex items-center space-x-2 sm:col-span-2">
                 <Checkbox id="rte" checked={form.is_rte_quota} onCheckedChange={(c) => set("is_rte_quota", !!c)} />
                 <Label htmlFor="rte" className="font-normal">RTE (Right to Education) Quota</Label>
@@ -511,7 +522,7 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>Previous school</Label>
+                <Label>Previous school Name</Label>
                 <Input value={form.last_school} onChange={(e) => set("last_school", e.target.value)} placeholder="Name of last school" />
               </div>
               <div className="space-y-2 sm:col-span-2">

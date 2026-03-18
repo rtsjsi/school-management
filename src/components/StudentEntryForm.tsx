@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StudentDocumentsPhotos } from "@/components/StudentDocumentsPhotos";
 import { CameraCaptureButton } from "@/components/CameraCapture";
 import { StandardDivisionYearSelects } from "@/components/StandardDivisionYearSelects";
+import { AcademicYearSelect } from "@/components/AcademicYearSelect";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Upload, FileText, ImageIcon } from "lucide-react";
@@ -491,6 +492,16 @@ export default function StudentEntryForm({
                 <Label>GR Number *</Label>
                 <Input value={form.gr_number} onChange={(e) => set("gr_number", e.target.value)} required />
               </div>
+              <div className="space-y-2">
+                <Label>Roll number *</Label>
+                <Input
+                  type="number"
+                  value={form.roll_number}
+                  onChange={(e) => set("roll_number", e.target.value)}
+                  min={0}
+                  required
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -742,6 +753,10 @@ export default function StudentEntryForm({
                 <Label htmlFor="admission_date">Admission date *</Label>
                 <Input id="admission_date" type="date" value={form.admission_date} onChange={(e) => set("admission_date", e.target.value)} required />
               </div>
+              <AcademicYearSelect
+                value={form.academic_year}
+                onChange={(v) => set("academic_year", v)}
+              />
               <StandardDivisionYearSelects
                 standard={form.standard}
                 division={form.division}
@@ -754,12 +769,8 @@ export default function StudentEntryForm({
                 onAcademicYearChange={(v) => set("academic_year", v)}
                 standardRequired
                 divisionRequired
-                academicYearRequired
+                showAcademicYear={false}
               />
-              <div className="space-y-2">
-                <Label>Roll number *</Label>
-                <Input type="number" value={form.roll_number} onChange={(e) => set("roll_number", e.target.value)} min={0} required />
-              </div>
               <div className="flex items-center space-x-2 sm:col-span-2">
                 <Checkbox id="rte" checked={form.is_rte_quota} onCheckedChange={(c) => set("is_rte_quota", !!c)} />
                 <Label htmlFor="rte" className="font-normal">RTE (Right to Education) Quota</Label>
@@ -776,7 +787,7 @@ export default function StudentEntryForm({
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>Previous school</Label>
+                <Label>Previous school Name</Label>
                 <Input value={form.last_school} onChange={(e) => set("last_school", e.target.value)} placeholder="Name of last school" />
               </div>
               <div className="space-y-2 sm:col-span-2">
