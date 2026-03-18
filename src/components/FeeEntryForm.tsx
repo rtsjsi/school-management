@@ -7,8 +7,9 @@ import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getFeeTypeLabel } from "@/lib/utils";
 
-const FEE_TYPES = ["tuition", "transport", "library", "lab", "sports", "other"] as const;
+const FEE_TYPES = ["education_fee"] as const;
 
 type StudentOption = { id: string; full_name: string };
 
@@ -19,7 +20,7 @@ export default function FeeEntryForm({ students }: { students: StudentOption[] }
   const [form, setForm] = useState({
     student_id: "",
     amount: "",
-    fee_type: "tuition" as string,
+    fee_type: "education_fee" as string,
     due_date: "",
     notes: "",
   });
@@ -54,7 +55,7 @@ export default function FeeEntryForm({ students }: { students: StudentOption[] }
         setError(err.message);
         return;
       }
-      setForm({ student_id: "", amount: "", fee_type: "tuition", due_date: "", notes: "" });
+      setForm({ student_id: "", amount: "", fee_type: "education_fee", due_date: "", notes: "" });
       router.refresh();
     } catch {
       setError("Something went wrong.");
@@ -102,7 +103,7 @@ export default function FeeEntryForm({ students }: { students: StudentOption[] }
             </SelectTrigger>
             <SelectContent>
               {FEE_TYPES.map((t) => (
-                <SelectItem key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</SelectItem>
+                <SelectItem key={t} value={t}>{getFeeTypeLabel(t)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -128,10 +129,10 @@ export default function FeeEntryForm({ students }: { students: StudentOption[] }
         />
       </div>
       <div className="flex justify-start">
-      <SubmitButton loading={loading} loadingLabel="Adding…">
-        Add fee
-      </SubmitButton>
-    </div>
+        <SubmitButton loading={loading} loadingLabel="Adding…">
+          Add fee
+        </SubmitButton>
+      </div>
     </form>
   );
 }

@@ -9,7 +9,6 @@ import FeeCollectionList from "@/components/FeeCollectionList";
 import OutstandingReport from "@/components/OutstandingReport";
 import FeeCollectionReport from "@/components/FeeCollectionReport";
 import { createClient } from "@/lib/supabase/server";
-import { FeeTypesManager } from "@/components/FeeTypesManager";
 
 export default async function FeesPage() {
   const user = await getUser();
@@ -41,7 +40,6 @@ export default async function FeesPage() {
       <Tabs defaultValue="structure" className="space-y-6">
         <TabsList className="flex flex-nowrap gap-1 w-full">
           <TabsTrigger value="structure">Fee Structure</TabsTrigger>
-          {canEdit && <TabsTrigger value="types">Fee Types</TabsTrigger>}
           <TabsTrigger value="collection">Fee Collection</TabsTrigger>
           <TabsTrigger value="outstanding">Outstanding</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
@@ -51,12 +49,6 @@ export default async function FeesPage() {
           {canEdit && <FeeStructureForm />}
           <FeeStructureListWithFilters canEdit={canEdit} />
         </TabsContent>
-
-        {canEdit && (
-          <TabsContent value="types" className="space-y-6">
-            <FeeTypesManager />
-          </TabsContent>
-        )}
 
         <TabsContent value="collection" className="space-y-6">
           {canEdit && students && students.length > 0 && (
