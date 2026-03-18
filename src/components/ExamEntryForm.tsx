@@ -6,7 +6,6 @@ import { createClient } from "@/lib/supabase/client";
 import { createExamWithSubjects } from "@/app/dashboard/exams/actions";
 import { fetchStandards, fetchAcademicYears } from "@/lib/lov";
 import type { StandardOption } from "@/lib/lov";
-import type { AcademicYearOption } from "@/lib/lov";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
