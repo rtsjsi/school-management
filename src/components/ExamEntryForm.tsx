@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const EXAM_TYPES = ["midterm", "final", "quiz", "assignment"] as const;
+const TERMS = ["Term-1", "Term-2"] as const;
 
 type SubjectRow = { id: string; name: string; code: string | null; evaluation_type: string };
 
@@ -31,10 +31,10 @@ export default function ExamEntryForm() {
   const [subjects, setSubjects] = useState<SubjectRow[]>([]);
   const [form, setForm] = useState({
     name: "",
-    exam_type: "final" as string,
     standardId: "",
     academicYearId: "",
     held_at: "",
+    term: "Term-1" as string,
     description: "",
   });
   const [maxMarks, setMaxMarks] = useState<Record<string, string>>({});
@@ -117,7 +117,7 @@ export default function ExamEntryForm() {
     try {
       const result = await createExamWithSubjects({
         name: form.name.trim(),
-        exam_type: form.exam_type,
+        exam_type: "final",
         held_at: form.held_at,
         description: form.description.trim() || null,
         standard: standardName,
@@ -132,10 +132,10 @@ export default function ExamEntryForm() {
 
       setForm({
         name: "",
-        exam_type: "final",
         standardId: "",
         academicYearId: "",
         held_at: "",
+        term: "Term-1",
         description: "",
       });
       setSubjects([]);
@@ -214,18 +214,18 @@ export default function ExamEntryForm() {
           </Select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="exam-type">Type</Label>
+          <Label htmlFor="exam-term">Term</Label>
           <Select
-            value={form.exam_type}
-            onValueChange={(v) => setForm((p) => ({ ...p, exam_type: v }))}
+            value={form.term}
+            onValueChange={(v) => setForm((p) => ({ ...p, term: v }))}
           >
-            <SelectTrigger id="exam-type" className="w-full">
-              <SelectValue />
+            <SelectTrigger id="exam-term" className="w-full">
+              <SelectValue placeholder="Select term" />
             </SelectTrigger>
             <SelectContent>
-              {EXAM_TYPES.map((t) => (
+              {TERMS.map((t) => (
                 <SelectItem key={t} value={t}>
-                  {t.charAt(0).toUpperCase() + t.slice(1)}
+                  {t}
                 </SelectItem>
               ))}
             </SelectContent>
