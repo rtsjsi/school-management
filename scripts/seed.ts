@@ -163,14 +163,21 @@ async function seedStandards() {
     { name: "Nursery", section: "pre_primary", sort_order: 0 },
     { name: "Junior KG (LKG)", section: "pre_primary", sort_order: 1 },
     { name: "Senior KG (UKG)", section: "pre_primary", sort_order: 2 },
-    // Primary (1 to 8)
-    ...Array.from({ length: 8 }, (_, i) => ({ name: String(i + 1), section: "primary", sort_order: i + 3 })),
-    // Secondary (9-10)
-    { name: "9", section: "secondary", sort_order: 11 },
-    { name: "10", section: "secondary", sort_order: 12 },
-    // Higher secondary (11-12)
-    { name: "11", section: "higher_secondary", sort_order: 13 },
-    { name: "12", section: "higher_secondary", sort_order: 14 },
+    // Standards I to VIII (primary)
+    { name: "I", section: "primary", sort_order: 3 },
+    { name: "II", section: "primary", sort_order: 4 },
+    { name: "III", section: "primary", sort_order: 5 },
+    { name: "IV", section: "primary", sort_order: 6 },
+    { name: "V", section: "primary", sort_order: 7 },
+    { name: "VI", section: "primary", sort_order: 8 },
+    { name: "VII", section: "primary", sort_order: 9 },
+    { name: "VIII", section: "primary", sort_order: 10 },
+    // Standards IX–X (secondary)
+    { name: "IX", section: "secondary", sort_order: 11 },
+    { name: "X", section: "secondary", sort_order: 12 },
+    // Standards XI–XII (higher secondary)
+    { name: "XI", section: "higher_secondary", sort_order: 13 },
+    { name: "XII", section: "higher_secondary", sort_order: 14 },
   ];
   await supabase.from("standards").insert(standards);
 }
@@ -541,7 +548,21 @@ async function seedFeeCollections() {
     Nursery: 0,
     "Junior KG (LKG)": 1,
     "Senior KG (UKG)": 2,
+    // Numeric standards (backward compatibility)
     "1": 3, "2": 4, "3": 5, "4": 6, "5": 7, "6": 8, "7": 9, "8": 10, "9": 11, "10": 12, "11": 13, "12": 14,
+    // Roman standards I–XII (preferred)
+    I: 3,
+    II: 4,
+    III: 5,
+    IV: 6,
+    V: 7,
+    VI: 8,
+    VII: 9,
+    VIII: 10,
+    IX: 11,
+    X: 12,
+    XI: 13,
+    XII: 14,
   };
   const inRange = (g: string, f: string, t: string) => (GRADE_ORDER[g] ?? -1) >= (GRADE_ORDER[f] ?? -1) && (GRADE_ORDER[g] ?? -1) <= (GRADE_ORDER[t] ?? -1);
 
