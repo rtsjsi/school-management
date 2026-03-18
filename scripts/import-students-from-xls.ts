@@ -7,11 +7,11 @@
  * Default path: d:\Angel School Management App Project\Student List 2025-26.xls
  */
 
+import { createClient } from "@supabase/supabase-js";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import { execSync } from "child_process";
 import * as XLSX from "xlsx";
-import { createClient } from "@supabase/supabase-js";
 
 const repoRoot = process.cwd();
 
@@ -36,23 +36,21 @@ function getCurrentBranch(): string | null {
   }
 }
 
-function initSupabaseFromEnv() {
-  const branch = getCurrentBranch();
-  const branchFile = branch === "main" ? ".env.main" : ".env.development";
-  const branchEnv = loadEnvFile(branchFile);
-  const localEnv = loadEnvFile(".env.local");
-  Object.entries(branchEnv).forEach(([k, v]) => (process.env[k] = v));
-  Object.entries(localEnv).forEach(([k, v]) => (process.env[k] = v));
+const branch = getCurrentBranch();
+const branchFile = branch === "main" ? ".env.main" : ".env.development";
+const branchEnv = loadEnvFile(branchFile);
+const localEnv = loadEnvFile(".env.local");
+Object.entries(branchEnv).forEach(([k, v]) => (process.env[k] = v));
+Object.entries(localEnv).forEach(([k, v]) => (process.env[k] = v));
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !serviceKey) {
-    console.error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in", branchFile, "or .env.local");
-    process.exit(1);
-  }
-
-  return createClient(url, serviceKey, { auth: { persistSession: false } });
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!url || !serviceKey) {
+  console.error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in", branchFile, "or .env.local");
+  process.exit(1);
 }
+
+const supabase = createClient(url, serviceKey, { auth: { persistSession: false } });
 
 /** Default path to the Excel file (override with first CLI arg). */
 export const DEFAULT_XLS_PATH =
@@ -116,12 +114,6 @@ export type ParsedExcelRow = {
   category: string | null;
   gender: string | null;
   address: string;
-  aadhar_no?: string | null;
-  father_name?: string | null;
-  mother_name?: string | null;
-  religion?: string | null;
-  blood_group?: string | null;
-  roll_number?: number | null;
 };
 
 export function parseSheet(xlsPath: string): ParsedExcelRow[] {
@@ -130,88 +122,7 @@ export function parseSheet(xlsPath: string): ParsedExcelRow[] {
   const sheet = wb.Sheets[sheetName];
   const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" }) as unknown[][];
 
-  // Detect AEMS class-wise sheet format (header row contains "RollNo" and "Gr_no").
-  const headerIdx = rows.findIndex((r) => (r ?? []).some((c) => String(c ?? "").trim() === "RollNo") && (r ?? []).some((c) => String(c ?? "").trim() === "Gr_no"));
-  if (headerIdx >= 0) {
-    const headerRow = rows[headerIdx] ?? [];
-    const idxOf = (name: string) => headerRow.findIndex((c) => String(c ?? "").trim() === name);
-    const iRoll = idxOf("RollNo");
-    const iGr = idxOf("Gr_no");
-    const iName = idxOf("Name");
-    const iGender = idxOf("Gender");
-    const iMother = idxOf("MotherName");
-    const iDob = idxOf("Birthdate");
-    const iAadhar = idxOf("AdharCard");
-    const iAddress = idxOf("Address");
-    const iPhone = idxOf("PhMob");
-    const iCategory = idxOf("Category");
-    const iReligion = idxOf("Religion");
-    const iFather = idxOf("FatherName");
-    const iBlood = idxOf("BldGroup");
-
-    const topText = rows.slice(0, headerIdx).flatMap((r) => (r ?? []).map((c) => String(c ?? "").trim())).filter(Boolean).join(" ");
-    const classMatch = topText.match(/Class\s*-\s*([A-Za-z.0-9 ]+)/i);
-    const fileBase = xlsPath.split(/[\\/]/).pop() ?? "";
-    const divMatch = fileBase.match(/-([A-Z])-(?:Student-List)?\.xls/i);
-
-    const gradeRaw = (classMatch?.[1] ?? "").trim();
-    const grade = (STANDARD_MAP[gradeRaw] ?? gradeRaw) || "Unknown";
-    const division = (divMatch?.[1] ?? "A").trim();
-
-    const out: ParsedExcelRow[] = [];
-
-    for (let r = headerIdx + 1; r < rows.length; r++) {
-      const row = rows[r] ?? [];
-      const cell = (idx: number) => (idx >= 0 && row[idx] != null ? String(row[idx]).trim() : "");
-
-      const gr = cell(iGr);
-      const name = cell(iName);
-      const grNum = parseFloat(gr);
-      if (!(Number.isFinite(grNum) && grNum > 0) || name.length < 2) continue;
-
-      const dobRaw = iDob >= 0 ? row[iDob] : "";
-      const dobStr = String(dobRaw ?? "").trim();
-      const dob =
-        dobStr && /^[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{4}$/.test(dobStr)
-          ? (() => {
-              const [d, m, y] = dobStr.split(".").map((p) => parseInt(p, 10));
-              if (!y || !m || !d) return null;
-              return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-            })()
-          : excelDateToISO(dobRaw);
-
-      const mobile = cell(iPhone);
-      const category = mapCategory(iCategory >= 0 ? row[iCategory] : "");
-      const gender = mapGender(iGender >= 0 ? row[iGender] : "");
-      const address = cell(iAddress);
-      const aadharRaw = cell(iAadhar);
-      const aadhar_no = aadharRaw ? aadharRaw.replace(/[^0-9]/g, "") || null : null;
-
-      out.push({
-        grade,
-        division,
-        roll_number: cell(iRoll) ? parseInt(cell(iRoll), 10) : null,
-        gr: String(grNum),
-        name,
-        dob,
-        mobile,
-        mobile2: "",
-        caste: "",
-        category,
-        gender,
-        address,
-        aadhar_no,
-        father_name: cell(iFather) || null,
-        mother_name: cell(iMother) || null,
-        religion: cell(iReligion) || null,
-        blood_group: cell(iBlood) || null,
-      });
-    }
-
-    return out;
-  }
-
-  const out: ParsedExcelRow[] = [];
+  const out: { grade: string; division: string; gr: string; name: string; dob: string | null; mobile: string; mobile2: string; caste: string; category: string | null; gender: string | null; address: string }[] = [];
   let curGrade = "";
   let curDivision = "";
 
@@ -278,8 +189,6 @@ async function main() {
     process.exit(0);
   }
 
-  const supabase = initSupabaseFromEnv();
-
   const { data: activeYear } = await supabase
     .from("academic_years")
     .select("id, name")
@@ -324,13 +233,13 @@ async function main() {
       full_name: row.name.trim(),
       date_of_birth: row.dob,
       gender: row.gender,
-      blood_group: row.blood_group ?? null,
+      blood_group: null,
       category: row.category,
-      religion: row.religion ?? null,
+      religion: null,
       caste: row.caste || null,
       district: null,
       address: row.address || null,
-      aadhar_no: row.aadhar_no ?? null,
+      aadhar_no: null,
       pen_no: null,
       apaar_id: null,
       udise_id: null,
@@ -339,13 +248,13 @@ async function main() {
       parent_contact: row.mobile || null,
       mother_contact: row.mobile2 || null,
       academic_year: academicYearName,
-      roll_number: row.roll_number ?? (parseInt(row.gr, 10) || null),
+      roll_number: parseInt(row.gr, 10) || null,
       standard: row.grade,
       division: row.division,
       status: "active",
       admission_date: null,
-      father_name: row.father_name ?? null,
-      mother_name: row.mother_name ?? null,
+      father_name: null,
+      mother_name: null,
       fee_concession_amount: null,
       fee_concession_reason: null,
       notes: `Imported from Student List 2025-26.xls (GR ${row.gr})`,
