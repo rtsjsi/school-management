@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveAcademicYearName } from "@/lib/enrollment";
+import { linesWithNetAfterConcession } from "@/lib/fee-concession";
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     const { data: students } = await supabase
       .from("students")
-      .select("id, full_name, standard, division, roll_number, student_id, is_rte_quota")
+      .select("id, full_name, standard, division, roll_number, student_id, is_rte_quota, fee_concession_amount")
       .eq("status", "active")
       .order("full_name");
 
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
       .select(`
         id,
         standards(name),
-        fee_structure_items(fee_type, quarter, amount)
+        fee_structure_items(quarter, amount)
       `)
       .eq("academic_year", ay);
 
@@ -74,12 +75,16 @@ export async function GET(request: NextRequest) {
       });
       if (!structure) continue;
 
-      const items = (structure.fee_structure_items as { fee_type: string; quarter: number; amount: number }[]) ?? [];
-      for (const item of items) {
-        if (quarter && item.quarter !== parseInt(quarter)) continue;
+      const items = (structure.fee_structure_items as { quarter: number; amount: number }[]) ?? [];
+      const lines = linesWithNetAfterConcession(
+        items,
+        (s as { fee_concession_amount?: number | null }).fee_concession_amount
+      );
+      for (const line of lines) {
+        if (quarter && line.quarter !== parseInt(quarter)) continue;
 
-        const total = Number(item.amount);
-        const key = `${s.id}-${item.quarter}-${item.fee_type}`;
+        const total = line.net;
+        const key = `${s.id}-${line.quarter}-${line.fee_type}`;
         const paid = paidMap.get(key) ?? 0;
         const outstanding = total - paid;
         if (outstanding > 0) {
@@ -90,8 +95,8 @@ export async function GET(request: NextRequest) {
             division: s.division ?? "",
             roll_number: (s as { roll_number?: number }).roll_number,
             student_id_display: (s as { student_id?: string }).student_id,
-            quarter: item.quarter,
-            fee_type: item.fee_type,
+            quarter: line.quarter,
+            fee_type: line.fee_type,
             total,
             paid,
             outstanding,

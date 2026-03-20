@@ -17,7 +17,7 @@ export async function updateFeeStructure(
     standardId: string;
     academic_year: string;
     total_fees: number | null;
-    items: { fee_type: string; quarter: number; amount: number }[];
+    items: { quarter: number; amount: number }[];
   }
 ): Promise<FeeStructureActionResult> {
   const supabase = await createClient();
@@ -47,7 +47,6 @@ export async function updateFeeStructure(
   if (data.items.length > 0) {
     const items = data.items.map((i) => ({
       fee_structure_id: id,
-      fee_type: i.fee_type,
       quarter: i.quarter,
       amount: i.amount,
     }));

@@ -15,15 +15,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { AcademicYearSelect } from "@/components/AcademicYearSelect";
 import { FeeStructureRowActions } from "@/components/FeeStructureRowActions";
-import { getFeeTypeLabel } from "@/lib/utils";
-
 type StructureRow = {
   id: string;
   standard_id: string;
   academic_year: string;
   total_fees?: number | string | null;
   standards: { name?: string; sort_order?: number } | { name?: string; sort_order?: number }[] | null;
-  fee_structure_items: { fee_type: string; quarter: number; amount: number }[] | null;
+  fee_structure_items: { quarter: number; amount: number }[] | null;
 };
 
 function standardSortOrderFromRow(row: StructureRow): number {
@@ -76,7 +74,7 @@ export function FeeStructureListWithFilters({ canEdit = false }: { canEdit?: boo
         standards(name, sort_order),
         academic_year,
         total_fees,
-        fee_structure_items(fee_type, quarter, amount)
+        fee_structure_items(quarter, amount)
       `,
       );
 
@@ -116,27 +114,24 @@ export function FeeStructureListWithFilters({ canEdit = false }: { canEdit?: boo
     setYearFilter("");
   };
 
-  const renderAmounts = (items: { fee_type: string; quarter: number; amount: number }[] | null) => {
+  const renderAmounts = (items: { quarter: number; amount: number }[] | null) => {
     const list = items ?? [];
     if (list.length === 0) {
       return <span className="text-xs text-muted-foreground">No items</span>;
     }
-    const byType: Record<string, Record<number, number>> = {};
+    const byQuarter: Record<number, number> = {};
     for (const it of list) {
       const rawAmount = (it as unknown as { amount: number | string }).amount;
       const amountNumber =
         typeof rawAmount === "number" ? rawAmount : Number.parseFloat(String(rawAmount));
       if (!Number.isFinite(amountNumber)) continue;
-      if (!byType[it.fee_type]) byType[it.fee_type] = {};
-      byType[it.fee_type][it.quarter] = amountNumber;
+      byQuarter[it.quarter] = (byQuarter[it.quarter] ?? 0) + amountNumber;
     }
-    const feeTypes = Object.keys(byType).sort();
     return (
       <div className="overflow-x-auto">
         <table className="w-full text-xs border-collapse">
           <thead>
             <tr className="border-b">
-              <th className="text-left py-1 pr-2">Fee Type</th>
               <th className="text-left py-1 px-1">Q1</th>
               <th className="text-left py-1 px-1">Q2</th>
               <th className="text-left py-1 px-1">Q3</th>
@@ -144,16 +139,13 @@ export function FeeStructureListWithFilters({ canEdit = false }: { canEdit?: boo
             </tr>
           </thead>
           <tbody>
-            {feeTypes.map((ft) => (
-              <tr key={ft} className="border-b last:border-b-0">
-                <td className="py-1 pr-2 align-middle">{getFeeTypeLabel(ft)}</td>
-                {[1, 2, 3, 4].map((q) => (
-                  <td key={q} className="py-1 px-1 align-middle">
-                    {byType[ft][q] != null ? byType[ft][q].toFixed(2) : "-"}
-                  </td>
-                ))}
-              </tr>
-            ))}
+            <tr className="border-b last:border-b-0">
+              {[1, 2, 3, 4].map((q) => (
+                <td key={q} className="py-1 px-1 align-middle">
+                  {byQuarter[q] != null ? byQuarter[q].toFixed(2) : "—"}
+                </td>
+              ))}
+            </tr>
           </tbody>
         </table>
       </div>
@@ -215,7 +207,7 @@ export function FeeStructureListWithFilters({ canEdit = false }: { canEdit?: boo
                 <TableHead>Standard</TableHead>
                 <TableHead>Academic Year</TableHead>
                 <TableHead className="text-right whitespace-nowrap">Total fees</TableHead>
-                <TableHead>Quarter-wise Amounts (per fee type)</TableHead>
+                <TableHead>Quarter-wise (from annual split)</TableHead>
                 {canEdit && <TableHead className="w-24"></TableHead>}
               </TableRow>
             </TableHeader>

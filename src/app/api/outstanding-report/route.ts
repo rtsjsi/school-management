@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveAcademicYearName } from "@/lib/enrollment";
+import { linesWithNetAfterConcession } from "@/lib/fee-concession";
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,12 +20,12 @@ export async function GET(request: NextRequest) {
 
     const { data: students } = await supabase
       .from("students")
-      .select("id, full_name, standard, division, roll_number, student_id, is_rte_quota")
+      .select("id, full_name, standard, division, roll_number, student_id, is_rte_quota, fee_concession_amount")
       .eq("status", "active");
 
     const { data: structures } = await supabase
       .from("fee_structures")
-      .select("id, standards(name), fee_structure_items(fee_type, quarter, amount)")
+      .select("id, standards(name), fee_structure_items(quarter, amount)")
       .eq("academic_year", ay);
 
     const { data: collections } = await supabase
@@ -70,18 +71,22 @@ export async function GET(request: NextRequest) {
       });
       if (!structure) continue;
 
-      const items = (structure.fee_structure_items as { fee_type: string; quarter: number; amount: number }[]) ?? [];
+      const items = (structure.fee_structure_items as { quarter: number; amount: number }[]) ?? [];
+      const lines = linesWithNetAfterConcession(
+        items,
+        (s as { fee_concession_amount?: number | null }).fee_concession_amount
+      );
       const quarterFilter = quarter ? parseInt(quarter) : null;
 
       if (quarterFilter) {
         // Till-quarter: cumulative outstanding from Q1 through selected quarter, per fee_type
         const byFeeType: Record<string, { total: number; paid: number }> = {};
         for (let q = 1; q <= quarterFilter; q++) {
-          for (const item of items) {
-            if (item.quarter !== q) continue;
-            const ft = item.fee_type;
+          for (const line of lines) {
+            if (line.quarter !== q) continue;
+            const ft = line.fee_type;
             if (!byFeeType[ft]) byFeeType[ft] = { total: 0, paid: 0 };
-            const total = Number(item.amount);
+            const total = line.net;
             const key = `${s.id}-${q}-${ft}`;
             const paid = paidMap.get(key) ?? 0;
             byFeeType[ft].total += total;
@@ -109,9 +114,9 @@ export async function GET(request: NextRequest) {
         }
       } else {
         // No quarter filter: show each quarter separately
-        for (const item of items) {
-          const total = Number(item.amount);
-          const key = `${s.id}-${item.quarter}-${item.fee_type}`;
+        for (const line of lines) {
+          const total = line.net;
+          const key = `${s.id}-${line.quarter}-${line.fee_type}`;
           const paid = paidMap.get(key) ?? 0;
           const outstanding = total - paid;
           if (outstanding > 0) {
@@ -122,9 +127,9 @@ export async function GET(request: NextRequest) {
               division: s.division ?? "",
               roll_number: s.roll_number,
               student_id_display: (s as { student_id?: string }).student_id,
-              quarter: item.quarter,
-              quarter_label: `Q${item.quarter}`,
-              fee_type: item.fee_type,
+              quarter: line.quarter,
+              quarter_label: `Q${line.quarter}`,
+              fee_type: line.fee_type,
               total,
               paid,
               outstanding,

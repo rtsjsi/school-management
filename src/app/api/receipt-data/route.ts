@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { annualNetFeeLiability } from "@/lib/fee-concession";
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,7 +23,14 @@ export async function GET(request: NextRequest) {
     if (error || !c) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     const s = Array.isArray(c.students) ? c.students[0] : c.students;
-    const student = s as { full_name?: string; standard?: string; division?: string; roll_number?: number; student_id?: string } | null;
+    const student = s as {
+      full_name?: string;
+      standard?: string;
+      division?: string;
+      roll_number?: number;
+      student_id?: string;
+      fee_concession_amount?: number | null;
+    } | null;
     const studentId = (c as { student_id?: string }).student_id;
     if (!studentId) return NextResponse.json({ error: "Invalid collection" }, { status: 400 });
 
@@ -39,7 +47,7 @@ export async function GET(request: NextRequest) {
     });
     if (structure) {
       const items = (structure.fee_structure_items as { quarter: number; amount: number }[]) ?? [];
-      const totalDues = items.reduce((sum, i) => sum + Number(i.amount), 0);
+      const totalDues = annualNetFeeLiability(items, student?.fee_concession_amount ?? null);
       const { data: paidRows } = await supabase
         .from("fee_collections")
         .select("amount")

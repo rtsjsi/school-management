@@ -1,5 +1,5 @@
 -- Fee structures for academic year 2026-2027 — from printed "Fees Structure- 2026:27"
--- Sets total_fees (FRC) and education_fee per quarter (Q1–Q4).
+-- Sets total_fees (FRC) and quarter amounts (Q1–Q4); fee_type column removed from fee_structure_items.
 --
 -- DB standard names must match `standards.name` (Nursery, Junior KG (LKG), I, II, … XII).
 -- XI/XII use stream "Science" on the sheet; mapped to standards XI / XII.
@@ -16,8 +16,8 @@ DELETE FROM public.fee_structure_items WHERE fee_structure_id IN (
 DELETE FROM public.fee_structures WHERE standard_id = (SELECT id FROM public.standards WHERE name = 'Nursery' LIMIT 1) AND academic_year = '2026-2027';
 INSERT INTO public.fee_structures (standard_id, academic_year, total_fees)
 SELECT id, '2026-2027', 19610::numeric FROM public.standards WHERE name = 'Nursery' LIMIT 1;
-INSERT INTO public.fee_structure_items (fee_structure_id, fee_type, quarter, amount)
-SELECT fs.id, 'education_fee', v.q, v.amt FROM public.fee_structures fs
+INSERT INTO public.fee_structure_items (fee_structure_id, quarter, amount)
+SELECT fs.id, v.q, v.amt FROM public.fee_structures fs
 JOIN public.standards st ON st.id = fs.standard_id AND st.name = 'Nursery'
 CROSS JOIN (VALUES (1, 4903::numeric), (2, 4903), (3, 4903), (4, 4903)) AS v(q, amt)
 WHERE fs.academic_year = '2026-2027';
@@ -29,8 +29,8 @@ DELETE FROM public.fee_structure_items WHERE fee_structure_id IN (
 DELETE FROM public.fee_structures WHERE standard_id = (SELECT id FROM public.standards WHERE name = 'Junior KG (LKG)' LIMIT 1) AND academic_year = '2026-2027';
 INSERT INTO public.fee_structures (standard_id, academic_year, total_fees)
 SELECT id, '2026-2027', 32860::numeric FROM public.standards WHERE name = 'Junior KG (LKG)' LIMIT 1;
-INSERT INTO public.fee_structure_items (fee_structure_id, fee_type, quarter, amount)
-SELECT fs.id, 'education_fee', v.q, v.amt FROM public.fee_structures fs
+INSERT INTO public.fee_structure_items (fee_structure_id, quarter, amount)
+SELECT fs.id, v.q, v.amt FROM public.fee_structures fs
 JOIN public.standards st ON st.id = fs.standard_id AND st.name = 'Junior KG (LKG)'
 CROSS JOIN (VALUES (1, 8215::numeric), (2, 8215), (3, 8215), (4, 8215)) AS v(q, amt)
 WHERE fs.academic_year = '2026-2027';
@@ -42,8 +42,8 @@ DELETE FROM public.fee_structure_items WHERE fee_structure_id IN (
 DELETE FROM public.fee_structures WHERE standard_id = (SELECT id FROM public.standards WHERE name = 'Senior KG (UKG)' LIMIT 1) AND academic_year = '2026-2027';
 INSERT INTO public.fee_structures (standard_id, academic_year, total_fees)
 SELECT id, '2026-2027', 32860::numeric FROM public.standards WHERE name = 'Senior KG (UKG)' LIMIT 1;
-INSERT INTO public.fee_structure_items (fee_structure_id, fee_type, quarter, amount)
-SELECT fs.id, 'education_fee', v.q, v.amt FROM public.fee_structures fs
+INSERT INTO public.fee_structure_items (fee_structure_id, quarter, amount)
+SELECT fs.id, v.q, v.amt FROM public.fee_structures fs
 JOIN public.standards st ON st.id = fs.standard_id AND st.name = 'Senior KG (UKG)'
 CROSS JOIN (VALUES (1, 8215::numeric), (2, 8215), (3, 8215), (4, 8215)) AS v(q, amt)
 WHERE fs.academic_year = '2026-2027';
@@ -55,8 +55,8 @@ DELETE FROM public.fee_structure_items WHERE fee_structure_id IN (
 DELETE FROM public.fee_structures WHERE standard_id = (SELECT id FROM public.standards WHERE name = 'I' LIMIT 1) AND academic_year = '2026-2027';
 INSERT INTO public.fee_structures (standard_id, academic_year, total_fees)
 SELECT id, '2026-2027', 34300::numeric FROM public.standards WHERE name = 'I' LIMIT 1;
-INSERT INTO public.fee_structure_items (fee_structure_id, fee_type, quarter, amount)
-SELECT fs.id, 'education_fee', v.q, v.amt FROM public.fee_structures fs
+INSERT INTO public.fee_structure_items (fee_structure_id, quarter, amount)
+SELECT fs.id, v.q, v.amt FROM public.fee_structures fs
 JOIN public.standards st ON st.id = fs.standard_id AND st.name = 'I'
 CROSS JOIN (VALUES (1, 8575::numeric), (2, 8575), (3, 8575), (4, 8575)) AS v(q, amt)
 WHERE fs.academic_year = '2026-2027';
@@ -68,8 +68,8 @@ DELETE FROM public.fee_structure_items WHERE fee_structure_id IN (
 DELETE FROM public.fee_structures WHERE standard_id = (SELECT id FROM public.standards WHERE name = 'II' LIMIT 1) AND academic_year = '2026-2027';
 INSERT INTO public.fee_structures (standard_id, academic_year, total_fees)
 SELECT id, '2026-2027', 34300::numeric FROM public.standards WHERE name = 'II' LIMIT 1;
-INSERT INTO public.fee_structure_items (fee_structure_id, fee_type, quarter, amount)
-SELECT fs.id, 'education_fee', v.q, v.amt FROM public.fee_structures fs
+INSERT INTO public.fee_structure_items (fee_structure_id, quarter, amount)
+SELECT fs.id, v.q, v.amt FROM public.fee_structures fs
 JOIN public.standards st ON st.id = fs.standard_id AND st.name = 'II'
 CROSS JOIN (VALUES (1, 8575::numeric), (2, 8575), (3, 8575), (4, 8575)) AS v(q, amt)
 WHERE fs.academic_year = '2026-2027';
@@ -81,8 +81,8 @@ DELETE FROM public.fee_structure_items WHERE fee_structure_id IN (
 DELETE FROM public.fee_structures WHERE standard_id = (SELECT id FROM public.standards WHERE name = 'III' LIMIT 1) AND academic_year = '2026-2027';
 INSERT INTO public.fee_structures (standard_id, academic_year, total_fees)
 SELECT id, '2026-2027', 35080::numeric FROM public.standards WHERE name = 'III' LIMIT 1;
-INSERT INTO public.fee_structure_items (fee_structure_id, fee_type, quarter, amount)
-SELECT fs.id, 'education_fee', v.q, v.amt FROM public.fee_structures fs
+INSERT INTO public.fee_structure_items (fee_structure_id, quarter, amount)
+SELECT fs.id, v.q, v.amt FROM public.fee_structures fs
 JOIN public.standards st ON st.id = fs.standard_id AND st.name = 'III'
 CROSS JOIN (VALUES (1, 8770::numeric), (2, 8770), (3, 8770), (4, 8770)) AS v(q, amt)
 WHERE fs.academic_year = '2026-2027';
@@ -94,8 +94,8 @@ DELETE FROM public.fee_structure_items WHERE fee_structure_id IN (
 DELETE FROM public.fee_structures WHERE standard_id = (SELECT id FROM public.standards WHERE name = 'IV' LIMIT 1) AND academic_year = '2026-2027';
 INSERT INTO public.fee_structures (standard_id, academic_year, total_fees)
 SELECT id, '2026-2027', 35080::numeric FROM public.standards WHERE name = 'IV' LIMIT 1;
-INSERT INTO public.fee_structure_items (fee_structure_id, fee_type, quarter, amount)
-SELECT fs.id, 'education_fee', v.q, v.amt FROM public.fee_structures fs
+INSERT INTO public.fee_structure_items (fee_structure_id, quarter, amount)
+SELECT fs.id, v.q, v.amt FROM public.fee_structures fs
 JOIN public.standards st ON st.id = fs.standard_id AND st.name = 'IV'
 CROSS JOIN (VALUES (1, 8770::numeric), (2, 8770), (3, 8770), (4, 8770)) AS v(q, amt)
 WHERE fs.academic_year = '2026-2027';
@@ -107,8 +107,8 @@ DELETE FROM public.fee_structure_items WHERE fee_structure_id IN (
 DELETE FROM public.fee_structures WHERE standard_id = (SELECT id FROM public.standards WHERE name = 'V' LIMIT 1) AND academic_year = '2026-2027';
 INSERT INTO public.fee_structures (standard_id, academic_year, total_fees)
 SELECT id, '2026-2027', 35080::numeric FROM public.standards WHERE name = 'V' LIMIT 1;
-INSERT INTO public.fee_structure_items (fee_structure_id, fee_type, quarter, amount)
-SELECT fs.id, 'education_fee', v.q, v.amt FROM public.fee_structures fs
+INSERT INTO public.fee_structure_items (fee_structure_id, quarter, amount)
+SELECT fs.id, v.q, v.amt FROM public.fee_structures fs
 JOIN public.standards st ON st.id = fs.standard_id AND st.name = 'V'
 CROSS JOIN (VALUES (1, 8770::numeric), (2, 8770), (3, 8770), (4, 8770)) AS v(q, amt)
 WHERE fs.academic_year = '2026-2027';
@@ -120,8 +120,8 @@ DELETE FROM public.fee_structure_items WHERE fee_structure_id IN (
 DELETE FROM public.fee_structures WHERE standard_id = (SELECT id FROM public.standards WHERE name = 'VI' LIMIT 1) AND academic_year = '2026-2027';
 INSERT INTO public.fee_structures (standard_id, academic_year, total_fees)
 SELECT id, '2026-2027', 39680::numeric FROM public.standards WHERE name = 'VI' LIMIT 1;
-INSERT INTO public.fee_structure_items (fee_structure_id, fee_type, quarter, amount)
-SELECT fs.id, 'education_fee', v.q, v.amt FROM public.fee_structures fs
+INSERT INTO public.fee_structure_items (fee_structure_id, quarter, amount)
+SELECT fs.id, v.q, v.amt FROM public.fee_structures fs
 JOIN public.standards st ON st.id = fs.standard_id AND st.name = 'VI'
 CROSS JOIN (VALUES (1, 9920::numeric), (2, 9920), (3, 9920), (4, 9920)) AS v(q, amt)
 WHERE fs.academic_year = '2026-2027';
@@ -133,8 +133,8 @@ DELETE FROM public.fee_structure_items WHERE fee_structure_id IN (
 DELETE FROM public.fee_structures WHERE standard_id = (SELECT id FROM public.standards WHERE name = 'VII' LIMIT 1) AND academic_year = '2026-2027';
 INSERT INTO public.fee_structures (standard_id, academic_year, total_fees)
 SELECT id, '2026-2027', 39680::numeric FROM public.standards WHERE name = 'VII' LIMIT 1;
-INSERT INTO public.fee_structure_items (fee_structure_id, fee_type, quarter, amount)
-SELECT fs.id, 'education_fee', v.q, v.amt FROM public.fee_structures fs
+INSERT INTO public.fee_structure_items (fee_structure_id, quarter, amount)
+SELECT fs.id, v.q, v.amt FROM public.fee_structures fs
 JOIN public.standards st ON st.id = fs.standard_id AND st.name = 'VII'
 CROSS JOIN (VALUES (1, 9920::numeric), (2, 9920), (3, 9920), (4, 9920)) AS v(q, amt)
 WHERE fs.academic_year = '2026-2027';
@@ -146,8 +146,8 @@ DELETE FROM public.fee_structure_items WHERE fee_structure_id IN (
 DELETE FROM public.fee_structures WHERE standard_id = (SELECT id FROM public.standards WHERE name = 'VIII' LIMIT 1) AND academic_year = '2026-2027';
 INSERT INTO public.fee_structures (standard_id, academic_year, total_fees)
 SELECT id, '2026-2027', 41500::numeric FROM public.standards WHERE name = 'VIII' LIMIT 1;
-INSERT INTO public.fee_structure_items (fee_structure_id, fee_type, quarter, amount)
-SELECT fs.id, 'education_fee', v.q, v.amt FROM public.fee_structures fs
+INSERT INTO public.fee_structure_items (fee_structure_id, quarter, amount)
+SELECT fs.id, v.q, v.amt FROM public.fee_structures fs
 JOIN public.standards st ON st.id = fs.standard_id AND st.name = 'VIII'
 CROSS JOIN (VALUES (1, 10375::numeric), (2, 10375), (3, 10375), (4, 10375)) AS v(q, amt)
 WHERE fs.academic_year = '2026-2027';
@@ -159,8 +159,8 @@ DELETE FROM public.fee_structure_items WHERE fee_structure_id IN (
 DELETE FROM public.fee_structures WHERE standard_id = (SELECT id FROM public.standards WHERE name = 'IX' LIMIT 1) AND academic_year = '2026-2027';
 INSERT INTO public.fee_structures (standard_id, academic_year, total_fees)
 SELECT id, '2026-2027', 45850::numeric FROM public.standards WHERE name = 'IX' LIMIT 1;
-INSERT INTO public.fee_structure_items (fee_structure_id, fee_type, quarter, amount)
-SELECT fs.id, 'education_fee', v.q, v.amt FROM public.fee_structures fs
+INSERT INTO public.fee_structure_items (fee_structure_id, quarter, amount)
+SELECT fs.id, v.q, v.amt FROM public.fee_structures fs
 JOIN public.standards st ON st.id = fs.standard_id AND st.name = 'IX'
 CROSS JOIN (VALUES (1, 11463::numeric), (2, 11463), (3, 11463), (4, 11463)) AS v(q, amt)
 WHERE fs.academic_year = '2026-2027';
@@ -172,8 +172,8 @@ DELETE FROM public.fee_structure_items WHERE fee_structure_id IN (
 DELETE FROM public.fee_structures WHERE standard_id = (SELECT id FROM public.standards WHERE name = 'X' LIMIT 1) AND academic_year = '2026-2027';
 INSERT INTO public.fee_structures (standard_id, academic_year, total_fees)
 SELECT id, '2026-2027', 52460::numeric FROM public.standards WHERE name = 'X' LIMIT 1;
-INSERT INTO public.fee_structure_items (fee_structure_id, fee_type, quarter, amount)
-SELECT fs.id, 'education_fee', v.q, v.amt FROM public.fee_structures fs
+INSERT INTO public.fee_structure_items (fee_structure_id, quarter, amount)
+SELECT fs.id, v.q, v.amt FROM public.fee_structures fs
 JOIN public.standards st ON st.id = fs.standard_id AND st.name = 'X'
 CROSS JOIN (VALUES (1, 13115::numeric), (2, 13115), (3, 13115), (4, 13115)) AS v(q, amt)
 WHERE fs.academic_year = '2026-2027';
@@ -185,8 +185,8 @@ DELETE FROM public.fee_structure_items WHERE fee_structure_id IN (
 DELETE FROM public.fee_structures WHERE standard_id = (SELECT id FROM public.standards WHERE name = 'XI' LIMIT 1) AND academic_year = '2026-2027';
 INSERT INTO public.fee_structures (standard_id, academic_year, total_fees)
 SELECT id, '2026-2027', 60000::numeric FROM public.standards WHERE name = 'XI' LIMIT 1;
-INSERT INTO public.fee_structure_items (fee_structure_id, fee_type, quarter, amount)
-SELECT fs.id, 'education_fee', v.q, v.amt FROM public.fee_structures fs
+INSERT INTO public.fee_structure_items (fee_structure_id, quarter, amount)
+SELECT fs.id, v.q, v.amt FROM public.fee_structures fs
 JOIN public.standards st ON st.id = fs.standard_id AND st.name = 'XI'
 CROSS JOIN (VALUES (1, 15000::numeric), (2, 15000), (3, 15000), (4, 15000)) AS v(q, amt)
 WHERE fs.academic_year = '2026-2027';
@@ -198,8 +198,8 @@ DELETE FROM public.fee_structure_items WHERE fee_structure_id IN (
 DELETE FROM public.fee_structures WHERE standard_id = (SELECT id FROM public.standards WHERE name = 'XII' LIMIT 1) AND academic_year = '2026-2027';
 INSERT INTO public.fee_structures (standard_id, academic_year, total_fees)
 SELECT id, '2026-2027', 60000::numeric FROM public.standards WHERE name = 'XII' LIMIT 1;
-INSERT INTO public.fee_structure_items (fee_structure_id, fee_type, quarter, amount)
-SELECT fs.id, 'education_fee', v.q, v.amt FROM public.fee_structures fs
+INSERT INTO public.fee_structure_items (fee_structure_id, quarter, amount)
+SELECT fs.id, v.q, v.amt FROM public.fee_structures fs
 JOIN public.standards st ON st.id = fs.standard_id AND st.name = 'XII'
 CROSS JOIN (VALUES (1, 15000::numeric), (2, 15000), (3, 15000), (4, 15000)) AS v(q, amt)
 WHERE fs.academic_year = '2026-2027';

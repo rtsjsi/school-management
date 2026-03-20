@@ -7,6 +7,7 @@ import { createClient } from "@supabase/supabase-js";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import { execSync } from "child_process";
+import { splitAnnualFeeAcrossQuarters } from "../src/lib/fee-annual-split";
 
 const repoRoot = process.cwd();
 
@@ -53,7 +54,6 @@ console.log("Using Supabase project from", branch ? `${branch} (${branchFile})` 
 
 const supabase = createClient(url, serviceKey, { auth: { persistSession: false } });
 
-const FEE_TYPES = ["education_fee"] as const;
 
 function pick<T>(arr: readonly T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -280,12 +280,12 @@ async function seedFeeStructures() {
     .select("id")
     .single();
   if (fs) {
-    const items = [];
-    for (const ft of FEE_TYPES) {
-      for (let q = 1; q <= 4; q++) {
-        items.push({ fee_structure_id: fs.id, fee_type: ft, quarter: q, amount: 2000 + randomInt(0, 3000) });
-      }
-    }
+    const annual = 20000 + randomInt(0, 3000);
+    const items = splitAnnualFeeAcrossQuarters(annual).map((i) => ({
+      fee_structure_id: fs.id,
+      quarter: i.quarter,
+      amount: i.amount,
+    }));
     await supabase.from("fee_structure_items").insert(items);
   }
   const { data: fs2 } = await supabase
@@ -294,12 +294,12 @@ async function seedFeeStructures() {
     .select("id")
     .single();
   if (fs2) {
-    const items = [];
-    for (const ft of FEE_TYPES) {
-      for (let q = 1; q <= 4; q++) {
-        items.push({ fee_structure_id: fs2.id, fee_type: ft, quarter: q, amount: 3500 + randomInt(0, 4000) });
-      }
-    }
+    const annual = 35000 + randomInt(0, 4000);
+    const items = splitAnnualFeeAcrossQuarters(annual).map((i) => ({
+      fee_structure_id: fs2.id,
+      quarter: i.quarter,
+      amount: i.amount,
+    }));
     await supabase.from("fee_structure_items").insert(items);
   }
 }
@@ -539,7 +539,7 @@ async function seedFeeCollections() {
   const ay = `${new Date().getFullYear()}-${(new Date().getFullYear() + 1).toString().slice(-2)}`;
   const { data: structures } = await supabase
     .from("fee_structures")
-    .select("id, grade_from, grade_to, fee_structure_items(fee_type, quarter, amount)")
+    .select("id, grade_from, grade_to, fee_structure_items(quarter, amount)")
     .eq("academic_year", ay);
   const { data: students } = await supabase.from("students").select("id, standard, is_rte_quota").eq("status", "active");
   const nonRte = (students ?? []).filter((s) => !(s as { is_rte_quota?: boolean }).is_rte_quota);
@@ -572,7 +572,7 @@ async function seedFeeCollections() {
   for (const s of nonRte.slice(0, 12)) {
     const structure = (structures ?? []).find((st) => inRange(s.standard ?? "", st.grade_from, st.grade_to));
     if (!structure) continue;
-    const items = (structure.fee_structure_items as { fee_type: string; quarter: number; amount: number }[]) ?? [];
+    const items = (structure.fee_structure_items as { quarter: number; amount: number }[]) ?? [];
     for (const item of items.slice(0, 3)) {
       if (Math.random() < 0.5) {
         const amt = Math.floor(Number(item.amount) * (0.3 + Math.random() * 0.7));
@@ -581,7 +581,7 @@ async function seedFeeCollections() {
           amount: amt,
           quarter: item.quarter,
           academic_year: ay,
-          fee_type: item.fee_type,
+          fee_type: "education_fee",
           payment_mode: pick(["cash", "cheque", "online"]),
           receipt_number: `RCP-${receiptNum++}`,
         });

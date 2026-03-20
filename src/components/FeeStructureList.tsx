@@ -33,7 +33,7 @@ export async function FeeStructureList({ canEdit = false }: { canEdit?: boolean 
       standards(name, sort_order),
       academic_year,
       total_fees,
-      fee_structure_items(fee_type, quarter, amount)
+      fee_structure_items(quarter, amount)
     `);
 
   const structures =

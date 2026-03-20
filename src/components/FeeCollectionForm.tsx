@@ -24,6 +24,7 @@ import { generateReceiptPDF, amountInWords } from "@/lib/receipt-pdf";
 import { AcademicYearSelect } from "@/components/AcademicYearSelect";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 import { useToast } from "@/hooks/use-toast";
+import { annualNetFeeLiability, linesWithNetAfterConcession } from "@/lib/fee-concession";
 
 const PAYMENT_MODES = ["cash", "cheque", "online"] as const;
 const FEE_TYPE = "education_fee";
@@ -33,7 +34,15 @@ const DEFAULT_POLICY_NOTES = [
   "(3) Cheque payment subject to realisation.",
 ];
 
-type StudentOption = { id: string; full_name: string; standard?: string; division?: string; roll_number?: number; student_id?: string };
+type StudentOption = {
+  id: string;
+  full_name: string;
+  standard?: string;
+  division?: string;
+  roll_number?: number;
+  student_id?: string;
+  fee_concession_amount?: number | null;
+};
 
 export default function FeeCollectionForm({
   students,
@@ -116,13 +125,12 @@ export default function FeeCollectionForm({
         return;
       }
       const items = (structure.fee_structure_items as { quarter: number; amount: number }[]) ?? [];
+      const lines = linesWithNetAfterConcession(items, selectedStudent.fee_concession_amount ?? null);
       const quarterNum = parseInt(form.quarter);
-      const totalForQuarter = items
-        .filter((i) => i.quarter === quarterNum)
-        .reduce((sum, i) => sum + Number(i.amount ?? 0), 0);
+      const totalForQuarter = lines.filter((l) => l.quarter === quarterNum).reduce((sum, l) => sum + l.net, 0);
       setStructureAmount(totalForQuarter > 0 ? totalForQuarter : null);
     })();
-  }, [selectedStudent?.standard, form.quarter, form.academic_year]);
+  }, [selectedStudent?.standard, selectedStudent?.fee_concession_amount, form.quarter, form.academic_year]);
 
   useEffect(() => {
     if (structureAmount != null) {
@@ -248,7 +256,7 @@ export default function FeeCollectionForm({
       });
       if (structure) {
         const items = (structure.fee_structure_items as { quarter: number; amount: number }[]) ?? [];
-        const totalDues = items.reduce((s, i) => s + Number(i.amount), 0);
+        const totalDues = annualNetFeeLiability(items, selectedStudent?.fee_concession_amount ?? null);
         const { data: paidRows } = await supabase
           .from("fee_collections")
           .select("amount")
@@ -490,7 +498,7 @@ export default function FeeCollectionForm({
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="amount">Amount (from fee structure) *</Label>
+              <Label htmlFor="amount">Amount (fee structure, net of concession) *</Label>
               <Input
                 id="amount"
                 type="number"
@@ -505,6 +513,13 @@ export default function FeeCollectionForm({
                     : "0.00"
                 }
               />
+              {selectedStudent && Number(selectedStudent.fee_concession_amount) > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Annual concession ₹{Number(selectedStudent.fee_concession_amount).toLocaleString("en-IN")}{" "}
+                  is spread across all fee lines for the year; this quarter&apos;s education fee share is shown
+                  above.
+                </p>
+              )}
             </div>
           </div>
 
