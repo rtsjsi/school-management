@@ -318,21 +318,54 @@ export default function FeeCollectionForm({
       });
 
       const url = URL.createObjectURL(pdfBlob);
-      const iframe = document.createElement("iframe");
-      iframe.style.display = "none";
-      iframe.src = url;
-      document.body.appendChild(iframe);
-      iframe.onload = () => {
-        try {
-          iframe.contentWindow?.print();
-        } catch {
-          window.open(url, "_blank");
-        }
-        setTimeout(() => {
-          URL.revokeObjectURL(url);
-          document.body.removeChild(iframe);
-        }, 1000);
+      let blobRevoked = false;
+      const revokeBlob = () => {
+        if (blobRevoked) return;
+        blobRevoked = true;
+        URL.revokeObjectURL(url);
       };
+
+      // New tab + print keeps the system print dialog stable (hidden iframe + early revoke was closing it).
+      const printWin = window.open(url, "_blank", "noopener,noreferrer");
+      if (printWin) {
+        let didPrint = false;
+        const runPrint = () => {
+          if (didPrint) return;
+          didPrint = true;
+          try {
+            printWin.focus();
+            printWin.print();
+          } catch {
+            /* ignore */
+          }
+        };
+        printWin.addEventListener("afterprint", () => revokeBlob(), { once: true });
+        printWin.addEventListener("load", runPrint, { once: true });
+        setTimeout(runPrint, 600);
+        setTimeout(() => revokeBlob(), 10 * 60 * 1000);
+      } else {
+        const iframe = document.createElement("iframe");
+        iframe.style.display = "none";
+        iframe.src = url;
+        document.body.appendChild(iframe);
+        iframe.onload = () => {
+          const cw = iframe.contentWindow;
+          const teardown = () => {
+            revokeBlob();
+            iframe.remove();
+          };
+          if (cw) {
+            cw.addEventListener("afterprint", teardown, { once: true });
+            try {
+              cw.focus();
+              cw.print();
+            } catch {
+              teardown();
+            }
+          }
+          setTimeout(teardown, 10 * 60 * 1000);
+        };
+      }
 
       setStudentInput("");
       setForm({
@@ -656,7 +689,7 @@ export default function FeeCollectionForm({
           )}
         </div>
 
-        <div className="flex justify-end pt-1">
+        <div className="flex justify-start pt-1">
           <SubmitButton
             loading={loading}
             loadingLabel="Saving…"

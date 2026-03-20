@@ -217,19 +217,26 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
 
   if (loadingData) {
     return (
-      <div className={cn(shellClass, "p-3")}>
+      <div className={cn(shellClass, "max-w-md w-full p-3")}>
         <p className="text-xs text-muted-foreground">Loading…</p>
       </div>
     );
   }
 
   const formContent = (
-    <form onSubmit={handleSubmit} className="p-3 sm:p-4 space-y-3 overflow-visible">
+    <form onSubmit={handleSubmit} className="p-3 sm:p-4 space-y-3 overflow-visible w-full">
       {error && (
         <p className="text-xs text-destructive bg-destructive/10 px-2 py-1.5 rounded-md">{error}</p>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <div className="flex flex-col gap-3">
+        <AcademicYearSelect
+          value={form.academic_year}
+          onChange={(v) => setForm((p) => ({ ...p, academic_year: v }))}
+          id="academic_year"
+          label="Academic year *"
+          compact
+        />
         <div className="space-y-1">
           <Label htmlFor="standard" className="text-xs font-medium text-muted-foreground">
             Standard *
@@ -258,23 +265,16 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
             />
           )}
         </div>
-        <AcademicYearSelect
-          value={form.academic_year}
-          onChange={(v) => setForm((p) => ({ ...p, academic_year: v }))}
-          id="academic_year"
-          label="Year *"
-          compact
-        />
       </div>
 
       <div className="pt-2 border-t border-border/50 space-y-2">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-xs font-semibold text-foreground">Annual by fee type *</span>
+        <div className="flex flex-col items-start gap-2">
           {availableToAdd.length > 0 && (
             <Button type="button" variant="secondary" size="sm" className="h-8 text-xs px-2" onClick={addRow}>
               + Type
             </Button>
           )}
+          <span className="text-xs font-semibold text-foreground">Annual by fee type *</span>
         </div>
         <p className="text-[11px] leading-snug text-muted-foreground">
           Split equally Q1–Q4 (Q4 rounds).
@@ -283,51 +283,48 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
           {feeRows.map((row) => (
             <div
               key={row.localId}
-              className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2 items-end rounded-md border border-border/60 bg-muted/20 p-2"
+              className="rounded-md border border-border/60 bg-muted/20 p-2 space-y-1.5"
             >
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-muted-foreground">Fee type</Label>
-                <Select value={row.feeType} onValueChange={(v) => setRowFeeType(row.localId, v)}>
-                  <SelectTrigger className="h-9 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {FEE_STRUCTURE_FEE_TYPE_CODES.map((code) => (
-                      <SelectItem
-                        key={code}
-                        value={code}
-                        disabled={feeRows.some((r) => r.localId !== row.localId && r.feeType === code)}
-                      >
-                        {getFeeTypeLabel(code)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-muted-foreground">Annual ₹</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  step={0.01}
-                  placeholder="e.g. 40000"
-                  value={row.annual}
-                  onChange={(e) => setRowAnnual(row.localId, e.target.value)}
-                  className="h-9 text-sm tabular-nums"
-                />
-              </div>
-              <div className="flex sm:justify-end pb-0.5">
-                {feeRows.length > 1 && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 text-xs text-muted-foreground"
-                    onClick={() => removeRow(row.localId)}
-                  >
-                    Remove
-                  </Button>
-                )}
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-[11px] font-medium text-muted-foreground">Fee type & annual ₹</Label>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Select value={row.feeType} onValueChange={(v) => setRowFeeType(row.localId, v)}>
+                    <SelectTrigger className="h-9 text-sm min-w-0 flex-1 basis-[min(100%,11rem)]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {FEE_STRUCTURE_FEE_TYPE_CODES.map((code) => (
+                        <SelectItem
+                          key={code}
+                          value={code}
+                          disabled={feeRows.some((r) => r.localId !== row.localId && r.feeType === code)}
+                        >
+                          {getFeeTypeLabel(code)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    placeholder="₹"
+                    value={row.annual}
+                    onChange={(e) => setRowAnnual(row.localId, e.target.value)}
+                    className="h-9 text-sm tabular-nums w-[7.5rem] shrink-0"
+                  />
+                  {feeRows.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 text-xs text-muted-foreground shrink-0 -ml-1"
+                      onClick={() => removeRow(row.localId)}
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </div>
               </div>
               {(() => {
                 const n = Number.parseFloat(row.annual.trim());
@@ -335,7 +332,7 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
                 const q = splitAnnualFeeAcrossQuarters(n);
                 if (q.length !== 4) return null;
                 return (
-                  <p className="text-[11px] text-muted-foreground sm:col-span-2 leading-snug">
+                  <p className="text-[11px] text-muted-foreground leading-snug pl-0.5">
                     Q1 ₹{q[0].amount.toFixed(2)} · Q2 ₹{q[1].amount.toFixed(2)} · Q3 ₹{q[2].amount.toFixed(2)} · Q4 ₹
                     {q[3].amount.toFixed(2)}
                   </p>
@@ -348,7 +345,7 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
 
       <div className="space-y-1 pt-1 border-t border-border/50">
         <Label htmlFor="total_fees_display" className="text-xs font-medium text-muted-foreground">
-          Total (FRC)
+          Total Annual Fee
         </Label>
         <Input
           id="total_fees_display"
@@ -368,7 +365,7 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
         />
       </div>
 
-      <div className="flex justify-end gap-2 pt-1">
+      <div className="flex justify-start flex-wrap gap-2 pt-1">
         {onCancel && (
           <Button type="button" variant="outline" size="sm" className="h-9 text-sm" onClick={onCancel} disabled={loading}>
             Cancel
@@ -379,11 +376,11 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
           loadingLabel="Saving…"
           className="h-9 px-4 text-sm font-semibold shadow-none"
         >
-          {structureId ? "Save" : "Add structure"}
+          {structureId ? "Save" : "Add fee structure"}
         </SubmitButton>
       </div>
     </form>
   );
 
-  return <div className={shellClass}>{formContent}</div>;
+  return <div className={cn(shellClass, "max-w-md w-full")}>{formContent}</div>;
 }

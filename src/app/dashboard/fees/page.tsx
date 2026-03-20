@@ -37,18 +37,13 @@ export default async function FeesPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="structure" className="space-y-6">
+      <Tabs defaultValue="collection" className="space-y-6">
         <TabsList className="flex flex-nowrap gap-1 w-full">
-          <TabsTrigger value="structure">Fee Structure</TabsTrigger>
           <TabsTrigger value="collection">Fee Collection</TabsTrigger>
           <TabsTrigger value="outstanding">Outstanding</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
+          <TabsTrigger value="structure">Fee Structure</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="structure" className="space-y-6">
-          {canEdit && <FeeStructureForm />}
-          <FeeStructureListWithFilters canEdit={canEdit} />
-        </TabsContent>
 
         <TabsContent value="collection" className="space-y-6">
           {canEdit && students && students.length > 0 && (
@@ -66,6 +61,11 @@ export default async function FeesPage() {
 
         <TabsContent value="reports" className="space-y-6">
           <FeeCollectionReport />
+        </TabsContent>
+
+        <TabsContent value="structure" className="space-y-6">
+          {canEdit && <FeeStructureForm />}
+          <FeeStructureListWithFilters canEdit={canEdit} />
         </TabsContent>
       </Tabs>
     </div>
