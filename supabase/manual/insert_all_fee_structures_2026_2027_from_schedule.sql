@@ -1,5 +1,5 @@
 -- Fee structures for academic year 2026-2027 — from printed "Fees Structure- 2026:27"
--- Sets total_fees (FRC) and education_fee per quarter (Q1–Q4).
+-- Sets total_fees (FRC) and education_fee per quarter (Q1–Q4). Handwritten notes on sheet are ignored.
 --
 -- DB standard names must match `standards.name` (Nursery, Junior KG (LKG), I, II, … XII).
 -- XI/XII use stream "Science" on the sheet; mapped to standards XI / XII.
