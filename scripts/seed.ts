@@ -283,6 +283,7 @@ async function seedFeeStructures() {
     const annual = 20000 + randomInt(0, 3000);
     const items = splitAnnualFeeAcrossQuarters(annual).map((i) => ({
       fee_structure_id: fs.id,
+      fee_type: "education_fee",
       quarter: i.quarter,
       amount: i.amount,
     }));
@@ -297,6 +298,7 @@ async function seedFeeStructures() {
     const annual = 35000 + randomInt(0, 4000);
     const items = splitAnnualFeeAcrossQuarters(annual).map((i) => ({
       fee_structure_id: fs2.id,
+      fee_type: "education_fee",
       quarter: i.quarter,
       amount: i.amount,
     }));
@@ -539,7 +541,7 @@ async function seedFeeCollections() {
   const ay = `${new Date().getFullYear()}-${(new Date().getFullYear() + 1).toString().slice(-2)}`;
   const { data: structures } = await supabase
     .from("fee_structures")
-    .select("id, grade_from, grade_to, fee_structure_items(quarter, amount)")
+    .select("id, grade_from, grade_to, fee_structure_items(fee_type, quarter, amount)")
     .eq("academic_year", ay);
   const { data: students } = await supabase.from("students").select("id, standard, is_rte_quota").eq("status", "active");
   const nonRte = (students ?? []).filter((s) => !(s as { is_rte_quota?: boolean }).is_rte_quota);

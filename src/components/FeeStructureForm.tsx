@@ -12,12 +12,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { AcademicYearSelect } from "@/components/AcademicYearSelect";
 import { Button } from "@/components/ui/button";
 import { splitAnnualFeeAcrossQuarters } from "@/lib/fee-annual-split";
+import { FEE_STRUCTURE_FEE_TYPE_CODES } from "@/lib/fee-types";
+import { getFeeTypeLabel } from "@/lib/utils";
+
+type FeeRow = { localId: string; feeType: string; annual: string };
 
 type FeeStructureFormProps = {
   structureId?: string;
   onSuccess?: () => void;
   onCancel?: () => void;
 };
+
+function nextLocalId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
 
 export default function FeeStructureForm({ structureId, onSuccess, onCancel }: FeeStructureFormProps) {
   const router = useRouter();
@@ -27,8 +35,11 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
   const [form, setForm] = useState({
     standard: "",
     academic_year: "",
-    annual_fee: "",
   });
+  const [feeRows, setFeeRows] = useState<FeeRow[]>([
+    { localId: nextLocalId(), feeType: FEE_STRUCTURE_FEE_TYPE_CODES[0], annual: "" },
+  ]);
+
   const [classes, setClasses] = useState<{ id: string; name: string; sort_order: number }[]>([]);
 
   useEffect(() => {
@@ -52,18 +63,59 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
       }
       const { data: items } = await supabase
         .from("fee_structure_items")
-        .select("quarter, amount")
+        .select("fee_type, quarter, amount")
         .eq("fee_structure_id", structureId);
-      const annualSum = (items ?? []).reduce((s, row) => s + Number((row as { amount?: number }).amount ?? 0), 0);
+      const byType: Record<string, number> = {};
+      for (const row of items ?? []) {
+        const r = row as { fee_type?: string; amount?: number };
+        const ft = r.fee_type ?? "education_fee";
+        byType[ft] = (byType[ft] ?? 0) + Number(r.amount ?? 0);
+      }
+      const entries = Object.entries(byType);
+      const rows: FeeRow[] =
+        entries.length > 0
+          ? entries.map(([feeType, sum]) => ({
+              localId: nextLocalId(),
+              feeType,
+              annual: sum > 0 ? String(Math.round(sum * 100) / 100) : "",
+            }))
+          : [{ localId: nextLocalId(), feeType: FEE_STRUCTURE_FEE_TYPE_CODES[0], annual: "" }];
       setForm({
         standard: structure.standard_id,
         academic_year: structure.academic_year,
-        annual_fee: annualSum > 0 ? String(Math.round(annualSum * 100) / 100) : "",
       });
+      setFeeRows(rows);
       setLoadingData(false);
     };
     load();
   }, [structureId]);
+
+  const usedFeeTypes = new Set(feeRows.map((r) => r.feeType));
+  const availableToAdd = FEE_STRUCTURE_FEE_TYPE_CODES.filter((c) => !usedFeeTypes.has(c));
+
+  const setRowAnnual = (localId: string, annual: string) => {
+    setFeeRows((prev) => prev.map((r) => (r.localId === localId ? { ...r, annual } : r)));
+  };
+
+  const setRowFeeType = (localId: string, feeType: string) => {
+    if (feeRows.some((r) => r.localId !== localId && r.feeType === feeType)) return;
+    setFeeRows((prev) => prev.map((r) => (r.localId === localId ? { ...r, feeType } : r)));
+  };
+
+  const addRow = () => {
+    const next = availableToAdd[0];
+    if (!next) return;
+    setFeeRows((prev) => [...prev, { localId: nextLocalId(), feeType: next, annual: "" }]);
+  };
+
+  const removeRow = (localId: string) => {
+    setFeeRows((prev) => (prev.length <= 1 ? prev : prev.filter((r) => r.localId !== localId)));
+  };
+
+  const grandTotalAnnual = feeRows.reduce((s, r) => {
+    const n = Number.parseFloat(r.annual.trim());
+    return s + (Number.isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : 0);
+  }, 0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,24 +125,31 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
       return;
     }
 
-    const annualRaw = form.annual_fee.trim();
-    if (!annualRaw) {
-      setError("Annual fee is required (it will be split equally across Q1–Q4).");
-      return;
+    const items: { fee_type: string; quarter: number; amount: number }[] = [];
+    for (const row of feeRows) {
+      const raw = row.annual.trim();
+      if (!raw) continue;
+      const annualNum = Number.parseFloat(raw);
+      if (!Number.isFinite(annualNum) || annualNum <= 0) {
+        setError(`Enter a valid positive annual amount for ${getFeeTypeLabel(row.feeType)}, or clear the row.`);
+        return;
+      }
+      const quarters = splitAnnualFeeAcrossQuarters(annualNum);
+      if (quarters.length !== 4) {
+        setError("Could not compute quarter amounts.");
+        return;
+      }
+      for (const q of quarters) {
+        items.push({ fee_type: row.feeType, quarter: q.quarter, amount: q.amount });
+      }
     }
-    const annualNum = Number.parseFloat(annualRaw);
-    if (!Number.isFinite(annualNum) || annualNum <= 0) {
-      setError("Annual fee must be a positive number.");
+
+    if (items.length === 0) {
+      setError("Add at least one fee type with a positive annual amount.");
       return;
     }
 
-    const items = splitAnnualFeeAcrossQuarters(annualNum);
-    if (items.length !== 4) {
-      setError("Could not compute quarter amounts.");
-      return;
-    }
-
-    const totalFeesValue = Math.round(annualNum * 100) / 100;
+    const totalFeesValue = Math.round(grandTotalAnnual * 100) / 100;
 
     setLoading(true);
     try {
@@ -133,6 +192,7 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
 
       const insertItems = items.map((i) => ({
         fee_structure_id: structure.id,
+        fee_type: i.fee_type,
         quarter: i.quarter,
         amount: i.amount,
       }));
@@ -143,7 +203,8 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
         return;
       }
 
-      setForm({ standard: "", academic_year: "", annual_fee: "" });
+      setForm({ standard: "", academic_year: "" });
+      setFeeRows([{ localId: nextLocalId(), feeType: FEE_STRUCTURE_FEE_TYPE_CODES[0], annual: "" }]);
       router.refresh();
     } catch {
       setError("Something went wrong.");
@@ -153,12 +214,6 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
   };
 
   const isEdit = !!structureId;
-
-  const preview = (() => {
-    const n = Number.parseFloat(form.annual_fee.trim());
-    if (!Number.isFinite(n) || n <= 0) return null;
-    return splitAnnualFeeAcrossQuarters(n);
-  })();
 
   if (loadingData) {
     return (
@@ -204,49 +259,98 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
           id="academic_year"
           label="Academic Year *"
         />
-        <div className="space-y-2 sm:col-span-2">
-          <Label htmlFor="annual_fee">Annual fee (total for year) *</Label>
-          <Input
-            id="annual_fee"
-            type="number"
-            min={0.01}
-            step={0.01}
-            placeholder="e.g. 40000"
-            value={form.annual_fee}
-            onChange={(e) => setForm((p) => ({ ...p, annual_fee: e.target.value }))}
-            required
-          />
-          <p className="text-xs text-muted-foreground">
-            Saved as four equal quarterly amounts (last quarter adjusts for rounding).
-          </p>
-          {preview && preview.length === 4 && (
-            <p className="text-xs text-muted-foreground">
-              Q1: ₹{preview[0].amount.toFixed(2)} · Q2: ₹{preview[1].amount.toFixed(2)} · Q3: ₹{preview[2].amount.toFixed(2)}{" "}
-              · Q4: ₹{preview[3].amount.toFixed(2)}
-            </p>
+      </div>
+
+      <div className="pt-2 border-t space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <h4 className="text-sm font-semibold">Annual fee by fee type *</h4>
+          {availableToAdd.length > 0 && (
+            <Button type="button" variant="secondary" size="sm" onClick={addRow}>
+              Add fee type
+            </Button>
           )}
         </div>
-        <div className="space-y-2 sm:col-span-2">
-          <Label htmlFor="total_fees_display">Total fees (FRC)</Label>
-          <Input
-            id="total_fees_display"
-            readOnly
-            tabIndex={-1}
-            className="bg-muted tabular-nums"
-            value={
-              (() => {
-                const n = Number.parseFloat(form.annual_fee.trim());
-                if (!Number.isFinite(n) || n <= 0) return "";
-                return `₹${new Intl.NumberFormat("en-IN", {
+        <p className="text-xs text-muted-foreground">
+          Each amount is split equally across Q1–Q4 (last quarter adjusts for rounding).
+        </p>
+        <div className="space-y-3">
+          {feeRows.map((row) => (
+            <div
+              key={row.localId}
+              className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 items-end border rounded-md p-3"
+            >
+              <div className="space-y-1.5">
+                <Label>Fee type</Label>
+                <Select value={row.feeType} onValueChange={(v) => setRowFeeType(row.localId, v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FEE_STRUCTURE_FEE_TYPE_CODES.map((code) => (
+                      <SelectItem
+                        key={code}
+                        value={code}
+                        disabled={feeRows.some((r) => r.localId !== row.localId && r.feeType === code)}
+                      >
+                        {getFeeTypeLabel(code)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Annual amount (₹)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  placeholder="e.g. 40000"
+                  value={row.annual}
+                  onChange={(e) => setRowAnnual(row.localId, e.target.value)}
+                />
+              </div>
+              <div className="flex sm:justify-end">
+                {feeRows.length > 1 && (
+                  <Button type="button" variant="ghost" size="sm" onClick={() => removeRow(row.localId)}>
+                    Remove
+                  </Button>
+                )}
+              </div>
+              {(() => {
+                const n = Number.parseFloat(row.annual.trim());
+                if (!Number.isFinite(n) || n <= 0) return null;
+                const q = splitAnnualFeeAcrossQuarters(n);
+                if (q.length !== 4) return null;
+                return (
+                  <p className="text-xs text-muted-foreground sm:col-span-2">
+                    Quarters: Q1 ₹{q[0].amount.toFixed(2)} · Q2 ₹{q[1].amount.toFixed(2)} · Q3 ₹{q[2].amount.toFixed(2)} · Q4 ₹
+                    {q[3].amount.toFixed(2)}
+                  </p>
+                );
+              })()}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="total_fees_display">Total fees (FRC)</Label>
+        <Input
+          id="total_fees_display"
+          readOnly
+          tabIndex={-1}
+          className="bg-muted tabular-nums"
+          value={
+            grandTotalAnnual > 0
+              ? `₹${new Intl.NumberFormat("en-IN", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
-                }).format(Math.round(n * 100) / 100)}`;
-              })()
-            }
-            placeholder="Enter annual fee above"
-          />
-          <p className="text-xs text-muted-foreground">Matches annual fee total (saved automatically).</p>
-        </div>
+                }).format(grandTotalAnnual)}`
+              : ""
+          }
+          placeholder="Sum of annual amounts above"
+        />
+        <p className="text-xs text-muted-foreground">Saved automatically as the sum of all fee types.</p>
       </div>
 
       <div className="flex gap-2 justify-start">

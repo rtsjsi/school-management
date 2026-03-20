@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     let outstandingAfterPayment: number | undefined;
     const { data: structures } = await supabase
       .from("fee_structures")
-      .select("standards(name), fee_structure_items(quarter, amount)")
+      .select("standards(name), fee_structure_items(fee_type, quarter, amount)")
       .eq("academic_year", c.academic_year);
     const structure = (structures ?? []).find((st: { standards?: { name?: string } | { name?: string }[] | null }) => {
       const std = Array.isArray(st.standards)
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       return std && std === (student?.standard ?? "");
     });
     if (structure) {
-      const items = (structure.fee_structure_items as { quarter: number; amount: number }[]) ?? [];
+      const items = (structure.fee_structure_items as { fee_type: string; quarter: number; amount: number }[]) ?? [];
       const totalDues = annualNetFeeLiability(items, student?.fee_concession_amount ?? null);
       const { data: paidRows } = await supabase
         .from("fee_collections")

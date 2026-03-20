@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       .select(`
         id,
         standards(name),
-        fee_structure_items(quarter, amount)
+        fee_structure_items(fee_type, quarter, amount)
       `)
       .eq("academic_year", ay);
 
@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
       });
       if (!structure) continue;
 
-      const items = (structure.fee_structure_items as { quarter: number; amount: number }[]) ?? [];
+      const items = (structure.fee_structure_items as { fee_type: string; quarter: number; amount: number }[]) ?? [];
       const lines = linesWithNetAfterConcession(
         items,
         (s as { fee_concession_amount?: number | null }).fee_concession_amount
