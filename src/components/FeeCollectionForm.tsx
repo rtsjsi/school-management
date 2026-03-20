@@ -59,7 +59,6 @@ export default function FeeCollectionForm({
     cheque_date: "",
     online_transaction_id: "",
     online_transaction_ref: "",
-    notes: "",
     collection_date: new Date().toISOString().slice(0, 10),
   });
 
@@ -232,7 +231,6 @@ export default function FeeCollectionForm({
           online_transaction_id: form.payment_mode === "online" ? form.online_transaction_id.trim() || null : null,
           online_transaction_ref: form.payment_mode === "online" ? form.online_transaction_ref.trim() || null : null,
           receipt_number: receiptNumber,
-          notes: form.notes.trim() || null,
           collected_at: collectedAt,
           collected_by: receivedBy ?? null,
           enrollment_id: enrollmentId,
@@ -334,7 +332,6 @@ export default function FeeCollectionForm({
         cheque_date: "",
         online_transaction_id: "",
         online_transaction_ref: "",
-        notes: "",
         collection_date: new Date().toISOString().slice(0, 10),
       });
       fetch("/api/receipt-number")
@@ -620,16 +617,6 @@ export default function FeeCollectionForm({
               </div>
             </div>
           )}
-
-          <div className="space-y-1.5">
-            <Label htmlFor="notes">Notes</Label>
-            <Input
-              id="notes"
-              value={form.notes}
-              onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
-              placeholder="Optional"
-            />
-          </div>
 
           <div className="flex justify-start">
             <SubmitButton loading={loading} loadingLabel="Saving & printing receipt…">
