@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { SubmitButton } from "@/components/ui/SubmitButton";
@@ -8,17 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
 import { cn } from "@/lib/utils";
-import { Check, ChevronsUpDown } from "lucide-react";
 import { generateReceiptPDF, amountInWords } from "@/lib/receipt-pdf";
 import { AcademicYearSelect } from "@/components/AcademicYearSelect";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
@@ -28,6 +18,7 @@ import { annualNetFeeLiability, linesWithNetAfterConcession } from "@/lib/fee-co
 const PAYMENT_MODES = ["cash", "cheque", "online"] as const;
 /** Stored on `fee_collections` / receipt label; amount field sums all fee types for the quarter. */
 const COLLECTION_FEE_TYPE = "education_fee";
+
 const DEFAULT_POLICY_NOTES = [
   "(1) Fees will not be refunded in any case.",
   "(2) Fees are not transferable.",
@@ -43,6 +34,14 @@ type StudentOption = {
   student_id?: string;
   fee_concession_amount?: number | null;
 };
+
+function formatStudentDisplay(s: StudentOption): string {
+  const cls = s.standard
+    ? ` (${s.standard}${s.division ? "-" + s.division : ""})`
+    : "";
+  const gr = s.student_id ? ` · ${s.student_id}` : "";
+  return `${s.full_name}${cls}${gr}`;
+}
 
 export default function FeeCollectionForm({
   students,
@@ -84,7 +83,9 @@ export default function FeeCollectionForm({
 
   const [classFilter, setClassFilter] = useState("all");
   const [divisionFilter, setDivisionFilter] = useState("all");
-  const [studentPickerOpen, setStudentPickerOpen] = useState(false);
+  const [studentInput, setStudentInput] = useState("");
+  const [studentSuggestionsOpen, setStudentSuggestionsOpen] = useState(false);
+  const studentComboRef = useRef<HTMLDivElement>(null);
 
   const filteredStudents = useMemo(() => {
     return students.filter((s) => {
@@ -93,6 +94,27 @@ export default function FeeCollectionForm({
       return true;
     });
   }, [students, classFilter, divisionFilter]);
+
+  const studentSuggestions = useMemo(() => {
+    const q = studentInput.trim().toLowerCase();
+    const base = filteredStudents;
+    if (!q) return base.slice(0, 25);
+    return base
+      .filter((s) => {
+        const blob = [s.full_name, s.student_id, s.standard, s.division].filter(Boolean).join(" ").toLowerCase();
+        return blob.includes(q);
+      })
+      .slice(0, 50);
+  }, [filteredStudents, studentInput]);
+
+  useEffect(() => {
+    const onDocMouseDown = (e: MouseEvent) => {
+      if (studentComboRef.current?.contains(e.target as Node)) return;
+      setStudentSuggestionsOpen(false);
+    };
+    document.addEventListener("mousedown", onDocMouseDown);
+    return () => document.removeEventListener("mousedown", onDocMouseDown);
+  }, []);
 
   useEffect(() => {
     fetch("/api/receipt-number")
@@ -312,6 +334,7 @@ export default function FeeCollectionForm({
         }, 1000);
       };
 
+      setStudentInput("");
       setForm({
         student_id: "",
         amount: "",
@@ -352,33 +375,33 @@ export default function FeeCollectionForm({
 
   return (
     <div className="rounded-lg border border-border/60 bg-background/80 shadow-sm">
-      <form onSubmit={handleSubmit} className="p-3 sm:p-4 space-y-3">
+      <form onSubmit={handleSubmit} className="p-3 sm:p-4 space-y-3 overflow-visible">
         {error && (
           <p className="text-xs text-destructive bg-destructive/10 px-2 py-1.5 rounded-md">{error}</p>
         )}
 
-        {/* Meta: receipt + date — one tight row */}
-        <div className="flex flex-wrap gap-2 items-end">
-          <div className="space-y-1 w-[8.5rem] shrink-0">
-            <Label className="text-xs font-medium text-muted-foreground">Receipt</Label>
-            <Input
-              value={receiptNumber}
-              readOnly
-              className="h-9 text-xs font-mono bg-muted/80 border-transparent"
-              tabIndex={-1}
-            />
-          </div>
-          <div className="space-y-1 min-w-[9.5rem]">
+        {/* Collection date (left) · Receipt no. (right, full number) */}
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="space-y-1 shrink-0">
             <Label htmlFor="collection_date" className="text-xs font-medium text-muted-foreground">
-              Date *
+              Collection Date *
             </Label>
             <Input
               id="collection_date"
               type="date"
               value={form.collection_date}
               onChange={(e) => setForm((p) => ({ ...p, collection_date: e.target.value }))}
-              className="h-9 text-sm"
+              className="h-9 text-sm w-[11rem]"
             />
+          </div>
+          <div className="space-y-1 min-w-0 max-w-full sm:max-w-[min(100%,24rem)] text-right ml-auto">
+            <Label className="text-xs font-medium text-muted-foreground block">Receipt No.</Label>
+            <p
+              className="font-mono text-sm font-medium leading-snug break-all text-foreground min-h-[2.25rem] flex items-center justify-end sm:justify-end"
+              title={receiptNumber || undefined}
+            >
+              {receiptNumber || "—"}
+            </p>
           </div>
         </div>
 
@@ -416,75 +439,68 @@ export default function FeeCollectionForm({
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1 col-span-2 sm:col-span-4">
-            <Label htmlFor="student" className="text-xs font-medium text-muted-foreground">
+          <div className="space-y-1 col-span-2 sm:col-span-4 relative" ref={studentComboRef}>
+            <Label htmlFor="student_search" className="text-xs font-medium text-muted-foreground">
               Student *
             </Label>
-            <Popover open={studentPickerOpen} onOpenChange={setStudentPickerOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  id="student"
-                  type="button"
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={studentPickerOpen}
-                  className="w-full justify-between font-normal h-9 px-2.5 text-sm"
-                >
-                  <span className="truncate text-left">
-                    {selectedStudent
-                      ? `${selectedStudent.full_name}${
-                          selectedStudent.standard
-                            ? ` (${selectedStudent.standard}${
-                                selectedStudent.division ? "-" + selectedStudent.division : ""
-                              })`
-                            : ""
-                        }`
-                      : "Pick student…"}
-                  </span>
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-45" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="p-0 w-[min(100vw-2rem,26rem)]" align="start">
-                <Command>
-                  <CommandInput placeholder="Search name, GR no…" className="h-9" />
-                  <CommandList>
-                    <CommandEmpty className="text-xs py-3">No match.</CommandEmpty>
-                    <CommandGroup>
-                      {filteredStudents.map((s) => {
-                        const searchBlob = [s.full_name, s.student_id, s.standard, s.division]
-                          .filter(Boolean)
-                          .join(" ");
-                        return (
-                          <CommandItem
-                            key={s.id}
-                            value={searchBlob}
-                            className="text-sm"
-                            onSelect={() => {
-                              setForm((p) => ({ ...p, student_id: s.id }));
-                              setStudentPickerOpen(false);
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4 shrink-0",
-                                form.student_id === s.id ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            <span className="truncate">
-                              {s.full_name}
-                              {s.standard
-                                ? ` (${s.standard}${s.division ? "-" + s.division : ""})`
-                                : ""}
-                              {s.student_id ? ` · ${s.student_id}` : ""}
-                            </span>
-                          </CommandItem>
-                        );
-                      })}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+            <Input
+              id="student_search"
+              type="text"
+              autoComplete="off"
+              role="combobox"
+              aria-expanded={studentSuggestionsOpen}
+              aria-controls="student-suggestions-list"
+              aria-autocomplete="list"
+              placeholder="Type name, GR no., class…"
+              value={studentInput}
+              onChange={(e) => {
+                const v = e.target.value;
+                setStudentInput(v);
+                setStudentSuggestionsOpen(true);
+                if (form.student_id) {
+                  const cur = students.find((x) => x.id === form.student_id);
+                  if (cur && formatStudentDisplay(cur) !== v) {
+                    setForm((p) => ({ ...p, student_id: "" }));
+                  }
+                }
+              }}
+              onFocus={() => setStudentSuggestionsOpen(true)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") setStudentSuggestionsOpen(false);
+              }}
+              className="h-9 text-sm"
+            />
+            {studentSuggestionsOpen && (
+              <ul
+                id="student-suggestions-list"
+                role="listbox"
+                className="absolute left-0 right-0 top-full z-50 mt-0.5 max-h-52 overflow-auto rounded-md border bg-popover text-popover-foreground shadow-md py-1"
+              >
+                {studentSuggestions.length === 0 ? (
+                  <li className="px-2 py-2 text-xs text-muted-foreground text-center">No match.</li>
+                ) : (
+                  studentSuggestions.map((s) => (
+                    <li key={s.id} role="option" aria-selected={form.student_id === s.id}>
+                      <button
+                        type="button"
+                        className={cn(
+                          "w-full text-left px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground",
+                          form.student_id === s.id && "bg-accent/60"
+                        )}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          setForm((p) => ({ ...p, student_id: s.id }));
+                          setStudentInput(formatStudentDisplay(s));
+                          setStudentSuggestionsOpen(false);
+                        }}
+                      >
+                        <span className="block truncate">{formatStudentDisplay(s)}</span>
+                      </button>
+                    </li>
+                  ))
+                )}
+              </ul>
+            )}
           </div>
         </div>
 
@@ -568,18 +584,6 @@ export default function FeeCollectionForm({
           {form.payment_mode === "cheque" && (
             <>
               <div className="space-y-1">
-                <Label htmlFor="cheque_number" className="text-xs font-medium text-muted-foreground">
-                  Chq # *
-                </Label>
-                <Input
-                  id="cheque_number"
-                  value={form.cheque_number}
-                  onChange={(e) => setForm((p) => ({ ...p, cheque_number: e.target.value }))}
-                  placeholder="No."
-                  className="h-9 text-sm"
-                />
-              </div>
-              <div className="space-y-1">
                 <Label htmlFor="cheque_bank" className="text-xs font-medium text-muted-foreground">
                   Bank
                 </Label>
@@ -588,6 +592,18 @@ export default function FeeCollectionForm({
                   value={form.cheque_bank}
                   onChange={(e) => setForm((p) => ({ ...p, cheque_bank: e.target.value }))}
                   placeholder="Bank"
+                  className="h-9 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="cheque_number" className="text-xs font-medium text-muted-foreground">
+                  Chq # *
+                </Label>
+                <Input
+                  id="cheque_number"
+                  value={form.cheque_number}
+                  onChange={(e) => setForm((p) => ({ ...p, cheque_number: e.target.value }))}
+                  placeholder="No."
                   className="h-9 text-sm"
                 />
               </div>
