@@ -7,7 +7,19 @@ import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { Check, ChevronsUpDown } from "lucide-react";
 import { generateReceiptPDF, amountInWords } from "@/lib/receipt-pdf";
 import { AcademicYearSelect } from "@/components/AcademicYearSelect";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
@@ -64,6 +76,7 @@ export default function FeeCollectionForm({
 
   const [classFilter, setClassFilter] = useState("all");
   const [divisionFilter, setDivisionFilter] = useState("all");
+  const [studentPickerOpen, setStudentPickerOpen] = useState(false);
 
   const filteredStudents = useMemo(() => {
     return students.filter((s) => {
@@ -407,22 +420,70 @@ export default function FeeCollectionForm({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="student">Student *</Label>
-              <Select
-                value={form.student_id}
-                onValueChange={(v) => setForm((p) => ({ ...p, student_id: v }))}
-              >
-                <SelectTrigger id="student">
-                  <SelectValue placeholder="Select student" />
-                </SelectTrigger>
-                <SelectContent>
-                  {filteredStudents.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.full_name}{" "}
-                      {s.standard ? `(${s.standard}${s.division ? "-" + s.division : ""})` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={studentPickerOpen} onOpenChange={setStudentPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="student"
+                    type="button"
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={studentPickerOpen}
+                    className="w-full justify-between font-normal h-10 px-3"
+                  >
+                    <span className="truncate text-left">
+                      {selectedStudent
+                        ? `${selectedStudent.full_name}${
+                            selectedStudent.standard
+                              ? ` (${selectedStudent.standard}${
+                                  selectedStudent.division ? "-" + selectedStudent.division : ""
+                                })`
+                              : ""
+                          }`
+                        : "Search or select student…"}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="p-0 w-[min(100vw-2rem,28rem)]" align="start">
+                  <Command>
+                    <CommandInput placeholder="Type name, GR no., standard…" />
+                    <CommandList>
+                      <CommandEmpty>No student matches filters.</CommandEmpty>
+                      <CommandGroup>
+                        {filteredStudents.map((s) => {
+                          const searchBlob = [s.full_name, s.student_id, s.standard, s.division]
+                            .filter(Boolean)
+                            .join(" ");
+                          return (
+                            <CommandItem
+                              key={s.id}
+                              value={searchBlob}
+                              onSelect={() => {
+                                setForm((p) => ({ ...p, student_id: s.id }));
+                                setStudentPickerOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4 shrink-0",
+                                  form.student_id === s.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <span className="truncate">
+                                {s.full_name}
+                                {s.standard
+                                  ? ` (${s.standard}${s.division ? "-" + s.division : ""})`
+                                  : ""}
+                                {s.student_id ? ` · ${s.student_id}` : ""}
+                              </span>
+                            </CommandItem>
+                          );
+                        })}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
