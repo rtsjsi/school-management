@@ -32,7 +32,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil } from "lucide-react";
 
 type StandardRow = { id: string; name: string; section: string };
 type SubjectRow = { id: string; name: string; evaluation_type: string };
@@ -95,18 +95,6 @@ export function SubjectMaster() {
       setAddError("Something went wrong.");
     } finally {
       setAddLoading(false);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this subject? Exam marks for it will be removed.")) return;
-    const { deleteSubject } = await import("@/app/dashboard/classes/actions");
-    const result = await deleteSubject(id);
-    if (result.ok) {
-      loadSubjects();
-      router.refresh();
-    } else {
-      alert(result.error);
     }
   };
 
@@ -198,7 +186,7 @@ export function SubjectMaster() {
                 </TableHeader>
                 <TableBody>
                   {subjects.map((s) => (
-                    <SubjectRow key={s.id} subject={s} onDelete={handleDelete} onSaved={loadSubjects} />
+                    <SubjectRow key={s.id} subject={s} onSaved={loadSubjects} />
                   ))}
                 </TableBody>
               </Table>
@@ -220,11 +208,9 @@ export function SubjectMaster() {
 
 function SubjectRow({
   subject,
-  onDelete,
   onSaved,
 }: {
   subject: SubjectRow;
-  onDelete: (id: string) => void;
   onSaved: () => void;
 }) {
   const [editing, setEditing] = useState(false);
@@ -285,14 +271,9 @@ function SubjectRow({
         <span className="text-sm">{subject.evaluation_type === "grade" ? "Grade based" : "Mark based"}</span>
       </TableCell>
       <TableCell>
-        <div className="flex gap-1">
-          <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>
-            <Pencil className="h-3 w-3" />
-          </Button>
-          <Button size="sm" variant="ghost" className="text-destructive" onClick={() => onDelete(subject.id)}>
-            <Trash2 className="h-3 w-3" />
-          </Button>
-        </div>
+        <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>
+          <Pencil className="h-3 w-3" />
+        </Button>
       </TableCell>
     </TableRow>
   );

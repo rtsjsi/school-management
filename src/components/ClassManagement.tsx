@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { createStandard, updateStandard, deleteStandard, createDivision, deleteDivision } from "@/app/dashboard/classes/actions";
+import { createStandard, updateStandard, createDivision } from "@/app/dashboard/classes/actions";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -32,7 +32,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, ChevronDown, ChevronRight, Download } from "lucide-react";
+import { Plus, Pencil, ChevronDown, ChevronRight, Download } from "lucide-react";
 
 type DivisionRow = { id: string; name: string; sort_order: number };
 
@@ -196,17 +196,6 @@ export function ClassManagement() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this standard? Subjects and student references may be affected.")) return;
-    const result = await deleteStandard(id);
-    if (result.ok) {
-      loadStandards();
-      router.refresh();
-    } else {
-      alert(result.error);
-    }
-  };
-
   return (
     <Card>
       <CardContent className="space-y-4 pt-6">
@@ -314,7 +303,6 @@ export function ClassManagement() {
                   <StandardRow
                     key={c.id}
                     row={c}
-                    onDelete={handleDelete}
                     onSaved={() => {
                       loadStandards();
                       router.refresh();
@@ -334,11 +322,9 @@ export function ClassManagement() {
 
 function StandardRow({
   row,
-  onDelete,
   onSaved,
 }: {
   row: StandardRow;
-  onDelete: (id: string) => void;
   onSaved: () => void;
 }) {
   const [editing, setEditing] = useState(false);
@@ -384,17 +370,6 @@ function StandardRow({
     if (result.ok) {
       setAddDivOpen(false);
       setAddDivName("");
-      loadDivisions();
-      onSaved();
-    } else {
-      alert(result.error);
-    }
-  };
-
-  const handleDeleteDivision = async (id: string) => {
-    if (!confirm("Delete this division?")) return;
-    const result = await deleteDivision(id);
-    if (result.ok) {
       loadDivisions();
       onSaved();
     } else {
@@ -469,14 +444,9 @@ function StandardRow({
           )}
         </TableCell>
         <TableCell>
-          <div className="flex gap-1">
-            <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>
-              <Pencil className="h-3 w-3" />
-            </Button>
-            <Button size="sm" variant="ghost" className="text-destructive" onClick={() => onDelete(row.id)}>
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          </div>
+          <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>
+            <Pencil className="h-3 w-3" />
+          </Button>
         </TableCell>
       </TableRow>
       {expanded && (
@@ -527,14 +497,6 @@ function StandardRow({
                       className="inline-flex items-center gap-1 rounded-md bg-background border px-2 py-1 text-sm"
                     >
                       {d.name}
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-4 w-4 text-destructive hover:text-destructive"
-                        onClick={() => handleDeleteDivision(d.id)}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
                     </span>
                   ))}
                 </div>
