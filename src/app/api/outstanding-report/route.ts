@@ -138,31 +138,13 @@ export async function GET(request: NextRequest) {
       a.full_name.localeCompare(b.full_name) || a.quarter - b.quarter || a.standard.localeCompare(b.standard)
     );
 
-    const totalOutstanding = defaulters.reduce((sum, d) => sum + d.outstanding, 0);
-    const studentCount = new Set(defaulters.map((d) => d.student_id)).size;
-
-    const byStandard: Record<string, { count: number; total: number }> = {};
-    for (const d of defaulters) {
-      const g = d.standard || "—";
-      if (!byStandard[g]) byStandard[g] = { count: 0, total: 0 };
-      byStandard[g].count += 1;
-      byStandard[g].total += d.outstanding;
-    }
-
     return NextResponse.json({
       data: defaulters,
-      summary: {
-        totalOutstanding,
-        defaulterCount: defaulters.length,
-        studentCount,
-        byStandard: Object.entries(byStandard).map(([g, v]) => ({ standard: g, count: v.count, total: v.total })),
-      },
       academicYear: ay,
     });
   } catch {
     return NextResponse.json({
       data: [],
-      summary: { totalOutstanding: 0, defaulterCount: 0, studentCount: 0, byStandard: [] },
       academicYear: "",
     });
   }

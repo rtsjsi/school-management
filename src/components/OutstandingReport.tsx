@@ -21,7 +21,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AlertCircle } from "lucide-react";
-import { fetchStandards, fetchAcademicYears } from "@/lib/lov";
+import { AcademicYearSelect } from "@/components/AcademicYearSelect";
+import { fetchStandards } from "@/lib/lov";
 
 const QUARTERS = [1, 2, 3, 4] as const;
 
@@ -40,27 +41,14 @@ type OutstandingRow = {
   outstanding: number;
 };
 
-type Summary = {
-  totalOutstanding: number;
-  defaulterCount: number;
-  studentCount: number;
-  byStandard: { standard: string; count: number; total: number }[];
-};
-
 export default function OutstandingReport() {
-  const currentYear = new Date().getFullYear();
-  const defaultAy = `${currentYear}-${(currentYear + 1).toString().slice(-2)}`;
-
   const [academicYear, setAcademicYear] = useState("");
   const [quarter, setQuarter] = useState("");
   const [standardFilter, setStandardFilter] = useState("");
   const [studentId, setStudentId] = useState("");
   const [students, setStudents] = useState<{ id: string; full_name: string; standard?: string }[]>([]);
   const [standards, setStandards] = useState<{ id: string; name: string }[]>([]);
-  const [years, setYears] = useState<{ id: string; name: string }[]>([]);
   const [data, setData] = useState<OutstandingRow[] | null>(null);
-  const [summary, setSummary] = useState<Summary | null>(null);
-  const [academicYearUsed, setAcademicYearUsed] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -72,19 +60,6 @@ export default function OutstandingReport() {
 
   useEffect(() => {
     fetchStandards().then(setStandards).catch(() => setStandards([]));
-  }, []);
-
-  useEffect(() => {
-    fetchAcademicYears()
-      .then((y) => {
-        const list = y.map(({ id, name }) => ({ id, name }));
-        if (list.length === 0) list.push({ id: "current", name: defaultAy });
-        else if (!list.some((x) => x.name === defaultAy)) list.unshift({ id: "current", name: defaultAy });
-        setYears(list);
-        const activeName = y.find((x) => x.status === "active")?.name ?? list[0]?.name ?? defaultAy;
-        setAcademicYear((prev) => prev || activeName);
-      })
-      .catch(() => setYears([{ id: "current", name: defaultAy }]));
   }, []);
 
   const fetchReport = () => {
@@ -99,13 +74,9 @@ export default function OutstandingReport() {
       .then((r) => r.json())
       .then((d) => {
         setData(d.data ?? []);
-        setSummary(d.summary ?? null);
-        setAcademicYearUsed(d.academicYear ?? academicYear);
       })
       .catch(() => {
         setData([]);
-        setSummary(null);
-        setAcademicYearUsed("");
       })
       .finally(() => setLoading(false));
   };
@@ -124,28 +95,12 @@ export default function OutstandingReport() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div className="space-y-2">
-              <Label>Academic Year *</Label>
-              <Select
-                value={academicYear || years[0]?.name || " "}
-                onValueChange={setAcademicYear}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {years.length > 0 ? (
-                    years.map((y) => (
-                      <SelectItem key={y.id} value={y.name}>
-                        {y.name}
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value={defaultAy}>{defaultAy}</SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
+            <AcademicYearSelect
+              id="outstanding-report-academic-year"
+              label="Academic Year *"
+              value={academicYear}
+              onChange={setAcademicYear}
+            />
             <div className="space-y-2">
               <Label>Quarter</Label>
               <Select value={quarter || "all"} onValueChange={(v) => setQuarter(v === "all" ? "" : v)}>
@@ -201,31 +156,6 @@ export default function OutstandingReport() {
             </div>
           </div>
 
-          {summary && (
-            <div className="rounded-lg border bg-destructive/5 border-destructive/20 p-4 space-y-2">
-              <h3 className="font-medium">Summary ({academicYearUsed})</h3>
-              <div className="flex flex-wrap gap-6">
-                <span>
-                  <strong>₹{summary.totalOutstanding.toLocaleString()}</strong> total outstanding
-                </span>
-                <span>
-                  <strong>{summary.defaulterCount}</strong> dues
-                </span>
-                <span>
-                  <strong>{summary.studentCount}</strong> student(s) with dues
-                </span>
-                {summary.byStandard.length > 0 && (
-                  <span className="text-sm">
-                    By standard:{" "}
-                    {summary.byStandard
-                      .map((g) => `${g.standard}: ₹${g.total.toLocaleString()} (${g.count})`)
-                      .join(" | ")}
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-
           {data !== null && (
             <div className="border rounded-lg overflow-x-auto">
               {data.length > 0 ? (
@@ -265,7 +195,7 @@ export default function OutstandingReport() {
                 </Table>
               ) : (
                 <p className="p-6 text-sm text-muted-foreground text-center">
-                  {academicYearUsed
+                  {academicYear
                     ? "All fees are up to date for the selected filters."
                     : "Select filters and generate report."}
                 </p>
