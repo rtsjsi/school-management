@@ -22,9 +22,22 @@ type StructureRow = {
   standard_id: string;
   academic_year: string;
   total_fees?: number | string | null;
-  standards: { name?: string } | { name?: string }[] | null;
+  standards: { name?: string; sort_order?: number } | { name?: string; sort_order?: number }[] | null;
   fee_structure_items: { fee_type: string; quarter: number; amount: number }[] | null;
 };
+
+function standardSortOrderFromRow(row: StructureRow): number {
+  const st = row.standards;
+  const s = st == null ? null : Array.isArray(st) ? st[0] : st;
+  const n = s?.sort_order != null ? Number(s.sort_order) : NaN;
+  return Number.isFinite(n) ? n : 9999;
+}
+
+function standardNameFromRow(row: StructureRow): string {
+  const st = row.standards;
+  const s = st == null ? null : Array.isArray(st) ? st[0] : st;
+  return s?.name ?? "";
+}
 
 function formatFeeAmount(value: number | string | null | undefined): string {
   if (value == null) return "—";
@@ -60,14 +73,12 @@ export function FeeStructureListWithFilters({ canEdit = false }: { canEdit?: boo
         `
         id,
         standard_id,
-        standards(name),
+        standards(name, sort_order),
         academic_year,
         total_fees,
         fee_structure_items(fee_type, quarter, amount)
       `,
-      )
-      .order("academic_year", { ascending: false })
-      .order("standard_id");
+      );
 
     if (standardFilter) {
       query = query.eq("standard_id", standardFilter);
@@ -77,7 +88,16 @@ export function FeeStructureListWithFilters({ canEdit = false }: { canEdit?: boo
     }
 
     query.then(({ data }) => {
-      setStructures((data ?? []) as StructureRow[]);
+      const rows = (data ?? []) as StructureRow[];
+      const sorted = [...rows].sort((a, b) => {
+        const yearCmp = String(b.academic_year ?? "").localeCompare(String(a.academic_year ?? ""));
+        if (yearCmp !== 0) return yearCmp;
+        const ordA = standardSortOrderFromRow(a);
+        const ordB = standardSortOrderFromRow(b);
+        if (ordA !== ordB) return ordA - ordB;
+        return standardNameFromRow(a).localeCompare(standardNameFromRow(b));
+      });
+      setStructures(sorted);
     });
   };
 

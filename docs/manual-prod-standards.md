@@ -28,3 +28,15 @@ Notes:
 - This script assumes the `public.standards` table is either **empty or flushed** before running.  
 - There is **no extra Roman-name migration step**; all standards are inserted directly with final Roman names.
 
+---
+
+## Fee structures (2026–27 schedule)
+
+After `fee_structures.total_fees` exists (migration applied), load **all classes** (FRC + Q1–Q4 `education_fee`) with:
+
+```bash
+node scripts/by-branch.js db query --linked -f supabase/manual/insert_all_fee_structures_2026_2027_from_schedule.sql
+```
+
+Edit the SQL file if your `academic_year` text differs from `2026-2027`.
+

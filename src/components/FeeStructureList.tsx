@@ -10,20 +10,45 @@ import {
 } from "@/components/ui/table";
 import { FeeStructureRowActions } from "@/components/FeeStructureRowActions";
 
+type StandardsEmbed = { name?: string; sort_order?: number } | { name?: string; sort_order?: number }[] | null;
+
+function standardSortOrderFromRow(standards: StandardsEmbed): number {
+  const s = standards == null ? null : Array.isArray(standards) ? standards[0] : standards;
+  const n = s && typeof s === "object" && "sort_order" in s ? Number((s as { sort_order: number }).sort_order) : NaN;
+  return Number.isFinite(n) ? n : 9999;
+}
+
+function standardNameFromRow(standards: StandardsEmbed): string {
+  const s = standards == null ? null : Array.isArray(standards) ? standards[0] : standards;
+  return (s as { name?: string } | null)?.name ?? "";
+}
+
 export async function FeeStructureList({ canEdit = false }: { canEdit?: boolean }) {
   const supabase = await createClient();
-  const { data: structures } = await supabase
+  const { data: structuresRaw } = await supabase
     .from("fee_structures")
     .select(`
       id,
       standard_id,
-      standards(name),
+      standards(name, sort_order),
       academic_year,
       total_fees,
       fee_structure_items(fee_type, quarter, amount)
-    `)
-    .order("academic_year", { ascending: false })
-    .order("standard_id");
+    `);
+
+  const structures =
+    structuresRaw == null
+      ? []
+      : [...structuresRaw].sort((a, b) => {
+          const yearCmp = String(b.academic_year ?? "").localeCompare(String(a.academic_year ?? ""));
+          if (yearCmp !== 0) return yearCmp;
+          const ordA = standardSortOrderFromRow(a.standards as StandardsEmbed);
+          const ordB = standardSortOrderFromRow(b.standards as StandardsEmbed);
+          if (ordA !== ordB) return ordA - ordB;
+          return standardNameFromRow(a.standards as StandardsEmbed).localeCompare(
+            standardNameFromRow(b.standards as StandardsEmbed),
+          );
+        });
 
   if (!structures || structures.length === 0) {
     return (

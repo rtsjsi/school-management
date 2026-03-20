@@ -4,6 +4,7 @@
 -- Academic year is stored as text on fee_structures. This uses '2026-2027'.
 -- If your school uses another label (e.g. '2026-27'), change both occurrences below.
 --
+-- Prefer the all-classes script: insert_all_fee_structures_2026_2027_from_schedule.sql
 -- Safe to re-run: replaces items for Nursery + this academic year only.
 
 BEGIN;
@@ -20,8 +21,8 @@ DELETE FROM public.fee_structures
 WHERE standard_id = (SELECT id FROM public.standards WHERE name = 'Nursery' LIMIT 1)
   AND academic_year = '2026-2027';
 
-INSERT INTO public.fee_structures (standard_id, academic_year)
-SELECT id, '2026-2027' FROM public.standards WHERE name = 'Nursery' LIMIT 1;
+INSERT INTO public.fee_structures (standard_id, academic_year, total_fees)
+SELECT id, '2026-2027', 19610::numeric FROM public.standards WHERE name = 'Nursery' LIMIT 1;
 
 INSERT INTO public.fee_structure_items (fee_structure_id, fee_type, quarter, amount)
 SELECT fs.id, 'education_fee', v.q, v.amt

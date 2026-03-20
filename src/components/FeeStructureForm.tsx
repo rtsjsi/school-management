@@ -286,9 +286,6 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
                 value={form.total_fees}
                 onChange={(e) => setForm((p) => ({ ...p, total_fees: e.target.value }))}
               />
-              <p className="text-xs text-muted-foreground">
-                Shown in the fee structure list; independent of quarter amounts.
-              </p>
             </div>
           </div>
 
