@@ -52,7 +52,7 @@ export default function OutstandingReport() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetch("/api/students?limit=500")
+    fetch("/api/students?limit=500&exclude_rte=1")
       .then((r) => r.json())
       .then((d) => setStudents(d.students ?? []))
       .catch(() => {});

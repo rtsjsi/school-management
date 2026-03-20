@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 
     const { data: students } = await supabase
       .from("students")
-      .select("id, full_name, standard, division, roll_number, student_id")
+      .select("id, full_name, standard, division, roll_number, student_id, is_rte_quota")
       .eq("status", "active")
       .order("full_name");
 
