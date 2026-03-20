@@ -268,14 +268,7 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
       </div>
 
       <div className="pt-2 border-t border-border/50 space-y-2">
-        <div className="flex flex-col items-start gap-2">
-          {availableToAdd.length > 0 && (
-            <Button type="button" variant="secondary" size="sm" className="h-8 text-xs px-2" onClick={addRow}>
-              + Type
-            </Button>
-          )}
-          <span className="text-xs font-semibold text-foreground">Annual by fee type *</span>
-        </div>
+        <span className="text-xs font-semibold text-foreground">Annual by fee type *</span>
         <p className="text-[11px] leading-snug text-muted-foreground">
           Split equally Q1–Q4 (Q4 rounds).
         </p>
@@ -313,17 +306,28 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
                     onChange={(e) => setRowAnnual(row.localId, e.target.value)}
                     className="h-9 text-sm tabular-nums w-[7.5rem] shrink-0"
                   />
-                  {feeRows.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 text-xs text-muted-foreground shrink-0 -ml-1"
-                      onClick={() => removeRow(row.localId)}
-                    >
-                      Remove
-                    </Button>
-                  )}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 text-xs text-muted-foreground shrink-0 -ml-1"
+                    disabled={feeRows.length <= 1}
+                    title={feeRows.length <= 1 ? "At least one fee type row is required" : undefined}
+                    onClick={() => removeRow(row.localId)}
+                  >
+                    Remove
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="h-8 text-xs px-2 shrink-0"
+                    disabled={availableToAdd.length === 0}
+                    title={availableToAdd.length === 0 ? "All fee types are already added" : undefined}
+                    onClick={addRow}
+                  >
+                    Add
+                  </Button>
                 </div>
               </div>
               {(() => {
