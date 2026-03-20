@@ -27,7 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { annualNetFeeLiability, linesWithNetAfterConcession } from "@/lib/fee-concession";
 
 const PAYMENT_MODES = ["cash", "cheque", "online"] as const;
-/** Collections from this screen are always education fee (matches typical structure line). */
+/** Stored on `fee_collections` / receipt label; amount field sums all fee types for the quarter. */
 const COLLECTION_FEE_TYPE = "education_fee";
 const DEFAULT_POLICY_NOTES = [
   "(1) Fees will not be refunded in any case.",
@@ -129,7 +129,7 @@ export default function FeeCollectionForm({
       const lines = linesWithNetAfterConcession(items, selectedStudent.fee_concession_amount ?? null);
       const quarterNum = parseInt(form.quarter);
       const totalForQuarter = lines
-        .filter((l) => l.quarter === quarterNum && l.fee_type === COLLECTION_FEE_TYPE)
+        .filter((l) => l.quarter === quarterNum)
         .reduce((sum, l) => sum + l.net, 0);
       setStructureAmount(totalForQuarter > 0 ? totalForQuarter : null);
     })();
@@ -501,7 +501,7 @@ export default function FeeCollectionForm({
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="amount">Amount (fee structure, net of concession) *</Label>
+              <Label htmlFor="amount">Amount (all fee types this quarter, net of concession) *</Label>
               <Input
                 id="amount"
                 type="number"
@@ -519,7 +519,8 @@ export default function FeeCollectionForm({
               {selectedStudent && Number(selectedStudent.fee_concession_amount) > 0 && (
                 <p className="text-xs text-muted-foreground">
                   Annual concession ₹{Number(selectedStudent.fee_concession_amount).toLocaleString("en-IN")}{" "}
-                  is spread across all fee lines for the year; this quarter&apos;s education fee share is shown above.
+                  is spread across all fee lines for the year; this quarter&apos;s combined total (all fee types) is
+                  shown above.
                 </p>
               )}
             </div>
