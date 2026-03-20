@@ -189,12 +189,34 @@ export default function FeeCollectionForm({
       });
       return;
     }
-    if (form.payment_mode === "cheque" && !form.cheque_number?.trim()) {
-      const message = "Cheque number is required for cheque payment.";
+    if (form.payment_mode === "cheque") {
+      if (!form.cheque_number?.trim()) {
+        const message = "Cheque number is required for cheque payment.";
+        setError(message);
+        toast({
+          variant: "destructive",
+          title: "Missing cheque details",
+          description: message,
+        });
+        return;
+      }
+      if (!form.cheque_date?.trim()) {
+        const message = "Cheque date is required for cheque payment.";
+        setError(message);
+        toast({
+          variant: "destructive",
+          title: "Missing cheque date",
+          description: message,
+        });
+        return;
+      }
+    }
+    if (form.payment_mode === "online" && !form.online_transaction_id?.trim()) {
+      const message = "Transaction ID is required for online payment.";
       setError(message);
       toast({
         variant: "destructive",
-        title: "Missing cheque details",
+        title: "Missing transaction ID",
         description: message,
       });
       return;
@@ -241,8 +263,12 @@ export default function FeeCollectionForm({
           payment_mode: form.payment_mode,
           cheque_number: form.payment_mode === "cheque" ? form.cheque_number.trim() : null,
           cheque_bank: form.payment_mode === "cheque" ? form.cheque_bank.trim() || null : null,
-          cheque_date: form.payment_mode === "cheque" && form.cheque_date ? form.cheque_date : null,
-          online_transaction_id: form.payment_mode === "online" ? form.online_transaction_id.trim() || null : null,
+          cheque_date:
+            form.payment_mode === "cheque" && form.cheque_date.trim()
+              ? form.cheque_date.trim()
+              : null,
+          online_transaction_id:
+            form.payment_mode === "online" ? form.online_transaction_id.trim() : null,
           online_transaction_ref: form.payment_mode === "online" ? form.online_transaction_ref.trim() || null : null,
           receipt_number: receiptNumber,
           collected_at: collectedAt,
@@ -638,11 +664,12 @@ export default function FeeCollectionForm({
                   onChange={(e) => setForm((p) => ({ ...p, cheque_number: e.target.value }))}
                   placeholder="No."
                   className="h-9 text-sm"
+                  required
                 />
               </div>
               <div className="space-y-1">
                 <Label htmlFor="cheque_date" className="text-xs font-medium text-muted-foreground">
-                  Chq date
+                  Chq date *
                 </Label>
                 <Input
                   id="cheque_date"
@@ -650,6 +677,7 @@ export default function FeeCollectionForm({
                   value={form.cheque_date}
                   onChange={(e) => setForm((p) => ({ ...p, cheque_date: e.target.value }))}
                   className="h-9 text-sm"
+                  required
                 />
               </div>
             </>
@@ -659,7 +687,7 @@ export default function FeeCollectionForm({
             <>
               <div className="space-y-1">
                 <Label htmlFor="online_txn_id" className="text-xs font-medium text-muted-foreground">
-                  Txn ID
+                  Txn ID *
                 </Label>
                 <Input
                   id="online_txn_id"
@@ -669,6 +697,7 @@ export default function FeeCollectionForm({
                   }
                   className="h-9 text-sm"
                   placeholder="ID"
+                  required
                 />
               </div>
               <div className="space-y-1">
