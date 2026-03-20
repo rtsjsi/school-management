@@ -17,7 +17,6 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { generateReceiptPDF, amountInWords } from "@/lib/receipt-pdf";
@@ -346,284 +345,311 @@ export default function FeeCollectionForm({
     }
   };
 
+  const concessionTitle =
+    selectedStudent && Number(selectedStudent.fee_concession_amount) > 0
+      ? `Annual concession ₹${Number(selectedStudent.fee_concession_amount).toLocaleString("en-IN")} applied across all fee lines; amount shown is this quarter’s net total.`
+      : undefined;
+
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>
-          )}
+    <div className="rounded-lg border border-border/60 bg-background/80 shadow-sm">
+      <form onSubmit={handleSubmit} className="p-3 sm:p-4 space-y-3">
+        {error && (
+          <p className="text-xs text-destructive bg-destructive/10 px-2 py-1.5 rounded-md">{error}</p>
+        )}
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-1.5">
-              <Label>Receipt No.</Label>
-              <Input value={receiptNumber} readOnly className="bg-muted font-mono" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Collected By</Label>
-              <Input value={receivedBy ?? "—"} readOnly className="bg-muted" />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="collection_date">Collection Date *</Label>
-              <Input
-                id="collection_date"
-                type="date"
-                value={form.collection_date}
-                onChange={(e) => setForm((p) => ({ ...p, collection_date: e.target.value }))}
-              />
-            </div>
+        {/* Meta: receipt + date — one tight row */}
+        <div className="flex flex-wrap gap-2 items-end">
+          <div className="space-y-1 w-[8.5rem] shrink-0">
+            <Label className="text-xs font-medium text-muted-foreground">Receipt</Label>
+            <Input
+              value={receiptNumber}
+              readOnly
+              className="h-9 text-xs font-mono bg-muted/80 border-transparent"
+              tabIndex={-1}
+            />
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-1.5">
-              <Label>Standard</Label>
-              <Select value={classFilter} onValueChange={setClassFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  {classes.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Division</Label>
-              <Select value={divisionFilter} onValueChange={setDivisionFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  {divisions.map((d) => (
-                    <SelectItem key={d} value={d}>
-                      {d}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="student">Student *</Label>
-              <Popover open={studentPickerOpen} onOpenChange={setStudentPickerOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    id="student"
-                    type="button"
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={studentPickerOpen}
-                    className="w-full justify-between font-normal h-10 px-3"
-                  >
-                    <span className="truncate text-left">
-                      {selectedStudent
-                        ? `${selectedStudent.full_name}${
-                            selectedStudent.standard
-                              ? ` (${selectedStudent.standard}${
-                                  selectedStudent.division ? "-" + selectedStudent.division : ""
-                                })`
-                              : ""
-                          }`
-                        : "Search or select student…"}
-                    </span>
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="p-0 w-[min(100vw-2rem,28rem)]" align="start">
-                  <Command>
-                    <CommandInput placeholder="Type name, GR no., standard…" />
-                    <CommandList>
-                      <CommandEmpty>No student matches filters.</CommandEmpty>
-                      <CommandGroup>
-                        {filteredStudents.map((s) => {
-                          const searchBlob = [s.full_name, s.student_id, s.standard, s.division]
-                            .filter(Boolean)
-                            .join(" ");
-                          return (
-                            <CommandItem
-                              key={s.id}
-                              value={searchBlob}
-                              onSelect={() => {
-                                setForm((p) => ({ ...p, student_id: s.id }));
-                                setStudentPickerOpen(false);
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4 shrink-0",
-                                  form.student_id === s.id ? "opacity-100" : "opacity-0"
-                                )}
-                              />
-                              <span className="truncate">
-                                {s.full_name}
-                                {s.standard
-                                  ? ` (${s.standard}${s.division ? "-" + s.division : ""})`
-                                  : ""}
-                                {s.student_id ? ` · ${s.student_id}` : ""}
-                              </span>
-                            </CommandItem>
-                          );
-                        })}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            </div>
+          <div className="space-y-1 min-w-[9.5rem]">
+            <Label htmlFor="collection_date" className="text-xs font-medium text-muted-foreground">
+              Date *
+            </Label>
+            <Input
+              id="collection_date"
+              type="date"
+              value={form.collection_date}
+              onChange={(e) => setForm((p) => ({ ...p, collection_date: e.target.value }))}
+              className="h-9 text-sm"
+            />
           </div>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Filters + student */}
+        <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
+          <div className="space-y-1 col-span-1">
+            <Label className="text-xs font-medium text-muted-foreground">Std</Label>
+            <Select value={classFilter} onValueChange={setClassFilter}>
+              <SelectTrigger className="h-9 text-sm">
+                <SelectValue placeholder="All" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                {classes.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1 col-span-1">
+            <Label className="text-xs font-medium text-muted-foreground">Div</Label>
+            <Select value={divisionFilter} onValueChange={setDivisionFilter}>
+              <SelectTrigger className="h-9 text-sm">
+                <SelectValue placeholder="All" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                {divisions.map((d) => (
+                  <SelectItem key={d} value={d}>
+                    {d}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1 col-span-2 sm:col-span-4">
+            <Label htmlFor="student" className="text-xs font-medium text-muted-foreground">
+              Student *
+            </Label>
+            <Popover open={studentPickerOpen} onOpenChange={setStudentPickerOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  id="student"
+                  type="button"
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={studentPickerOpen}
+                  className="w-full justify-between font-normal h-9 px-2.5 text-sm"
+                >
+                  <span className="truncate text-left">
+                    {selectedStudent
+                      ? `${selectedStudent.full_name}${
+                          selectedStudent.standard
+                            ? ` (${selectedStudent.standard}${
+                                selectedStudent.division ? "-" + selectedStudent.division : ""
+                              })`
+                            : ""
+                        }`
+                      : "Pick student…"}
+                  </span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-45" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="p-0 w-[min(100vw-2rem,26rem)]" align="start">
+                <Command>
+                  <CommandInput placeholder="Search name, GR no…" className="h-9" />
+                  <CommandList>
+                    <CommandEmpty className="text-xs py-3">No match.</CommandEmpty>
+                    <CommandGroup>
+                      {filteredStudents.map((s) => {
+                        const searchBlob = [s.full_name, s.student_id, s.standard, s.division]
+                          .filter(Boolean)
+                          .join(" ");
+                        return (
+                          <CommandItem
+                            key={s.id}
+                            value={searchBlob}
+                            className="text-sm"
+                            onSelect={() => {
+                              setForm((p) => ({ ...p, student_id: s.id }));
+                              setStudentPickerOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4 shrink-0",
+                                form.student_id === s.id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            <span className="truncate">
+                              {s.full_name}
+                              {s.standard
+                                ? ` (${s.standard}${s.division ? "-" + s.division : ""})`
+                                : ""}
+                              {s.student_id ? ` · ${s.student_id}` : ""}
+                            </span>
+                          </CommandItem>
+                        );
+                      })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+
+        {/* Year + quarter chips + net — core entry row */}
+        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:items-end">
+          <div className="w-full sm:w-[11rem] shrink-0">
             <AcademicYearSelect
               value={form.academic_year}
               onChange={(v) => setForm((p) => ({ ...p, academic_year: v }))}
               id="academic_year"
-              label="Academic Year *"
+              label="Year *"
+              compact
             />
-            <div className="space-y-1.5">
-              <Label htmlFor="quarter">Quarter *</Label>
-              <Select
-                value={form.quarter}
-                onValueChange={(v) => setForm((p) => ({ ...p, quarter: v }))}
-              >
-                <SelectTrigger id="quarter">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">Q1</SelectItem>
-                  <SelectItem value="2">Q2</SelectItem>
-                  <SelectItem value="3">Q3</SelectItem>
-                  <SelectItem value="4">Q4</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="amount">Amount (all fee types this quarter, net of concession) *</Label>
-              <Input
-                id="amount"
-                type="number"
-                min={0}
-                step={0.01}
-                value={form.amount}
-                readOnly
-                className="bg-muted"
-                placeholder={
-                  structureAmount === null && selectedStudent
-                    ? "No structure for this standard / quarter"
-                    : "0.00"
-                }
-              />
-              {selectedStudent && Number(selectedStudent.fee_concession_amount) > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Annual concession ₹{Number(selectedStudent.fee_concession_amount).toLocaleString("en-IN")}{" "}
-                  is spread across all fee lines for the year; this quarter&apos;s combined total (all fee types) is
-                  shown above.
-                </p>
-              )}
+          </div>
+          <div className="space-y-1 min-w-0 flex-1 sm:flex-initial">
+            <span className="text-xs font-medium text-muted-foreground block">Quarter *</span>
+            <div className="flex gap-1 flex-wrap" role="group" aria-label="Quarter">
+              {([1, 2, 3, 4] as const).map((q) => (
+                <Button
+                  key={q}
+                  type="button"
+                  variant={form.quarter === String(q) ? "default" : "outline"}
+                  size="sm"
+                  className={cn(
+                    "h-9 min-w-[2.75rem] px-2 text-sm font-medium",
+                    form.quarter === String(q) ? "" : "border-muted-foreground/25 text-muted-foreground"
+                  )}
+                  onClick={() => setForm((p) => ({ ...p, quarter: String(q) }))}
+                >
+                  Q{q}
+                </Button>
+              ))}
             </div>
           </div>
+          <div className="space-y-1 w-full sm:w-36 sm:ml-auto shrink-0">
+            <Label htmlFor="amount" className="text-xs font-medium text-muted-foreground">
+              Net ₹ *
+            </Label>
+            <Input
+              id="amount"
+              type="number"
+              min={0}
+              step={0.01}
+              value={form.amount}
+              readOnly
+              title={concessionTitle}
+              className={cn(
+                "h-9 text-base font-semibold tabular-nums bg-muted/80 border-transparent",
+                concessionTitle && "cursor-help"
+              )}
+              placeholder={
+                structureAmount === null && selectedStudent ? "—" : "0"
+              }
+            />
+          </div>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="payment_mode">Payment Mode *</Label>
-              <Select
-                value={form.payment_mode}
-                onValueChange={(v) => setForm((p) => ({ ...p, payment_mode: v }))}
-              >
-                <SelectTrigger id="payment_mode">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PAYMENT_MODES.map((m) => (
-                    <SelectItem key={m} value={m}>
-                      {m.charAt(0).toUpperCase() + m.slice(1)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {form.payment_mode === "cheque" && (
-              <>
-                <div className="space-y-1.5">
-                  <Label htmlFor="cheque_number">Cheque Number *</Label>
-                  <Input
-                    id="cheque_number"
-                    value={form.cheque_number}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, cheque_number: e.target.value }))
-                    }
-                    placeholder="e.g. 123456"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="cheque_bank">Bank</Label>
-                  <Input
-                    id="cheque_bank"
-                    value={form.cheque_bank}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, cheque_bank: e.target.value }))
-                    }
-                    placeholder="Bank name"
-                  />
-                </div>
-              </>
-            )}
-
-            {form.payment_mode === "online" && (
-              <>
-                <div className="space-y-1.5">
-                  <Label htmlFor="online_txn_id">Transaction ID</Label>
-                  <Input
-                    id="online_txn_id"
-                    value={form.online_transaction_id}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, online_transaction_id: e.target.value }))
-                    }
-                    placeholder="Txn ID"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="online_txn_ref">Reference</Label>
-                  <Input
-                    id="online_txn_ref"
-                    value={form.online_transaction_ref}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, online_transaction_ref: e.target.value }))
-                    }
-                    placeholder="Reference no"
-                  />
-                </div>
-              </>
-            )}
+        {/* Payment */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 pt-1 border-t border-border/50">
+          <div className="space-y-1">
+            <Label htmlFor="payment_mode" className="text-xs font-medium text-muted-foreground">
+              Pay *
+            </Label>
+            <Select
+              value={form.payment_mode}
+              onValueChange={(v) => setForm((p) => ({ ...p, payment_mode: v }))}
+            >
+              <SelectTrigger id="payment_mode" className="h-9 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PAYMENT_MODES.map((m) => (
+                  <SelectItem key={m} value={m}>
+                    {m.charAt(0).toUpperCase() + m.slice(1)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {form.payment_mode === "cheque" && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-1.5 md:col-start-2 md:col-span-1">
-                <Label htmlFor="cheque_date">Cheque Date</Label>
+            <>
+              <div className="space-y-1">
+                <Label htmlFor="cheque_number" className="text-xs font-medium text-muted-foreground">
+                  Chq # *
+                </Label>
+                <Input
+                  id="cheque_number"
+                  value={form.cheque_number}
+                  onChange={(e) => setForm((p) => ({ ...p, cheque_number: e.target.value }))}
+                  placeholder="No."
+                  className="h-9 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="cheque_bank" className="text-xs font-medium text-muted-foreground">
+                  Bank
+                </Label>
+                <Input
+                  id="cheque_bank"
+                  value={form.cheque_bank}
+                  onChange={(e) => setForm((p) => ({ ...p, cheque_bank: e.target.value }))}
+                  placeholder="Bank"
+                  className="h-9 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="cheque_date" className="text-xs font-medium text-muted-foreground">
+                  Chq date
+                </Label>
                 <Input
                   id="cheque_date"
                   type="date"
                   value={form.cheque_date}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, cheque_date: e.target.value }))
-                  }
+                  onChange={(e) => setForm((p) => ({ ...p, cheque_date: e.target.value }))}
+                  className="h-9 text-sm"
                 />
               </div>
-            </div>
+            </>
           )}
 
-          <div className="flex justify-start">
-            <SubmitButton loading={loading} loadingLabel="Saving & printing receipt…">
-              Collect Fee & Print Receipt
-            </SubmitButton>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+          {form.payment_mode === "online" && (
+            <>
+              <div className="space-y-1">
+                <Label htmlFor="online_txn_id" className="text-xs font-medium text-muted-foreground">
+                  Txn ID
+                </Label>
+                <Input
+                  id="online_txn_id"
+                  value={form.online_transaction_id}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, online_transaction_id: e.target.value }))
+                  }
+                  className="h-9 text-sm"
+                  placeholder="ID"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="online_txn_ref" className="text-xs font-medium text-muted-foreground">
+                  Ref
+                </Label>
+                <Input
+                  id="online_txn_ref"
+                  value={form.online_transaction_ref}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, online_transaction_ref: e.target.value }))
+                  }
+                  className="h-9 text-sm"
+                  placeholder="Ref"
+                />
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="flex justify-end pt-1">
+          <SubmitButton
+            loading={loading}
+            loadingLabel="Saving…"
+            className="h-9 px-4 text-sm font-semibold shadow-none"
+          >
+            Save & print
+          </SubmitButton>
+        </div>
+      </form>
+    </div>
   );
 }

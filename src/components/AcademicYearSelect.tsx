@@ -11,15 +11,24 @@ import {
 } from "@/components/ui/select";
 import { fetchAcademicYears } from "@/lib/lov";
 import type { AcademicYearOption } from "@/lib/lov";
+import { cn } from "@/lib/utils";
 
 interface AcademicYearSelectProps {
   value: string;
   onChange: (v: string) => void;
   id?: string;
   label?: string;
+  /** Smaller label + control for dense forms (e.g. fee collection). */
+  compact?: boolean;
 }
 
-export function AcademicYearSelect({ value, onChange, id = "academic_year", label = "Academic year" }: AcademicYearSelectProps) {
+export function AcademicYearSelect({
+  value,
+  onChange,
+  id = "academic_year",
+  label = "Academic year",
+  compact = false,
+}: AcademicYearSelectProps) {
   const [years, setYears] = useState<AcademicYearOption[]>([]);
   const hasDefaulted = useRef(false);
 
@@ -38,10 +47,12 @@ export function AcademicYearSelect({ value, onChange, id = "academic_year", labe
   }, [years, value, onChange]);
 
   return (
-    <div className="space-y-2">
-      <Label htmlFor={id}>{label}</Label>
+    <div className={cn(compact ? "space-y-1" : "space-y-2")}>
+      <Label htmlFor={id} className={cn(compact && "text-xs font-medium text-muted-foreground")}>
+        {label}
+      </Label>
       <Select value={value || " "} onValueChange={(v) => onChange(v === " " ? "" : v)}>
-        <SelectTrigger id={id}>
+        <SelectTrigger id={id} className={cn(compact && "h-9 text-sm")}>
           <SelectValue placeholder="Select year" />
         </SelectTrigger>
         <SelectContent>
