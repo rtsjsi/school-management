@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/dialog";
 import StudentEntryForm from "@/components/StudentEntryForm";
 import { StudentEditForm } from "@/components/StudentEditForm";
+import StudentViewDialog from "@/components/StudentViewDialog";
 
 type StudentRow = {
   id: string;
@@ -565,6 +566,7 @@ export function ManageStudentsList({
                   <TableHead>Division</TableHead>
                   <TableHead>Roll #</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="w-20 text-center">View</TableHead>
                   {canEdit && <TableHead className="w-32 text-center">Enrolments</TableHead>}
                   {canEdit && <TableHead className="w-28 text-right">Exit</TableHead>}
                 </TableRow>
@@ -629,7 +631,10 @@ export function ManageStudentsList({
                         {s.status || "active"}
                       </Badge>
                     </TableCell>
-                  {canEdit && (
+                    <TableCell className="text-center">
+                      <StudentViewDialog student={s} />
+                    </TableCell>
+                    {canEdit && (
                       <TableCell className="text-center">
                         <StudentEnrolmentsDialog
                           studentId={s.id}
