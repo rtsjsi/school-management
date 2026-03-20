@@ -25,10 +25,10 @@ import { AcademicYearSelect } from "@/components/AcademicYearSelect";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 import { useToast } from "@/hooks/use-toast";
 import { annualNetFeeLiability, linesWithNetAfterConcession } from "@/lib/fee-concession";
-import { FEE_STRUCTURE_FEE_TYPE_CODES } from "@/lib/fee-types";
-import { getFeeTypeLabel } from "@/lib/utils";
 
 const PAYMENT_MODES = ["cash", "cheque", "online"] as const;
+/** Collections from this screen are always education fee (matches typical structure line). */
+const COLLECTION_FEE_TYPE = "education_fee";
 const DEFAULT_POLICY_NOTES = [
   "(1) Fees will not be refunded in any case.",
   "(2) Fees are not transferable.",
@@ -58,22 +58,8 @@ export default function FeeCollectionForm({
   const [error, setError] = useState<string | null>(null);
   const [receiptNumber, setReceiptNumber] = useState<string>("");
   const [structureAmount, setStructureAmount] = useState<number | null>(null);
-  const [form, setForm] = useState<{
-    student_id: string;
-    fee_type: string;
-    amount: string;
-    quarter: string;
-    academic_year: string;
-    payment_mode: string;
-    cheque_number: string;
-    cheque_bank: string;
-    cheque_date: string;
-    online_transaction_id: string;
-    online_transaction_ref: string;
-    collection_date: string;
-  }>({
+  const [form, setForm] = useState({
     student_id: "",
-    fee_type: FEE_STRUCTURE_FEE_TYPE_CODES[0],
     amount: "",
     quarter: "1",
     academic_year: "",
@@ -143,17 +129,11 @@ export default function FeeCollectionForm({
       const lines = linesWithNetAfterConcession(items, selectedStudent.fee_concession_amount ?? null);
       const quarterNum = parseInt(form.quarter);
       const totalForQuarter = lines
-        .filter((l) => l.quarter === quarterNum && l.fee_type === form.fee_type)
+        .filter((l) => l.quarter === quarterNum && l.fee_type === COLLECTION_FEE_TYPE)
         .reduce((sum, l) => sum + l.net, 0);
       setStructureAmount(totalForQuarter > 0 ? totalForQuarter : null);
     })();
-  }, [
-    selectedStudent?.standard,
-    selectedStudent?.fee_concession_amount,
-    form.quarter,
-    form.fee_type,
-    form.academic_year,
-  ]);
+  }, [selectedStudent?.standard, selectedStudent?.fee_concession_amount, form.quarter, form.academic_year]);
 
   useEffect(() => {
     if (structureAmount != null) {
@@ -213,12 +193,12 @@ export default function FeeCollectionForm({
         .eq("student_id", form.student_id)
         .eq("academic_year", form.academic_year)
         .eq("quarter", parseInt(form.quarter))
-        .eq("fee_type", form.fee_type)
+        .eq("fee_type", COLLECTION_FEE_TYPE)
         .limit(1);
 
       if (existingCollections && existingCollections.length > 0) {
         const message =
-          "Fees for this fee type, quarter, and academic year have already been collected for this student.";
+          "Fees for this quarter and academic year have already been collected for this student.";
         setError(message);
         toast({
           variant: "destructive",
@@ -234,7 +214,7 @@ export default function FeeCollectionForm({
         .insert({
           student_id: form.student_id,
           amount,
-          fee_type: form.fee_type,
+          fee_type: COLLECTION_FEE_TYPE,
           quarter: parseInt(form.quarter),
           academic_year: form.academic_year,
           payment_mode: form.payment_mode,
@@ -297,7 +277,7 @@ export default function FeeCollectionForm({
         paymentMode: form.payment_mode,
         quarter: parseInt(form.quarter),
         academicYear: form.academic_year,
-        feeType: form.fee_type,
+        feeType: COLLECTION_FEE_TYPE,
         collectedAt: new Date((collection as { collected_at?: string })?.collected_at ?? Date.now()).toISOString(),
         amountInWords: amountInWords(amount),
         receivedBy,
@@ -335,7 +315,6 @@ export default function FeeCollectionForm({
 
       setForm({
         student_id: "",
-        fee_type: FEE_STRUCTURE_FEE_TYPE_CODES[0],
         amount: "",
         quarter: "1",
         academic_year: form.academic_year,
@@ -497,31 +476,13 @@ export default function FeeCollectionForm({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <AcademicYearSelect
               value={form.academic_year}
               onChange={(v) => setForm((p) => ({ ...p, academic_year: v }))}
               id="academic_year"
               label="Academic Year *"
             />
-            <div className="space-y-1.5">
-              <Label htmlFor="fee_type_collection">Fee type *</Label>
-              <Select
-                value={form.fee_type}
-                onValueChange={(v) => setForm((p) => ({ ...p, fee_type: v }))}
-              >
-                <SelectTrigger id="fee_type_collection">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {FEE_STRUCTURE_FEE_TYPE_CODES.map((code) => (
-                    <SelectItem key={code} value={code}>
-                      {getFeeTypeLabel(code)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
             <div className="space-y-1.5">
               <Label htmlFor="quarter">Quarter *</Label>
               <Select
@@ -558,8 +519,7 @@ export default function FeeCollectionForm({
               {selectedStudent && Number(selectedStudent.fee_concession_amount) > 0 && (
                 <p className="text-xs text-muted-foreground">
                   Annual concession ₹{Number(selectedStudent.fee_concession_amount).toLocaleString("en-IN")}{" "}
-                  is spread across all fee lines for the year; this quarter&apos;s share for the selected fee type is
-                  shown above.
+                  is spread across all fee lines for the year; this quarter&apos;s education fee share is shown above.
                 </p>
               )}
             </div>

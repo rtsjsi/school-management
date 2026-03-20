@@ -238,13 +238,6 @@ This document lists practical end-to-end flows you can use to manually test the 
     - Students are created with correct standard/division and IDs.
     - Imported students appear in lists, fee, and exam flows.
 
-### 6.2 Seed script (for demo environments)
-- **Seeding**
-  - On a fresh database, run the seed script.
-  - Verify:
-    - Base data (standards, divisions, sample students, fee structures) is created.
-    - You can immediately run through the major flows above using seeded data.
-
 ---
 
 You can work through these sections one by one when testing new deployments or features. Checkboxes in your own notes or issue tracker work well to track which flows you’ve already validated for a given release.
