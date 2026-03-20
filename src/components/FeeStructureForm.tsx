@@ -8,12 +8,11 @@ import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
 import { AcademicYearSelect } from "@/components/AcademicYearSelect";
 import { Button } from "@/components/ui/button";
 import { splitAnnualFeeAcrossQuarters } from "@/lib/fee-annual-split";
 import { FEE_STRUCTURE_FEE_TYPE_CODES } from "@/lib/fee-types";
-import { getFeeTypeLabel } from "@/lib/utils";
+import { cn, getFeeTypeLabel } from "@/lib/utils";
 
 type FeeRow = { localId: string; feeType: string; annual: string };
 
@@ -26,6 +25,9 @@ type FeeStructureFormProps = {
 function nextLocalId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
+
+const shellClass =
+  "rounded-lg border border-border/60 bg-background/80 shadow-sm";
 
 export default function FeeStructureForm({ structureId, onSuccess, onCancel }: FeeStructureFormProps) {
   const router = useRouter();
@@ -213,26 +215,28 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
     }
   };
 
-  const isEdit = !!structureId;
-
   if (loadingData) {
     return (
-      <div className="py-4">
-        <p className="text-sm text-muted-foreground">Loading…</p>
+      <div className={cn(shellClass, "p-3")}>
+        <p className="text-xs text-muted-foreground">Loading…</p>
       </div>
     );
   }
 
   const formContent = (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {error && <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>}
+    <form onSubmit={handleSubmit} className="p-3 sm:p-4 space-y-3 overflow-visible">
+      {error && (
+        <p className="text-xs text-destructive bg-destructive/10 px-2 py-1.5 rounded-md">{error}</p>
+      )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="standard">Standard *</Label>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className="space-y-1">
+          <Label htmlFor="standard" className="text-xs font-medium text-muted-foreground">
+            Standard *
+          </Label>
           {classes.length > 0 ? (
             <Select value={form.standard} onValueChange={(v) => setForm((p) => ({ ...p, standard: v }))} required>
-              <SelectTrigger id="standard">
+              <SelectTrigger id="standard" className="h-9 text-sm">
                 <SelectValue placeholder="Select" />
               </SelectTrigger>
               <SelectContent>
@@ -248,8 +252,9 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
               id="standard"
               value={form.standard}
               onChange={(e) => setForm((p) => ({ ...p, standard: e.target.value }))}
-              placeholder="e.g. standard UUID"
+              placeholder="Standard ID"
               required
+              className="h-9 text-sm"
             />
           )}
         </div>
@@ -257,32 +262,33 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
           value={form.academic_year}
           onChange={(v) => setForm((p) => ({ ...p, academic_year: v }))}
           id="academic_year"
-          label="Academic Year *"
+          label="Year *"
+          compact
         />
       </div>
 
-      <div className="pt-2 border-t space-y-3">
+      <div className="pt-2 border-t border-border/50 space-y-2">
         <div className="flex items-center justify-between gap-2">
-          <h4 className="text-sm font-semibold">Annual fee by fee type *</h4>
+          <span className="text-xs font-semibold text-foreground">Annual by fee type *</span>
           {availableToAdd.length > 0 && (
-            <Button type="button" variant="secondary" size="sm" onClick={addRow}>
-              Add fee type
+            <Button type="button" variant="secondary" size="sm" className="h-8 text-xs px-2" onClick={addRow}>
+              + Type
             </Button>
           )}
         </div>
-        <p className="text-xs text-muted-foreground">
-          Each amount is split equally across Q1–Q4 (last quarter adjusts for rounding).
+        <p className="text-[11px] leading-snug text-muted-foreground">
+          Split equally Q1–Q4 (Q4 rounds).
         </p>
-        <div className="space-y-3">
+        <div className="space-y-2">
           {feeRows.map((row) => (
             <div
               key={row.localId}
-              className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 items-end border rounded-md p-3"
+              className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2 items-end rounded-md border border-border/60 bg-muted/20 p-2"
             >
-              <div className="space-y-1.5">
-                <Label>Fee type</Label>
+              <div className="space-y-1">
+                <Label className="text-xs font-medium text-muted-foreground">Fee type</Label>
                 <Select value={row.feeType} onValueChange={(v) => setRowFeeType(row.localId, v)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9 text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -298,8 +304,8 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5">
-                <Label>Annual amount (₹)</Label>
+              <div className="space-y-1">
+                <Label className="text-xs font-medium text-muted-foreground">Annual ₹</Label>
                 <Input
                   type="number"
                   min={0}
@@ -307,11 +313,18 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
                   placeholder="e.g. 40000"
                   value={row.annual}
                   onChange={(e) => setRowAnnual(row.localId, e.target.value)}
+                  className="h-9 text-sm tabular-nums"
                 />
               </div>
-              <div className="flex sm:justify-end">
+              <div className="flex sm:justify-end pb-0.5">
                 {feeRows.length > 1 && (
-                  <Button type="button" variant="ghost" size="sm" onClick={() => removeRow(row.localId)}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 text-xs text-muted-foreground"
+                    onClick={() => removeRow(row.localId)}
+                  >
                     Remove
                   </Button>
                 )}
@@ -322,8 +335,8 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
                 const q = splitAnnualFeeAcrossQuarters(n);
                 if (q.length !== 4) return null;
                 return (
-                  <p className="text-xs text-muted-foreground sm:col-span-2">
-                    Quarters: Q1 ₹{q[0].amount.toFixed(2)} · Q2 ₹{q[1].amount.toFixed(2)} · Q3 ₹{q[2].amount.toFixed(2)} · Q4 ₹
+                  <p className="text-[11px] text-muted-foreground sm:col-span-2 leading-snug">
+                    Q1 ₹{q[0].amount.toFixed(2)} · Q2 ₹{q[1].amount.toFixed(2)} · Q3 ₹{q[2].amount.toFixed(2)} · Q4 ₹
                     {q[3].amount.toFixed(2)}
                   </p>
                 );
@@ -333,13 +346,16 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="total_fees_display">Total fees (FRC)</Label>
+      <div className="space-y-1 pt-1 border-t border-border/50">
+        <Label htmlFor="total_fees_display" className="text-xs font-medium text-muted-foreground">
+          Total (FRC)
+        </Label>
         <Input
           id="total_fees_display"
           readOnly
           tabIndex={-1}
-          className="bg-muted tabular-nums"
+          title="Saved as sum of annual amounts above"
+          className="h-9 text-sm font-medium tabular-nums bg-muted/80 border-transparent"
           value={
             grandTotalAnnual > 0
               ? `₹${new Intl.NumberFormat("en-IN", {
@@ -348,31 +364,26 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
                 }).format(grandTotalAnnual)}`
               : ""
           }
-          placeholder="Sum of annual amounts above"
+          placeholder="—"
         />
-        <p className="text-xs text-muted-foreground">Saved automatically as the sum of all fee types.</p>
       </div>
 
-      <div className="flex gap-2 justify-start">
+      <div className="flex justify-end gap-2 pt-1">
         {onCancel && (
-          <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
+          <Button type="button" variant="outline" size="sm" className="h-9 text-sm" onClick={onCancel} disabled={loading}>
             Cancel
           </Button>
         )}
-        <SubmitButton loading={loading} loadingLabel={structureId ? "Saving…" : "Adding…"}>
-          {structureId ? "Update Fee Structure" : "Add Fee Structure"}
+        <SubmitButton
+          loading={loading}
+          loadingLabel="Saving…"
+          className="h-9 px-4 text-sm font-semibold shadow-none"
+        >
+          {structureId ? "Save" : "Add structure"}
         </SubmitButton>
       </div>
     </form>
   );
 
-  if (isEdit) {
-    return <div>{formContent}</div>;
-  }
-
-  return (
-    <Card>
-      <CardContent className="pt-6">{formContent}</CardContent>
-    </Card>
-  );
+  return <div className={shellClass}>{formContent}</div>;
 }
