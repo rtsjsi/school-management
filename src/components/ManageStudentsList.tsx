@@ -565,7 +565,6 @@ export function ManageStudentsList({
                   <TableHead>Division</TableHead>
                   <TableHead>Roll #</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Admission</TableHead>
                   {canEdit && <TableHead className="w-32 text-center">Enrolments</TableHead>}
                   {canEdit && <TableHead className="w-28 text-right">Exit</TableHead>}
                 </TableRow>
@@ -630,12 +629,7 @@ export function ManageStudentsList({
                         {s.status || "active"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {s.admission_date
-                        ? new Date(s.admission_date).toLocaleDateString()
-                        : "—"}
-                    </TableCell>
-                    {canEdit && (
+                  {canEdit && (
                       <TableCell className="text-center">
                         <StudentEnrolmentsDialog
                           studentId={s.id}
