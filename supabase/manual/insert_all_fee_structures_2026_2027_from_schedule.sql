@@ -1,8 +1,8 @@
 -- Fee structures for academic year 2026-2027 — from printed "Fees Structure- 2026:27"
 -- Sets total_fees (FRC) and education_fee per quarter (Q1–Q4). Handwritten notes on sheet are ignored.
 --
--- DB standard names must match `standards.name` (Nursery, Junior KG (LKG), I, II, … XII).
--- XI/XII use stream "Science" on the sheet; mapped to standards XI / XII.
+-- DB standard names must match `standards.name` (see insert_standards_prod.sql):
+-- Nursery … X as today; higher secondary uses "XI Science" and "XII Science" (not plain XI/XII).
 --
 -- Safe to re-run: replaces fee_structure + items for each standard for 2026-2027 only.
 -- If your app uses a different academic_year label, replace '2026-2027' below.
@@ -178,29 +178,29 @@ JOIN public.standards st ON st.id = fs.standard_id AND st.name = 'X'
 CROSS JOIN (VALUES (1, 13115::numeric), (2, 13115), (3, 13115), (4, 13115)) AS v(q, amt)
 WHERE fs.academic_year = '2026-2027';
 
--- XI Science → standard XI — FRC 60,000
+-- XI Science — FRC 60,000 (sheet "XI Science"; matches insert_standards_prod.sql)
 DELETE FROM public.fee_structure_items WHERE fee_structure_id IN (
   SELECT fs.id FROM public.fee_structures fs JOIN public.standards st ON st.id = fs.standard_id
-  WHERE st.name = 'XI' AND fs.academic_year = '2026-2027');
-DELETE FROM public.fee_structures WHERE standard_id = (SELECT id FROM public.standards WHERE name = 'XI' LIMIT 1) AND academic_year = '2026-2027';
+  WHERE st.name = 'XI Science' AND fs.academic_year = '2026-2027');
+DELETE FROM public.fee_structures WHERE standard_id = (SELECT id FROM public.standards WHERE name = 'XI Science' LIMIT 1) AND academic_year = '2026-2027';
 INSERT INTO public.fee_structures (standard_id, academic_year, total_fees)
-SELECT id, '2026-2027', 60000::numeric FROM public.standards WHERE name = 'XI' LIMIT 1;
+SELECT id, '2026-2027', 60000::numeric FROM public.standards WHERE name = 'XI Science' LIMIT 1;
 INSERT INTO public.fee_structure_items (fee_structure_id, fee_type, quarter, amount)
 SELECT fs.id, 'education_fee'::text, v.q, v.amt FROM public.fee_structures fs
-JOIN public.standards st ON st.id = fs.standard_id AND st.name = 'XI'
+JOIN public.standards st ON st.id = fs.standard_id AND st.name = 'XI Science'
 CROSS JOIN (VALUES (1, 15000::numeric), (2, 15000), (3, 15000), (4, 15000)) AS v(q, amt)
 WHERE fs.academic_year = '2026-2027';
 
--- XII Science → standard XII — FRC 60,000
+-- XII Science — FRC 60,000
 DELETE FROM public.fee_structure_items WHERE fee_structure_id IN (
   SELECT fs.id FROM public.fee_structures fs JOIN public.standards st ON st.id = fs.standard_id
-  WHERE st.name = 'XII' AND fs.academic_year = '2026-2027');
-DELETE FROM public.fee_structures WHERE standard_id = (SELECT id FROM public.standards WHERE name = 'XII' LIMIT 1) AND academic_year = '2026-2027';
+  WHERE st.name = 'XII Science' AND fs.academic_year = '2026-2027');
+DELETE FROM public.fee_structures WHERE standard_id = (SELECT id FROM public.standards WHERE name = 'XII Science' LIMIT 1) AND academic_year = '2026-2027';
 INSERT INTO public.fee_structures (standard_id, academic_year, total_fees)
-SELECT id, '2026-2027', 60000::numeric FROM public.standards WHERE name = 'XII' LIMIT 1;
+SELECT id, '2026-2027', 60000::numeric FROM public.standards WHERE name = 'XII Science' LIMIT 1;
 INSERT INTO public.fee_structure_items (fee_structure_id, fee_type, quarter, amount)
 SELECT fs.id, 'education_fee'::text, v.q, v.amt FROM public.fee_structures fs
-JOIN public.standards st ON st.id = fs.standard_id AND st.name = 'XII'
+JOIN public.standards st ON st.id = fs.standard_id AND st.name = 'XII Science'
 CROSS JOIN (VALUES (1, 15000::numeric), (2, 15000), (3, 15000), (4, 15000)) AS v(q, amt)
 WHERE fs.academic_year = '2026-2027';
 

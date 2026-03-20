@@ -18,6 +18,6 @@ VALUES
   ('VIII', 'primary', 10),
   ('IX', 'secondary', 11),
   ('X', 'secondary', 12),
-  ('XI', 'higher_secondary', 13),
-  ('XII', 'higher_secondary', 14);
+  ('XI Science', 'higher_secondary', 13),
+  ('XII Science', 'higher_secondary', 14);
 
