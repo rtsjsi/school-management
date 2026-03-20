@@ -217,7 +217,7 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
 
   if (loadingData) {
     return (
-      <div className={cn(shellClass, "max-w-md w-full p-3")}>
+      <div className={cn(shellClass, "max-w-xl w-full p-3")}>
         <p className="text-xs text-muted-foreground">Loading…</p>
       </div>
     );
@@ -282,7 +282,7 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
                 <Label className="text-[11px] font-medium text-muted-foreground">Fee type & annual ₹</Label>
                 <div className="flex flex-wrap items-center gap-2">
                   <Select value={row.feeType} onValueChange={(v) => setRowFeeType(row.localId, v)}>
-                    <SelectTrigger className="h-9 text-sm min-w-0 flex-1 basis-[min(100%,11rem)]">
+                    <SelectTrigger className="h-9 text-sm min-w-0 flex-1 basis-[min(100%,14rem)]">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -304,30 +304,32 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
                     placeholder="₹"
                     value={row.annual}
                     onChange={(e) => setRowAnnual(row.localId, e.target.value)}
-                    className="h-9 text-sm tabular-nums w-[7.5rem] shrink-0"
+                    className="h-9 text-sm tabular-nums w-[8rem] shrink-0"
                   />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 text-xs text-muted-foreground shrink-0 -ml-1"
-                    disabled={feeRows.length <= 1}
-                    title={feeRows.length <= 1 ? "At least one fee type row is required" : undefined}
-                    onClick={() => removeRow(row.localId)}
-                  >
-                    Remove
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    className="h-8 text-xs px-2 shrink-0"
-                    disabled={availableToAdd.length === 0}
-                    title={availableToAdd.length === 0 ? "All fee types are already added" : undefined}
-                    onClick={addRow}
-                  >
-                    Add
-                  </Button>
+                  <div className="inline-flex flex-nowrap items-center gap-1.5 shrink-0">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 text-xs text-muted-foreground px-2.5"
+                      disabled={feeRows.length <= 1}
+                      title={feeRows.length <= 1 ? "At least one fee type row is required" : undefined}
+                      onClick={() => removeRow(row.localId)}
+                    >
+                      Remove
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className="h-8 text-xs px-2.5"
+                      disabled={availableToAdd.length === 0}
+                      title={availableToAdd.length === 0 ? "All fee types are already added" : undefined}
+                      onClick={addRow}
+                    >
+                      Add
+                    </Button>
+                  </div>
                 </div>
               </div>
               {(() => {
@@ -386,5 +388,5 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
     </form>
   );
 
-  return <div className={cn(shellClass, "max-w-md w-full")}>{formContent}</div>;
+  return <div className={cn(shellClass, "max-w-xl w-full")}>{formContent}</div>;
 }
