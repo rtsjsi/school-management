@@ -19,6 +19,7 @@ export async function FeeStructureList({ canEdit = false }: { canEdit?: boolean 
       standard_id,
       standards(name),
       academic_year,
+      total_fees,
       fee_structure_items(fee_type, quarter, amount)
     `)
     .order("academic_year", { ascending: false })
@@ -42,6 +43,7 @@ export async function FeeStructureList({ canEdit = false }: { canEdit?: boolean 
             <TableRow>
               <TableHead>Standard</TableHead>
               <TableHead>Academic Year</TableHead>
+              <TableHead className="text-right whitespace-nowrap">Total fees</TableHead>
               <TableHead>Items</TableHead>
               {canEdit && <TableHead className="w-24"></TableHead>}
             </TableRow>
@@ -50,6 +52,12 @@ export async function FeeStructureList({ canEdit = false }: { canEdit?: boolean 
             {structures.map((s) => {
               const items = s.fee_structure_items ?? [];
               const itemCount = items.length;
+              const totalRaw = (s as { total_fees?: number | string | null }).total_fees;
+              const totalNum =
+                totalRaw == null ? NaN : typeof totalRaw === "number" ? totalRaw : Number.parseFloat(String(totalRaw));
+              const totalDisplay = Number.isFinite(totalNum)
+                ? new Intl.NumberFormat("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalNum)
+                : "—";
               const standardName =
                 (Array.isArray(s.standards)
                   ? (s.standards[0] as { name?: string })?.name
@@ -58,6 +66,7 @@ export async function FeeStructureList({ canEdit = false }: { canEdit?: boolean 
                 <TableRow key={s.id}>
                   <TableCell className="font-medium">{standardName}</TableCell>
                   <TableCell>{s.academic_year}</TableCell>
+                  <TableCell className="text-right font-medium tabular-nums text-sm">₹{totalDisplay}</TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {itemCount} items
                   </TableCell>

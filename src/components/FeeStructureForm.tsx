@@ -29,6 +29,7 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
   const [form, setForm] = useState({
     standard: "",
     academic_year: "",
+    total_fees: "",
   });
   const [quarterAmounts, setQuarterAmounts] = useState<Record<string, Record<number, string>>>({});
   const [classes, setClasses] = useState<{ id: string; name: string; sort_order: number }[]>([]);
@@ -46,7 +47,7 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
       const supabase = createClient();
       const { data: structure, error: structErr } = await supabase
         .from("fee_structures")
-        .select("id, standard_id, academic_year")
+        .select("id, standard_id, academic_year, total_fees")
         .eq("id", structureId)
         .single();
       if (structErr || !structure) {
@@ -58,9 +59,14 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
         .from("fee_structure_items")
         .select("fee_type, quarter, amount")
         .eq("fee_structure_id", structureId);
+      const tf = (structure as { total_fees?: number | string | null }).total_fees;
       setForm({
         standard: structure.standard_id,
         academic_year: structure.academic_year,
+        total_fees:
+          tf != null && tf !== ""
+            ? String(typeof tf === "number" ? tf : Number.parseFloat(String(tf)))
+            : "",
       });
       const amounts: Record<string, Record<number, string>> = {};
       const usedFeeTypes = new Set<string>();
@@ -89,6 +95,14 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
   };
 
   const getAmount = (feeType: string, quarter: number) => quarterAmounts[feeType]?.[quarter] ?? "";
+
+  function parseTotalFeesInput(): number | null {
+    const t = form.total_fees.trim();
+    if (!t) return null;
+    const n = Number.parseFloat(t);
+    if (!Number.isFinite(n) || n < 0) return null;
+    return n;
+  }
 
   const handleRowFeeTypeChange = (index: number, newType: string) => {
     setRowFeeTypes((prev) => {
@@ -139,6 +153,12 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
       }
     }
 
+    const totalFeesValue = parseTotalFeesInput();
+    if (form.total_fees.trim() !== "" && totalFeesValue === null) {
+      setError("Total fees must be a valid number, or leave blank.");
+      return;
+    }
+
     setLoading(true);
     try {
       const standardId = form.standard.trim();
@@ -146,6 +166,7 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
         const result = await updateFeeStructure(structureId, {
           standardId,
           academic_year: form.academic_year.trim(),
+          total_fees: totalFeesValue,
           items,
         });
         if (result.ok) {
@@ -163,6 +184,7 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
         .insert({
           standard_id: standardId,
           academic_year: form.academic_year.trim(),
+          total_fees: totalFeesValue,
         })
         .select("id")
         .single();
@@ -191,7 +213,7 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
         }
       }
 
-      setForm({ standard: "", academic_year: "" });
+      setForm({ standard: "", academic_year: "", total_fees: "" });
       setQuarterAmounts({});
       router.refresh();
     } catch {
@@ -253,6 +275,21 @@ export default function FeeStructureForm({ structureId, onSuccess, onCancel }: F
               id="academic_year"
               label="Academic Year *"
             />
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="total_fees">Total fees (optional)</Label>
+              <Input
+                id="total_fees"
+                type="number"
+                min={0}
+                step={0.01}
+                placeholder="e.g. final FRC / annual total"
+                value={form.total_fees}
+                onChange={(e) => setForm((p) => ({ ...p, total_fees: e.target.value }))}
+              />
+              <p className="text-xs text-muted-foreground">
+                Shown in the fee structure list; independent of quarter amounts.
+              </p>
+            </div>
           </div>
 
           <div className="pt-4 border-t">

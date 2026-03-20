@@ -21,9 +21,20 @@ type StructureRow = {
   id: string;
   standard_id: string;
   academic_year: string;
+  total_fees?: number | string | null;
   standards: { name?: string } | { name?: string }[] | null;
   fee_structure_items: { fee_type: string; quarter: number; amount: number }[] | null;
 };
+
+function formatFeeAmount(value: number | string | null | undefined): string {
+  if (value == null) return "—";
+  const n = typeof value === "number" ? value : Number.parseFloat(String(value));
+  if (!Number.isFinite(n)) return "—";
+  return new Intl.NumberFormat("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(n);
+}
 
 type StandardLov = { id: string; name: string; sort_order: number };
 
@@ -51,6 +62,7 @@ export function FeeStructureListWithFilters({ canEdit = false }: { canEdit?: boo
         standard_id,
         standards(name),
         academic_year,
+        total_fees,
         fee_structure_items(fee_type, quarter, amount)
       `,
       )
@@ -182,6 +194,7 @@ export function FeeStructureListWithFilters({ canEdit = false }: { canEdit?: boo
               <TableRow>
                 <TableHead>Standard</TableHead>
                 <TableHead>Academic Year</TableHead>
+                <TableHead className="text-right whitespace-nowrap">Total fees</TableHead>
                 <TableHead>Quarter-wise Amounts (per fee type)</TableHead>
                 {canEdit && <TableHead className="w-24"></TableHead>}
               </TableRow>
@@ -193,6 +206,9 @@ export function FeeStructureListWithFilters({ canEdit = false }: { canEdit?: boo
                   <TableRow key={s.id}>
                     <TableCell className="font-medium">{standardName}</TableCell>
                     <TableCell>{s.academic_year}</TableCell>
+                    <TableCell className="text-right font-medium tabular-nums">
+                      ₹{formatFeeAmount(s.total_fees)}
+                    </TableCell>
                     <TableCell>{renderAmounts(s.fee_structure_items)}</TableCell>
                     {canEdit && (
                       <TableCell>

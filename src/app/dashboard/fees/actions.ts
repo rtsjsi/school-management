@@ -16,6 +16,7 @@ export async function updateFeeStructure(
   data: {
     standardId: string;
     academic_year: string;
+    total_fees: number | null;
     items: { fee_type: string; quarter: number; amount: number }[];
   }
 ): Promise<FeeStructureActionResult> {
@@ -33,6 +34,7 @@ export async function updateFeeStructure(
     .update({
       standard_id: trimmed.standardId,
       academic_year: trimmed.academic_year,
+      total_fees: data.total_fees,
       updated_at: new Date().toISOString(),
     })
     .eq("id", id);
