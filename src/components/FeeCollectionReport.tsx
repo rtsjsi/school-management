@@ -166,7 +166,7 @@ export default function FeeCollectionReport() {
   };
 
   const printReceipt = (row: ReportRow) => {
-    getReceiptData(row).then((data) => {
+    getReceiptData(row).then(async (data) => {
       const d = data ?? {
         receiptNumber: row.receipt_number,
         studentName: row.student_name ?? "—",
@@ -187,7 +187,7 @@ export default function FeeCollectionReport() {
         rollNumber: row.student_roll_number,
         grNo: row.student_gr_no,
       };
-      const pdfBlob = generateReceiptPDF({
+      const pdfBlob = await generateReceiptPDF({
         receiptNumber: d.receiptNumber,
         studentName: d.studentName,
         amount: d.amount,
@@ -206,6 +206,7 @@ export default function FeeCollectionReport() {
         onlineTransactionRef: d.onlineTransactionRef,
         schoolName: school.name,
         schoolAddress: school.address,
+        schoolLogoUrl: school.logoUrl ?? undefined,
         standard: d.standard,
         division: d.division,
         rollNumber: d.rollNumber,
@@ -220,7 +221,7 @@ export default function FeeCollectionReport() {
   };
 
   const downloadReceipt = (row: ReportRow) => {
-    getReceiptData(row).then((data) => {
+    getReceiptData(row).then(async (data) => {
       const d = data ?? {
         receiptNumber: row.receipt_number,
         studentName: row.student_name ?? "—",
@@ -241,7 +242,7 @@ export default function FeeCollectionReport() {
         rollNumber: row.student_roll_number,
         grNo: row.student_gr_no,
       };
-      const pdfBlob = generateReceiptPDF({
+      const pdfBlob = await generateReceiptPDF({
         receiptNumber: d.receiptNumber,
         studentName: d.studentName,
         amount: d.amount,
@@ -260,6 +261,7 @@ export default function FeeCollectionReport() {
         onlineTransactionRef: d.onlineTransactionRef,
         schoolName: school.name,
         schoolAddress: school.address,
+        schoolLogoUrl: school.logoUrl ?? undefined,
         standard: d.standard,
         division: d.division,
         rollNumber: d.rollNumber,

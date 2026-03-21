@@ -60,6 +60,8 @@ export interface ReceiptData {
   policyNotes?: string[];
   schoolName?: string;
   schoolAddress?: string;
+  schoolLogoUrl?: string;
+  schoolLogoDataUrl?: string;
   standard?: string;
   division?: string;
   rollNumber?: number | string;
@@ -67,7 +69,35 @@ export interface ReceiptData {
   outstandingAfterPayment?: number;
 }
 
-export function generateReceiptPDF(data: ReceiptData): Blob {
+const QUARTER_MONTHS: Record<number, string> = {
+  1: "Jan-Mar",
+  2: "Apr-Jun",
+  3: "Jul-Sep",
+  4: "Oct-Dec",
+};
+
+function quarterLabel(quarter: number): string {
+  const months = QUARTER_MONTHS[quarter] ?? "—";
+  return `Q${quarter} (${months})`;
+}
+
+async function urlToDataUrl(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url, { cache: "force-cache" });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return await new Promise<string | null>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(typeof reader.result === "string" ? reader.result : null);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
+export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
   const doc = new jsPDF({ unit: "mm", format: "a6", orientation: "portrait" });
   const w = doc.internal.pageSize.getWidth();
   const h = doc.internal.pageSize.getHeight();
@@ -87,8 +117,17 @@ export function generateReceiptPDF(data: ReceiptData): Blob {
         year: "numeric",
       })
     : "";
-  const periodText = data.periodLabel ?? `Q${data.quarter}`;
+  const periodText = data.periodLabel ?? quarterLabel(data.quarter);
   const amountWords = data.amountInWords ?? amountInWords(data.amount);
+  const logoDataUrl = data.schoolLogoDataUrl ?? (data.schoolLogoUrl ? await urlToDataUrl(data.schoolLogoUrl) : null);
+
+  if (logoDataUrl) {
+    try {
+      doc.addImage(logoDataUrl, "PNG", margin, y - 2, 12, 12);
+    } catch {
+      // Ignore logo rendering failures and continue with text-only header.
+    }
+  }
 
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
@@ -140,19 +179,23 @@ export function generateReceiptPDF(data: ReceiptData): Blob {
   doc.text(String(data.standard ?? "—"), valueX, y);
   doc.text("Div. :", leftX + 29, y);
   doc.text(String(data.division ?? "—"), leftX + 42, y);
-  doc.text("Temp. GR No. :", rightX - 36, y);
+  doc.text("Roll No. :", rightX - 36, y);
+  doc.text(String(data.rollNumber ?? "—"), rightX, y, { align: "right" });
+  y += lh;
+
+  doc.text("GR Number :", leftX, y);
   doc.text(String(data.grNo ?? "—"), rightX, y, { align: "right" });
+  y += lh;
+
+  doc.text("Acedemic Year :", leftX, y);
+  doc.text(data.academicYear || "—", valueX, y);
   y += lh;
 
   doc.text("Period :", leftX, y);
   doc.text(periodText, valueX, y);
   y += lh;
 
-  doc.text("Year :", leftX, y);
-  doc.text(data.academicYear || "—", valueX, y);
-  y += lh;
-
-  doc.text("Pay Type :", leftX, y);
+  doc.text("Payment Mode :", leftX, y);
   doc.text(
     data.paymentMode ? data.paymentMode.charAt(0).toUpperCase() + data.paymentMode.slice(1) : "—",
     valueX,
@@ -186,6 +229,23 @@ export function generateReceiptPDF(data: ReceiptData): Blob {
   doc.text(amountText.replace("Rs. ", ""), rightX, y, { align: "right" });
   doc.setFontSize(7.9);
   y += lh;
+
+  if (data.outstandingAfterPayment != null) {
+    const badgeHeight = 5.4;
+    const badgeY = y - 1.2;
+    doc.setFillColor(255, 245, 204);
+    doc.setDrawColor(214, 158, 46);
+    doc.roundedRect(leftX, badgeY, contentW, badgeHeight, 1.2, 1.2, "FD");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.1);
+    doc.setTextColor(120, 53, 15);
+    doc.text("Outstanding:", leftX + 1.5, badgeY + 3.7);
+    doc.text(`Rs. ${data.outstandingAfterPayment.toFixed(2)}`, rightX - 1.5, badgeY + 3.7, {
+      align: "right",
+    });
+    doc.setTextColor(0, 0, 0);
+    y += badgeHeight;
+  }
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.2);
@@ -227,13 +287,6 @@ export function generateReceiptPDF(data: ReceiptData): Blob {
   const boxY = receiverBlockTop + 3;
   doc.setLineWidth(0.2);
   doc.rect(boxX, boxY, boxW, boxH);
-
-  if (data.outstandingAfterPayment != null) {
-    const outY = Math.min(h - 4, boxY + boxH + 4);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(6.8);
-    doc.text(`Outstanding: Rs. ${data.outstandingAfterPayment.toFixed(2)}`, leftX, outY);
-  }
 
   if (data.paymentMode === "cheque" || data.paymentMode === "online") {
     const refY = Math.min(h - 1.2, (data.outstandingAfterPayment != null ? receiverBlockTop + boxH + 7 : receiverBlockTop + boxH + 3));

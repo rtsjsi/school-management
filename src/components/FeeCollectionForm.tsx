@@ -317,7 +317,7 @@ export default function FeeCollectionForm({
         if (outstanding > 0) outstandingAfterPayment = outstanding;
       }
 
-      const pdfBlob = generateReceiptPDF({
+      const pdfBlob = await generateReceiptPDF({
         receiptNumber,
         studentName,
         amount,
@@ -336,6 +336,7 @@ export default function FeeCollectionForm({
         onlineTransactionRef: form.payment_mode === "online" ? form.online_transaction_ref : undefined,
         schoolName: school.name,
         schoolAddress: school.address,
+        schoolLogoUrl: school.logoUrl ?? undefined,
         standard: selectedStudent?.standard,
         division: selectedStudent?.division,
         rollNumber: selectedStudent?.roll_number,
