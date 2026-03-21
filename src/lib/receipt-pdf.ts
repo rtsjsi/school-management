@@ -156,6 +156,11 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
   const leftX = margin;
   const rightX = w - margin;
   const valueX = margin + 19;
+  const drawField = (label: string, value: string, yy: number) => {
+    doc.setFont("helvetica", "normal");
+    doc.text(`${label} :`, leftX, yy);
+    doc.text(value || "—", valueX, yy);
+  };
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.9);
@@ -183,22 +188,18 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
   doc.text(String(data.rollNumber ?? "—"), rightX, y, { align: "right" });
   y += lh;
 
-  doc.text("GR Number :", leftX, y);
-  doc.text(String(data.grNo ?? "—"), rightX, y, { align: "right" });
+  drawField("GR Number", String(data.grNo ?? "—"), y);
   y += lh;
 
-  doc.text("Acedemic Year :", leftX, y);
-  doc.text(data.academicYear || "—", valueX, y);
+  drawField("Acedemic Year", data.academicYear || "—", y);
   y += lh;
 
-  doc.text("Period :", leftX, y);
-  doc.text(periodText, valueX, y);
+  drawField("Period", periodText, y);
   y += lh;
 
-  doc.text("Payment Mode :", leftX, y);
-  doc.text(
+  drawField(
+    "Payment Mode",
     data.paymentMode ? data.paymentMode.charAt(0).toUpperCase() + data.paymentMode.slice(1) : "—",
-    valueX,
     y
   );
   y += blockGap + 0.6;
@@ -232,7 +233,7 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
 
   if (data.outstandingAfterPayment != null) {
     const badgeHeight = 5.4;
-    const badgeY = y - 1.2;
+    const badgeY = y - 0.2;
     doc.setFillColor(255, 245, 204);
     doc.setDrawColor(214, 158, 46);
     doc.roundedRect(leftX, badgeY, contentW, badgeHeight, 1.2, 1.2, "FD");
@@ -244,13 +245,13 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
       align: "right",
     });
     doc.setTextColor(0, 0, 0);
-    y += badgeHeight;
+    y += badgeHeight + 1.8;
   }
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.2);
   y = drawWrappedText(doc, amountWords, leftX, y, contentW, smallLh);
-  y += 0.8;
+  y += 1.4;
 
   doc.line(margin, y, w - margin, y);
   y += blockGap - 0.4;
@@ -272,12 +273,15 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
         "(2) Fees are not transferable.",
         "(3) Cheque payment subject to realization of cheque.",
       ];
+  // Right-side receiver name and signature/stamp box with fixed lower area
+  const receiverBlockTop = Math.max(y + 1, h - 27);
+  const notesBottomLimit = receiverBlockTop - 2;
   notes.slice(0, 3).forEach((line) => {
-    y = drawWrappedText(doc, line, leftX, y, contentW - 36, 3.4);
+    if (y < notesBottomLimit) {
+      y = drawWrappedText(doc, line, leftX, y, contentW - 36, 3.4);
+    }
   });
 
-  // Right-side receiver name and signature/stamp box
-  const receiverBlockTop = y - 12;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7.4);
   doc.text(data.receivedBy ?? "", rightX, receiverBlockTop, { align: "right" });
