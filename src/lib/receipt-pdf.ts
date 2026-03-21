@@ -174,7 +174,9 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
   doc.text(String(data.receiptNumber), valueX, y);
   doc.setFont("helvetica", "normal");
   doc.text("Date :", rightX - 24, y);
+  doc.setFont("helvetica", "bold");
   doc.text(dateStr || "—", rightX, y, { align: "right" });
+  doc.setFont("helvetica", "normal");
   y += lh;
 
   doc.text("Name", labelX, y);
