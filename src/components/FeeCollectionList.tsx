@@ -43,7 +43,7 @@ const DEFAULT_POLICY_NOTES = [
   "(3) Cheque payment subject to realisation.",
 ];
 
-type SchoolInfo = { name: string; address: string };
+type SchoolInfo = { name: string; address: string; logoUrl?: string | null };
 
 async function getReceiptData(row: CollectionRow) {
   const res = await fetch(`/api/receipt-data?id=${row.id}`);
@@ -51,13 +51,13 @@ async function getReceiptData(row: CollectionRow) {
   return res.json();
 }
 
-function printReceipt(row: CollectionRow, school: SchoolInfo) {
-  getReceiptData(row).then((data) => {
+async function printReceipt(row: CollectionRow, school: SchoolInfo) {
+  getReceiptData(row).then(async (data) => {
     if (!data) {
       generateAndPrintFallback(row, school);
       return;
     }
-    const pdfBlob = generateReceiptPDF({
+    const pdfBlob = await generateReceiptPDF({
       receiptNumber: data.receiptNumber,
       studentName: data.studentName,
       amount: data.amount,
@@ -76,6 +76,7 @@ function printReceipt(row: CollectionRow, school: SchoolInfo) {
       onlineTransactionRef: data.onlineTransactionRef,
       schoolName: school.name,
       schoolAddress: school.address,
+      schoolLogoUrl: school.logoUrl ?? undefined,
       standard: data.standard,
       division: data.division,
       rollNumber: data.rollNumber,
@@ -89,8 +90,8 @@ function printReceipt(row: CollectionRow, school: SchoolInfo) {
   });
 }
 
-function generateAndPrintFallback(row: CollectionRow, school: SchoolInfo) {
-  const pdfBlob = generateReceiptPDF({
+async function generateAndPrintFallback(row: CollectionRow, school: SchoolInfo) {
+  const pdfBlob = await generateReceiptPDF({
     receiptNumber: row.receipt_number,
     studentName: row.student_name ?? "—",
     amount: Number(row.amount),
@@ -109,6 +110,7 @@ function generateAndPrintFallback(row: CollectionRow, school: SchoolInfo) {
     onlineTransactionRef: row.online_transaction_ref,
     schoolName: school.name,
     schoolAddress: school.address,
+    schoolLogoUrl: school.logoUrl ?? undefined,
     standard: row.student_standard,
     division: row.student_division,
     rollNumber: row.student_roll_number,
@@ -120,13 +122,13 @@ function generateAndPrintFallback(row: CollectionRow, school: SchoolInfo) {
   setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
 
-function downloadReceipt(row: CollectionRow, school: SchoolInfo) {
-  getReceiptData(row).then((data) => {
+async function downloadReceipt(row: CollectionRow, school: SchoolInfo) {
+  getReceiptData(row).then(async (data) => {
     if (!data) {
       downloadFallback(row, school);
       return;
     }
-    const pdfBlob = generateReceiptPDF({
+    const pdfBlob = await generateReceiptPDF({
       receiptNumber: data.receiptNumber,
       studentName: data.studentName,
       amount: data.amount,
@@ -145,6 +147,7 @@ function downloadReceipt(row: CollectionRow, school: SchoolInfo) {
       onlineTransactionRef: data.onlineTransactionRef,
       schoolName: school.name,
       schoolAddress: school.address,
+      schoolLogoUrl: school.logoUrl ?? undefined,
       standard: data.standard,
       division: data.division,
       rollNumber: data.rollNumber,
@@ -160,8 +163,8 @@ function downloadReceipt(row: CollectionRow, school: SchoolInfo) {
   });
 }
 
-function downloadFallback(row: CollectionRow, school: SchoolInfo) {
-  const pdfBlob = generateReceiptPDF({
+async function downloadFallback(row: CollectionRow, school: SchoolInfo) {
+  const pdfBlob = await generateReceiptPDF({
     receiptNumber: row.receipt_number,
     studentName: row.student_name ?? "—",
     amount: Number(row.amount),
@@ -180,6 +183,7 @@ function downloadFallback(row: CollectionRow, school: SchoolInfo) {
     onlineTransactionRef: row.online_transaction_ref,
     schoolName: school.name,
     schoolAddress: school.address,
+    schoolLogoUrl: school.logoUrl ?? undefined,
     standard: row.student_standard,
     division: row.student_division,
     rollNumber: row.student_roll_number,
@@ -251,7 +255,13 @@ export default function FeeCollectionList() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => downloadReceipt(row, { name: school.name, address: school.address })}
+                        onClick={() =>
+                          downloadReceipt(row, {
+                            name: school.name,
+                            address: school.address,
+                            logoUrl: school.logoUrl,
+                          })
+                        }
                         aria-label="Download receipt"
                       >
                         <Download className="h-3 w-3" />
@@ -259,7 +269,13 @@ export default function FeeCollectionList() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => printReceipt(row, { name: school.name, address: school.address })}
+                        onClick={() =>
+                          printReceipt(row, {
+                            name: school.name,
+                            address: school.address,
+                            logoUrl: school.logoUrl,
+                          })
+                        }
                         aria-label="Print receipt"
                       >
                         <Printer className="h-3 w-3" />

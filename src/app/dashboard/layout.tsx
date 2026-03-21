@@ -18,13 +18,13 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="h-screen flex flex-col lg:flex-row bg-muted/30 overflow-hidden">
+    <div className="flex min-h-0 h-[100dvh] max-h-[100dvh] flex-col overflow-hidden lg:flex-row bg-muted/30">
       <InactivitySignOut />
       <AppSidebar user={user} />
-      <main className="flex flex-col flex-1 min-w-0 min-h-0 lg:ml-64 overflow-hidden bg-background border-l border-border/80">
+      <main className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden bg-background border-l border-border/80 lg:ml-64">
         <DashboardHeader user={user} />
-        <div className="flex-1 min-h-[60vh] overflow-y-auto overflow-x-hidden content-area">
-          <div className="container py-8 px-4 sm:px-6 lg:px-8 xl:px-10 max-w-7xl xl:max-w-[90rem] min-w-0 w-full">
+        <div className="content-area flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden touch-pan-y">
+          <div className="container w-full min-w-0 max-w-7xl px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-8 lg:px-8 xl:max-w-[90rem] xl:px-10">
             {children}
           </div>
         </div>

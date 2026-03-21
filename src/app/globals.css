@@ -94,9 +94,15 @@
   * {
     @apply border-border;
   }
+  /* Lock document scroll; dashboard uses its own scroll region (.content-area) */
   html {
     height: 100%;
     overflow: hidden;
+  }
+  @supports (height: 100dvh) {
+    html {
+      height: 100dvh;
+    }
   }
   body {
     @apply bg-background text-foreground antialiased;
@@ -129,8 +135,10 @@
   .caption {
     @apply text-xs text-muted-foreground leading-relaxed;
   }
-  /* Content area – stable surface */
+  /* Main dashboard scroll region – nested scroll + momentum on iOS */
   .content-area {
     @apply bg-background;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
   }
 }
