@@ -1,6 +1,6 @@
 import { jsPDF } from "jspdf";
 import { getFeeTypeLabel } from "@/lib/utils";
-import { PDF_LAYOUT, drawWrappedText } from "./pdf-utils";
+import { drawWrappedText } from "./pdf-utils";
 
 const ONES = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
 const TENS = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
@@ -68,121 +68,142 @@ export interface ReceiptData {
 }
 
 export function generateReceiptPDF(data: ReceiptData): Blob {
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const doc = new jsPDF({ unit: "mm", format: "a6", orientation: "portrait" });
   const w = doc.internal.pageSize.getWidth();
-  const margin = PDF_LAYOUT.margin;
-  const lh = PDF_LAYOUT.lineHeight;
-  const blockGap = PDF_LAYOUT.blockGap;
-  let y = 22;
+  const h = doc.internal.pageSize.getHeight();
+  const margin = 7;
+  const contentW = w - margin * 2;
+  const lh = 4.4;
+  const smallLh = 3.8;
+  const blockGap = 3;
+  let y = 10;
 
   const schoolName = data.schoolName ?? "SCHOOL NAME";
   const schoolAddress = data.schoolAddress ?? "Address";
+  const dateStr = data.collectedAt
+    ? new Date(data.collectedAt).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
+    : "";
+  const stdDiv = [data.standard, data.division].filter(Boolean).join(" / ") || "—";
+  const periodText = data.periodLabel ?? `Q${data.quarter} (${data.academicYear})`;
+  const amountWords = data.amountInWords ?? amountInWords(data.amount);
 
-  doc.setFontSize(PDF_LAYOUT.fontSizeTitle);
+  doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
   doc.text(schoolName.toUpperCase(), w / 2, y, { align: "center" });
-  y += lh + 2;
+  y += lh + 0.6;
 
-  doc.setFontSize(PDF_LAYOUT.fontSizeSubtitle);
+  doc.setFontSize(7.4);
   doc.setFont("helvetica", "normal");
-  const addrLines = doc.splitTextToSize(schoolAddress.toUpperCase(), PDF_LAYOUT.contentWidth);
+  const addrLines = doc.splitTextToSize(schoolAddress.toUpperCase(), contentW);
   addrLines.forEach((line: string) => {
     doc.text(line, w / 2, y, { align: "center" });
-    y += lh;
+    y += smallLh;
   });
-  y += blockGap;
+  y += 1.2;
 
-  doc.setFontSize(PDF_LAYOUT.fontSizeHeading);
+  doc.setFontSize(9.2);
   doc.setFont("helvetica", "bold");
-  doc.text("Fee Receipt", w / 2, y, { align: "center" });
-  y += lh + blockGap;
+  doc.text("FEE RECEIPT", w / 2, y, { align: "center" });
+  y += lh;
 
   doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.25);
   doc.line(margin, y, w - margin, y);
   y += blockGap;
 
-  const colLeft = margin;
-  const colRight = w / 2 + 5;
-  const labelW = PDF_LAYOUT.labelWidth;
-  const dateStr = data.collectedAt ? new Date(data.collectedAt).toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
-  const stdDiv = [data.standard, data.division].filter(Boolean).join(" ") || "—";
+  const leftX = margin;
+  const rightX = w - margin;
+  const valueX = margin + 19;
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(PDF_LAYOUT.fontSizeBody);
+  doc.setFontSize(7.9);
 
-  doc.text("Receipt No.:", colLeft, y);
-  doc.text(String(data.receiptNumber), colLeft + labelW, y);
-  doc.text("Date:", colRight, y);
-  doc.text(dateStr, colRight + labelW, y);
+  doc.text("Receipt:", leftX, y);
+  doc.setFont("helvetica", "bold");
+  doc.text(String(data.receiptNumber), valueX, y);
+  doc.setFont("helvetica", "normal");
+  doc.text("Date:", rightX - 24, y);
+  doc.text(dateStr || "—", rightX, y, { align: "right" });
   y += lh;
 
-  doc.text("Name:", colLeft, y);
-  const nameLines = doc.splitTextToSize(data.studentName, PDF_LAYOUT.valueMaxWidth);
+  doc.text("Name:", leftX, y);
+  const nameLines = doc.splitTextToSize(data.studentName || "—", contentW - 19);
   nameLines.forEach((line: string, i: number) => {
-    doc.text(line, colLeft + labelW, y + i * lh);
+    doc.text(line, valueX, y + i * lh);
   });
-  doc.text("Std:", colRight, y);
-  doc.text(stdDiv, colRight + labelW, y);
   y += Math.max(lh * nameLines.length, lh);
 
-  doc.text("Div.:", colLeft, y);
-  doc.text(data.division ?? "—", colLeft + labelW, y);
-  doc.text("GR No.:", colRight, y);
-  doc.text(String(data.grNo ?? "—"), colRight + labelW, y);
+  doc.text("Class:", leftX, y);
+  doc.text(stdDiv, valueX, y);
+  doc.text("GR:", rightX - 24, y);
+  doc.text(String(data.grNo ?? "—"), rightX, y, { align: "right" });
   y += lh;
 
-  doc.text("Period:", colLeft, y);
-  doc.text(data.periodLabel ?? `Q${data.quarter} (${data.academicYear})`, colLeft + labelW, y);
-  doc.text("Year:", colRight, y);
-  doc.text(data.academicYear, colRight + labelW, y);
+  doc.text("Period:", leftX, y);
+  doc.text(periodText, valueX, y);
   y += lh;
 
-  doc.text("Pay Type:", colLeft, y);
-  doc.text(data.paymentMode.charAt(0).toUpperCase() + data.paymentMode.slice(1), colLeft + labelW, y);
-  y += blockGap;
+  doc.text("Mode:", leftX, y);
+  doc.text(
+    data.paymentMode ? data.paymentMode.charAt(0).toUpperCase() + data.paymentMode.slice(1) : "—",
+    valueX,
+    y
+  );
+  y += blockGap + 0.6;
 
   doc.line(margin, y, w - margin, y);
   y += blockGap;
-
-  doc.setFont("helvetica", "bold");
-  doc.text("Fees", w / 2, y, { align: "center" });
-  y += lh + 2;
 
   const feeLabel = getFeeTypeLabel(data.feeType);
+  const amountText = `Rs. ${Number(data.amount || 0).toFixed(2)}`;
   doc.setFont("helvetica", "normal");
-  doc.text(`${feeLabel}:`, margin, y);
-  doc.text(data.amount.toFixed(2), w - margin, y, { align: "right" });
-  y += lh + 2;
+  doc.text("Fee Head:", leftX, y);
+  doc.text(feeLabel || "Fee", valueX, y);
+  y += lh;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9.3);
+  doc.text("Total Paid:", leftX, y);
+  doc.text(amountText, rightX, y, { align: "right" });
+  doc.setFontSize(7.9);
+  y += lh + 0.6;
 
   doc.line(margin, y, w - margin, y);
   y += blockGap;
-
-  doc.setFont("helvetica", "bold");
-  doc.text("Total Fee:", margin, y);
-  doc.text(data.amount.toFixed(2), w - margin, y, { align: "right" });
-  y += lh + 2;
 
   if (data.outstandingAfterPayment != null) {
     doc.setFont("helvetica", "normal");
-    doc.text("Outstanding after this payment:", margin, y);
+    doc.text("Outstanding:", leftX, y);
     doc.setFont("helvetica", "bold");
-    doc.text(`₹${data.outstandingAfterPayment.toFixed(2)}`, w - margin, y, { align: "right" });
+    doc.text(`Rs. ${data.outstandingAfterPayment.toFixed(2)}`, rightX, y, { align: "right" });
     doc.setFont("helvetica", "normal");
-    y += lh + 2;
+    y += lh;
   }
 
-  const amountWords = data.amountInWords ?? amountInWords(data.amount);
-  doc.setFontSize(PDF_LAYOUT.fontSizeSmall);
-  y = drawWrappedText(doc, amountWords, margin, y, PDF_LAYOUT.contentWidth, PDF_LAYOUT.lineHeightSmall);
-  y += blockGap;
+  doc.setFontSize(7.2);
+  y = drawWrappedText(doc, `In Words: ${amountWords}`, leftX, y, contentW, smallLh);
+  y += 1.2;
 
+  if (data.paymentMode === "cheque") {
+    doc.setFont("helvetica", "normal");
+    doc.text(`Cheque No: ${data.chequeNumber ?? "—"}`, leftX, y);
+    y += smallLh;
+    doc.text(`Bank: ${data.chequeBank ?? "—"}`, leftX, y);
+    y += smallLh;
+  }
+  if (data.paymentMode === "online") {
+    doc.setFont("helvetica", "normal");
+    doc.text(`Txn ID: ${data.onlineTransactionId ?? "—"}`, leftX, y);
+    y += smallLh;
+  }
+
+  y += 0.6;
   doc.line(margin, y, w - margin, y);
-  y += blockGap;
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(PDF_LAYOUT.fontSizeBody);
-  doc.text("Note:", margin, y);
-  y += lh;
+  y += 2.4;
 
   const notes = data.policyNotes && data.policyNotes.length > 0
     ? data.policyNotes
@@ -193,18 +214,23 @@ export function generateReceiptPDF(data: ReceiptData): Blob {
       ];
 
   doc.setFont("helvetica", "normal");
-  notes.forEach((line) => {
-    y = drawWrappedText(doc, line, margin + 3, y, PDF_LAYOUT.contentWidth - 3, PDF_LAYOUT.lineHeightSmall);
+  doc.setFontSize(6.4);
+  const maxNotesToShow = 2;
+  notes.slice(0, maxNotesToShow).forEach((line) => {
+    if (y < h - 14) {
+      y = drawWrappedText(doc, line, leftX, y, contentW, 3.2);
+    }
   });
 
-  y += blockGap;
+  const signY = h - 10;
+  doc.setFontSize(7.4);
   doc.setFont("helvetica", "bold");
-  doc.text("Received By", w - margin - 50, y);
-  y += 4;
-  doc.line(w - margin - 55, y, w - margin, y);
-  y += lh;
+  doc.text("Received By", rightX, signY - 2.2, { align: "right" });
+  doc.setLineWidth(0.2);
+  doc.line(rightX - 28, signY, rightX, signY);
   doc.setFont("helvetica", "normal");
-  doc.text(data.receivedBy ?? "", w - margin - 50, y);
+  doc.setFontSize(6.8);
+  doc.text(data.receivedBy ?? "", rightX, signY + 3.2, { align: "right" });
 
   return doc.output("blob");
 }
