@@ -155,10 +155,13 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
 
   const leftX = margin;
   const rightX = w - margin;
-  const valueX = margin + 19;
-  const drawField = (label: string, value: string, yy: number) => {
+  const labelX = leftX;
+  const colonX = leftX + 17;
+  const valueX = leftX + 19;
+  const drawAlignedField = (label: string, value: string, yy: number) => {
     doc.setFont("helvetica", "normal");
-    doc.text(`${label} :`, leftX, yy);
+    doc.text(label, labelX, yy);
+    doc.text(":", colonX, yy);
     doc.text(value || "—", valueX, yy);
   };
 
@@ -173,31 +176,34 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
   doc.text(dateStr || "—", rightX, y, { align: "right" });
   y += lh;
 
-  doc.text("Name :", leftX, y);
-  const nameLines = doc.splitTextToSize(data.studentName || "—", contentW - 19);
+  doc.text("Name", labelX, y);
+  doc.text(":", colonX, y);
+  const nameLines = doc.splitTextToSize(data.studentName || "—", contentW - (valueX - leftX));
   nameLines.forEach((line: string, i: number) => {
     doc.text(line, valueX, y + i * lh);
   });
   y += Math.max(lh * nameLines.length, lh);
 
-  doc.text("Std. :", leftX, y);
-  doc.text(String(data.standard ?? "—"), valueX, y);
-  doc.text("Div. :", leftX + 29, y);
-  doc.text(String(data.division ?? "—"), leftX + 42, y);
-  doc.text("Roll No. :", rightX - 36, y);
-  doc.text(String(data.rollNumber ?? "—"), rightX, y, { align: "right" });
+  drawAlignedField(
+    "Std/Div",
+    `${String(data.standard ?? "—")} / ${String(data.division ?? "—")}`,
+    y
+  );
   y += lh;
 
-  drawField("GR Number", String(data.grNo ?? "—"), y);
+  drawAlignedField("Roll No", String(data.rollNumber ?? "—"), y);
   y += lh;
 
-  drawField("Acedemic Year", data.academicYear || "—", y);
+  drawAlignedField("GR No", String(data.grNo ?? "—"), y);
   y += lh;
 
-  drawField("Period", periodText, y);
+  drawAlignedField("Year", data.academicYear || "—", y);
   y += lh;
 
-  drawField(
+  drawAlignedField("Period", periodText, y);
+  y += lh;
+
+  drawAlignedField(
     "Payment Mode",
     data.paymentMode ? data.paymentMode.charAt(0).toUpperCase() + data.paymentMode.slice(1) : "—",
     y
@@ -231,23 +237,6 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
   doc.setFontSize(7.9);
   y += lh;
 
-  if (data.outstandingAfterPayment != null) {
-    const badgeHeight = 5.4;
-    const badgeY = y - 0.2;
-    doc.setFillColor(255, 245, 204);
-    doc.setDrawColor(214, 158, 46);
-    doc.roundedRect(leftX, badgeY, contentW, badgeHeight, 1.2, 1.2, "FD");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(7.1);
-    doc.setTextColor(120, 53, 15);
-    doc.text("Outstanding:", leftX + 1.5, badgeY + 3.7);
-    doc.text(`Rs. ${data.outstandingAfterPayment.toFixed(2)}`, rightX - 1.5, badgeY + 3.7, {
-      align: "right",
-    });
-    doc.setTextColor(0, 0, 0);
-    y += badgeHeight + 1.8;
-  }
-
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.2);
   y = drawWrappedText(doc, amountWords, leftX, y, contentW, smallLh);
@@ -273,27 +262,27 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
         "(2) Fees are not transferable.",
         "(3) Cheque payment subject to realization of cheque.",
       ];
-  // Right-side receiver name and signature/stamp box with fixed lower area
-  const receiverBlockTop = Math.max(y + 1, h - 27);
-  const notesBottomLimit = receiverBlockTop - 2;
+  // Keep note text and receiver block aligned on the same top line.
+  const sectionTopY = y;
+  const notesBottomLimit = h - 11;
   notes.slice(0, 3).forEach((line) => {
     if (y < notesBottomLimit) {
       y = drawWrappedText(doc, line, leftX, y, contentW - 36, 3.4);
     }
   });
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(7.4);
-  doc.text(data.receivedBy ?? "", rightX, receiverBlockTop, { align: "right" });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.2);
+  doc.text(data.receivedBy ?? "", rightX, sectionTopY + 4, { align: "right" });
   const boxW = 26;
   const boxH = 16;
   const boxX = rightX - boxW;
-  const boxY = receiverBlockTop + 3;
+  const boxY = sectionTopY + 6;
   doc.setLineWidth(0.2);
   doc.rect(boxX, boxY, boxW, boxH);
 
   if (data.paymentMode === "cheque" || data.paymentMode === "online") {
-    const refY = Math.min(h - 1.2, (data.outstandingAfterPayment != null ? receiverBlockTop + boxH + 7 : receiverBlockTop + boxH + 3));
+    const refY = Math.min(h - 1.2, sectionTopY + boxH + 9);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(6.6);
     if (data.paymentMode === "cheque") {
