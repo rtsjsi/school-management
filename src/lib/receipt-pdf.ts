@@ -87,8 +87,7 @@ export function generateReceiptPDF(data: ReceiptData): Blob {
         year: "numeric",
       })
     : "";
-  const stdDiv = [data.standard, data.division].filter(Boolean).join(" / ") || "—";
-  const periodText = data.periodLabel ?? `Q${data.quarter} (${data.academicYear})`;
+  const periodText = data.periodLabel ?? `Q${data.quarter}`;
   const amountWords = data.amountInWords ?? amountInWords(data.amount);
 
   doc.setFontSize(10);
@@ -105,7 +104,7 @@ export function generateReceiptPDF(data: ReceiptData): Blob {
   });
   y += 1.2;
 
-  doc.setFontSize(9.2);
+  doc.setFontSize(8.8);
   doc.setFont("helvetica", "bold");
   doc.text("FEE RECEIPT", w / 2, y, { align: "center" });
   y += lh;
@@ -122,32 +121,38 @@ export function generateReceiptPDF(data: ReceiptData): Blob {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.9);
 
-  doc.text("Receipt:", leftX, y);
+  doc.text("Receipt :", leftX, y);
   doc.setFont("helvetica", "bold");
   doc.text(String(data.receiptNumber), valueX, y);
   doc.setFont("helvetica", "normal");
-  doc.text("Date:", rightX - 24, y);
+  doc.text("Date :", rightX - 24, y);
   doc.text(dateStr || "—", rightX, y, { align: "right" });
   y += lh;
 
-  doc.text("Name:", leftX, y);
+  doc.text("Name :", leftX, y);
   const nameLines = doc.splitTextToSize(data.studentName || "—", contentW - 19);
   nameLines.forEach((line: string, i: number) => {
     doc.text(line, valueX, y + i * lh);
   });
   y += Math.max(lh * nameLines.length, lh);
 
-  doc.text("Class:", leftX, y);
-  doc.text(stdDiv, valueX, y);
-  doc.text("GR:", rightX - 24, y);
+  doc.text("Std. :", leftX, y);
+  doc.text(String(data.standard ?? "—"), valueX, y);
+  doc.text("Div. :", leftX + 29, y);
+  doc.text(String(data.division ?? "—"), leftX + 42, y);
+  doc.text("Temp. GR No. :", rightX - 36, y);
   doc.text(String(data.grNo ?? "—"), rightX, y, { align: "right" });
   y += lh;
 
-  doc.text("Period:", leftX, y);
+  doc.text("Period :", leftX, y);
   doc.text(periodText, valueX, y);
   y += lh;
 
-  doc.text("Mode:", leftX, y);
+  doc.text("Year :", leftX, y);
+  doc.text(data.academicYear || "—", valueX, y);
+  y += lh;
+
+  doc.text("Pay Type :", leftX, y);
   doc.text(
     data.paymentMode ? data.paymentMode.charAt(0).toUpperCase() + data.paymentMode.slice(1) : "—",
     valueX,
@@ -158,53 +163,48 @@ export function generateReceiptPDF(data: ReceiptData): Blob {
   doc.line(margin, y, w - margin, y);
   y += blockGap;
 
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8.4);
+  doc.text("Fees", w / 2, y, { align: "center" });
+  y += lh;
+
   const feeLabel = getFeeTypeLabel(data.feeType);
   const amountText = `Rs. ${Number(data.amount || 0).toFixed(2)}`;
   doc.setFont("helvetica", "normal");
-  doc.text("Fee Head:", leftX, y);
-  doc.text(feeLabel || "Fee", valueX, y);
-  y += lh;
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9.3);
-  doc.text("Total Paid:", leftX, y);
-  doc.text(amountText, rightX, y, { align: "right" });
   doc.setFontSize(7.9);
-  y += lh + 0.6;
+  doc.text(`${feeLabel || "Fee"} :`, leftX, y);
+  doc.text(amountText.replace("Rs. ", ""), rightX, y, { align: "right" });
+  y += lh + 0.3;
 
+  // Empty body area line like printed receipt block
   doc.line(margin, y, w - margin, y);
   y += blockGap;
 
-  if (data.outstandingAfterPayment != null) {
-    doc.setFont("helvetica", "normal");
-    doc.text("Outstanding:", leftX, y);
-    doc.setFont("helvetica", "bold");
-    doc.text(`Rs. ${data.outstandingAfterPayment.toFixed(2)}`, rightX, y, { align: "right" });
-    doc.setFont("helvetica", "normal");
-    y += lh;
-  }
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9.3);
+  doc.text("Total Fee :", leftX, y);
+  doc.text(amountText.replace("Rs. ", ""), rightX, y, { align: "right" });
+  doc.setFontSize(7.9);
+  y += lh;
 
+  doc.setFont("helvetica", "normal");
   doc.setFontSize(7.2);
-  y = drawWrappedText(doc, `In Words: ${amountWords}`, leftX, y, contentW, smallLh);
-  y += 1.2;
+  y = drawWrappedText(doc, amountWords, leftX, y, contentW, smallLh);
+  y += 0.8;
 
-  if (data.paymentMode === "cheque") {
-    doc.setFont("helvetica", "normal");
-    doc.text(`Cheque No: ${data.chequeNumber ?? "—"}`, leftX, y);
-    y += smallLh;
-    doc.text(`Bank: ${data.chequeBank ?? "—"}`, leftX, y);
-    y += smallLh;
-  }
-  if (data.paymentMode === "online") {
-    doc.setFont("helvetica", "normal");
-    doc.text(`Txn ID: ${data.onlineTransactionId ?? "—"}`, leftX, y);
-    y += smallLh;
-  }
-
-  y += 0.6;
   doc.line(margin, y, w - margin, y);
-  y += 2.4;
+  y += blockGap - 0.4;
 
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.text("Note :", leftX, y);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.3);
+  doc.text("Received By,", rightX, y, { align: "right" });
+  y += lh;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.2);
   const notes = data.policyNotes && data.policyNotes.length > 0
     ? data.policyNotes
     : [
@@ -212,25 +212,39 @@ export function generateReceiptPDF(data: ReceiptData): Blob {
         "(2) Fees are not transferable.",
         "(3) Cheque payment subject to realization of cheque.",
       ];
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(6.4);
-  const maxNotesToShow = 2;
-  notes.slice(0, maxNotesToShow).forEach((line) => {
-    if (y < h - 14) {
-      y = drawWrappedText(doc, line, leftX, y, contentW, 3.2);
-    }
+  notes.slice(0, 3).forEach((line) => {
+    y = drawWrappedText(doc, line, leftX, y, contentW - 36, 3.4);
   });
 
-  const signY = h - 10;
-  doc.setFontSize(7.4);
+  // Right-side receiver name and signature/stamp box
+  const receiverBlockTop = y - 12;
   doc.setFont("helvetica", "bold");
-  doc.text("Received By", rightX, signY - 2.2, { align: "right" });
+  doc.setFontSize(7.4);
+  doc.text(data.receivedBy ?? "", rightX, receiverBlockTop, { align: "right" });
+  const boxW = 26;
+  const boxH = 16;
+  const boxX = rightX - boxW;
+  const boxY = receiverBlockTop + 3;
   doc.setLineWidth(0.2);
-  doc.line(rightX - 28, signY, rightX, signY);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(6.8);
-  doc.text(data.receivedBy ?? "", rightX, signY + 3.2, { align: "right" });
+  doc.rect(boxX, boxY, boxW, boxH);
+
+  if (data.outstandingAfterPayment != null) {
+    const outY = Math.min(h - 4, boxY + boxH + 4);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.8);
+    doc.text(`Outstanding: Rs. ${data.outstandingAfterPayment.toFixed(2)}`, leftX, outY);
+  }
+
+  if (data.paymentMode === "cheque" || data.paymentMode === "online") {
+    const refY = Math.min(h - 1.2, (data.outstandingAfterPayment != null ? receiverBlockTop + boxH + 7 : receiverBlockTop + boxH + 3));
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.6);
+    if (data.paymentMode === "cheque") {
+      doc.text(`Cheque: ${data.chequeNumber ?? "—"}  Bank: ${data.chequeBank ?? "—"}`, leftX, refY);
+    } else {
+      doc.text(`Txn ID: ${data.onlineTransactionId ?? "—"}`, leftX, refY);
+    }
+  }
 
   return doc.output("blob");
 }
