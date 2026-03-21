@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/dialog";
 import StudentEntryForm from "@/components/StudentEntryForm";
 import { StudentEditForm } from "@/components/StudentEditForm";
-import StudentViewDialog from "@/components/StudentViewDialog";
+import { StudentViewDialog } from "@/components/StudentViewDialog";
 
 type StudentRow = {
   id: string;

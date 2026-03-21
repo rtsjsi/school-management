@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import {
   Dialog,
   DialogContent,
@@ -12,11 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye } from "lucide-react";
-import { CheckCircle } from "lucide-react";
-import { StandardDivisionYearSelects } from "@/components/StandardDivisionYearSelects";
-import { AcademicYearSelect } from "@/components/AcademicYearSelect";
-import { IN_STATES } from "@/lib/student-form";
+import { Eye, CheckCircle } from "lucide-react";
 
 interface StudentViewDialogProps {
   student: {
@@ -55,9 +50,8 @@ interface StudentViewDialogProps {
 
 export function StudentViewDialog({ student }: StudentViewDialogProps) {
   const [open, setOpen] = useState(false);
-  const supabase = createClient();
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     const map: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       active: "default",
       inactive: "secondary",
@@ -65,7 +59,7 @@ export function StudentViewDialog({ student }: StudentViewDialogProps) {
       graduated: "secondary",
       suspended: "destructive",
     };
-    return map[status] || "default";
+    return map[status] ?? "default";
   };
 
   return (
@@ -159,8 +153,10 @@ export function StudentViewDialog({ student }: StudentViewDialogProps) {
                 <h3 className="text-sm font-medium text-muted-foreground mb-1">RTE Quota</h3>
                 <p className="text-lg">
                   {student.is_rte_quota ? (
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    Yes
+                    <>
+                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                      Yes
+                    </>
                   ) : (
                     <span className="text-muted-foreground">No</span>
                   )}
@@ -246,15 +242,15 @@ export function StudentViewDialog({ student }: StudentViewDialogProps) {
                 <p className="text-lg">{student.aadhar_no ?? "—"}</p>
               </div>
               <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-1">Father's Name</h3>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">Father&#39;s Name</h3>
                 <p className="text-lg">{student.father_name ?? "—"}</p>
               </div>
               <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-1">Mother's Name</h3>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">Mother&#39;s Name</h3>
                 <p className="text-lg">{student.mother_name ?? "—"}</p>
               </div>
               <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-1">Mother's Contact</h3>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">Mother&#39;s Contact</h3>
                 <p className="text-lg">{student.mother_contact ?? "—"}</p>
               </div>
             </div>
