@@ -168,7 +168,8 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.9);
 
-  doc.text("Receipt :", leftX, y);
+  doc.text("Receipt", labelX, y);
+  doc.text(":", colonX, y);
   doc.setFont("helvetica", "bold");
   doc.text(String(data.receiptNumber), valueX, y);
   doc.setFont("helvetica", "normal");
@@ -203,11 +204,7 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
   drawAlignedField("Period", periodText, y);
   y += lh;
 
-  drawAlignedField(
-    "Payment Mode",
-    data.paymentMode ? data.paymentMode.charAt(0).toUpperCase() + data.paymentMode.slice(1) : "—",
-    y
-  );
+  drawAlignedField("Mode", data.paymentMode ? data.paymentMode.charAt(0).toUpperCase() + data.paymentMode.slice(1) : "—", y);
   y += blockGap + 0.6;
 
   doc.line(margin, y, w - margin, y);
@@ -240,6 +237,16 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.2);
   y = drawWrappedText(doc, amountWords, leftX, y, contentW, smallLh);
+  if (data.outstandingAfterPayment != null) {
+    y += 0.8;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.3);
+    doc.text("Outstanding :", leftX, y);
+    doc.text(`Rs. ${data.outstandingAfterPayment.toFixed(2)}`, rightX, y, { align: "right" });
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.2);
+    y += smallLh;
+  }
   y += 1.4;
 
   doc.line(margin, y, w - margin, y);
@@ -273,11 +280,11 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.2);
-  doc.text(data.receivedBy ?? "", rightX, sectionTopY + 4, { align: "right" });
+  doc.text(data.receivedBy ?? "", rightX, sectionTopY, { align: "right" });
   const boxW = 26;
   const boxH = 16;
   const boxX = rightX - boxW;
-  const boxY = sectionTopY + 6;
+  const boxY = sectionTopY + 2;
   doc.setLineWidth(0.2);
   doc.rect(boxX, boxY, boxW, boxH);
 
