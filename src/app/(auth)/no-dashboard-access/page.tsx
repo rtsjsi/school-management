@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-/** Legacy URL: everyone uses the home landing now. */
+/** Legacy URL: send users to sign-in. */
 export default function NoDashboardAccessRedirectPage() {
-  redirect("/");
+  redirect("/login");
 }
