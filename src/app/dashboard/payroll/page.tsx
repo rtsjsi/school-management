@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { getUser, canViewFinance } from "@/lib/auth";
+import { getUser, canAccessPayroll } from "@/lib/auth";
 import { Wallet } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ShiftForm from "@/components/ShiftForm";
@@ -19,7 +19,7 @@ import { TableSkeleton } from "@/components/skeletons/TableSkeleton";
 export default async function PayrollPage() {
   const user = await getUser();
   if (!user) redirect("/login");
-  if (!canViewFinance(user)) redirect("/dashboard");
+  if (!canAccessPayroll(user)) redirect("/dashboard");
 
   return (
     <div className="space-y-8">

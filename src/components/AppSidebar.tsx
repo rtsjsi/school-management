@@ -17,6 +17,7 @@ import {
   Banknote,
 } from "lucide-react";
 import type { AuthUser } from "@/lib/auth";
+import type { UserRole } from "@/types/auth";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -25,17 +26,58 @@ type NavItem = {
   href: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
-  roles?: ("principal" | "admin" | "teacher" | "auditor")[];
+  roles?: UserRole[];
 };
 
+const ALL_DASHBOARD_ROLES: UserRole[] = [
+  "principal",
+  "admin",
+  "teacher",
+  "auditor",
+  "clerk",
+  "payroll",
+];
+
+const ACADEMIC_STUDENT_EXAM_ROLES: UserRole[] = ["principal", "admin", "teacher", "auditor"];
+
 const navItems: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/academic-setup", label: "Academic setup", icon: BookOpen },
-  { href: "/dashboard/students", label: "Students management", icon: GraduationCap },
-  { href: "/dashboard/fees", label: "Fees management", icon: DollarSign, roles: ["principal", "admin", "auditor"] },
-  { href: "/dashboard/expenses", label: "Expense management", icon: Banknote, roles: ["principal", "admin", "auditor"] },
-  { href: "/dashboard/payroll", label: "Payroll", icon: Wallet, roles: ["principal", "admin", "auditor"] },
-  { href: "/dashboard/exams", label: "Exam management", icon: FileQuestion },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ALL_DASHBOARD_ROLES },
+  {
+    href: "/dashboard/academic-setup",
+    label: "Academic setup",
+    icon: BookOpen,
+    roles: ACADEMIC_STUDENT_EXAM_ROLES,
+  },
+  {
+    href: "/dashboard/students",
+    label: "Students management",
+    icon: GraduationCap,
+    roles: ACADEMIC_STUDENT_EXAM_ROLES,
+  },
+  {
+    href: "/dashboard/fees",
+    label: "Fees management",
+    icon: DollarSign,
+    roles: ["principal", "admin", "auditor", "clerk"],
+  },
+  {
+    href: "/dashboard/expenses",
+    label: "Expense management",
+    icon: Banknote,
+    roles: ["principal", "admin", "auditor"],
+  },
+  {
+    href: "/dashboard/payroll",
+    label: "Payroll",
+    icon: Wallet,
+    roles: ["principal", "admin", "auditor", "payroll"],
+  },
+  {
+    href: "/dashboard/exams",
+    label: "Exam management",
+    icon: FileQuestion,
+    roles: ACADEMIC_STUDENT_EXAM_ROLES,
+  },
   { href: "/dashboard/administration", label: "Administration", icon: Building2, roles: ["principal"] },
 ];
 

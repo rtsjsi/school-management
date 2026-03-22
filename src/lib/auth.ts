@@ -2,7 +2,7 @@ import { cache } from "react";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/types/auth";
 
-const VALID_ROLES: UserRole[] = ["principal", "admin", "teacher", "auditor"];
+const VALID_ROLES: UserRole[] = ["principal", "admin", "teacher", "auditor", "clerk", "payroll"];
 
 function normalizeRole(value: unknown): UserRole {
   const s = typeof value === "string" ? value.trim().toLowerCase() : "";
@@ -141,9 +141,40 @@ export function isAdminOrAbove(user: AuthUser | null): boolean {
   return user?.role === "principal" || user?.role === "admin";
 }
 
-/** Only Principal and Admin may access the /dashboard application shell. */
+/** Who may use the /dashboard shell (nav + module pages). */
 export function canAccessDashboard(user: AuthUser | null): boolean {
-  return isAdminOrAbove(user);
+  if (!user) return false;
+  return (
+    isAdminOrAbove(user) ||
+    user.role === "teacher" ||
+    user.role === "clerk" ||
+    user.role === "payroll" ||
+    user.role === "auditor"
+  );
+}
+
+export function isClerk(user: AuthUser | null): boolean {
+  return user?.role === "clerk";
+}
+
+export function isPayrollRole(user: AuthUser | null): boolean {
+  return user?.role === "payroll";
+}
+
+/** Fees management (collection, structure, reports). */
+export function canAccessFees(user: AuthUser | null): boolean {
+  if (!user) return false;
+  return isAdminOrAbove(user) || isClerk(user) || isAuditor(user);
+}
+
+export function canEditFees(user: AuthUser | null): boolean {
+  return isAdminOrAbove(user) || isClerk(user);
+}
+
+/** Payroll module (attendance, payslips, NEFT, etc.). */
+export function canAccessPayroll(user: AuthUser | null): boolean {
+  if (!user) return false;
+  return isAdminOrAbove(user) || isPayrollRole(user) || isAuditor(user);
 }
 
 export function isAuditor(user: AuthUser | null): boolean {

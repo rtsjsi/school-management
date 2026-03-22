@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { getUser, canViewFinance } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { getUser, canViewFinance, isClerk, isPayrollRole } from "@/lib/auth";
 import { shouldApplyClassFilter, getStudentIdsForAllowedClasses } from "@/lib/class-access";
 import { createClient } from "@/lib/supabase/server";
 import { ROLES } from "@/types/auth";
@@ -23,6 +24,9 @@ function formatCurrency(n: number) {
 export default async function DashboardPage() {
   const user = await getUser();
   if (!user) return null;
+
+  if (isClerk(user)) redirect("/dashboard/fees");
+  if (isPayrollRole(user)) redirect("/dashboard/payroll");
 
   const supabase = await createClient();
   const applyClassFilter = shouldApplyClassFilter(user);

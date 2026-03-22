@@ -1,6 +1,7 @@
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getUser, isAdminOrAbove } from "@/lib/auth";
+import { guardAcademicAndStudentModules } from "@/lib/dashboard-guards";
 import { GraduationCap } from "lucide-react";
 import { StudentEditForm } from "@/components/StudentEditForm";
 
@@ -11,6 +12,7 @@ export default async function StudentEditPage({
 }) {
   const user = await getUser();
   if (!user) redirect("/login");
+  guardAcademicAndStudentModules(user);
   if (!isAdminOrAbove(user)) redirect("/dashboard/students");
 
   const { id } = await params;

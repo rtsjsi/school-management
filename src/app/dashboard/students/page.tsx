@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getUser, isAdminOrAbove } from "@/lib/auth";
+import { guardAcademicAndStudentModules } from "@/lib/dashboard-guards";
 import { shouldApplyClassFilter, getAllowedClassNames } from "@/lib/class-access";
 import { GraduationCap } from "lucide-react";
 import { ManageStudentsList } from "@/components/ManageStudentsList";
@@ -9,6 +10,7 @@ import { TableSkeleton } from "@/components/skeletons/TableSkeleton";
 export default async function StudentsPage() {
   const user = await getUser();
   if (!user) redirect("/login");
+  guardAcademicAndStudentModules(user);
 
   const canEdit = isAdminOrAbove(user);
   const applyClassFilter = shouldApplyClassFilter(user);

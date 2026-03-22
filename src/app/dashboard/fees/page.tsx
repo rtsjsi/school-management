@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getUser, isAdminOrAbove, canViewFinance } from "@/lib/auth";
+import { getUser, canAccessFees, canEditFees } from "@/lib/auth";
 import { DollarSign } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import FeeStructureForm from "@/components/FeeStructureForm";
@@ -13,7 +13,7 @@ import { createClient } from "@/lib/supabase/server";
 export default async function FeesPage() {
   const user = await getUser();
   if (!user) redirect("/login");
-  if (!canViewFinance(user)) redirect("/dashboard");
+  if (!canAccessFees(user)) redirect("/dashboard");
 
   const supabase = await createClient();
   const { data: allStudents } = await supabase
@@ -23,7 +23,7 @@ export default async function FeesPage() {
     .order("full_name");
   const students = (allStudents ?? []).filter((s) => !(s as { is_rte_quota?: boolean }).is_rte_quota);
 
-  const canEdit = isAdminOrAbove(user);
+  const canEdit = canEditFees(user);
 
   return (
     <div className="space-y-8">

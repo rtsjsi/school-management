@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth";
+import { guardAcademicAndStudentModules } from "@/lib/dashboard-guards";
 import { shouldApplyClassFilter, getAllowedClassNames } from "@/lib/class-access";
 import { FileQuestion } from "lucide-react";
 import { ExamsList } from "@/components/async/ExamsList";
@@ -12,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 export default async function ExamsPage() {
   const user = await getUser();
   if (!user) redirect("/login");
+  guardAcademicAndStudentModules(user);
 
   const allowedClassNames = shouldApplyClassFilter(user) ? (await getAllowedClassNames(user.id)) ?? [] : null;
 

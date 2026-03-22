@@ -1,5 +1,6 @@
 import { redirect, notFound } from "next/navigation";
 import { getUser } from "@/lib/auth";
+import { guardAcademicAndStudentModules } from "@/lib/dashboard-guards";
 import { createClient } from "@/lib/supabase/server";
 import {
   Table,
@@ -18,6 +19,7 @@ export default async function StudentEnrolmentsPage({
 }) {
   const user = await getUser();
   if (!user) redirect("/login");
+  guardAcademicAndStudentModules(user);
 
   const { id: studentId } = await params;
   const supabase = await createClient();

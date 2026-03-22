@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getUser, isAdminOrAbove } from "@/lib/auth";
+import { guardAcademicAndStudentModules } from "@/lib/dashboard-guards";
 import { BookOpen } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClassManagement } from "@/components/ClassManagement";
@@ -15,6 +16,7 @@ export default async function AcademicSetupPage({
 }) {
   const user = await getUser();
   if (!user) redirect("/login");
+  guardAcademicAndStudentModules(user);
 
   const params = await searchParams;
   const canPromote = isAdminOrAbove(user);
