@@ -1,14 +1,11 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { canAccessDashboard, getUser } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import LoginForm from "@/components/LoginForm";
 
 export default async function LoginPage() {
   const user = await getUser();
-  if (user) {
-    if (canAccessDashboard(user)) redirect("/dashboard");
-    redirect("/no-dashboard-access");
-  }
+  if (user) redirect("/");
 
   return (
     <Suspense

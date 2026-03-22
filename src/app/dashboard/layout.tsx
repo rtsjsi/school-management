@@ -18,7 +18,7 @@ export default async function DashboardLayout({
   }
 
   if (!canAccessDashboard(user)) {
-    redirect("/no-dashboard-access");
+    redirect("/?from=dashboard");
   }
 
   return (

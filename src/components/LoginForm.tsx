@@ -19,7 +19,7 @@ export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; submit?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
-  /** True after auth succeeds while Next.js navigates to the dashboard (keep UI busy until unmount). */
+  /** True after auth succeeds while navigating to home (keep UI busy until unmount). */
   const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
@@ -73,14 +73,7 @@ export default function LoginForm() {
       if (data.user) {
         navigatingAway = true;
         setIsRedirecting(true);
-        const { data: prof } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", data.user.id)
-          .maybeSingle();
-        const raw = typeof prof?.role === "string" ? prof.role.trim().toLowerCase() : "";
-        const dashboardAllowed = raw === "principal" || raw === "admin";
-        router.push(dashboardAllowed ? "/dashboard" : "/no-dashboard-access");
+        router.push("/");
         router.refresh();
         // Do not clear loading — navigation is still in progress; finally is skipped below.
       }
@@ -106,10 +99,10 @@ export default function LoginForm() {
           >
             <Loader2 className="h-9 w-9 animate-spin text-primary" aria-hidden />
             <p className="text-sm font-medium text-foreground">
-              {isRedirecting ? "Finishing sign-in…" : "Signing you in…"}
+              {isRedirecting ? "Taking you home…" : "Signing you in…"}
             </p>
             <p className="text-xs text-muted-foreground max-w-[240px]">
-              {isRedirecting ? "Checking your access. This can take a few seconds." : "Verifying your credentials."}
+              {isRedirecting ? "Almost there. This can take a few seconds." : "Verifying your credentials."}
             </p>
           </div>
         )}
