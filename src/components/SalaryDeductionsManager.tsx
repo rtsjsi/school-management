@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   upsertSalaryDeduction,
@@ -73,16 +73,16 @@ export default function SalaryDeductionsManager() {
   const [addAllowanceType, setAddAllowanceType] = useState<string>("hra");
   const [addAllowanceAmount, setAddAllowanceAmount] = useState("");
 
-  const fetchEmployees = () => {
+  const fetchEmployees = useCallback(() => {
     createClient()
       .from("employees")
       .select("id, full_name, employee_id")
       .eq("status", "active")
       .order("full_name")
       .then(({ data }) => setEmployees(data ?? []));
-  };
+  }, []);
 
-  const fetchData = () => {
+  const fetchData = useCallback(() => {
     setLoading(true);
     setError(null);
     Promise.all([
@@ -94,15 +94,15 @@ export default function SalaryDeductionsManager() {
       })
       .catch(() => setError("Failed to load"))
       .finally(() => setLoading(false));
-  };
+  }, [monthYear]);
 
   useEffect(() => {
     fetchEmployees();
-  }, []);
+  }, [fetchEmployees]);
 
   useEffect(() => {
     fetchData();
-  }, [monthYear]);
+  }, [fetchData]);
 
   const handleAddDeduction = async (e: React.FormEvent) => {
     e.preventDefault();

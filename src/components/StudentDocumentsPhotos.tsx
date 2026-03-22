@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Label } from "@/components/ui/label";
@@ -44,7 +45,7 @@ export function StudentDocumentsPhotos({ studentId }: { studentId: string }) {
   const [uploading, setUploading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     if (!studentId) return;
@@ -59,7 +60,7 @@ export function StudentDocumentsPhotos({ studentId }: { studentId: string }) {
       setDocuments((docsRes.data ?? []) as DocRecord[]);
       setLoading(false);
     })();
-  }, [studentId]);
+  }, [studentId, supabase]);
 
   useEffect(() => {
     if (!studentId || (photos.length === 0 && documents.length === 0)) return;
@@ -75,7 +76,7 @@ export function StudentDocumentsPhotos({ studentId }: { studentId: string }) {
       }
       setSignedUrls((prev) => ({ ...prev, ...next }));
     })();
-  }, [studentId, photos, documents]);
+  }, [studentId, photos, documents, supabase]);
 
   const getExt = (file: File) => {
     const n = file.name.toLowerCase();
@@ -196,9 +197,16 @@ export function StudentDocumentsPhotos({ studentId }: { studentId: string }) {
               const isUploading = uploading === `photo-${role}`;
               return (
                 <div key={role} className="border rounded-lg p-3 flex flex-col items-center gap-2">
-                  <div className="w-20 h-20 rounded-md bg-muted flex items-center justify-center overflow-hidden">
+                  <div className="relative w-20 h-20 rounded-md bg-muted overflow-hidden">
                     {url ? (
-                      <img src={url} alt={PHOTO_LABELS[role]} className="w-full h-full object-cover" />
+                      <Image
+                        src={url}
+                        alt={PHOTO_LABELS[role]}
+                        fill
+                        sizes="80px"
+                        className="object-cover"
+                        unoptimized
+                      />
                     ) : (
                       <ImageIcon className="w-8 h-8 text-muted-foreground" />
                     )}

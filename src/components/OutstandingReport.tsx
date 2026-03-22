@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getFeeTypeLabel } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -62,7 +62,7 @@ export default function OutstandingReport() {
     fetchStandards().then(setStandards).catch(() => setStandards([]));
   }, []);
 
-  const fetchReport = () => {
+  const fetchReport = useCallback(() => {
     setLoading(true);
     const params = new URLSearchParams();
     params.set("academicYear", academicYear);
@@ -79,11 +79,11 @@ export default function OutstandingReport() {
         setData([]);
       })
       .finally(() => setLoading(false));
-  };
+  }, [academicYear, quarter, standardFilter, studentId]);
 
   useEffect(() => {
     if (academicYear) fetchReport();
-  }, [academicYear]);
+  }, [academicYear, fetchReport]);
 
   return (
     <Card>

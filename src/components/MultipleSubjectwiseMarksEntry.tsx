@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { SubmitButton } from "@/components/ui/SubmitButton";
@@ -38,7 +38,7 @@ export default function MultipleSubjectwiseMarksEntry() {
   const [classNames, setClassNames] = useState<string[]>([]);
   const [examSubjectMaxMarks, setExamSubjectMaxMarks] = useState<Record<string, number>>({});
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     supabase
@@ -51,7 +51,7 @@ export default function MultipleSubjectwiseMarksEntry() {
       .select("name")
       .order("sort_order")
       .then(({ data }) => setClassNames((data ?? []).map((c) => c.name)));
-  }, []);
+  }, [supabase]);
 
   const exam = exams.find((e) => e.id === selectedExamId);
   const effectiveGrade =
@@ -83,7 +83,7 @@ export default function MultipleSubjectwiseMarksEntry() {
         .order("sort_order");
       setSubjects((subData ?? []) as Subject[]);
     })();
-  }, [effectiveGrade]);
+  }, [effectiveGrade, supabase]);
 
   useEffect(() => {
     if (!selectedExamId || subjects.length === 0) {
@@ -101,7 +101,7 @@ export default function MultipleSubjectwiseMarksEntry() {
         });
         setExamSubjectMaxMarks(map);
       });
-  }, [selectedExamId, subjects]);
+  }, [selectedExamId, subjects, supabase]);
 
   const loadStudentsAndMarks = useCallback(() => {
     if (!selectedExamId) return;
@@ -147,7 +147,7 @@ export default function MultipleSubjectwiseMarksEntry() {
       }
       setMarks(initial);
     })().finally(() => setLoading(false));
-  }, [selectedExamId, exams, gradeFilter, divisionFilter, subjects]);
+  }, [selectedExamId, exams, gradeFilter, divisionFilter, subjects, supabase]);
 
   useEffect(() => {
     if (!selectedExamId || subjects.length === 0) {

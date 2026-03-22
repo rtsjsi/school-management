@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { SubmitButton } from "@/components/ui/SubmitButton";
@@ -41,13 +41,15 @@ type AllowedClassNames = { standardName: string; divisionName: string }[];
 
 export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: AllowedClassNames } = {}) {
   const router = useRouter();
-  const supabase = createClient();
-  const allowedStandardSet = allowedClassNames && allowedClassNames.length > 0
-    ? new Set(allowedClassNames.map((p) => p.standardName))
-    : null;
-  const allowedPairSet = allowedClassNames && allowedClassNames.length > 0
-    ? new Set(allowedClassNames.map((p) => `${p.standardName}\0${p.divisionName}`))
-    : null;
+  const supabase = useMemo(() => createClient(), []);
+  const allowedStandardSet = useMemo(() => {
+    if (!allowedClassNames?.length) return null;
+    return new Set(allowedClassNames.map((p) => p.standardName));
+  }, [allowedClassNames]);
+  const allowedPairSet = useMemo(() => {
+    if (!allowedClassNames?.length) return null;
+    return new Set(allowedClassNames.map((p) => `${p.standardName}\0${p.divisionName}`));
+  }, [allowedClassNames]);
 
   const [exams, setExams] = useState<Exam[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -98,7 +100,7 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
         .order("sort_order")
         .then(({ data }) => setClassNames((data ?? []).map((c: { name: string }) => c.name)));
     }
-  }, [allowedStandardSet ? Array.from(allowedStandardSet).join(",") : "all"]);
+  }, [supabase, allowedStandardSet]);
 
   // When exam changes, reset filters to exam's standard
   useEffect(() => {
@@ -134,7 +136,7 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
           .order("sort_order")
           .then(({ data }) => setSubjects((data ?? []) as Subject[]));
       });
-  }, [effectiveStandard]);
+  }, [effectiveStandard, supabase]);
 
   // Load max marks per subject for selected exam
   useEffect(() => {
@@ -153,7 +155,7 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
         });
         setExamSubjectMaxMarks(map);
       });
-  }, [selectedExamId, subjects]);
+  }, [selectedExamId, subjects, supabase]);
 
   const loadStudentsAndMarks = useCallback(() => {
     if (!selectedExamId || subjects.length === 0) return;
@@ -215,7 +217,7 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
       }
       setMarks(initial);
     })().finally(() => setLoading(false));
-  }, [selectedExamId, exam?.standard, standardFilter, divisionFilter, subjects, allowedPairSet?.size ?? 0]);
+  }, [supabase, selectedExamId, exam?.standard, standardFilter, divisionFilter, subjects, allowedPairSet]);
 
   useEffect(() => {
     if (!selectedExamId || subjects.length === 0) {

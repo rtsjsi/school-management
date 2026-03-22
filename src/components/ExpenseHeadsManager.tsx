@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,19 +38,19 @@ export function ExpenseHeadsManager() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
-  const loadHeads = () => {
+  const loadHeads = useCallback(() => {
     supabase
       .from("expense_heads")
       .select("id, name, sort_order")
       .order("sort_order")
       .then(({ data }) => setHeads((data ?? []) as HeadRow[]));
-  };
+  }, [supabase]);
 
   useEffect(() => {
     loadHeads();
-  }, []);
+  }, [loadHeads]);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();

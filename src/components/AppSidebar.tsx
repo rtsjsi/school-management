@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -68,11 +69,13 @@ export function AppSidebar({ user }: { user: AuthUser }) {
           title={school.name}
         >
           {school.logoUrl ? (
-            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md bg-sidebar-foreground/10 flex items-center justify-center">
-              <img
+            <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md bg-sidebar-foreground/10">
+              <Image
                 src={school.logoUrl}
                 alt=""
-                className="h-full w-full object-contain"
+                fill
+                sizes="40px"
+                className="object-contain p-0.5"
               />
             </div>
           ) : (
@@ -133,8 +136,8 @@ export function AppSidebar({ user }: { user: AuthUser }) {
         </Button>
         <Link href="/dashboard" className="flex min-w-0 flex-1 items-center gap-2">
           {school.logoUrl ? (
-            <div className="h-8 w-8 shrink-0 overflow-hidden rounded bg-muted flex items-center justify-center">
-              <img src={school.logoUrl} alt="" className="h-full w-full object-contain" />
+            <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded bg-muted">
+              <Image src={school.logoUrl} alt="" fill sizes="32px" className="object-contain p-0.5" />
             </div>
           ) : (
             <div className="h-8 w-8 shrink-0 rounded bg-muted flex items-center justify-center">

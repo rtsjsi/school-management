@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,7 @@ type AcademicYear = { id: string; name: string; status?: string | null };
 type ExpenseHead = { id: string; name: string };
 
 export function ExpenseBudgetsManager() {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const [years, setYears] = useState<AcademicYear[]>([]);
   const [heads, setHeads] = useState<ExpenseHead[]>([]);
   const [selectedYearId, setSelectedYearId] = useState<string | null>(null);
@@ -42,7 +42,7 @@ export function ExpenseBudgetsManager() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [supabase]);
 
   useEffect(() => {
     if (!selectedYearId) return;
@@ -67,7 +67,7 @@ export function ExpenseBudgetsManager() {
       setBudgets(map);
       setLoading(false);
     })();
-  }, [selectedYearId]);
+  }, [selectedYearId, supabase]);
 
   const handleChange = (headId: string, value: string) => {
     setBudgets((prev) => ({ ...prev, [headId]: value }));

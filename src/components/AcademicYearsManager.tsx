@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,15 +37,15 @@ export function AcademicYearsManager() {
   const [addLoading, setAddLoading] = useState(false);
   const [addStatus, setAddStatus] = useState<"active" | "closed" | "future">("future");
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
-  const loadYears = () => {
+  const loadYears = useCallback(() => {
     supabase
       .from("academic_years")
       .select("id, name, sort_order, status")
       .order("sort_order")
       .then(({ data }) => setYears((data ?? []) as YearRow[]));
-  };
+  }, [supabase]);
 
   const updateYearStatus = async (id: string, status: "active" | "closed" | "future") => {
     await supabase.from("academic_years").update({ status }).eq("id", id);
@@ -55,7 +55,7 @@ export function AcademicYearsManager() {
 
   useEffect(() => {
     loadYears();
-  }, []);
+  }, [loadYears]);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
