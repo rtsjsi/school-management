@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import Link from "next/link";
@@ -9,16 +9,26 @@ import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 
 export default function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [bannerMessage, setBannerMessage] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; submit?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const message = searchParams.get("message");
+    const err = searchParams.get("error");
+    if (err === "auth") {
+      setBannerMessage(message || "Sign-in failed. Try again or request a new reset link.");
+    } else if (message) {
+      setBannerMessage(message);
+    }
+  }, [searchParams]);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -74,6 +84,17 @@ export default function LoginForm() {
         <CardDescription>Sign in to School Management</CardDescription>
       </CardHeader>
       <CardContent>
+        {bannerMessage && (
+          <p
+            className={`text-sm p-3 rounded-md mb-4 ${
+              searchParams.get("error") === "auth"
+                ? "text-destructive bg-destructive/10"
+                : "text-green-800 bg-green-50 dark:text-green-200 dark:bg-green-950/40"
+            }`}
+          >
+            {bannerMessage}
+          </p>
+        )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email Address</Label>
@@ -121,14 +142,7 @@ export default function LoginForm() {
             {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
           </div>
 
-          <div className="flex items-center justify-between">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <Checkbox
-                checked={rememberMe}
-                onCheckedChange={(checked) => setRememberMe(checked === true)}
-              />
-              <span className="text-sm text-muted-foreground">Remember me</span>
-            </label>
+          <div className="flex justify-end">
             <Link
               href="/forgot-password"
               className="text-sm text-primary hover:underline font-medium"
