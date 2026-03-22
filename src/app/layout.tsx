@@ -27,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${plusJakarta.variable} font-sans antialiased bg-background text-foreground h-full min-h-0 overflow-hidden`}
+        className={`${plusJakarta.variable} font-sans antialiased bg-background text-foreground min-h-dvh`}
       >
         {children}
         <Toaster />
