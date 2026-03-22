@@ -73,7 +73,14 @@ export default function LoginForm() {
       if (data.user) {
         navigatingAway = true;
         setIsRedirecting(true);
-        router.push("/dashboard");
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", data.user.id)
+          .maybeSingle();
+        const raw = typeof prof?.role === "string" ? prof.role.trim().toLowerCase() : "";
+        const dashboardAllowed = raw === "principal" || raw === "admin";
+        router.push(dashboardAllowed ? "/dashboard" : "/no-dashboard-access");
         router.refresh();
         // Do not clear loading — navigation is still in progress; finally is skipped below.
       }
@@ -99,10 +106,10 @@ export default function LoginForm() {
           >
             <Loader2 className="h-9 w-9 animate-spin text-primary" aria-hidden />
             <p className="text-sm font-medium text-foreground">
-              {isRedirecting ? "Opening your dashboard…" : "Signing you in…"}
+              {isRedirecting ? "Finishing sign-in…" : "Signing you in…"}
             </p>
             <p className="text-xs text-muted-foreground max-w-[240px]">
-              {isRedirecting ? "Almost there. This can take a few seconds." : "Verifying your credentials."}
+              {isRedirecting ? "Checking your access. This can take a few seconds." : "Verifying your credentials."}
             </p>
           </div>
         )}
@@ -212,7 +219,7 @@ export default function LoginForm() {
 
             <SubmitButton
               loading={isLoading || isRedirecting}
-              loadingLabel={isRedirecting ? "Opening dashboard…" : "Signing in…"}
+              loadingLabel={isRedirecting ? "Please wait…" : "Signing in…"}
               className="h-9 w-full rounded-lg text-sm shadow-md shadow-primary/20 transition-all hover:shadow-lg hover:shadow-primary/25 sm:h-10 sm:rounded-xl sm:text-base"
             >
               Sign in

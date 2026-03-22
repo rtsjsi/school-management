@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getUser } from "@/lib/auth";
+import { canAccessDashboard, getUser } from "@/lib/auth";
 import { AppSidebar } from "@/components/AppSidebar";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { InactivitySignOut } from "@/components/InactivitySignOut";
@@ -15,6 +15,10 @@ export default async function DashboardLayout({
 
   if (!user) {
     redirect("/login");
+  }
+
+  if (!canAccessDashboard(user)) {
+    redirect("/no-dashboard-access");
   }
 
   return (

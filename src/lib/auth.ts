@@ -141,6 +141,11 @@ export function isAdminOrAbove(user: AuthUser | null): boolean {
   return user?.role === "principal" || user?.role === "admin";
 }
 
+/** Only Principal and Admin may access the /dashboard application shell. */
+export function canAccessDashboard(user: AuthUser | null): boolean {
+  return isAdminOrAbove(user);
+}
+
 export function isAuditor(user: AuthUser | null): boolean {
   return user?.role === "auditor";
 }
