@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Eye, EyeOff, Lock, LogIn, Mail } from "lucide-react";
+import { Eye, EyeOff, Loader2, Lock, LogIn, Mail } from "lucide-react";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -19,6 +19,8 @@ export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; submit?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
+  /** True after auth succeeds while Next.js navigates to the dashboard (keep UI busy until unmount). */
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
     const message = searchParams.get("message");
@@ -55,8 +57,10 @@ export default function LoginForm() {
     if (!validateForm()) return;
 
     setIsLoading(true);
+    setIsRedirecting(false);
     setErrors((prev) => ({ ...prev, submit: undefined }));
 
+    let navigatingAway = false;
     try {
       const supabase = createClient();
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -67,19 +71,41 @@ export default function LoginForm() {
       }
 
       if (data.user) {
+        navigatingAway = true;
+        setIsRedirecting(true);
         router.push("/dashboard");
         router.refresh();
+        // Do not clear loading — navigation is still in progress; finally is skipped below.
       }
     } catch {
       setErrors((prev) => ({ ...prev, submit: "Something went wrong. Please try again." }));
     } finally {
-      setIsLoading(false);
+      if (!navigatingAway) {
+        setIsLoading(false);
+        setIsRedirecting(false);
+      }
     }
   };
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-      <Card className="overflow-hidden border-border/60 bg-card/90 shadow-lg shadow-slate-900/8 ring-1 ring-border/50 backdrop-blur-sm dark:bg-card/95 dark:shadow-black/30">
+      <Card className="relative overflow-hidden border-border/60 bg-card/90 shadow-lg shadow-slate-900/8 ring-1 ring-border/50 backdrop-blur-sm dark:bg-card/95 dark:shadow-black/30">
+        {(isLoading || isRedirecting) && (
+          <div
+            className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-background/75 px-6 text-center backdrop-blur-sm"
+            role="status"
+            aria-live="polite"
+            aria-busy="true"
+          >
+            <Loader2 className="h-9 w-9 animate-spin text-primary" aria-hidden />
+            <p className="text-sm font-medium text-foreground">
+              {isRedirecting ? "Opening your dashboard…" : "Signing you in…"}
+            </p>
+            <p className="text-xs text-muted-foreground max-w-[240px]">
+              {isRedirecting ? "Almost there. This can take a few seconds." : "Verifying your credentials."}
+            </p>
+          </div>
+        )}
         <div className="h-1 w-full bg-gradient-to-r from-primary via-sky-500 to-indigo-500" aria-hidden />
         <CardHeader className="space-y-2 pb-0 pt-4 text-center sm:text-left sm:pt-5">
           <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-inner ring-1 ring-primary/15 sm:mx-0">
@@ -117,6 +143,7 @@ export default function LoginForm() {
                   type="email"
                   autoComplete="email"
                   value={email}
+                  disabled={isLoading || isRedirecting}
                   onChange={(e) => {
                     setEmail(e.target.value);
                     if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
@@ -141,6 +168,7 @@ export default function LoginForm() {
                   type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   value={password}
+                  disabled={isLoading || isRedirecting}
                   onChange={(e) => {
                     setPassword(e.target.value);
                     if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
@@ -153,7 +181,8 @@ export default function LoginForm() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:right-3"
+                  disabled={isLoading || isRedirecting}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50 sm:right-3"
                   aria-label="Toggle password visibility"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -163,12 +192,16 @@ export default function LoginForm() {
             </div>
 
             <div className="flex justify-end pt-0.5">
-              <Link
-                href="/forgot-password"
-                className="text-xs font-medium text-primary underline-offset-4 transition-colors hover:text-primary/80 hover:underline sm:text-sm"
-              >
-                Forgot password?
-              </Link>
+              {isLoading || isRedirecting ? (
+                <span className="text-xs text-muted-foreground sm:text-sm">Forgot password?</span>
+              ) : (
+                <Link
+                  href="/forgot-password"
+                  className="text-xs font-medium text-primary underline-offset-4 transition-colors hover:text-primary/80 hover:underline sm:text-sm"
+                >
+                  Forgot password?
+                </Link>
+              )}
             </div>
 
             {errors.submit && (
@@ -178,8 +211,8 @@ export default function LoginForm() {
             )}
 
             <SubmitButton
-              loading={isLoading}
-              loadingLabel="Signing in…"
+              loading={isLoading || isRedirecting}
+              loadingLabel={isRedirecting ? "Opening dashboard…" : "Signing in…"}
               className="h-9 w-full rounded-lg text-sm shadow-md shadow-primary/20 transition-all hover:shadow-lg hover:shadow-primary/25 sm:h-10 sm:rounded-xl sm:text-base"
             >
               Sign in
