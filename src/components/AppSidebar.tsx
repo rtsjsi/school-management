@@ -6,6 +6,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
+  Home,
   GraduationCap,
   BookOpen,
   DollarSign,
@@ -41,7 +42,13 @@ const ALL_DASHBOARD_ROLES: UserRole[] = [
 const ACADEMIC_STUDENT_EXAM_ROLES: UserRole[] = ["principal", "admin", "teacher", "auditor"];
 
 const navItems: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ALL_DASHBOARD_ROLES },
+  { href: "/dashboard", label: "Home", icon: Home, roles: ALL_DASHBOARD_ROLES },
+  {
+    href: "/dashboard/overview",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    roles: ALL_DASHBOARD_ROLES,
+  },
   {
     href: "/dashboard/academic-setup",
     label: "Academic setup",
@@ -105,7 +112,7 @@ export function AppSidebar({ user }: { user: AuthUser }) {
     <div className="flex h-full w-64 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-foreground/10">
       <div className="flex h-14 shrink-0 items-center gap-3 border-b border-sidebar-foreground/10 px-3 py-2">
         <Link
-          href="/"
+          href="/dashboard"
           className="flex min-w-0 flex-1 items-center gap-3 hover:opacity-90 transition-opacity"
           onClick={() => setMobileOpen(false)}
           title={school.name}
@@ -141,7 +148,10 @@ export function AppSidebar({ user }: { user: AuthUser }) {
       </div>
       <nav className="flex-1 min-h-0 space-y-0.5 p-2.5 overflow-y-auto scrollbar-hide">
         {items.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive =
+            item.href === "/dashboard"
+              ? pathname === "/dashboard"
+              : pathname === item.href || pathname.startsWith(`${item.href}/`);
           const Icon = item.icon;
           return (
             <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}>
@@ -176,7 +186,7 @@ export function AppSidebar({ user }: { user: AuthUser }) {
         >
           <Menu className="h-5 w-5" />
         </Button>
-        <Link href="/" className="flex min-w-0 flex-1 items-center gap-2">
+        <Link href="/dashboard" className="flex min-w-0 flex-1 items-center gap-2">
           {school.logoUrl ? (
             <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded bg-muted">
               <Image src={school.logoUrl} alt="" fill sizes="32px" className="object-contain p-0.5" />

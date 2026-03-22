@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { getUser, canAccessDashboard } from "@/lib/auth";
 import { getSchoolSettings } from "@/lib/school-settings";
 import { HomeLandingPage } from "@/components/HomeLandingPage";
@@ -30,6 +31,10 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
 
   const canUseDashboard = user ? canAccessDashboard(user) : false;
   const fromDashboardAttempt = Boolean(fromDashboard && user && !canUseDashboard);
+
+  if (user && canUseDashboard) {
+    redirect("/dashboard");
+  }
 
   return (
     <HomeLandingPage

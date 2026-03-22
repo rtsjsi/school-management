@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getUser, isAdminOrAbove, canViewFinance, isClerk, isPayrollRole } from "@/lib/auth";
+import { getUser, isAdminOrAbove, canViewFinance } from "@/lib/auth";
 import { Receipt } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ExpensesManager from "@/components/ExpensesManager";
@@ -10,8 +10,6 @@ import { ExpenseBudgetsManager } from "@/components/ExpenseBudgetsManager";
 export default async function ExpensesPage() {
   const user = await getUser();
   if (!user) redirect("/login");
-  if (isClerk(user)) redirect("/dashboard/fees");
-  if (isPayrollRole(user)) redirect("/dashboard/payroll");
   if (!canViewFinance(user)) redirect("/dashboard");
 
   const canEdit = isAdminOrAbove(user);

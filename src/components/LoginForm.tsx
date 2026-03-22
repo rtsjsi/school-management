@@ -73,7 +73,7 @@ export default function LoginForm() {
       if (data.user) {
         navigatingAway = true;
         setIsRedirecting(true);
-        router.push("/");
+        router.push("/dashboard");
         router.refresh();
         // Do not clear loading — navigation is still in progress; finally is skipped below.
       }

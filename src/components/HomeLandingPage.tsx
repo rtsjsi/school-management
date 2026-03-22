@@ -93,7 +93,7 @@ export function HomeLandingPage({
 
             {user && canUseDashboard && (
               <Button asChild size="lg" className="w-full sm:w-auto">
-                <Link href="/dashboard">Open dashboard</Link>
+                <Link href="/dashboard">Continue to app</Link>
               </Button>
             )}
 

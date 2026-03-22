@@ -4,7 +4,7 @@ import ForgotPasswordForm from "@/components/ForgotPasswordForm";
 
 export default async function ForgotPasswordPage() {
   const user = await getUser();
-  if (user) redirect("/");
+  if (user) redirect("/dashboard");
 
   return <ForgotPasswordForm />;
 }
