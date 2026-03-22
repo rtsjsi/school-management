@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { createExamWithSubjects } from "@/app/dashboard/exams/actions";
+import { createExamWithSubjects } from "@/app/(workspace)/dashboard/exams/actions";
 import { fetchStandards, fetchAcademicYears } from "@/lib/lov";
 import type { StandardOption } from "@/lib/lov";
 import { SubmitButton } from "@/components/ui/SubmitButton";

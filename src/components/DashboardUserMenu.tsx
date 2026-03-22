@@ -17,7 +17,7 @@ export function DashboardUserMenu({ user }: { user: AuthUser }) {
     try {
       const supabase = createClient();
       await supabase.auth.signOut();
-      router.push("/");
+      router.push("/login");
       router.refresh();
     } finally {
       setSigningOut(false);

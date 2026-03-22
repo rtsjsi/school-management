@@ -27,7 +27,7 @@ import { Pencil } from "lucide-react";
 import { StudentDocumentsPhotos } from "@/components/StudentDocumentsPhotos";
 import { StandardDivisionYearSelects } from "@/components/StandardDivisionYearSelects";
 import { AcademicYearSelect } from "@/components/AcademicYearSelect";
-import { upsertCurrentEnrollment } from "@/app/dashboard/students/actions";
+import { upsertCurrentEnrollment } from "@/app/(workspace)/dashboard/students/actions";
 import { IN_STATES } from "@/lib/student-form";
 
 interface StudentEditDialogProps {

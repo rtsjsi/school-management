@@ -10,7 +10,5 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   // Only run middleware for protected routes, skip auth pages and static assets
-  matcher: [
-    "/dashboard/:path*",
-  ],
+  matcher: ["/welcome", "/dashboard/:path*"],
 };

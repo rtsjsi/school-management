@@ -14,7 +14,7 @@ export default async function AdministrationPage({
 }) {
   const user = await getUser();
   if (!user) redirect("/login");
-  if (!isPrincipal(user)) redirect("/dashboard");
+  if (!isPrincipal(user)) redirect("/welcome");
 
   const params = await searchParams;
   const tab = params.tab ?? "users";

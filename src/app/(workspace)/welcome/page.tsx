@@ -4,10 +4,10 @@ import { getSchoolSettings } from "@/lib/school-settings";
 import { AppWelcomePage } from "@/components/AppWelcomePage";
 
 /**
- * In-app home / welcome — first screen after sign-in for everyone.
- * The statistics “Dashboard” lives at /dashboard/overview like any other module.
+ * In-app welcome — first screen after sign-in for everyone.
+ * Stats overview lives at /dashboard.
  */
-export default async function DashboardHomePage() {
+export default async function WelcomePage() {
   const user = await getUser();
   if (!user) redirect("/login");
 

@@ -4,6 +4,6 @@ import { isClerk, isPayrollRole } from "@/lib/auth";
 
 /** Block clerk/payroll from academic & student modules (not their remit). */
 export function guardAcademicAndStudentModules(user: AuthUser): void {
-  if (isClerk(user)) redirect("/dashboard");
-  if (isPayrollRole(user)) redirect("/dashboard");
+  if (isClerk(user)) redirect("/welcome");
+  if (isPayrollRole(user)) redirect("/welcome");
 }

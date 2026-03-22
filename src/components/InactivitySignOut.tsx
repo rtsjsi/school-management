@@ -15,7 +15,7 @@ export function InactivitySignOut() {
   const signOut = useCallback(async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
-    router.push("/");
+    router.push("/login");
     router.refresh();
   }, [router]);
 

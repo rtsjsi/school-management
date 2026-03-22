@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { updateSchoolSettings } from "@/app/dashboard/school-settings/actions";
+import { updateSchoolSettings } from "@/app/(workspace)/dashboard/school-settings/actions";
 import { Building2, ImageIcon, FileSignature, Upload } from "lucide-react";
 
 const BUCKET = "school-assets";

@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { createStandard, updateStandard, createDivision } from "@/app/dashboard/classes/actions";
+import { createStandard, updateStandard, createDivision } from "@/app/(workspace)/dashboard/classes/actions";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,

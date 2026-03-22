@@ -19,7 +19,7 @@ import { TableSkeleton } from "@/components/skeletons/TableSkeleton";
 export default async function PayrollPage() {
   const user = await getUser();
   if (!user) redirect("/login");
-  if (!canAccessPayroll(user)) redirect("/dashboard");
+  if (!canAccessPayroll(user)) redirect("/welcome");
 
   return (
     <div className="space-y-8">

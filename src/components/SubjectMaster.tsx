@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { createSubject } from "@/app/dashboard/classes/actions";
+import { createSubject } from "@/app/(workspace)/dashboard/classes/actions";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -222,7 +222,7 @@ function SubjectRow({
 
   const handleSave = async () => {
     setLoading(true);
-    const { updateSubject } = await import("@/app/dashboard/classes/actions");
+    const { updateSubject } = await import("@/app/(workspace)/dashboard/classes/actions");
     const result = await updateSubject(subject.id, name, evalType);
     setLoading(false);
     if (result.ok) {

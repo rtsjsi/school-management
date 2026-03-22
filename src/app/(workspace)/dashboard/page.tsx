@@ -21,8 +21,8 @@ function formatCurrency(n: number) {
   return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
 }
 
-/** Stats / summary — same as any other module; reachable from the sidebar as “Dashboard”. */
-export default async function DashboardOverviewPage() {
+/** Stats / summary at /dashboard — sidebar label “Dashboard”. */
+export default async function DashboardPage() {
   const user = await getUser();
   if (!user) redirect("/login");
 

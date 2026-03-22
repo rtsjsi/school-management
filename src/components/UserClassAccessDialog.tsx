@@ -6,7 +6,7 @@ import {
   getProfileAllowedClasses,
   setProfileAllowedClasses,
   type AllowedClassPair,
-} from "@/app/dashboard/administration/actions";
+} from "@/app/(workspace)/dashboard/administration/actions";
 import { fetchStandards } from "@/lib/lov";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";

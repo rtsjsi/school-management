@@ -7,7 +7,7 @@ import {
   deleteSalaryDeduction,
   upsertSalaryAllowance,
   deleteSalaryAllowance,
-} from "@/app/dashboard/attendance/actions";
+} from "@/app/(workspace)/dashboard/attendance/actions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

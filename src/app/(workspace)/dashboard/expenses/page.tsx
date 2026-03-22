@@ -10,7 +10,7 @@ import { ExpenseBudgetsManager } from "@/components/ExpenseBudgetsManager";
 export default async function ExpensesPage() {
   const user = await getUser();
   if (!user) redirect("/login");
-  if (!canViewFinance(user)) redirect("/dashboard");
+  if (!canViewFinance(user)) redirect("/welcome");
 
   const canEdit = isAdminOrAbove(user);
 

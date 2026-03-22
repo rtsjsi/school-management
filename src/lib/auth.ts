@@ -141,7 +141,7 @@ export function isAdminOrAbove(user: AuthUser | null): boolean {
   return user?.role === "principal" || user?.role === "admin";
 }
 
-/** Who may use the /dashboard shell (nav + module pages). */
+/** Who may use the signed-in workspace shell (/welcome, /dashboard/*, etc.). */
 export function canAccessDashboard(user: AuthUser | null): boolean {
   if (!user) return false;
   return (

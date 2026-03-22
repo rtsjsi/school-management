@@ -5,7 +5,7 @@ import LoginForm from "@/components/LoginForm";
 
 export default async function LoginPage() {
   const user = await getUser();
-  if (user) redirect("/dashboard");
+  if (user) redirect("/welcome");
 
   return (
     <Suspense

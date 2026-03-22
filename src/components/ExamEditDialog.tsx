@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Pencil } from "lucide-react";
 import { fetchStandards } from "@/lib/lov";
 import type { StandardOption } from "@/lib/lov";
-import { updateExam } from "@/app/dashboard/exams/actions";
+import { updateExam } from "@/app/(workspace)/dashboard/exams/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

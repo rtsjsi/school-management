@@ -33,7 +33,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   const fromDashboardAttempt = Boolean(fromDashboard && user && !canUseDashboard);
 
   if (user && canUseDashboard) {
-    redirect("/dashboard");
+    redirect("/welcome");
   }
 
   return (

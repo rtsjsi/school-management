@@ -13,7 +13,7 @@ import { createClient } from "@/lib/supabase/server";
 export default async function FeesPage() {
   const user = await getUser();
   if (!user) redirect("/login");
-  if (!canAccessFees(user)) redirect("/dashboard");
+  if (!canAccessFees(user)) redirect("/welcome");
 
   const supabase = await createClient();
   const { data: allStudents } = await supabase

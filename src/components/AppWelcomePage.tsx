@@ -11,7 +11,7 @@ type Props = {
 };
 
 /**
- * Default in-app landing shown at /dashboard for every signed-in user.
+ * Default in-app landing shown at /welcome for every signed-in user.
  * Other modules are peers in the sidebar — this is not a separate “product” from the rest of the app.
  */
 export function AppWelcomePage({ user, schoolName }: Props) {
@@ -38,9 +38,9 @@ export function AppWelcomePage({ user, schoolName }: Props) {
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Button asChild>
-            <Link href="/dashboard/overview" className="gap-2">
+            <Link href="/dashboard" className="gap-2">
               <LayoutDashboard className="h-4 w-4" aria-hidden />
-              Open dashboard overview
+              Open dashboard
             </Link>
           </Button>
         </div>
