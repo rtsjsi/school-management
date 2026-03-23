@@ -190,8 +190,6 @@ export default function StudentEntryForm({
     setLoading(true);
     try {
       const supabase = createClient();
-      const student_id = `STU-${new Date().getFullYear()}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-
       const payload: Record<string, unknown> = {
         full_name: form.full_name.trim(),
         date_of_birth: form.date_of_birth || null,
@@ -204,7 +202,6 @@ export default function StudentEntryForm({
         admission_date: form.admission_date || null,
         academic_year: form.academic_year.trim() || null,
         status: form.status,
-        student_id,
         category: form.category || null,
         religion: form.religion.trim() || null,
         caste: form.caste.trim() || null,

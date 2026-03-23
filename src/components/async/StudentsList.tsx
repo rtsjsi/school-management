@@ -20,7 +20,7 @@ export async function StudentsList() {
   const supabase = await createClient();
   const { data: students } = await supabase
     .from("students")
-    .select("id, student_id, full_name, standard, division, roll_number, status, admission_date, date_of_birth, is_rte_quota, created_at")
+    .select("id, gr_number, full_name, standard, division, roll_number, status, admission_date, date_of_birth, is_rte_quota, created_at")
     .order("created_at", { ascending: false })
     .limit(10);
 
@@ -56,7 +56,7 @@ export async function StudentsList() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Student ID</TableHead>
+                      <TableHead>GR No.</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Quota</TableHead>
                       <TableHead>Standard</TableHead>
@@ -73,7 +73,7 @@ export async function StudentsList() {
                       return (
                         <TableRow key={s.id}>
                           <TableCell className="font-mono text-xs text-muted-foreground">
-                            {s.student_id || "—"}
+                            {(s as { gr_number?: string }).gr_number || "—"}
                           </TableCell>
                           <TableCell className="font-medium">{s.full_name}</TableCell>
                           <TableCell>

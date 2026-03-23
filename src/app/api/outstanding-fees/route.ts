@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     const { data: students } = await supabase
       .from("students")
-      .select("id, full_name, standard, division, roll_number, student_id, is_rte_quota, fee_concession_amount")
+      .select("id, full_name, standard, division, roll_number, gr_number, is_rte_quota, fee_concession_amount")
       .eq("status", "active")
       .order("full_name");
 
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
       standard: string;
       division: string;
       roll_number?: number;
-      student_id_display?: string;
+      gr_number?: string;
       quarter: number;
       fee_type: string;
       total: number;
@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
             standard: s.standard ?? "—",
             division: s.division ?? "",
             roll_number: (s as { roll_number?: number }).roll_number,
-            student_id_display: (s as { student_id?: string }).student_id,
+            gr_number: (s as { gr_number?: string }).gr_number,
             quarter: line.quarter,
             fee_type: line.fee_type,
             total,

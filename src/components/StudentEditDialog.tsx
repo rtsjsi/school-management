@@ -33,7 +33,6 @@ import { IN_STATES } from "@/lib/student-form";
 interface StudentEditDialogProps {
   student: Record<string, unknown> & {
     id: string;
-    student_id?: string;
     full_name: string;
     date_of_birth?: string;
     gender?: string;

@@ -16,7 +16,7 @@ import { Eye, CheckCircle } from "lucide-react";
 interface StudentViewDialogProps {
   student: {
     id: string;
-    student_id?: string;
+    gr_number?: string;
     full_name: string;
     date_of_birth?: string;
     gender?: string;
@@ -91,9 +91,9 @@ export function StudentViewDialog({ student }: StudentViewDialogProps) {
               </div>
               <div>
                 <h2 className="text-xl font-bold">{student.full_name}</h2>
-                {student.student_id && (
+                {student.gr_number && (
                   <div className="text-sm text-muted-foreground">
-                    Student ID: {student.student_id}
+                    GR No: {student.gr_number}
                   </div>
                 )}
               </div>

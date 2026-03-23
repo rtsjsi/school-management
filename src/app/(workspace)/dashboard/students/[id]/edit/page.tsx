@@ -35,8 +35,8 @@ export default async function StudentEditPage({
         </h1>
         <p className="text-muted-foreground mt-1">
           Update details for {student.full_name}
-          {student.student_id && (
-            <span className="font-mono text-xs ml-2">({student.student_id})</span>
+          {student.gr_number && (
+            <span className="font-mono text-xs ml-2">(GR: {student.gr_number})</span>
           )}
         </p>
       </div>

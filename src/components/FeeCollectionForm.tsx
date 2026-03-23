@@ -31,7 +31,7 @@ type StudentOption = {
   standard?: string;
   division?: string;
   roll_number?: number;
-  student_id?: string;
+  gr_number?: string;
   fee_concession_amount?: number | null;
 };
 
@@ -39,7 +39,7 @@ function formatStudentDisplay(s: StudentOption): string {
   const cls = s.standard
     ? ` (${s.standard}${s.division ? "-" + s.division : ""})`
     : "";
-  const gr = s.student_id ? ` · ${s.student_id}` : "";
+  const gr = s.gr_number ? ` · ${s.gr_number}` : "";
   return `${s.full_name}${cls}${gr}`;
 }
 
@@ -105,7 +105,7 @@ export default function FeeCollectionForm({
     if (!q) return base.slice(0, 25);
     return base
       .filter((s) => {
-        const blob = [s.full_name, s.student_id, s.standard, s.division].filter(Boolean).join(" ").toLowerCase();
+        const blob = [s.full_name, s.gr_number, s.standard, s.division].filter(Boolean).join(" ").toLowerCase();
         return blob.includes(q);
       })
       .slice(0, 50);
@@ -356,7 +356,7 @@ export default function FeeCollectionForm({
         standard: selectedStudent?.standard,
         division: selectedStudent?.division,
         rollNumber: selectedStudent?.roll_number,
-        grNo: selectedStudent?.student_id ?? selectedStudent?.id?.slice(0, 8),
+        grNo: selectedStudent?.gr_number ?? selectedStudent?.id?.slice(0, 8),
         totalFees,
         outstandingAfterPayment,
       });

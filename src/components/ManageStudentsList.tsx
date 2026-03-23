@@ -39,7 +39,7 @@ import { StudentViewDialog } from "@/components/StudentViewDialog";
 
 type StudentRow = {
   id: string;
-  student_id?: string;
+  gr_number?: string;
   full_name: string;
   email?: string;
   phone_number?: string;
@@ -81,11 +81,11 @@ type ExitFormState = {
 function StudentEnrolmentsDialog({
   studentId,
   studentName,
-  studentCode,
+  grNumber,
 }: {
   studentId: string;
   studentName: string;
-  studentCode?: string;
+  grNumber?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -158,9 +158,9 @@ function StudentEnrolmentsDialog({
         <DialogHeader>
           <DialogTitle className="text-base">
             Enrolments — {studentName}
-            {studentCode && (
+            {grNumber && (
               <span className="font-mono text-xs font-normal text-muted-foreground ml-2">
-                ({studentCode})
+                (GR: {grNumber})
               </span>
             )}
           </DialogTitle>
@@ -224,9 +224,9 @@ function StudentEditDialog({
         <DialogHeader>
           <DialogTitle className="text-base">
             Edit student — {student.full_name}
-            {student.student_id && (
+            {student.gr_number && (
               <span className="font-mono text-xs font-normal text-muted-foreground ml-2">
-                ({student.student_id})
+                (GR: {student.gr_number})
               </span>
             )}
           </DialogTitle>
@@ -457,7 +457,7 @@ export function ManageStudentsList({
     if (divisionFilter && divisionFilter !== "all") q = q.eq("division", divisionFilter);
     if (statusFilter && statusFilter !== "all") q = q.eq("status", statusFilter);
     if (search.trim()) {
-      q = q.or(`full_name.ilike.%${search.trim()}%,student_id.ilike.%${search.trim()}%`);
+      q = q.or(`full_name.ilike.%${search.trim()}%,gr_number.ilike.%${search.trim()}%`);
     }
 
     (async () => {
@@ -491,7 +491,7 @@ export function ManageStudentsList({
             <div className="space-y-2 flex-1 min-w-[180px]">
               <Label>Search</Label>
               <Input
-                placeholder="Name or Student ID"
+                placeholder="Name or GR No."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -647,7 +647,7 @@ export function ManageStudentsList({
                         <StudentEnrolmentsDialog
                           studentId={s.id}
                           studentName={s.full_name}
-                          studentCode={s.student_id}
+                          grNumber={s.gr_number}
                         />
                       </TableCell>
                     )}

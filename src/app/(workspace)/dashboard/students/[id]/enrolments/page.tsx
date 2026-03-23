@@ -26,7 +26,7 @@ export default async function StudentEnrolmentsPage({
 
   const { data: student } = await supabase
     .from("students")
-    .select("id, full_name, student_id")
+    .select("id, full_name, gr_number")
     .eq("id", studentId)
     .single();
 
@@ -74,9 +74,9 @@ export default async function StudentEnrolmentsPage({
         <CardHeader>
           <CardTitle className="text-lg">
             Enrolments — {student.full_name}
-            {student.student_id && (
+            {student.gr_number && (
               <span className="font-mono text-sm font-normal text-muted-foreground ml-2">
-                ({student.student_id})
+                (GR: {student.gr_number})
               </span>
             )}
           </CardTitle>

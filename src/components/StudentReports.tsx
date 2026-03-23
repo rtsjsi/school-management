@@ -24,7 +24,7 @@ import {
 
 type StudentReportRow = {
   id: string;
-  student_id?: string | null;
+  gr_number?: string | null;
   full_name: string;
   standard?: string | null;
   division?: string | null;
@@ -55,7 +55,7 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
       setLoading(true);
       const { data } = await supabase
         .from("students")
-        .select("id, student_id, full_name, standard, division, roll_number, academic_year, status, is_rte_quota")
+        .select("id, gr_number, full_name, standard, division, roll_number, academic_year, status, is_rte_quota")
         .order("standard", { ascending: true })
         .order("division", { ascending: true })
         .order("roll_number", { ascending: true })
@@ -96,7 +96,7 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
 
   const exportRows = (format: "csv" | "xlsx" | "pdf") => {
     const reportRows = filteredRows.map((r) => ({
-      "Student ID": r.student_id ?? "",
+      "GR No": r.gr_number ?? "",
       Name: r.full_name,
       Standard: r.standard ?? "",
       Division: r.division ?? "",
@@ -178,7 +178,7 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
           doc.addPage();
           y = 12;
         }
-        doc.text(String(row["Student ID"] || "—"), 10, y, { maxWidth: 16 });
+        doc.text(String(row["GR No"] || "—"), 10, y, { maxWidth: 16 });
         doc.text(String(row.Name || "—"), 28, y, { maxWidth: 64 });
         doc.text(String(row.Standard || "—"), 95, y, { maxWidth: 10 });
         doc.text(String(row.Division || "—"), 108, y, { maxWidth: 10 });
@@ -269,7 +269,7 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Student ID</TableHead>
+                  <TableHead>GR No</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Standard</TableHead>
                   <TableHead>Division</TableHead>
@@ -282,7 +282,7 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
               <TableBody>
                 {filteredRows.map((row) => (
                   <TableRow key={row.id}>
-                    <TableCell className="font-mono text-xs">{row.student_id ?? "—"}</TableCell>
+                    <TableCell className="font-mono text-xs">{row.gr_number ?? "—"}</TableCell>
                     <TableCell className="font-medium">{row.full_name}</TableCell>
                     <TableCell>{row.standard ?? "—"}</TableCell>
                     <TableCell>{row.division ?? "—"}</TableCell>
