@@ -39,6 +39,14 @@ export function amountInWords(amount: number): string {
   return words.toUpperCase() + " RUPEES ONLY";
 }
 
+/** Receipt PDF currency: INR prefix + Indian grouping (e.g. INR 12,345.67). */
+export function formatInrAmount(value: number): string {
+  return `INR ${Number(value).toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
 export interface ReceiptData {
   receiptNumber: string;
   studentName: string;
@@ -219,11 +227,11 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
   y += lh;
 
   const feeLabel = getFeeTypeLabel(data.feeType);
-  const amountText = `Rs. ${Number(data.amount || 0).toFixed(2)}`;
+  const amountFormatted = formatInrAmount(Number(data.amount || 0));
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.9);
   doc.text(`${feeLabel || "Fee"} :`, leftX, y);
-  doc.text(amountText.replace("Rs. ", ""), rightX, y, { align: "right" });
+  doc.text(amountFormatted, rightX, y, { align: "right" });
   y += lh + 0.3;
 
   // Empty body area line like printed receipt block
@@ -233,7 +241,7 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9.3);
   doc.text("Total Fee :", leftX, y);
-  doc.text(amountText.replace("Rs. ", ""), rightX, y, { align: "right" });
+  doc.text(amountFormatted, rightX, y, { align: "right" });
   doc.setFontSize(7.9);
   y += lh;
 
@@ -241,14 +249,31 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
   doc.setFontSize(7.2);
   y = drawWrappedText(doc, amountWords, leftX, y, contentW, smallLh);
   if (data.outstandingAfterPayment != null) {
-    y += 0.8;
+    y += 1.2;
+    const bandH = 8.2;
+    const bandTop = y;
+    const bandPadX = 2.8;
+    // Soft, informative highlight (warm neutral — visible to parents, not alarming)
+    doc.setFillColor(252, 248, 240);
+    doc.setDrawColor(210, 190, 165);
+    doc.setLineWidth(0.22);
+    doc.roundedRect(margin, bandTop, contentW, bandH, 1.2, 1.2, "FD");
+
+    const outAmt = formatInrAmount(data.outstandingAfterPayment);
+    const lineMain = `Outstanding ${outAmt}`;
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(7.3);
-    doc.text("Outstanding :", leftX, y);
-    doc.text(`Rs. ${data.outstandingAfterPayment.toFixed(2)}`, rightX, y, { align: "right" });
+    doc.setFontSize(7.6);
+    doc.setTextColor(62, 54, 46);
+    doc.text(lineMain, margin + bandPadX, bandTop + 4.6);
+
     doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    doc.setTextColor(95, 88, 78);
+    doc.text("Balance remaining on the student fee account after this payment.", margin + bandPadX, bandTop + 7.4);
+
+    doc.setTextColor(0, 0, 0);
     doc.setFontSize(7.2);
-    y += smallLh;
+    y = bandTop + bandH + 1.4;
   }
   y += 1.4;
 
