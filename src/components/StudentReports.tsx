@@ -23,8 +23,8 @@ import {
 } from "@/components/ui/table";
 
 type StudentReportRow = {
+  [key: string]: unknown;
   id: string;
-  student_id?: string | null;
   gr_number?: string | null;
   full_name: string;
   date_of_birth?: string | null;
@@ -65,7 +65,9 @@ type StudentReportRow = {
   mother_tongue?: string | null;
   is_rte_quota?: boolean | null;
   created_at?: string | null;
+  created_by?: string | null;
   updated_at?: string | null;
+  updated_by?: string | null;
 };
 
 type AllowedClassNames = { standardName: string; divisionName: string }[];
@@ -129,52 +131,38 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
   }, [rows, standardFilter, divisionFilter, rteFilter]);
 
   const exportRows = (format: "csv" | "xlsx" | "pdf") => {
-    const toDate = (v?: string | null) => (v ? new Date(v).toLocaleDateString("en-CA") : "");
+    const toLabel = (key: string) =>
+      key
+        .split("_")
+        .map((p) => (p ? p[0].toUpperCase() + p.slice(1) : p))
+        .join(" ");
 
-    const exportRowsFull = filteredRows.map((r) => ({
-      "Student Name": r.full_name,
-      Standard: r.standard ?? "",
-      Division: r.division ?? "",
-      "Roll No": r.roll_number ?? "",
-      "GR No": r.gr_number ?? "",
-      "Legacy Student ID": r.student_id ?? "",
-      RTE: r.is_rte_quota ? "Yes" : "No",
-      Status: r.status ?? "",
-      "Admission Date": toDate(r.admission_date),
-      "Date of Birth": toDate(r.date_of_birth),
-      Gender: r.gender ?? "",
-      "Blood Group": r.blood_group ?? "",
-      Category: r.category ?? "",
-      Religion: r.religion ?? "",
-      Caste: r.caste ?? "",
-      "Aadhar No": r.aadhar_no ?? "",
-      "PEN No": r.pen_no ?? "",
-      "APAAR ID": r.apaar_id ?? "",
-      "UDISE ID": r.udise_id ?? "",
-      "Father Name": r.father_name ?? "",
-      "Mother Name": r.mother_name ?? "",
-      "Parent Name": r.parent_name ?? "",
-      "Parent Contact": r.parent_contact ?? "",
-      "Mother Contact": r.mother_contact ?? "",
-      "Parent Email": r.parent_email ?? "",
-      "Guardian Name": r.guardian_name ?? "",
-      "Guardian Contact": r.guardian_contact ?? "",
-      "Guardian Email": r.guardian_email ?? "",
-      "Mother Tongue": r.mother_tongue ?? "",
-      "Second Language": r.second_language ?? "",
-      "Fee Concession Amount": r.fee_concession_amount ?? "",
-      "Fee Concession Reason": r.fee_concession_reason ?? "",
-      "Address Line 1": r.present_address_line1 ?? "",
-      "Address Line 2": r.present_address_line2 ?? "",
-      City: r.present_city ?? "",
-      Taluka: r.present_taluka ?? "",
-      District: r.present_district ?? "",
-      State: r.present_state ?? "",
-      Pincode: r.present_pincode ?? "",
-      Country: r.present_country ?? "",
-      "Created At": toDate(r.created_at),
-      "Updated At": toDate(r.updated_at),
-    }));
+    const normalizeExportValue = (value: unknown): string | number | boolean => {
+      if (value === null || value === undefined) return "";
+      if (typeof value === "boolean" || typeof value === "number") return value;
+      if (value instanceof Date) return value.toISOString();
+      if (typeof value === "string") return value;
+      try {
+        return JSON.stringify(value);
+      } catch {
+        return String(value);
+      }
+    };
+
+    const exportColumns = Array.from(
+      filteredRows.reduce((set, row) => {
+        Object.keys(row).forEach((k) => set.add(k));
+        return set;
+      }, new Set<string>())
+    ).sort((a, b) => a.localeCompare(b));
+
+    const exportRowsFull = filteredRows.map((row) => {
+      const out: Record<string, string | number | boolean> = {};
+      for (const col of exportColumns) {
+        out[toLabel(col)] = normalizeExportValue(row[col]);
+      }
+      return out;
+    });
 
     const reportRows = filteredRows.map((r) => ({
       "Student Name": r.full_name,
@@ -236,39 +224,37 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
     }
 
     import("jspdf").then(({ jsPDF }) => {
-      const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const maxLineWidth = 185;
       let y = 12;
-      doc.setFontSize(14);
-      doc.text("Student Report", 10, y);
+      doc.setFontSize(13);
+      doc.text("Student Report (All Student Columns)", 10, y);
       y += 8;
-      doc.setFontSize(9);
-      doc.text("Name", 10, y);
-      doc.text("Std", 88, y);
-      doc.text("Div", 101, y);
-      doc.text("Roll", 114, y);
-      doc.text("GR", 129, y);
-      doc.text("RTE", 146, y);
-      doc.text("Status", 161, y);
-      y += 3;
-      doc.line(10, y, 286, y);
-      y += 5;
-      for (const row of reportRows) {
-        if (y > 195) {
+
+      filteredRows.forEach((row, idx) => {
+        if (idx > 0) {
           doc.addPage();
           y = 12;
         }
-        doc.text(String(row["Student Name"] || "—"), 10, y, { maxWidth: 74 });
-        doc.text(String(row.Standard || "—"), 88, y, { maxWidth: 10 });
-        doc.text(String(row.Division || "—"), 101, y, { maxWidth: 10 });
-        doc.text(String(row["Roll No"] || "—"), 114, y, { maxWidth: 10 });
-        doc.text(String(row["GR No"] || "—"), 129, y, { maxWidth: 14 });
-        doc.text(String(row["RTE Flag"] || "—"), 146, y, { maxWidth: 12 });
-        doc.text(String(row.Status || "—"), 161, y, { maxWidth: 22 });
-        y += 5;
-      }
-      y += 3;
-      doc.setFontSize(8);
-      doc.text("Detailed fields are included in CSV and Excel exports.", 10, y);
+        doc.setFontSize(11);
+        doc.text(`Student ${idx + 1}: ${String(row.full_name ?? "—")}`, 10, y);
+        y += 6;
+        doc.setFontSize(9);
+
+        for (const col of exportColumns) {
+          const line = `${toLabel(col)}: ${String(normalizeExportValue(row[col]))}`;
+          const wrapped = doc.splitTextToSize(line, maxLineWidth) as string[];
+          for (const seg of wrapped) {
+            if (y > pageHeight - 10) {
+              doc.addPage();
+              y = 12;
+            }
+            doc.text(seg, 10, y);
+            y += 4;
+          }
+        }
+      });
       doc.save("students-report.pdf");
     });
   };
