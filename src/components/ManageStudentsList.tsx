@@ -412,7 +412,6 @@ export function ManageStudentsList({
   const [rteFilter, setRteFilter] = useState("all");
   const [standards, setStandards] = useState<{ id: string; name: string }[]>([]);
   const [divisions, setDivisions] = useState<{ id: string; name: string }[]>([]);
-  const [activeYearName, setActiveYearName] = useState<string | undefined>(undefined);
   const [addOpen, setAddOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -437,14 +436,6 @@ export function ManageStudentsList({
       fetchStandards().then(setStandards);
       fetchAllDivisions().then(setDivisions);
     }
-    supabase
-      .from("academic_years")
-      .select("name")
-      .eq("status", "active")
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data?.name) setActiveYearName(data.name as string);
-      });
   }, [restrictByClass, allowedStandardsKey, allowedDivisionsKey, supabase]);
 
   useEffect(() => {
@@ -673,7 +664,7 @@ export function ManageStudentsList({
                     </DialogDescription>
                   </DialogHeader>
                   <div className="max-h-[70vh] overflow-y-auto pr-1">
-                    <StudentEntryForm defaultAcademicYear={activeYearName} />
+                    <StudentEntryForm />
                   </div>
                 </DialogContent>
               </Dialog>
