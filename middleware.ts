@@ -1,14 +1,33 @@
-import { type NextRequest } from "next/server";
-import { updateSession } from "@/lib/supabase/middleware";
+import { type NextRequest, NextResponse } from "next/server";
+import { redirectWithSessionCookies, updateSession } from "@/lib/supabase/middleware";
 
 export async function middleware(request: NextRequest) {
-  // Update Supabase session (refresh token, set cookies)
-  // This runs only for protected routes (see matcher below)
-  const response = await updateSession(request);
+  const { pathname } = request.nextUrl;
+
+  const { response, user } = await updateSession(request);
+
+  // Logged in: skip marketing/auth entry — go straight to app (no login flash)
+  if (user) {
+    if (pathname === "/" || pathname === "/login") {
+      return redirectWithSessionCookies(request, "/welcome", response);
+    }
+    return response;
+  }
+
+  // Not logged in: root goes to login (avoid double navigation)
+  if (pathname === "/") {
+    return redirectWithSessionCookies(request, "/login", response);
+  }
+
   return response;
 }
 
 export const config = {
-  // Only run middleware for protected routes, skip auth pages and static assets
-  matcher: ["/welcome", "/dashboard/:path*"],
+  matcher: [
+    /*
+     * Run on app HTML routes so the session is refreshed before RSC.
+     * Excludes static assets and Next internals.
+     */
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+  ],
 };
