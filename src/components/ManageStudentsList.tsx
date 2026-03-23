@@ -705,11 +705,12 @@ export function ManageStudentsList({
               <TableHeader>
                 <TableRow>
                   {canEdit && <TableHead className="w-32 whitespace-nowrap">Actions</TableHead>}
-                  <TableHead>Name</TableHead>
-                  <TableHead>RTE</TableHead>
+                  <TableHead>Student Name</TableHead>
                   <TableHead>Standard</TableHead>
                   <TableHead>Division</TableHead>
                   <TableHead>Roll #</TableHead>
+                  <TableHead>GR No</TableHead>
+                  <TableHead>RTE</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="w-20 text-center">View</TableHead>
                   {canEdit && <TableHead className="w-32 text-center">Enrolments</TableHead>}
@@ -761,12 +762,13 @@ export function ManageStudentsList({
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      {s.is_rte_quota ? <Badge variant="secondary">RTE</Badge> : "—"}
-                    </TableCell>
                     <TableCell>{s.standard ?? "—"}</TableCell>
                     <TableCell>{s.division ?? "—"}</TableCell>
                     <TableCell className="text-center">{s.roll_number ?? "—"}</TableCell>
+                    <TableCell className="font-mono text-xs">{s.gr_number ?? "—"}</TableCell>
+                    <TableCell>
+                      {s.is_rte_quota ? <Badge variant="secondary">RTE</Badge> : "—"}
+                    </TableCell>
                     <TableCell>
                       <Badge variant={getStatusBadge(s.status || "active")}>
                         {s.status || "active"}

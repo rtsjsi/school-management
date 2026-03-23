@@ -95,11 +95,11 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
 
   const exportRows = (format: "csv" | "xlsx" | "pdf") => {
     const reportRows = filteredRows.map((r) => ({
-      "GR No": r.gr_number ?? "",
-      Name: r.full_name,
+      "Student Name": r.full_name,
       Standard: r.standard ?? "",
       Division: r.division ?? "",
       "Roll No": r.roll_number ?? "",
+      "GR No": r.gr_number ?? "",
       "RTE Flag": r.is_rte_quota ? "Yes" : "No",
       Status: r.status ?? "",
     }));
@@ -160,13 +160,13 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
       doc.text("Student Report", 10, y);
       y += 8;
       doc.setFontSize(9);
-      doc.text("ID", 10, y);
-      doc.text("Name", 28, y);
-      doc.text("Std", 95, y);
-      doc.text("Div", 108, y);
-      doc.text("Roll", 121, y);
-      doc.text("RTE", 136, y);
-      doc.text("Status", 150, y);
+      doc.text("Name", 10, y);
+      doc.text("Std", 88, y);
+      doc.text("Div", 101, y);
+      doc.text("Roll", 114, y);
+      doc.text("GR", 129, y);
+      doc.text("RTE", 146, y);
+      doc.text("Status", 161, y);
       y += 3;
       doc.line(10, y, 286, y);
       y += 5;
@@ -175,13 +175,13 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
           doc.addPage();
           y = 12;
         }
-        doc.text(String(row["GR No"] || "—"), 10, y, { maxWidth: 16 });
-        doc.text(String(row.Name || "—"), 28, y, { maxWidth: 64 });
-        doc.text(String(row.Standard || "—"), 95, y, { maxWidth: 10 });
-        doc.text(String(row.Division || "—"), 108, y, { maxWidth: 10 });
-        doc.text(String(row["Roll No"] || "—"), 121, y, { maxWidth: 10 });
-        doc.text(String(row["RTE Flag"] || "—"), 136, y, { maxWidth: 12 });
-        doc.text(String(row.Status || "—"), 150, y, { maxWidth: 22 });
+        doc.text(String(row["Student Name"] || "—"), 10, y, { maxWidth: 74 });
+        doc.text(String(row.Standard || "—"), 88, y, { maxWidth: 10 });
+        doc.text(String(row.Division || "—"), 101, y, { maxWidth: 10 });
+        doc.text(String(row["Roll No"] || "—"), 114, y, { maxWidth: 10 });
+        doc.text(String(row["GR No"] || "—"), 129, y, { maxWidth: 14 });
+        doc.text(String(row["RTE Flag"] || "—"), 146, y, { maxWidth: 12 });
+        doc.text(String(row.Status || "—"), 161, y, { maxWidth: 22 });
         y += 5;
       }
       doc.save("students-report.pdf");
@@ -265,11 +265,11 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>GR No</TableHead>
-                  <TableHead>Name</TableHead>
+                  <TableHead>Student Name</TableHead>
                   <TableHead>Standard</TableHead>
                   <TableHead>Division</TableHead>
                   <TableHead>Roll #</TableHead>
+                  <TableHead>GR No</TableHead>
                   <TableHead>RTE</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
@@ -277,11 +277,11 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
               <TableBody>
                 {filteredRows.map((row) => (
                   <TableRow key={row.id}>
-                    <TableCell className="font-mono text-xs">{row.gr_number ?? "—"}</TableCell>
                     <TableCell className="font-medium">{row.full_name}</TableCell>
                     <TableCell>{row.standard ?? "—"}</TableCell>
                     <TableCell>{row.division ?? "—"}</TableCell>
                     <TableCell>{row.roll_number ?? "—"}</TableCell>
+                    <TableCell className="font-mono text-xs">{row.gr_number ?? "—"}</TableCell>
                     <TableCell>{row.is_rte_quota ? "Yes" : "No"}</TableCell>
                     <TableCell className="capitalize">{row.status ?? "—"}</TableCell>
                   </TableRow>
