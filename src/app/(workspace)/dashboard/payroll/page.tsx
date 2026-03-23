@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getUser, canAccessPayroll } from "@/lib/auth";
-import { Wallet } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ShiftForm from "@/components/ShiftForm";
 import HolidayForm from "@/components/HolidayForm";
@@ -23,16 +22,6 @@ export default async function PayrollPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-          <Wallet className="h-7 w-7 text-primary" />
-          Payroll
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Employees, shifts, holidays, attendance, payslips, and NEFT.
-        </p>
-      </div>
-
       <Tabs defaultValue="employees" className="space-y-6">
         <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
           <TabsList className="inline-flex flex-nowrap w-max min-w-full justify-start gap-1">
