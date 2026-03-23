@@ -49,9 +49,10 @@ interface StudentEditDialogProps {
 type StudentEditFormProps = {
   student: Record<string, unknown> & { id: string; full_name: string };
   onSaved?: () => void;
+  onCancel?: () => void;
 };
 
-function StudentEditFormInline({ student, onSaved }: StudentEditFormProps) {
+function StudentEditFormInline({ student, onSaved, onCancel }: StudentEditFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<StudentFormState>(() => studentFormFromRecord(student));
@@ -546,6 +547,9 @@ function StudentEditFormInline({ student, onSaved }: StudentEditFormProps) {
       </div>
 
       <div className="flex gap-2 justify-start">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
         <SubmitButton loading={loading} loadingLabel="Saving…">
           Save Changes
         </SubmitButton>
@@ -576,6 +580,7 @@ export function StudentEditDialog({ student, onSaved }: StudentEditDialogProps) 
         <div className="max-h-[70vh] overflow-y-auto pr-1">
           <StudentEditFormInline
             student={student as Record<string, unknown> & { id: string; full_name: string }}
+            onCancel={() => setOpen(false)}
             onSaved={() => {
               setOpen(false);
               if (onSaved) onSaved();
