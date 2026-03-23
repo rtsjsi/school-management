@@ -25,7 +25,7 @@ export default async function FeesPage() {
   const canEdit = canEditFees(user);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       <Tabs defaultValue="collection" className="space-y-6">
         <TabsList className="flex flex-nowrap gap-1 w-full">
           <TabsTrigger value="collection">Fee Collection</TabsTrigger>
