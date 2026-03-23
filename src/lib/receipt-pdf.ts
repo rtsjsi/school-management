@@ -232,11 +232,10 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
   doc.setFontSize(7.9);
   y += lh;
 
-  doc.line(margin, y, w - margin, y);
-  y += blockGap;
-
+  doc.setTextColor(0, 0, 0);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.2);
+  y += 1;
   y = drawWrappedText(doc, amountWords, leftX, y, contentW, smallLh);
 
   if (data.totalFees != null) {
@@ -250,14 +249,15 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
     const rowGap = 3.9;
     const bandTop = y;
     const bandH = 3.2 + rowGap * 3;
-    doc.setFillColor(252, 248, 240);
-    doc.setDrawColor(210, 190, 165);
-    doc.setLineWidth(0.22);
+    // Black & white print: light gray panel + black border/text only
+    doc.setFillColor(242, 242, 242);
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.25);
     doc.roundedRect(margin, bandTop, contentW, bandH, 1.2, 1.2, "FD");
 
     let rowY = bandTop + 4.2;
     doc.setFontSize(7.2);
-    doc.setTextColor(55, 48, 42);
+    doc.setTextColor(0, 0, 0);
     doc.setFont("helvetica", "normal");
     doc.text("Total Fees", innerLeft, rowY);
     doc.setFont("helvetica", "bold");
@@ -273,9 +273,10 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
     doc.setFont("helvetica", "normal");
     doc.text("Outstanding Fees", innerLeft, rowY);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(72, 58, 45);
+    doc.setFontSize(7.6);
     doc.text(formatInrAmount(outstanding), innerRight, rowY, { align: "right" });
 
+    doc.setFontSize(7.2);
     doc.setTextColor(0, 0, 0);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7.2);
