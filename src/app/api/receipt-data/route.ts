@@ -55,13 +55,24 @@ export async function GET(request: NextRequest) {
       const items = (structure.fee_structure_items as { fee_type: string; quarter: number; amount: number }[]) ?? [];
       const totalDues = annualNetFeeLiability(items, student?.fee_concession_amount ?? null);
       totalFees = totalDues;
+      /** Cumulative paid up to and including this receipt (as on fee collection date), not all-time if later payments exist. */
       const { data: paidRows } = await supabase
         .from("fee_collections")
-        .select("amount")
+        .select("id, amount, collected_at")
         .eq("student_id", studentId)
-        .eq("academic_year", c.academic_year);
-      const totalPaid = (paidRows ?? []).reduce((sum, r) => sum + Number(r.amount), 0);
-      outstandingAfterPayment = Math.max(0, totalDues - totalPaid);
+        .eq("academic_year", c.academic_year)
+        .order("collected_at", { ascending: true })
+        .order("id", { ascending: true });
+      const collectionId = (c as { id: string }).id;
+      const collectionTime = new Date((c as { collected_at: string }).collected_at).getTime();
+      let totalPaidAsOfCollection = 0;
+      for (const r of paidRows ?? []) {
+        const rTime = new Date(r.collected_at).getTime();
+        if (rTime < collectionTime || (rTime === collectionTime && r.id <= collectionId)) {
+          totalPaidAsOfCollection += Number(r.amount);
+        }
+      }
+      outstandingAfterPayment = Math.max(0, totalDues - totalPaidAsOfCollection);
     }
 
     return NextResponse.json({

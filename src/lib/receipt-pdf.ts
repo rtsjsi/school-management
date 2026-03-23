@@ -248,8 +248,9 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
     const innerLeft = margin + bandPadX;
     const innerRight = w - margin - bandPadX;
     const rowGap = 3.9;
+    const captionH = 3.8;
     const bandTop = y;
-    const bandH = 3.2 + rowGap * 3;
+    const bandH = 3.2 + rowGap * 3 + captionH;
     // Black & white print: light gray panel + black border/text only
     doc.setFillColor(242, 242, 242);
     doc.setDrawColor(0, 0, 0);
@@ -277,13 +278,18 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
     doc.setFontSize(7.6);
     doc.text(formatInrAmount(outstanding), innerRight, rowY, { align: "right" });
 
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6);
+    doc.setTextColor(80, 80, 80);
+    doc.text(`As on fee collection date · ${dateStr || "—"}`, innerLeft, bandTop + bandH - 2.2);
+
     doc.setFontSize(7.2);
     doc.setTextColor(0, 0, 0);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7.2);
     y = bandTop + bandH + 1.4;
   }
-  y += 1.4;
+  y += 4.2;
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
@@ -313,13 +319,14 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.2);
-  doc.text(data.collectedBy ?? "", rightX, sectionTopY, { align: "right" });
-  const boxW = 26;
-  const boxH = 16;
-  const boxX = rightX - boxW;
-  const boxY = sectionTopY + 2;
-  doc.setLineWidth(0.2);
-  doc.rect(boxX, boxY, boxW, boxH);
+  const sigW = 30;
+  const sigLeft = rightX - sigW;
+  const nameY = sectionTopY + 1.2;
+  doc.text(data.collectedBy ?? "", rightX, nameY, { align: "right" });
+  doc.setLineWidth(0.25);
+  doc.setDrawColor(0, 0, 0);
+  doc.line(sigLeft, nameY + 3.2, rightX, nameY + 3.2);
+  doc.setFontSize(7.2);
 
   return doc.output("blob");
 }
