@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getUser, canViewFinance, isClerk, isPayrollRole, canAccessFees, canAccessPayroll } from "@/lib/auth";
 import { shouldApplyClassFilter, getStudentIdsForAllowedClasses } from "@/lib/class-access";
@@ -7,13 +6,11 @@ import {
   BookOpen,
   GraduationCap,
   UserPlus,
-  ArrowRight,
   IndianRupee,
   AlertCircle,
   TrendingUp,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 
 function formatCurrency(n: number) {
   return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
@@ -122,28 +119,24 @@ export default async function DashboardPage() {
           value: String(standardsCount ?? 0),
           description: "View standards",
           icon: BookOpen,
-          href: "/dashboard/classes",
         },
         {
           title: "Active students",
           value: String(activeStudentsCount ?? 0),
           description: `${studentsCount ?? 0} total enrolled`,
           icon: GraduationCap,
-          href: "/dashboard/students",
         },
         {
           title: "New admissions (current year)",
           value: String(newAdmissionsCount ?? 0),
           description: activeYearName ? activeYearName : "Set active academic year",
           icon: UserPlus,
-          href: "/dashboard/students",
         },
         {
           title: "RTE quota students",
           value: String(rteStudentsCount ?? 0),
           description: "Active students under RTE",
           icon: AlertCircle,
-          href: "/dashboard/students",
         },
       ];
 
@@ -154,28 +147,24 @@ export default async function DashboardPage() {
           value: formatCurrency(feeCollected),
           description: "Collections this month",
           icon: IndianRupee,
-          href: "/dashboard/fees",
         },
         {
           title: "Net this month",
           value: formatCurrency(netThisMonth),
           description: "Collections − expenses",
           icon: TrendingUp,
-          href: "/dashboard/fees",
         },
         {
           title: "Expenses (this month)",
           value: formatCurrency(expensesThisMonth),
           description: "Approved expenses",
           icon: TrendingUp,
-          href: "/dashboard/expenses",
         },
         {
           title: "Total employees",
           value: String(employeesCount ?? 0),
           description: "Staff & teachers",
           icon: UserPlus,
-          href: "/dashboard/payroll",
         },
       ]
     : [];
@@ -188,7 +177,6 @@ export default async function DashboardPage() {
             value: formatCurrency(feeCollected),
             description: "Collections this month",
             icon: IndianRupee,
-            href: "/dashboard/fees",
           },
         ]
       : [];
@@ -201,7 +189,6 @@ export default async function DashboardPage() {
             value: String(employeesCount ?? 0),
             description: "Staff & teachers",
             icon: UserPlus,
-            href: "/dashboard/payroll",
           },
         ]
       : [];
@@ -213,11 +200,8 @@ export default async function DashboardPage() {
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {statCards.map((stat) => {
           const Icon = stat.icon;
-          const card = (
-            <Card
-              key={stat.title}
-              className={stat.href ? "hover:shadow-card-hover hover:border-primary/15 transition-all duration-200 ease-out" : ""}
-            >
+          return (
+            <Card key={stat.title}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   {stat.title}
@@ -229,17 +213,9 @@ export default async function DashboardPage() {
               <CardContent>
                 <div className="text-2xl font-bold tracking-tight text-foreground">{stat.value}</div>
                 <p className="text-xs text-muted-foreground mt-1">{stat.description}</p>
-                {stat.href && (
-                  <Button variant="link" className="mt-2 h-auto p-0 text-primary font-medium" asChild>
-                    <Link href={stat.href}>
-                      View <ArrowRight className="ml-1 h-3 w-3" />
-                    </Link>
-                  </Button>
-                )}
               </CardContent>
             </Card>
           );
-          return stat.href ? <Link key={stat.title} href={stat.href} className="block group">{card}</Link> : <div key={stat.title}>{card}</div>;
         })}
       </div>
     </div>
