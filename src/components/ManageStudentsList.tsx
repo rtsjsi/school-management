@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pencil, BookOpen, UserPlus, LogOut, Download } from "lucide-react";
+import { Pencil, BookOpen, UserPlus, LogOut, FileSpreadsheet, FileType2, FileText } from "lucide-react";
 import { fetchStandards, fetchAllDivisions } from "@/lib/lov";
 import {
   Dialog,
@@ -575,20 +575,21 @@ export function ManageStudentsList({
   return (
     <Card>
       <CardContent className="space-y-4 pt-6">
-        <div className="flex flex-wrap items-end gap-4 justify-between">
-          <div className="flex flex-wrap gap-4 items-end flex-1 min-w-[260px]">
-            <div className="space-y-2 flex-1 min-w-[180px]">
-              <Label>Search</Label>
+        <div className="w-full overflow-x-auto">
+          <div className="inline-flex min-w-max items-end gap-2">
+            <div className="space-y-1 w-[220px]">
+              <Label className="text-xs">Search</Label>
               <Input
                 placeholder="Name or GR No."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                className="h-8"
               />
             </div>
-            <div className="space-y-2 w-28">
-              <Label>Standard</Label>
+            <div className="space-y-1 w-[110px]">
+              <Label className="text-xs">Standard</Label>
               <Select value={standardFilter} onValueChange={setStandardFilter}>
-                <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
+                <SelectTrigger className="h-8"><SelectValue placeholder="All" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All</SelectItem>
                   {standards.map((g) => (
@@ -597,10 +598,10 @@ export function ManageStudentsList({
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2 w-24">
-              <Label>Division</Label>
+            <div className="space-y-1 w-[105px]">
+              <Label className="text-xs">Division</Label>
               <Select value={divisionFilter} onValueChange={setDivisionFilter}>
-                <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
+                <SelectTrigger className="h-8"><SelectValue placeholder="All" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All</SelectItem>
                   {divisions.map((d) => (
@@ -609,10 +610,10 @@ export function ManageStudentsList({
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2 w-28">
-              <Label>Status</Label>
+            <div className="space-y-1 w-[108px]">
+              <Label className="text-xs">Status</Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
+                <SelectTrigger className="h-8"><SelectValue placeholder="All" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
@@ -623,10 +624,10 @@ export function ManageStudentsList({
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2 w-28">
-              <Label>RTE</Label>
+            <div className="space-y-1 w-[100px]">
+              <Label className="text-xs">RTE</Label>
               <Select value={rteFilter} onValueChange={setRteFilter}>
-                <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
+                <SelectTrigger className="h-8"><SelectValue placeholder="All" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All</SelectItem>
                   <SelectItem value="rte">RTE only</SelectItem>
@@ -634,24 +635,10 @@ export function ManageStudentsList({
                 </SelectContent>
               </Select>
             </div>
-          </div>
-          <div className="flex flex-wrap items-end gap-2">
-            <Button type="button" variant="outline" className="gap-1" onClick={() => exportStudents("csv")}>
-              <Download className="h-3 w-3" />
-              CSV
-            </Button>
-            <Button type="button" variant="outline" className="gap-1" onClick={() => exportStudents("xlsx")}>
-              <Download className="h-3 w-3" />
-              Excel
-            </Button>
-            <Button type="button" variant="outline" className="gap-1" onClick={() => exportStudents("pdf")}>
-              <Download className="h-3 w-3" />
-              PDF
-            </Button>
             {canEdit && (
               <Dialog open={addOpen} onOpenChange={setAddOpen}>
                 <DialogTrigger asChild>
-                  <Button className="gap-1">
+                  <Button className="gap-1 h-8 px-3">
                     <UserPlus className="h-4 w-4" />
                     Add student
                   </Button>
@@ -677,7 +664,43 @@ export function ManageStudentsList({
         ) : students.length === 0 ? (
           <p className="text-sm text-muted-foreground py-8 text-center">No students found.</p>
         ) : (
-          <div className="overflow-x-auto rounded-md border">
+          <div className="space-y-2">
+            <div className="flex justify-end gap-1">
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7"
+                title="Export CSV"
+                aria-label="Export CSV"
+                onClick={() => exportStudents("csv")}
+              >
+                <FileType2 className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7"
+                title="Export Excel"
+                aria-label="Export Excel"
+                onClick={() => exportStudents("xlsx")}
+              >
+                <FileSpreadsheet className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7"
+                title="Export PDF"
+                aria-label="Export PDF"
+                onClick={() => exportStudents("pdf")}
+              >
+                <FileText className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+            <div className="overflow-x-auto rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -777,6 +800,7 @@ export function ManageStudentsList({
                 ))}
               </TableBody>
             </Table>
+            </div>
           </div>
         )}
       </CardContent>
