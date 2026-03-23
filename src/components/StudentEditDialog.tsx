@@ -570,7 +570,7 @@ export function StudentEditDialog({ student, onSaved }: StudentEditDialogProps) 
           Edit
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-5xl">
+      <DialogContent className="max-w-[95vw] sm:max-w-5xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="text-base">Edit student</DialogTitle>
           <DialogDescription>
