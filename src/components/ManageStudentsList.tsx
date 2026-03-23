@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pencil, BookOpen, UserPlus, LogOut, Download } from "lucide-react";
+import { Pencil, BookOpen, UserPlus, LogOut } from "lucide-react";
 import { fetchStandards, fetchAllDivisions } from "@/lib/lov";
 import {
   Dialog,
@@ -465,102 +465,6 @@ export function ManageStudentsList({
     })();
   }, [search, standardFilter, divisionFilter, statusFilter, rteFilter, reloadKey, restrictByClass, allowedClassPairsKey, supabase]);
 
-  const exportStudents = async (format: "csv" | "xlsx" | "pdf") => {
-    const rows = students.map((s) => ({
-      "GR No": s.gr_number ?? "",
-      Name: s.full_name,
-      Standard: s.standard ?? "",
-      Division: s.division ?? "",
-      "Roll No": s.roll_number ?? "",
-      RTE: s.is_rte_quota ? "Yes" : "No",
-      Status: s.status ?? "active",
-      "Admission Date": s.admission_date ? new Date(s.admission_date).toLocaleDateString("en-CA") : "",
-    }));
-
-    if (rows.length === 0) {
-      alert("No students to export for current filters.");
-      return;
-    }
-
-    if (format === "csv") {
-      const header = Object.keys(rows[0]).join(",");
-      const body = rows
-        .map((r) =>
-          Object.values(r)
-            .map((v) => {
-              const text = String(v ?? "");
-              if (text.includes(",") || text.includes("\"") || text.includes("\n")) {
-                return `"${text.replace(/"/g, "\"\"")}"`;
-              }
-              return text;
-            })
-            .join(",")
-        )
-        .join("\n");
-      const blob = new Blob(["\uFEFF" + `${header}\n${body}`], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "students.csv";
-      a.click();
-      URL.revokeObjectURL(url);
-      return;
-    }
-
-    if (format === "xlsx") {
-      const XLSX = await import("xlsx");
-      const ws = XLSX.utils.json_to_sheet(rows);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Students");
-      const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-      const blob = new Blob([wbout], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "students.xlsx";
-      a.click();
-      URL.revokeObjectURL(url);
-      return;
-    }
-
-    const { jsPDF } = await import("jspdf");
-    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-    let y = 12;
-    doc.setFontSize(14);
-    doc.text("Students Report", 10, y);
-    y += 8;
-    doc.setFontSize(9);
-    doc.text("GR No", 10, y);
-    doc.text("Name", 30, y);
-    doc.text("Std", 100, y);
-    doc.text("Div", 115, y);
-    doc.text("Roll", 130, y);
-    doc.text("RTE", 145, y);
-    doc.text("Status", 160, y);
-    doc.text("Admission", 185, y);
-    y += 3;
-    doc.line(10, y, 286, y);
-    y += 5;
-    for (const r of rows) {
-      if (y > 195) {
-        doc.addPage();
-        y = 12;
-      }
-      doc.text(String(r["GR No"] || "—"), 10, y, { maxWidth: 18 });
-      doc.text(String(r.Name || "—"), 30, y, { maxWidth: 68 });
-      doc.text(String(r.Standard || "—"), 100, y, { maxWidth: 12 });
-      doc.text(String(r.Division || "—"), 115, y, { maxWidth: 10 });
-      doc.text(String(r["Roll No"] || "—"), 130, y, { maxWidth: 10 });
-      doc.text(String(r.RTE || "—"), 145, y, { maxWidth: 12 });
-      doc.text(String(r.Status || "—"), 160, y, { maxWidth: 20 });
-      doc.text(String(r["Admission Date"] || "—"), 185, y, { maxWidth: 24 });
-      y += 5;
-    }
-    doc.save("students.pdf");
-  };
-
   const getStatusBadge = (status: string) => {
     const map: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       active: "default",
@@ -664,40 +568,7 @@ export function ManageStudentsList({
         ) : students.length === 0 ? (
           <p className="text-sm text-muted-foreground py-8 text-center">No students found.</p>
         ) : (
-          <div className="space-y-2">
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="gap-1 h-8"
-                onClick={() => exportStudents("csv")}
-              >
-                <Download className="h-3 w-3" />
-                CSV
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="gap-1 h-8"
-                onClick={() => exportStudents("xlsx")}
-              >
-                <Download className="h-3 w-3" />
-                Excel
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="gap-1 h-8"
-                onClick={() => exportStudents("pdf")}
-              >
-                <Download className="h-3 w-3" />
-                PDF
-              </Button>
-            </div>
-            <div className="overflow-x-auto rounded-md border">
+          <div className="overflow-x-auto rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -799,7 +670,6 @@ export function ManageStudentsList({
                 ))}
               </TableBody>
             </Table>
-            </div>
           </div>
         )}
       </CardContent>
