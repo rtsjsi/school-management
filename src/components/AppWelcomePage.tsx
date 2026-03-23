@@ -77,11 +77,16 @@ export async function AppWelcomePage({ user, schoolName }: Props) {
             )}
 
             <div className="mt-2 border-t border-border/60 pt-2">
-              <div className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:text-[11px]">
-                <ScrollText className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                On this day
+              <div className="mb-1 space-y-0.5">
+                <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:text-[11px]">
+                  <ScrollText className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  On this day
+                </div>
+                <p className="text-[10px] leading-tight text-muted-foreground/90 sm:text-[11px]">
+                  India observances &amp; well-known international days
+                </p>
               </div>
-              <p className="text-[11px] leading-snug text-muted-foreground sm:text-xs sm:leading-relaxed">{onThisDay}</p>
+              <p className="mt-1.5 text-[11px] leading-snug text-muted-foreground sm:text-xs sm:leading-relaxed">{onThisDay}</p>
             </div>
           </div>
         </div>
