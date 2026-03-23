@@ -237,7 +237,7 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
       }, new Set<string>())
     );
 
-    const orderedKnownKeys = addFormFieldOrder.filter((k) => rowKeys.includes(k));
+    const orderedKnownKeys = addFormFieldOrder.filter((k) => rowKeys.includes(k)) as string[];
     const extraKeys = rowKeys
       .filter((k) => !orderedKnownKeys.includes(k))
       .sort((a, b) => a.localeCompare(b));
