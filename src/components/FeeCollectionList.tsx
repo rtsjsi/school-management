@@ -81,6 +81,7 @@ async function printReceipt(row: CollectionRow, school: SchoolInfo) {
       division: data.division,
       rollNumber: data.rollNumber,
       grNo: data.grNo,
+      totalFees: data.totalFees,
       outstandingAfterPayment: data.outstandingAfterPayment,
     });
     const url = URL.createObjectURL(pdfBlob);
@@ -152,6 +153,7 @@ async function downloadReceipt(row: CollectionRow, school: SchoolInfo) {
       division: data.division,
       rollNumber: data.rollNumber,
       grNo: data.grNo,
+      totalFees: data.totalFees,
       outstandingAfterPayment: data.outstandingAfterPayment,
     });
     const url = URL.createObjectURL(pdfBlob);

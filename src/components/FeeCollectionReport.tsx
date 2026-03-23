@@ -211,6 +211,7 @@ export default function FeeCollectionReport() {
         division: d.division,
         rollNumber: d.rollNumber,
         grNo: d.grNo,
+        totalFees: d.totalFees,
         outstandingAfterPayment: d.outstandingAfterPayment,
       });
       const url = URL.createObjectURL(pdfBlob);
@@ -266,6 +267,7 @@ export default function FeeCollectionReport() {
         division: d.division,
         rollNumber: d.rollNumber,
         grNo: d.grNo,
+        totalFees: d.totalFees,
         outstandingAfterPayment: d.outstandingAfterPayment,
       });
       const url = URL.createObjectURL(pdfBlob);

@@ -294,6 +294,7 @@ export default function FeeCollectionForm({
       const selectedStudent = students.find((s) => s.id === form.student_id);
 
       let outstandingAfterPayment: number | undefined;
+      let totalFees: number | undefined;
       const { data: structures } = await supabase
         .from("fee_structures")
         .select("id, standards(name), fee_structure_items(fee_type, quarter, amount)")
@@ -307,14 +308,14 @@ export default function FeeCollectionForm({
       if (structure) {
         const items = (structure.fee_structure_items as { fee_type: string; quarter: number; amount: number }[]) ?? [];
         const totalDues = annualNetFeeLiability(items, selectedStudent?.fee_concession_amount ?? null);
+        totalFees = totalDues;
         const { data: paidRows } = await supabase
           .from("fee_collections")
           .select("amount")
           .eq("student_id", form.student_id)
           .eq("academic_year", form.academic_year);
         const totalPaid = (paidRows ?? []).reduce((s, r) => s + Number(r.amount), 0);
-        const outstanding = Math.max(0, totalDues - totalPaid);
-        if (outstanding > 0) outstandingAfterPayment = outstanding;
+        outstandingAfterPayment = Math.max(0, totalDues - totalPaid);
       }
 
       const pdfBlob = await generateReceiptPDF({
@@ -341,6 +342,7 @@ export default function FeeCollectionForm({
         division: selectedStudent?.division,
         rollNumber: selectedStudent?.roll_number,
         grNo: selectedStudent?.student_id ?? selectedStudent?.id?.slice(0, 8),
+        totalFees,
         outstandingAfterPayment,
       });
 

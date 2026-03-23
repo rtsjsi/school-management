@@ -1,5 +1,4 @@
 import { jsPDF } from "jspdf";
-import { getFeeTypeLabel } from "@/lib/utils";
 import { drawWrappedText } from "./pdf-utils";
 
 const ONES = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
@@ -74,6 +73,9 @@ export interface ReceiptData {
   division?: string;
   rollNumber?: number | string;
   grNo?: string;
+  /** Annual net fee liability for the student (academic year); enables fee summary on receipt. */
+  totalFees?: number;
+  /** Balance due after this payment (0 if fully paid for the year). */
   outstandingAfterPayment?: number;
 }
 
@@ -221,57 +223,61 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
   doc.line(margin, y, w - margin, y);
   y += blockGap;
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.4);
-  doc.text("Fees", w / 2, y, { align: "center" });
-  y += lh;
-
-  const feeLabel = getFeeTypeLabel(data.feeType);
   const amountFormatted = formatInrAmount(Number(data.amount || 0));
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7.9);
-  doc.text(`${feeLabel || "Fee"} :`, leftX, y);
-  doc.text(amountFormatted, rightX, y, { align: "right" });
-  y += lh + 0.3;
-
-  // Empty body area line like printed receipt block
-  doc.line(margin, y, w - margin, y);
-  y += blockGap;
-
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9.3);
-  doc.text("Total Fee :", leftX, y);
+  doc.text("Fee Amount :", leftX, y);
   doc.text(amountFormatted, rightX, y, { align: "right" });
+  doc.setFont("helvetica", "normal");
   doc.setFontSize(7.9);
   y += lh;
+
+  doc.line(margin, y, w - margin, y);
+  y += blockGap;
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.2);
   y = drawWrappedText(doc, amountWords, leftX, y, contentW, smallLh);
-  if (data.outstandingAfterPayment != null) {
+
+  if (data.totalFees != null) {
     y += 1.2;
-    const bandH = 8.2;
-    const bandTop = y;
+    const totalFees = Number(data.totalFees);
+    const outstanding = Math.max(0, Number(data.outstandingAfterPayment ?? 0));
+    const feesPaid = Math.max(0, totalFees - outstanding);
     const bandPadX = 2.8;
-    // Soft, informative highlight (warm neutral — visible to parents, not alarming)
+    const innerLeft = margin + bandPadX;
+    const innerRight = w - margin - bandPadX;
+    const rowGap = 3.9;
+    const bandTop = y;
+    const bandH = 3.2 + rowGap * 3;
     doc.setFillColor(252, 248, 240);
     doc.setDrawColor(210, 190, 165);
     doc.setLineWidth(0.22);
     doc.roundedRect(margin, bandTop, contentW, bandH, 1.2, 1.2, "FD");
 
-    const outAmt = formatInrAmount(data.outstandingAfterPayment);
-    const lineMain = `Outstanding ${outAmt}`;
+    let rowY = bandTop + 4.2;
+    doc.setFontSize(7.2);
+    doc.setTextColor(55, 48, 42);
+    doc.setFont("helvetica", "normal");
+    doc.text("Total Fees", innerLeft, rowY);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(7.6);
-    doc.setTextColor(62, 54, 46);
-    doc.text(lineMain, margin + bandPadX, bandTop + 4.6);
+    doc.text(formatInrAmount(totalFees), innerRight, rowY, { align: "right" });
+    rowY += rowGap;
 
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(6.5);
-    doc.setTextColor(95, 88, 78);
-    doc.text("Balance remaining on the student fee account after this payment.", margin + bandPadX, bandTop + 7.4);
+    doc.text("Fees Paid", innerLeft, rowY);
+    doc.setFont("helvetica", "bold");
+    doc.text(formatInrAmount(feesPaid), innerRight, rowY, { align: "right" });
+    rowY += rowGap;
+
+    doc.setFont("helvetica", "normal");
+    doc.text("Outstanding Fees", innerLeft, rowY);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(72, 58, 45);
+    doc.text(formatInrAmount(outstanding), innerRight, rowY, { align: "right" });
 
     doc.setTextColor(0, 0, 0);
+    doc.setFont("helvetica", "normal");
     doc.setFontSize(7.2);
     y = bandTop + bandH + 1.4;
   }

@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
         id, student_id, receipt_number, amount, fee_type, quarter, academic_year, payment_mode,
         collected_at, collected_by, cheque_number, cheque_bank, cheque_date,
         online_transaction_id, online_transaction_ref,
-        students(full_name, standard, division, roll_number, student_id)
+        students(full_name, standard, division, roll_number, student_id, fee_concession_amount)
       `)
       .eq("id", id)
       .single();
@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
     if (!studentId) return NextResponse.json({ error: "Invalid collection" }, { status: 400 });
 
     let outstandingAfterPayment: number | undefined;
+    let totalFees: number | undefined;
     const { data: structures } = await supabase
       .from("fee_structures")
       .select("standards(name), fee_structure_items(fee_type, quarter, amount)")
@@ -48,6 +49,7 @@ export async function GET(request: NextRequest) {
     if (structure) {
       const items = (structure.fee_structure_items as { fee_type: string; quarter: number; amount: number }[]) ?? [];
       const totalDues = annualNetFeeLiability(items, student?.fee_concession_amount ?? null);
+      totalFees = totalDues;
       const { data: paidRows } = await supabase
         .from("fee_collections")
         .select("amount")
@@ -76,6 +78,7 @@ export async function GET(request: NextRequest) {
       division: student?.division,
       rollNumber: student?.roll_number,
       grNo: student?.student_id,
+      totalFees,
       outstandingAfterPayment,
     });
   } catch {
