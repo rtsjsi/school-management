@@ -435,9 +435,9 @@ export function ManageStudentsList({
   return (
     <Card>
       <CardContent className="space-y-4 pt-6">
-        <div className="w-full overflow-x-auto">
-          <div className="inline-flex min-w-max items-end gap-2">
-            <div className="space-y-1 w-[220px]">
+        <div className="w-full">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-6 lg:items-end">
+            <div className="space-y-1 w-full min-w-0 lg:col-span-2">
               <Label className="text-xs">Search</Label>
               <Input
                 placeholder="Name or GR No."
@@ -446,7 +446,7 @@ export function ManageStudentsList({
                 className="h-8"
               />
             </div>
-            <div className="space-y-1 w-[110px]">
+            <div className="space-y-1 w-full min-w-0">
               <Label className="text-xs">Standard</Label>
               <Select value={standardFilter} onValueChange={setStandardFilter}>
                 <SelectTrigger className="h-8"><SelectValue placeholder="All" /></SelectTrigger>
@@ -458,7 +458,7 @@ export function ManageStudentsList({
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1 w-[105px]">
+            <div className="space-y-1 w-full min-w-0">
               <Label className="text-xs">Division</Label>
               <Select value={divisionFilter} onValueChange={setDivisionFilter}>
                 <SelectTrigger className="h-8"><SelectValue placeholder="All" /></SelectTrigger>
@@ -470,7 +470,7 @@ export function ManageStudentsList({
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1 w-[108px]">
+            <div className="space-y-1 w-full min-w-0">
               <Label className="text-xs">Status</Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="h-8"><SelectValue placeholder="All" /></SelectTrigger>
@@ -484,7 +484,7 @@ export function ManageStudentsList({
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1 w-[100px]">
+            <div className="space-y-1 w-full min-w-0">
               <Label className="text-xs">RTE</Label>
               <Select value={rteFilter} onValueChange={setRteFilter}>
                 <SelectTrigger className="h-8"><SelectValue placeholder="All" /></SelectTrigger>
@@ -498,12 +498,12 @@ export function ManageStudentsList({
             {canEdit && (
               <Dialog open={addOpen} onOpenChange={setAddOpen}>
                 <DialogTrigger asChild>
-                  <Button className="gap-1 h-8 px-3">
+                  <Button className="gap-1 h-8 px-3 w-full sm:w-auto lg:justify-self-end">
                     <UserPlus className="h-4 w-4" />
                     Add student
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-5xl">
+                <DialogContent className="max-w-[95vw] sm:max-w-5xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
                   <DialogHeader>
                     <DialogTitle className="text-base">Add new student</DialogTitle>
                     <DialogDescription>
