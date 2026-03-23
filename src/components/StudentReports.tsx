@@ -130,7 +130,7 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
     });
   }, [rows, standardFilter, divisionFilter, rteFilter]);
 
-  const exportRows = (format: "csv" | "xlsx" | "pdf") => {
+  const exportRows = () => {
     const toLabel = (key: string) =>
       key
         .split("_")
@@ -179,83 +179,20 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
       return;
     }
 
-    if (format === "csv") {
-      const header = Object.keys(exportRowsFull[0]).join(",");
-      const body = exportRowsFull
-        .map((row) =>
-          Object.values(row)
-            .map((value) => {
-              const text = String(value ?? "");
-              if (text.includes(",") || text.includes("\"") || text.includes("\n")) {
-                return `"${text.replace(/"/g, "\"\"")}"`;
-              }
-              return text;
-            })
-            .join(",")
-        )
-        .join("\n");
-      const blob = new Blob(["\uFEFF" + `${header}\n${body}`], { type: "text/csv;charset=utf-8;" });
+    import("xlsx").then((XLSX) => {
+      const ws = XLSX.utils.json_to_sheet(exportRowsFull);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Students");
+      const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+      const blob = new Blob([wbout], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "students-report.csv";
+      a.download = "students-report.xlsx";
       a.click();
       URL.revokeObjectURL(url);
-      return;
-    }
-
-    if (format === "xlsx") {
-      import("xlsx").then((XLSX) => {
-        const ws = XLSX.utils.json_to_sheet(exportRowsFull);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Students");
-        const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-        const blob = new Blob([wbout], {
-          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "students-report.xlsx";
-        a.click();
-        URL.revokeObjectURL(url);
-      });
-      return;
-    }
-
-    import("jspdf").then(({ jsPDF }) => {
-      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const maxLineWidth = 185;
-      let y = 12;
-      doc.setFontSize(13);
-      doc.text("Student Report (All Student Columns)", 10, y);
-      y += 8;
-
-      filteredRows.forEach((row, idx) => {
-        if (idx > 0) {
-          doc.addPage();
-          y = 12;
-        }
-        doc.setFontSize(11);
-        doc.text(`Student ${idx + 1}: ${String(row.full_name ?? "—")}`, 10, y);
-        y += 6;
-        doc.setFontSize(9);
-
-        for (const col of exportColumns) {
-          const line = `${toLabel(col)}: ${String(normalizeExportValue(row[col]))}`;
-          const wrapped = doc.splitTextToSize(line, maxLineWidth) as string[];
-          for (const seg of wrapped) {
-            if (y > pageHeight - 10) {
-              doc.addPage();
-              y = 12;
-            }
-            doc.text(seg, 10, y);
-            y += 4;
-          }
-        }
-      });
-      doc.save("students-report.pdf");
     });
   };
 
@@ -312,17 +249,9 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button type="button" size="sm" variant="outline" className="gap-1" onClick={() => exportRows("csv")}>
-              <Download className="h-3 w-3" />
-              CSV
-            </Button>
-            <Button type="button" size="sm" variant="outline" className="gap-1" onClick={() => exportRows("xlsx")}>
+            <Button type="button" size="sm" variant="outline" className="gap-1" onClick={exportRows}>
               <Download className="h-3 w-3" />
               Excel
-            </Button>
-            <Button type="button" size="sm" variant="outline" className="gap-1" onClick={() => exportRows("pdf")}>
-              <Download className="h-3 w-3" />
-              PDF
             </Button>
           </div>
         </div>
