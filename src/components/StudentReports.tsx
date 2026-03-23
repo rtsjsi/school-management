@@ -24,13 +24,48 @@ import {
 
 type StudentReportRow = {
   id: string;
+  student_id?: string | null;
   gr_number?: string | null;
   full_name: string;
+  date_of_birth?: string | null;
+  gender?: string | null;
+  blood_group?: string | null;
   standard?: string | null;
   division?: string | null;
   roll_number?: number | null;
+  admission_date?: string | null;
   status?: string | null;
+  category?: string | null;
+  religion?: string | null;
+  caste?: string | null;
+  aadhar_no?: string | null;
+  pen_no?: string | null;
+  apaar_id?: string | null;
+  udise_id?: string | null;
+  parent_name?: string | null;
+  parent_contact?: string | null;
+  parent_email?: string | null;
+  mother_name?: string | null;
+  mother_contact?: string | null;
+  father_name?: string | null;
+  guardian_name?: string | null;
+  guardian_contact?: string | null;
+  guardian_email?: string | null;
+  present_address_line1?: string | null;
+  present_address_line2?: string | null;
+  present_city?: string | null;
+  present_taluka?: string | null;
+  present_district?: string | null;
+  present_state?: string | null;
+  present_pincode?: string | null;
+  present_country?: string | null;
+  fee_concession_amount?: number | null;
+  fee_concession_reason?: string | null;
+  second_language?: string | null;
+  mother_tongue?: string | null;
   is_rte_quota?: boolean | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 };
 
 type AllowedClassNames = { standardName: string; divisionName: string }[];
@@ -54,7 +89,7 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
       setLoading(true);
       const { data } = await supabase
         .from("students")
-        .select("id, gr_number, full_name, standard, division, roll_number, status, is_rte_quota")
+        .select("*")
         .order("standard", { ascending: true })
         .order("division", { ascending: true })
         .order("roll_number", { ascending: true })
@@ -94,6 +129,53 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
   }, [rows, standardFilter, divisionFilter, rteFilter]);
 
   const exportRows = (format: "csv" | "xlsx" | "pdf") => {
+    const toDate = (v?: string | null) => (v ? new Date(v).toLocaleDateString("en-CA") : "");
+
+    const exportRowsFull = filteredRows.map((r) => ({
+      "Student Name": r.full_name,
+      Standard: r.standard ?? "",
+      Division: r.division ?? "",
+      "Roll No": r.roll_number ?? "",
+      "GR No": r.gr_number ?? "",
+      "Legacy Student ID": r.student_id ?? "",
+      RTE: r.is_rte_quota ? "Yes" : "No",
+      Status: r.status ?? "",
+      "Admission Date": toDate(r.admission_date),
+      "Date of Birth": toDate(r.date_of_birth),
+      Gender: r.gender ?? "",
+      "Blood Group": r.blood_group ?? "",
+      Category: r.category ?? "",
+      Religion: r.religion ?? "",
+      Caste: r.caste ?? "",
+      "Aadhar No": r.aadhar_no ?? "",
+      "PEN No": r.pen_no ?? "",
+      "APAAR ID": r.apaar_id ?? "",
+      "UDISE ID": r.udise_id ?? "",
+      "Father Name": r.father_name ?? "",
+      "Mother Name": r.mother_name ?? "",
+      "Parent Name": r.parent_name ?? "",
+      "Parent Contact": r.parent_contact ?? "",
+      "Mother Contact": r.mother_contact ?? "",
+      "Parent Email": r.parent_email ?? "",
+      "Guardian Name": r.guardian_name ?? "",
+      "Guardian Contact": r.guardian_contact ?? "",
+      "Guardian Email": r.guardian_email ?? "",
+      "Mother Tongue": r.mother_tongue ?? "",
+      "Second Language": r.second_language ?? "",
+      "Fee Concession Amount": r.fee_concession_amount ?? "",
+      "Fee Concession Reason": r.fee_concession_reason ?? "",
+      "Address Line 1": r.present_address_line1 ?? "",
+      "Address Line 2": r.present_address_line2 ?? "",
+      City: r.present_city ?? "",
+      Taluka: r.present_taluka ?? "",
+      District: r.present_district ?? "",
+      State: r.present_state ?? "",
+      Pincode: r.present_pincode ?? "",
+      Country: r.present_country ?? "",
+      "Created At": toDate(r.created_at),
+      "Updated At": toDate(r.updated_at),
+    }));
+
     const reportRows = filteredRows.map((r) => ({
       "Student Name": r.full_name,
       Standard: r.standard ?? "",
@@ -110,8 +192,8 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
     }
 
     if (format === "csv") {
-      const header = Object.keys(reportRows[0]).join(",");
-      const body = reportRows
+      const header = Object.keys(exportRowsFull[0]).join(",");
+      const body = exportRowsFull
         .map((row) =>
           Object.values(row)
             .map((value) => {
@@ -136,7 +218,7 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
 
     if (format === "xlsx") {
       import("xlsx").then((XLSX) => {
-        const ws = XLSX.utils.json_to_sheet(reportRows);
+        const ws = XLSX.utils.json_to_sheet(exportRowsFull);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Students");
         const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
@@ -184,6 +266,9 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
         doc.text(String(row.Status || "—"), 161, y, { maxWidth: 22 });
         y += 5;
       }
+      y += 3;
+      doc.setFontSize(8);
+      doc.text("Detailed fields are included in CSV and Excel exports.", 10, y);
       doc.save("students-report.pdf");
     });
   };
