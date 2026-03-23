@@ -277,11 +277,11 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
     <Card>
       <CardContent className="space-y-4 pt-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
-          <div className="grid w-full gap-3 sm:grid-cols-3 lg:w-auto lg:min-w-[560px]">
+          <div className="grid w-full gap-3 sm:grid-cols-3 lg:w-auto">
             <div className="space-y-2">
               <Label>Standard</Label>
               <Select value={standardFilter} onValueChange={setStandardFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="h-9">
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
@@ -297,7 +297,7 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
             <div className="space-y-2">
               <Label>Division</Label>
               <Select value={divisionFilter} onValueChange={setDivisionFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="h-9">
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
@@ -313,7 +313,7 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
             <div className="space-y-2">
               <Label>RTE Flag</Label>
               <Select value={rteFilter} onValueChange={setRteFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="h-9">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -326,7 +326,7 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button type="button" size="sm" variant="outline" className="gap-1" onClick={exportRows}>
+            <Button type="button" size="sm" variant="outline" className="gap-1 h-9" onClick={exportRows}>
               <Download className="h-3 w-3" />
               Excel
             </Button>

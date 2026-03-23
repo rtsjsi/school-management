@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BookOpen, UserPlus, LogOut } from "lucide-react";
+import { BookOpen, UserPlus, LogOut, ChevronDown, ChevronUp } from "lucide-react";
 import { fetchStandards, fetchAllDivisions } from "@/lib/lov";
 import {
   Dialog,
@@ -370,6 +370,7 @@ export function ManageStudentsList({
   const [divisions, setDivisions] = useState<{ id: string; name: string }[]>([]);
   const [addOpen, setAddOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [expandedStudentRows, setExpandedStudentRows] = useState<Record<string, boolean>>({});
 
   const supabase = useMemo(() => createClient(), []);
   const restrictByClass = allowedClassNames !== undefined;
@@ -443,13 +444,13 @@ export function ManageStudentsList({
                 placeholder="Name or GR No."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="h-8"
+                className="h-9"
               />
             </div>
             <div className="space-y-1 w-full min-w-0">
               <Label className="text-xs">Standard</Label>
               <Select value={standardFilter} onValueChange={setStandardFilter}>
-                <SelectTrigger className="h-8"><SelectValue placeholder="All" /></SelectTrigger>
+                <SelectTrigger className="h-9"><SelectValue placeholder="All" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All</SelectItem>
                   {standards.map((g) => (
@@ -461,7 +462,7 @@ export function ManageStudentsList({
             <div className="space-y-1 w-full min-w-0">
               <Label className="text-xs">Division</Label>
               <Select value={divisionFilter} onValueChange={setDivisionFilter}>
-                <SelectTrigger className="h-8"><SelectValue placeholder="All" /></SelectTrigger>
+                <SelectTrigger className="h-9"><SelectValue placeholder="All" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All</SelectItem>
                   {divisions.map((d) => (
@@ -473,7 +474,7 @@ export function ManageStudentsList({
             <div className="space-y-1 w-full min-w-0">
               <Label className="text-xs">Status</Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="h-8"><SelectValue placeholder="All" /></SelectTrigger>
+                <SelectTrigger className="h-9"><SelectValue placeholder="All" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
@@ -487,7 +488,7 @@ export function ManageStudentsList({
             <div className="space-y-1 w-full min-w-0">
               <Label className="text-xs">RTE</Label>
               <Select value={rteFilter} onValueChange={setRteFilter}>
-                <SelectTrigger className="h-8"><SelectValue placeholder="All" /></SelectTrigger>
+                <SelectTrigger className="h-9"><SelectValue placeholder="All" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All</SelectItem>
                   <SelectItem value="rte">RTE only</SelectItem>
@@ -498,7 +499,7 @@ export function ManageStudentsList({
             {canEdit && (
               <Dialog open={addOpen} onOpenChange={setAddOpen}>
                 <DialogTrigger asChild>
-                  <Button className="gap-1 h-8 px-3 w-full sm:w-auto lg:justify-self-end">
+                  <Button className="gap-1 h-9 px-3 w-full sm:w-auto lg:justify-self-end">
                     <UserPlus className="h-4 w-4" />
                     Add student
                   </Button>
@@ -531,21 +532,21 @@ export function ManageStudentsList({
                   {canEdit && <TableHead className="w-32 whitespace-nowrap">Actions</TableHead>}
                   <TableHead>Student Name</TableHead>
                   <TableHead>Standard</TableHead>
-                  <TableHead>Division</TableHead>
-                  <TableHead>Roll #</TableHead>
-                  <TableHead>GR No</TableHead>
+                  <TableHead className="hidden sm:table-cell">Division</TableHead>
+                  <TableHead className="hidden sm:table-cell">Roll #</TableHead>
+                  <TableHead className="hidden sm:table-cell">GR No</TableHead>
                   <TableHead>RTE</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-20 text-center">View</TableHead>
-                  {canEdit && <TableHead className="w-32 text-center">Enrolments</TableHead>}
-                  {canEdit && <TableHead className="w-28 text-right">Exit</TableHead>}
+                  <TableHead className="hidden sm:table-cell">Status</TableHead>
+                  <TableHead className="w-20 text-center hidden sm:table-cell">View</TableHead>
+                  {canEdit && <TableHead className="w-32 text-center hidden sm:table-cell">Enrolments</TableHead>}
+                  {canEdit && <TableHead className="w-28 text-right hidden sm:table-cell">Exit</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {students.map((s) => (
+                {students.flatMap((s) => [
                   <TableRow key={s.id}>
                     {canEdit && (
-                      <TableCell className="space-x-1">
+                      <TableCell className="space-x-1 align-top">
                         <StudentEditDialog
                           student={s}
                           onSaved={() => {
@@ -585,24 +586,39 @@ export function ManageStudentsList({
                           </div>
                         </div>
                       </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="mt-1 h-9 px-2 sm:hidden"
+                        onClick={() =>
+                          setExpandedStudentRows((prev) => ({
+                            ...prev,
+                            [s.id]: !prev[s.id],
+                          }))
+                        }
+                      >
+                        {expandedStudentRows[s.id] ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        Details
+                      </Button>
                     </TableCell>
                     <TableCell>{s.standard ?? "—"}</TableCell>
-                    <TableCell>{s.division ?? "—"}</TableCell>
-                    <TableCell className="text-center">{s.roll_number ?? "—"}</TableCell>
-                    <TableCell className="font-mono text-xs">{s.gr_number ?? "—"}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{s.division ?? "—"}</TableCell>
+                    <TableCell className="text-center hidden sm:table-cell">{s.roll_number ?? "—"}</TableCell>
+                    <TableCell className="font-mono text-xs hidden sm:table-cell">{s.gr_number ?? "—"}</TableCell>
                     <TableCell>
                       {s.is_rte_quota ? <Badge variant="secondary">RTE</Badge> : "—"}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden sm:table-cell">
                       <Badge variant={getStatusBadge(s.status || "active")}>
                         {s.status || "active"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-center">
+                    <TableCell className="text-center hidden sm:table-cell">
                       <StudentViewDialog student={s} />
                     </TableCell>
                     {canEdit && (
-                      <TableCell className="text-center">
+                      <TableCell className="text-center hidden sm:table-cell">
                         <StudentEnrolmentsDialog
                           studentId={s.id}
                           studentName={s.full_name}
@@ -611,7 +627,7 @@ export function ManageStudentsList({
                       </TableCell>
                     )}
                     {canEdit && (
-                      <TableCell className="text-right">
+                      <TableCell className="text-right hidden sm:table-cell">
                         <StudentExitDialog
                           studentId={s.id}
                           studentName={s.full_name}
@@ -622,8 +638,38 @@ export function ManageStudentsList({
                         />
                       </TableCell>
                     )}
-                  </TableRow>
-                ))}
+                  </TableRow>,
+                  expandedStudentRows[s.id] ? (
+                    <TableRow key={`${s.id}-mobile-details`} className="sm:hidden bg-muted/30">
+                      <TableCell colSpan={canEdit ? 4 : 3} className="text-sm space-y-1">
+                        <div><span className="text-muted-foreground">Division:</span> {s.division ?? "—"}</div>
+                        <div><span className="text-muted-foreground">Roll #:</span> {s.roll_number ?? "—"}</div>
+                        <div><span className="text-muted-foreground">GR No:</span> {s.gr_number ?? "—"}</div>
+                        <div><span className="text-muted-foreground">Status:</span> {s.status ?? "active"}</div>
+                        <div className="pt-1 flex flex-wrap gap-2">
+                          <StudentViewDialog student={s} />
+                          {canEdit && (
+                            <>
+                              <StudentEnrolmentsDialog
+                                studentId={s.id}
+                                studentName={s.full_name}
+                                grNumber={s.gr_number}
+                              />
+                              <StudentExitDialog
+                                studentId={s.id}
+                                studentName={s.full_name}
+                                currentStatus={s.status}
+                                onExited={() => {
+                                  setReloadKey((k) => k + 1);
+                                }}
+                              />
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : null,
+                ])}
               </TableBody>
             </Table>
           </div>
