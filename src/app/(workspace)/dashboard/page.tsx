@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { getUser, canViewFinance, isClerk, isPayrollRole, canAccessFees, canAccessPayroll } from "@/lib/auth";
 import { shouldApplyClassFilter, getStudentIdsForAllowedClasses } from "@/lib/class-access";
 import { createClient } from "@/lib/supabase/server";
-import { ROLES } from "@/types/auth";
 import {
   BookOpen,
   GraduationCap,
@@ -14,7 +13,6 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 function formatCurrency(n: number) {
@@ -105,8 +103,6 @@ export default async function DashboardPage() {
   );
   const expensesThisMonth = (expensesResult.data ?? []).reduce((sum, r) => sum + Number(r.amount ?? 0), 0);
   const netThisMonth = feeCollected - expensesThisMonth;
-
-  const roleLabel = ROLES[user.role as keyof typeof ROLES] ?? user.role;
 
   const limitedOpsRole = isClerk(user) || isPayrollRole(user);
 
@@ -206,13 +202,6 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="page-title">Dashboard</h1>
-        <p className="caption mt-1.5">
-          Overview for <Badge variant="secondary" className="font-medium">{roleLabel}</Badge>
-        </p>
-      </div>
-
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {statCards.map((stat) => {
           const Icon = stat.icon;

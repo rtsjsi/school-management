@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import { getUser, isPrincipal } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getSchoolSettingsWithUrls } from "@/lib/school-settings";
-import { Building2 } from "lucide-react";
 import { AdministrationTabs } from "@/components/AdministrationTabs";
 
 export const dynamic = "force-dynamic";
@@ -28,16 +27,6 @@ export default async function AdministrationPage({
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="page-title flex items-center gap-2">
-          <Building2 className="h-7 w-7 text-primary" />
-          Administration
-        </h1>
-        <p className="caption mt-1">
-          Users, school settings, and academic year (Principal only).
-        </p>
-      </div>
-
       <AdministrationTabs
         defaultTab={validTab}
         profiles={profiles as { id: string; email: string | null; full_name: string | null; role: string | null; created_at: string }[]}

@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getUser, isAdminOrAbove } from "@/lib/auth";
 import { guardAcademicAndStudentModules } from "@/lib/dashboard-guards";
-import { BookOpen } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClassManagement } from "@/components/ClassManagement";
 import { SubjectMaster } from "@/components/SubjectMaster";
@@ -26,16 +25,6 @@ export default async function AcademicSetupPage({
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="page-title flex items-center gap-2">
-          <BookOpen className="h-7 w-7 text-primary" />
-          Academic setup
-        </h1>
-        <p className="caption mt-1">
-          Standards, subjects, and year-end promotion.
-        </p>
-      </div>
-
       <Tabs defaultValue={tab} className="space-y-6">
         <TabsList className="flex flex-nowrap gap-1 w-full">
           <TabsTrigger value="standards">Standard management</TabsTrigger>
