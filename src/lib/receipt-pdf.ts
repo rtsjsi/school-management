@@ -69,14 +69,15 @@ export interface ReceiptData {
   outstandingAfterPayment?: number;
 }
 
+/** Academic / India FY-style quarters (Apr–Mar year), not calendar Jan–Dec Q1–Q4. */
 const QUARTER_MONTHS: Record<number, string> = {
-  1: "Jan-Mar",
-  2: "Apr-Jun",
-  3: "Jul-Sep",
-  4: "Oct-Dec",
+  1: "Apr-Jun",
+  2: "Jul-Sep",
+  3: "Oct-Dec",
+  4: "Jan-Mar",
 };
 
-function quarterLabel(quarter: number): string {
+export function quarterLabel(quarter: number): string {
   const months = QUARTER_MONTHS[quarter] ?? "—";
   return `Q${quarter} (${months})`;
 }
@@ -200,10 +201,10 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
   drawAlignedField("GR No", String(data.grNo ?? "—"), y);
   y += lh;
 
-  drawAlignedField("Year", data.academicYear || "—", y);
+  drawAlignedField("Period", periodText, y);
   y += lh;
 
-  drawAlignedField("Period", periodText, y);
+  drawAlignedField("Year", data.academicYear || "—", y);
   y += lh;
 
   drawAlignedField("Mode", data.paymentMode ? data.paymentMode.charAt(0).toUpperCase() + data.paymentMode.slice(1) : "—", y);
