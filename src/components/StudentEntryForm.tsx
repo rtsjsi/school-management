@@ -120,9 +120,7 @@ const defaultForm = () => ({
   is_rte_quota: false,
 });
 
-export default function StudentEntryForm({
-  defaultAcademicYear: _defaultAcademicYear,
-}: {
+export default function StudentEntryForm(_: {
   defaultAcademicYear?: string;
 } = {}) {
   const router = useRouter();
