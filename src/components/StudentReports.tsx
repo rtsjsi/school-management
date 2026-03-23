@@ -337,10 +337,32 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
               <TableHeader>
                 <TableRow>
                   <TableHead>Student Name</TableHead>
+                  <TableHead>Date of Birth</TableHead>
+                  <TableHead>Gender</TableHead>
+                  <TableHead>Blood Group</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Mother Tongue</TableHead>
+                  <TableHead>Second Language</TableHead>
+                  <TableHead>Admission Date</TableHead>
                   <TableHead>Standard</TableHead>
                   <TableHead>Division</TableHead>
                   <TableHead>Roll #</TableHead>
                   <TableHead>GR No</TableHead>
+                  <TableHead>UDISE ID</TableHead>
+                  <TableHead>Aadhar No</TableHead>
+                  <TableHead>PEN No</TableHead>
+                  <TableHead>APAAR ID</TableHead>
+                  <TableHead>Father Name</TableHead>
+                  <TableHead>Mother Name</TableHead>
+                  <TableHead>Parent Contact</TableHead>
+                  <TableHead>Parent Email</TableHead>
+                  <TableHead>Guardian Name</TableHead>
+                  <TableHead>Guardian Contact</TableHead>
+                  <TableHead>Present Address</TableHead>
+                  <TableHead>City</TableHead>
+                  <TableHead>District</TableHead>
+                  <TableHead>State</TableHead>
+                  <TableHead>Pincode</TableHead>
                   <TableHead>RTE</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
@@ -349,10 +371,32 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
                 {filteredRows.map((row) => (
                   <TableRow key={row.id}>
                     <TableCell className="font-medium">{row.full_name}</TableCell>
+                    <TableCell>{row.date_of_birth ? new Date(row.date_of_birth).toLocaleDateString() : "—"}</TableCell>
+                    <TableCell className="capitalize">{row.gender ?? "—"}</TableCell>
+                    <TableCell>{row.blood_group ?? "—"}</TableCell>
+                    <TableCell className="uppercase">{row.category ?? "—"}</TableCell>
+                    <TableCell>{row.mother_tongue ?? "—"}</TableCell>
+                    <TableCell>{row.second_language ?? "—"}</TableCell>
+                    <TableCell>{row.admission_date ? new Date(row.admission_date).toLocaleDateString() : "—"}</TableCell>
                     <TableCell>{row.standard ?? "—"}</TableCell>
                     <TableCell>{row.division ?? "—"}</TableCell>
                     <TableCell>{row.roll_number ?? "—"}</TableCell>
                     <TableCell className="font-mono text-xs">{row.gr_number ?? "—"}</TableCell>
+                    <TableCell>{row.udise_id ?? "—"}</TableCell>
+                    <TableCell>{row.aadhar_no ?? "—"}</TableCell>
+                    <TableCell>{row.pen_no ?? "—"}</TableCell>
+                    <TableCell>{row.apaar_id ?? "—"}</TableCell>
+                    <TableCell>{row.father_name ?? "—"}</TableCell>
+                    <TableCell>{row.mother_name ?? "—"}</TableCell>
+                    <TableCell>{row.parent_contact ?? "—"}</TableCell>
+                    <TableCell>{row.parent_email ?? "—"}</TableCell>
+                    <TableCell>{row.guardian_name ?? "—"}</TableCell>
+                    <TableCell>{row.guardian_contact ?? "—"}</TableCell>
+                    <TableCell>{row.present_address_line1 ?? "—"}</TableCell>
+                    <TableCell>{row.present_city ?? "—"}</TableCell>
+                    <TableCell>{row.present_district ?? "—"}</TableCell>
+                    <TableCell>{row.present_state ?? "—"}</TableCell>
+                    <TableCell>{row.present_pincode ?? "—"}</TableCell>
                     <TableCell>{row.is_rte_quota ? "Yes" : "No"}</TableCell>
                     <TableCell className="capitalize">{row.status ?? "—"}</TableCell>
                   </TableRow>
