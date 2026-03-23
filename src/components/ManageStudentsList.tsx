@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pencil, BookOpen, UserPlus, LogOut } from "lucide-react";
+import { BookOpen, UserPlus, LogOut } from "lucide-react";
 import { fetchStandards, fetchAllDivisions } from "@/lib/lov";
 import {
   Dialog,
@@ -34,7 +34,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import StudentEntryForm from "@/components/StudentEntryForm";
-import { StudentEditForm } from "@/components/StudentEditForm";
+import { StudentEditDialog } from "@/components/StudentEditDialog";
 import { StudentViewDialog } from "@/components/StudentViewDialog";
 
 type StudentRow = {
@@ -197,50 +197,6 @@ function StudentEnrolmentsDialog({
             </Table>
           </div>
         )}
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function StudentEditDialog({
-  student,
-  onSaved,
-}: {
-  student: StudentRow & { [key: string]: unknown };
-  onSaved: () => void;
-}) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" variant="outline" className="gap-1 px-2">
-          <Pencil className="h-3 w-3" />
-          <span className="text-xs">Edit</span>
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-5xl">
-        <DialogHeader>
-          <DialogTitle className="text-base">
-            Edit student — {student.full_name}
-            {student.gr_number && (
-              <span className="font-mono text-xs font-normal text-muted-foreground ml-2">
-                (GR: {student.gr_number})
-              </span>
-            )}
-          </DialogTitle>
-          <DialogDescription>Update student details. Changes will be saved immediately.</DialogDescription>
-        </DialogHeader>
-        <div className="max-h-[70vh] overflow-y-auto pr-1">
-          <StudentEditForm
-            student={student as unknown as Record<string, unknown> & { id: string; full_name: string }}
-            embedded
-            onSaved={() => {
-              setOpen(false);
-              onSaved();
-            }}
-          />
-        </div>
       </DialogContent>
     </Dialog>
   );
