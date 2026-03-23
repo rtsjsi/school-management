@@ -316,12 +316,5 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
   doc.setLineWidth(0.2);
   doc.rect(boxX, boxY, boxW, boxH);
 
-  if (data.paymentMode === "online") {
-    const refY = Math.min(h - 1.2, sectionTopY + boxH + 9);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(6.6);
-    doc.text(`Txn ID: ${data.onlineTransactionId ?? "—"}`, leftX, refY);
-  }
-
   return doc.output("blob");
 }
