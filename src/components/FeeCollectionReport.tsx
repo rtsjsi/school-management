@@ -1,10 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { getFeeTypeLabel } from "@/lib/utils";
 import { generateReceiptPDF, amountInWords } from "@/lib/receipt-pdf";
-import { updateFeeCollection } from "@/app/(workspace)/dashboard/fees/actions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,13 +15,6 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
   Table,
   TableBody,
   TableCell,
@@ -31,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { FileText, Pencil, Download, Printer } from "lucide-react";
+import { FileText, Download, Printer } from "lucide-react";
 import { fetchStandards, fetchAcademicYears } from "@/lib/lov";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 
@@ -73,7 +64,6 @@ type Summary = {
 };
 
 export default function FeeCollectionReport() {
-  const router = useRouter();
   const school = useSchoolSettings();
   const today = new Date().toISOString().split("T")[0];
   const [dateFrom, setDateFrom] = useState(today);
@@ -91,11 +81,6 @@ export default function FeeCollectionReport() {
   const [data, setData] = useState<ReportRow[] | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(false);
-  const [editRow, setEditRow] = useState<ReportRow | null>(null);
-  const [editPaymentMode, setEditPaymentMode] = useState("");
-  const [editRemarks, setEditRemarks] = useState("");
-  const [editError, setEditError] = useState<string | null>(null);
-  const [editLoading, setEditLoading] = useState(false);
 
   useEffect(() => {
     fetch("/api/students?limit=500")
@@ -144,20 +129,6 @@ export default function FeeCollectionReport() {
         setSummary(null);
       })
       .finally(() => setLoading(false));
-  };
-
-  const openEdit = (row: ReportRow) => {
-    setEditRow(row);
-    setEditPaymentMode(row.payment_mode);
-    setEditRemarks("");
-    setEditError(null);
-  };
-
-  const closeEdit = () => {
-    setEditRow(null);
-    setEditPaymentMode("");
-    setEditRemarks("");
-    setEditError(null);
   };
 
   const getReceiptData = async (row: ReportRow) => {
@@ -277,25 +248,6 @@ export default function FeeCollectionReport() {
       a.click();
       URL.revokeObjectURL(url);
     });
-  };
-
-  const handleEditSave = async () => {
-    if (!editRow) return;
-    setEditError(null);
-    if (!editRemarks.trim()) {
-      setEditError("Remarks are compulsory when modifying a fee collection entry.");
-      return;
-    }
-    setEditLoading(true);
-    const result = await updateFeeCollection(editRow.id, editPaymentMode, editRemarks);
-    setEditLoading(false);
-    if (result.ok) {
-      closeEdit();
-      fetchReport();
-      router.refresh();
-    } else {
-      setEditError(result.error);
-    }
   };
 
   return (
@@ -464,7 +416,7 @@ export default function FeeCollectionReport() {
                       <TableHead>Mode</TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead>Collected By</TableHead>
-                      <TableHead className="w-28"></TableHead>
+                      <TableHead className="w-20"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -491,9 +443,6 @@ export default function FeeCollectionReport() {
                             <Button size="sm" variant="ghost" onClick={() => printReceipt(row)} aria-label="Print">
                               <Printer className="h-3 w-3" />
                             </Button>
-                            <Button size="sm" variant="ghost" onClick={() => openEdit(row)} aria-label="Edit">
-                              <Pencil className="h-3 w-3" />
-                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -506,56 +455,6 @@ export default function FeeCollectionReport() {
             </div>
           )}
 
-          <Dialog open={!!editRow} onOpenChange={(open) => !open && closeEdit()}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Edit Fee Collection</DialogTitle>
-              </DialogHeader>
-              {editRow && (
-                <div className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    Receipt {editRow.receipt_number} — {editRow.student_name} — ₹{Number(editRow.amount).toLocaleString()}
-                  </p>
-                  {editError && (
-                    <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{editError}</p>
-                  )}
-                  <div className="space-y-2">
-                    <Label>Payment Mode *</Label>
-                    <Select value={editPaymentMode} onValueChange={setEditPaymentMode}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {PAYMENT_MODES.map((m) => (
-                          <SelectItem key={m} value={m}>
-                            {m.charAt(0).toUpperCase() + m.slice(1)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit_remarks">Remarks * (compulsory for modification)</Label>
-                    <Input
-                      id="edit_remarks"
-                      value={editRemarks}
-                      onChange={(e) => setEditRemarks(e.target.value)}
-                      placeholder="Enter reason for modification"
-                      required
-                    />
-                  </div>
-                </div>
-              )}
-              <DialogFooter>
-                <Button variant="outline" onClick={closeEdit} disabled={editLoading}>
-                  Cancel
-                </Button>
-                <Button onClick={handleEditSave} disabled={editLoading}>
-                  {editLoading ? "Saving…" : "Save"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
         </div>
       </CardContent>
     </Card>
