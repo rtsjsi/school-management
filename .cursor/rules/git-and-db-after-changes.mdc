@@ -1,0 +1,40 @@
+---
+description: After code or DB changes, commit, push to git, and apply Supabase migrations when relevant
+alwaysApply: true
+---
+
+# Git + database after changes
+
+When you finish a set of changes for this project (or the user asks you to wrap up), **do not stop at “done” in chat only**—also update version control and the database when applicable.
+
+## Git
+
+1. Run `git status` and stage all intended files (`git add -A` or selective adds).
+2. Commit with a clear message (e.g. `feat: …`, `fix: …`, `chore: …`).
+3. **Push** to the current branch (usually `development`): `git push`.
+
+**Caveats**
+
+- Do not force-push, rewrite history, or change remotes unless the user explicitly asks.
+- If push fails (auth, network), report the error and tell the user the exact commands to run locally.
+
+## Database (Supabase)
+
+1. If you added or edited files under **`supabase/migrations/`** or otherwise changed the schema/policies that belong in migrations, apply them with:
+   - `npm run db:push`  
+   (project script; runs Supabase push via `scripts/by-branch.js`.)
+2. If there are **no** migration/DB definition changes, **skip** `db:push`—do not run it blindly every time.
+
+**Caveats**
+
+- `db:push` needs a linked Supabase project and valid credentials; in CI/sandbox it may fail. If it fails, tell the user to run `npm run db:push` (or `supabase db push`) locally after linking.
+- Never run destructive SQL against production without the user’s confirmation.
+
+## Convenience
+
+- The repo defines `npm run push:all` → `git push && npm run db:push`. Use it when **both** a git push and DB push are needed in one step; otherwise run git and `db:push` only as appropriate.
+
+## Summary checklist
+
+- [ ] `git add` + `git commit` + `git push` after substantive edits (unless user says not to).
+- [ ] `npm run db:push` when migrations / Supabase schema files changed (otherwise skip).
