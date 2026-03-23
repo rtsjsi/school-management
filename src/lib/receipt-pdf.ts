@@ -321,11 +321,14 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
   doc.setFontSize(7.2);
   const sigW = 30;
   const sigLeft = rightX - sigW;
+  /** Printed name sits just under the notes row; leave a tall gap above the rule so signers can sign by hand. */
   const nameY = sectionTopY + 1.2;
+  const spaceAboveSignLineMm = 9;
   doc.text(data.collectedBy ?? "", rightX, nameY, { align: "right" });
   doc.setLineWidth(0.25);
   doc.setDrawColor(0, 0, 0);
-  doc.line(sigLeft, nameY + 3.2, rightX, nameY + 3.2);
+  const signLineY = nameY + 3.2 + spaceAboveSignLineMm;
+  doc.line(sigLeft, signLineY, rightX, signLineY);
   doc.setFontSize(7.2);
 
   return doc.output("blob");
