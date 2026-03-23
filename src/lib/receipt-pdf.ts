@@ -316,15 +316,11 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
   doc.setLineWidth(0.2);
   doc.rect(boxX, boxY, boxW, boxH);
 
-  if (data.paymentMode === "cheque" || data.paymentMode === "online") {
+  if (data.paymentMode === "online") {
     const refY = Math.min(h - 1.2, sectionTopY + boxH + 9);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(6.6);
-    if (data.paymentMode === "cheque") {
-      doc.text(`Cheque: ${data.chequeNumber ?? "—"}  Bank: ${data.chequeBank ?? "—"}`, leftX, refY);
-    } else {
-      doc.text(`Txn ID: ${data.onlineTransactionId ?? "—"}`, leftX, refY);
-    }
+    doc.text(`Txn ID: ${data.onlineTransactionId ?? "—"}`, leftX, refY);
   }
 
   return doc.output("blob");
