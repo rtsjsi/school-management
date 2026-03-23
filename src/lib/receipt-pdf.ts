@@ -63,7 +63,8 @@ export interface ReceiptData {
   concessionAmount?: number;
   periodLabel?: string;
   amountInWords?: string;
-  receivedBy?: string;
+  /** Display name from profiles.full_name (collector) */
+  collectedBy?: string;
   policyNotes?: string[];
   schoolName?: string;
   schoolAddress?: string;
@@ -284,15 +285,12 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
   }
   y += 1.4;
 
-  doc.line(margin, y, w - margin, y);
-  y += blockGap - 0.4;
-
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
   doc.text("Note :", leftX, y);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.3);
-  doc.text("Received By,", rightX, y, { align: "right" });
+  doc.text("Collected By", rightX, y, { align: "right" });
   y += lh;
 
   doc.setFont("helvetica", "normal");
@@ -315,7 +313,7 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.2);
-  doc.text(data.receivedBy ?? "", rightX, sectionTopY, { align: "right" });
+  doc.text(data.collectedBy ?? "", rightX, sectionTopY, { align: "right" });
   const boxW = 26;
   const boxH = 16;
   const boxX = rightX - boxW;

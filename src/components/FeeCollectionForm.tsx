@@ -45,10 +45,14 @@ function formatStudentDisplay(s: StudentOption): string {
 
 export default function FeeCollectionForm({
   students,
-  receivedBy,
+  collectorProfileId,
+  collectorFullName,
 }: {
   students: StudentOption[];
-  receivedBy?: string;
+  /** Stored as fee_collections.collected_by (profiles.id) */
+  collectorProfileId: string;
+  /** Shown on receipt PDF (profiles.full_name) */
+  collectorFullName: string;
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -272,7 +276,7 @@ export default function FeeCollectionForm({
           online_transaction_ref: form.payment_mode === "online" ? form.online_transaction_ref.trim() || null : null,
           receipt_number: receiptNumber,
           collected_at: collectedAt,
-          collected_by: receivedBy ?? null,
+          collected_by: collectorProfileId,
         })
         .select("id, students(full_name), collected_at")
         .single();
@@ -328,7 +332,7 @@ export default function FeeCollectionForm({
         feeType: COLLECTION_FEE_TYPE,
         collectedAt: new Date((collection as { collected_at?: string })?.collected_at ?? Date.now()).toISOString(),
         amountInWords: amountInWords(amount),
-        receivedBy,
+        collectedBy: collectorFullName,
         policyNotes: DEFAULT_POLICY_NOTES,
         chequeNumber: form.payment_mode === "cheque" ? form.cheque_number : undefined,
         chequeBank: form.payment_mode === "cheque" ? form.cheque_bank : undefined,

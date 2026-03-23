@@ -75,11 +75,19 @@ export async function updateFeeCollection(
   }
 
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { ok: false, error: "You must be signed in to update a fee collection." };
+  }
+
   const { error } = await supabase
     .from("fee_collections")
     .update({
       payment_mode: paymentMode,
       modification_remarks: remarks,
+      modified_by: user.id,
       updated_at: new Date().toISOString(),
     })
     .eq("id", id);

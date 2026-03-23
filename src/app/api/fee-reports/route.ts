@@ -19,7 +19,9 @@ export async function GET(request: NextRequest) {
     // Build base query with student join for grade/name
     let query = supabase
       .from("fee_collections")
-      .select("id, receipt_number, amount, fee_type, quarter, academic_year, payment_mode, collected_at, collected_by, cheque_number, cheque_bank, cheque_date, online_transaction_id, online_transaction_ref, students(full_name, standard, division, roll_number, student_id)");
+      .select(
+        "id, receipt_number, amount, fee_type, quarter, academic_year, payment_mode, collected_at, collected_by, modified_by, cheque_number, cheque_bank, cheque_date, online_transaction_id, online_transaction_ref, students(full_name, standard, division, roll_number, student_id), collector:profiles!collected_by(full_name)"
+      );
 
     // Date range
     if (dateFrom) {
@@ -63,6 +65,9 @@ export async function GET(request: NextRequest) {
     const result = filtered.map((row) => {
       const s = Array.isArray(row.students) ? row.students[0] : row.students;
       const student = s as { full_name?: string; standard?: string; division?: string; roll_number?: number; student_id?: string } | null;
+      const col = (row as { collector?: { full_name?: string } | { full_name?: string }[] }).collector;
+      const collectorProfile = Array.isArray(col) ? col[0] : col;
+      const collectedByName = collectorProfile?.full_name?.trim() || null;
       return {
         id: row.id,
         receipt_number: row.receipt_number,
@@ -77,7 +82,7 @@ export async function GET(request: NextRequest) {
         academic_year: row.academic_year,
         payment_mode: row.payment_mode,
         collected_at: row.collected_at,
-        collected_by: row.collected_by,
+        collected_by: collectedByName,
         cheque_number: row.cheque_number,
         cheque_bank: row.cheque_bank,
         cheque_date: row.cheque_date,

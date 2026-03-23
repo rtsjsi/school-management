@@ -15,12 +15,17 @@ export async function GET(request: NextRequest) {
         id, student_id, receipt_number, amount, fee_type, quarter, academic_year, payment_mode,
         collected_at, collected_by, cheque_number, cheque_bank, cheque_date,
         online_transaction_id, online_transaction_ref,
-        students(full_name, standard, division, roll_number, student_id, fee_concession_amount)
+        students(full_name, standard, division, roll_number, student_id, fee_concession_amount),
+        collector:profiles!collected_by(full_name)
       `)
       .eq("id", id)
       .single();
 
     if (error || !c) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    const col = (c as { collector?: { full_name?: string } | { full_name?: string }[] }).collector;
+    const collectorProfile = Array.isArray(col) ? col[0] : col;
+    const collectedByName = collectorProfile?.full_name?.trim() || null;
 
     const s = Array.isArray(c.students) ? c.students[0] : c.students;
     const student = s as {
@@ -68,7 +73,7 @@ export async function GET(request: NextRequest) {
       academicYear: c.academic_year,
       feeType: c.fee_type,
       collectedAt: c.collected_at,
-      collectedBy: c.collected_by,
+      collectedBy: collectedByName,
       chequeNumber: c.cheque_number,
       chequeBank: c.cheque_bank,
       chequeDate: c.cheque_date,
