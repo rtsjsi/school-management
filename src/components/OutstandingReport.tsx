@@ -32,7 +32,7 @@ type OutstandingRow = {
   standard: string;
   division: string;
   roll_number?: number;
-  student_id_display?: string;
+  gr_number?: string;
   quarter: number;
   quarter_label?: string;
   fee_type: string;
@@ -179,7 +179,7 @@ export default function OutstandingReport() {
                         <TableCell className="sticky left-0 bg-background z-10 font-medium">
                           {row.full_name}
                         </TableCell>
-                        <TableCell className="font-mono text-xs">{row.student_id_display ?? "—"}</TableCell>
+                        <TableCell className="font-mono text-xs">{row.gr_number ?? "—"}</TableCell>
                         <TableCell>{row.standard}</TableCell>
                         <TableCell>{row.division || "—"}</TableCell>
                         <TableCell>{row.quarter_label ?? `Q${row.quarter}`}</TableCell>

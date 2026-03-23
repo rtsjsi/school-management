@@ -93,7 +93,6 @@ export type StudentFormState = {
   division: string;
   roll_number: string;
   admission_date: string;
-  academic_year: string;
   status: string;
   category: string;
   religion: string;
@@ -168,7 +167,6 @@ export function studentFormFromRecord(r: Record<string, unknown>): StudentFormSt
     division: (r.division as string) || "",
     roll_number: r.roll_number != null ? String(r.roll_number) : "",
     admission_date: (r.admission_date as string) || "",
-    academic_year: (r.academic_year as string) || "",
     status: (r.status as string) || "active",
     category: (r.category as string) || "",
     religion: (r.religion as string) || "",
@@ -267,7 +265,6 @@ export function formToPayload(form: StudentFormState): Record<string, unknown> {
     division: form.division.trim() || null,
     roll_number: form.roll_number ? parseInt(form.roll_number) : null,
     admission_date: form.admission_date || null,
-    academic_year: form.academic_year.trim() || null,
     status: form.status,
     category: (form.category && form.category !== "none") ? form.category : null,
     religion: form.religion.trim() || null,

@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
         id, student_id, receipt_number, amount, fee_type, quarter, academic_year, payment_mode,
         collected_at, collected_by, cheque_number, cheque_bank, cheque_date,
         online_transaction_id, online_transaction_ref,
-        students(full_name, standard, division, roll_number, student_id, fee_concession_amount),
+        students(full_name, standard, division, roll_number, gr_number, fee_concession_amount),
         collector:profiles!collected_by(full_name)
       `)
       .eq("id", id)
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       standard?: string;
       division?: string;
       roll_number?: number;
-      student_id?: string;
+      gr_number?: string;
       fee_concession_amount?: number | null;
     } | null;
     const studentId = (c as { student_id?: string }).student_id;
@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
       standard: student?.standard,
       division: student?.division,
       rollNumber: student?.roll_number,
-      grNo: student?.student_id,
+      grNo: student?.gr_number,
       totalFees,
       outstandingAfterPayment,
     });

@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth";
 import { guardAcademicAndStudentModules } from "@/lib/dashboard-guards";
 import { shouldApplyClassFilter, getAllowedClassNames } from "@/lib/class-access";
-import { FileQuestion } from "lucide-react";
 import { ExamsList } from "@/components/async/ExamsList";
 import MarksEntry from "@/components/MarksEntry";
 import ReportCardGenerator from "@/components/ReportCardGenerator";
@@ -19,16 +18,6 @@ export default async function ExamsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-          <FileQuestion className="h-7 w-7 text-primary" />
-          Exam management
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Create exams and record marks/grades.
-        </p>
-      </div>
-
       <Tabs defaultValue="exams" className="space-y-6">
         <TabsList className="flex flex-nowrap gap-1 w-full">
           <TabsTrigger value="exams">Exams</TabsTrigger>

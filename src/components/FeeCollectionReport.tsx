@@ -1,10 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { getFeeTypeLabel } from "@/lib/utils";
 import { generateReceiptPDF, amountInWords } from "@/lib/receipt-pdf";
-import { updateFeeCollection } from "@/app/(workspace)/dashboard/fees/actions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,13 +15,6 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
   Table,
   TableBody,
   TableCell,
@@ -31,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { FileText, Pencil, Download, Printer } from "lucide-react";
+import { FileText, Download, Printer, ChevronDown, ChevronUp } from "lucide-react";
 import { fetchStandards, fetchAcademicYears } from "@/lib/lov";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 
@@ -73,7 +64,6 @@ type Summary = {
 };
 
 export default function FeeCollectionReport() {
-  const router = useRouter();
   const school = useSchoolSettings();
   const today = new Date().toISOString().split("T")[0];
   const [dateFrom, setDateFrom] = useState(today);
@@ -91,11 +81,7 @@ export default function FeeCollectionReport() {
   const [data, setData] = useState<ReportRow[] | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(false);
-  const [editRow, setEditRow] = useState<ReportRow | null>(null);
-  const [editPaymentMode, setEditPaymentMode] = useState("");
-  const [editRemarks, setEditRemarks] = useState("");
-  const [editError, setEditError] = useState<string | null>(null);
-  const [editLoading, setEditLoading] = useState(false);
+  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     fetch("/api/students?limit=500")
@@ -144,20 +130,6 @@ export default function FeeCollectionReport() {
         setSummary(null);
       })
       .finally(() => setLoading(false));
-  };
-
-  const openEdit = (row: ReportRow) => {
-    setEditRow(row);
-    setEditPaymentMode(row.payment_mode);
-    setEditRemarks("");
-    setEditError(null);
-  };
-
-  const closeEdit = () => {
-    setEditRow(null);
-    setEditPaymentMode("");
-    setEditRemarks("");
-    setEditError(null);
   };
 
   const getReceiptData = async (row: ReportRow) => {
@@ -279,25 +251,6 @@ export default function FeeCollectionReport() {
     });
   };
 
-  const handleEditSave = async () => {
-    if (!editRow) return;
-    setEditError(null);
-    if (!editRemarks.trim()) {
-      setEditError("Remarks are compulsory when modifying a fee collection entry.");
-      return;
-    }
-    setEditLoading(true);
-    const result = await updateFeeCollection(editRow.id, editPaymentMode, editRemarks);
-    setEditLoading(false);
-    if (result.ok) {
-      closeEdit();
-      fetchReport();
-      router.refresh();
-    } else {
-      setEditError(result.error);
-    }
-  };
-
   return (
     <Card>
       <CardContent className="pt-6">
@@ -311,7 +264,7 @@ export default function FeeCollectionReport() {
             <div className="space-y-2">
               <Label>Period</Label>
               <Select value={useMonth ? "month" : "range"} onValueChange={(v) => setUseMonth(v === "month")}>
-                <SelectTrigger>
+                <SelectTrigger className="h-9">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -323,17 +276,17 @@ export default function FeeCollectionReport() {
             {useMonth ? (
               <div className="space-y-2">
                 <Label>Month</Label>
-                <Input type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
+                <Input className="h-9" type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
               </div>
             ) : (
               <>
                 <div className="space-y-2">
                   <Label>From</Label>
-                  <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+                  <Input className="h-9" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label>To</Label>
-                  <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+                  <Input className="h-9" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
                 </div>
               </>
             )}
@@ -343,7 +296,7 @@ export default function FeeCollectionReport() {
             <div className="space-y-2">
               <Label>Academic Year</Label>
               <Select value={academicYear || "all"} onValueChange={(v) => setAcademicYear(v === "all" ? "" : v)}>
-                <SelectTrigger>
+                <SelectTrigger className="h-9">
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
@@ -359,7 +312,7 @@ export default function FeeCollectionReport() {
             <div className="space-y-2">
               <Label>Quarter</Label>
               <Select value={quarter || "all"} onValueChange={(v) => setQuarter(v === "all" ? "" : v)}>
-                <SelectTrigger>
+                <SelectTrigger className="h-9">
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
@@ -375,7 +328,7 @@ export default function FeeCollectionReport() {
             <div className="space-y-2">
               <Label>Payment Mode</Label>
               <Select value={paymentMode || "all"} onValueChange={(v) => setPaymentMode(v === "all" ? "" : v)}>
-                <SelectTrigger>
+                <SelectTrigger className="h-9">
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
@@ -391,7 +344,7 @@ export default function FeeCollectionReport() {
             <div className="space-y-2">
               <Label>Standard</Label>
               <Select value={standardFilter || "all"} onValueChange={(v) => setStandardFilter(v === "all" ? "" : v)}>
-                <SelectTrigger>
+                <SelectTrigger className="h-9">
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
@@ -410,7 +363,7 @@ export default function FeeCollectionReport() {
             <div className="space-y-2">
               <Label>Student</Label>
               <Select value={studentId || "all"} onValueChange={(v) => setStudentId(v === "all" ? "" : v)}>
-                <SelectTrigger>
+                <SelectTrigger className="h-9">
                   <SelectValue placeholder="All students" />
                 </SelectTrigger>
                 <SelectContent>
@@ -424,7 +377,7 @@ export default function FeeCollectionReport() {
               </Select>
             </div>
             <div className="flex items-end">
-              <Button onClick={fetchReport} disabled={loading}>
+              <Button className="h-9" onClick={fetchReport} disabled={loading}>
                 {loading ? "Loading…" : "Generate Report"}
               </Button>
             </div>
@@ -457,47 +410,73 @@ export default function FeeCollectionReport() {
                     <TableRow>
                       <TableHead>Receipt</TableHead>
                       <TableHead>Student</TableHead>
-                      <TableHead>Standard</TableHead>
+                      <TableHead className="hidden sm:table-cell">Standard</TableHead>
                       <TableHead>Amount</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Qtr</TableHead>
-                      <TableHead>Mode</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Collected By</TableHead>
-                      <TableHead className="w-28"></TableHead>
+                      <TableHead className="hidden sm:table-cell">Type</TableHead>
+                      <TableHead className="hidden sm:table-cell">Qtr</TableHead>
+                      <TableHead className="hidden sm:table-cell">Mode</TableHead>
+                      <TableHead className="hidden sm:table-cell">Date</TableHead>
+                      <TableHead className="hidden sm:table-cell">Collected By</TableHead>
+                      <TableHead className="w-20"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {data.map((row) => (
+                    {data.flatMap((row) => [
                       <TableRow key={row.id}>
                         <TableCell className="font-mono text-xs">{row.receipt_number}</TableCell>
-                        <TableCell className="font-medium">{row.student_name ?? "—"}</TableCell>
-                        <TableCell>
+                        <TableCell className="font-medium">
+                          {row.student_name ?? "—"}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="ml-1 h-8 px-2 sm:hidden"
+                            onClick={() =>
+                              setExpandedRows((prev) => ({
+                                ...prev,
+                                [row.id]: !prev[row.id],
+                              }))
+                            }
+                          >
+                            {expandedRows[row.id] ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                            Details
+                          </Button>
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">
                           {[row.student_standard, row.student_division].filter(Boolean).join(" ") || "—"}
                         </TableCell>
                         <TableCell>{Number(row.amount).toLocaleString()}</TableCell>
-                        <TableCell>{getFeeTypeLabel(row.fee_type)}</TableCell>
-                        <TableCell>Q{row.quarter}</TableCell>
-                        <TableCell className="capitalize">{row.payment_mode}</TableCell>
-                        <TableCell className="text-muted-foreground text-sm">
+                        <TableCell className="hidden sm:table-cell">{getFeeTypeLabel(row.fee_type)}</TableCell>
+                        <TableCell className="hidden sm:table-cell">Q{row.quarter}</TableCell>
+                        <TableCell className="capitalize hidden sm:table-cell">{row.payment_mode}</TableCell>
+                        <TableCell className="text-muted-foreground text-sm hidden sm:table-cell">
                           {row.collected_at ? new Date(row.collected_at).toLocaleDateString() : "—"}
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{row.collected_by ?? "—"}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">{row.collected_by ?? "—"}</TableCell>
                         <TableCell>
                           <div className="flex gap-1">
-                            <Button size="sm" variant="ghost" onClick={() => downloadReceipt(row)} aria-label="Download">
+                            <Button size="sm" variant="ghost" className="h-9 w-9 p-0" onClick={() => downloadReceipt(row)} aria-label="Download">
                               <Download className="h-3 w-3" />
                             </Button>
-                            <Button size="sm" variant="ghost" onClick={() => printReceipt(row)} aria-label="Print">
+                            <Button size="sm" variant="ghost" className="h-9 w-9 p-0" onClick={() => printReceipt(row)} aria-label="Print">
                               <Printer className="h-3 w-3" />
-                            </Button>
-                            <Button size="sm" variant="ghost" onClick={() => openEdit(row)} aria-label="Edit">
-                              <Pencil className="h-3 w-3" />
                             </Button>
                           </div>
                         </TableCell>
-                      </TableRow>
-                    ))}
+                      </TableRow>,
+                      expandedRows[row.id] ? (
+                        <TableRow key={`${row.id}-details`} className="sm:hidden bg-muted/30">
+                          <TableCell colSpan={4} className="text-sm space-y-1">
+                            <div><span className="text-muted-foreground">Standard:</span> {[row.student_standard, row.student_division].filter(Boolean).join(" ") || "—"}</div>
+                            <div><span className="text-muted-foreground">Type:</span> {getFeeTypeLabel(row.fee_type)}</div>
+                            <div><span className="text-muted-foreground">Quarter:</span> Q{row.quarter}</div>
+                            <div><span className="text-muted-foreground">Mode:</span> {row.payment_mode}</div>
+                            <div><span className="text-muted-foreground">Date:</span> {row.collected_at ? new Date(row.collected_at).toLocaleDateString() : "—"}</div>
+                            <div><span className="text-muted-foreground">Collected By:</span> {row.collected_by ?? "—"}</div>
+                          </TableCell>
+                        </TableRow>
+                      ) : null,
+                    ])}
                   </TableBody>
                 </Table>
               ) : (
@@ -506,56 +485,6 @@ export default function FeeCollectionReport() {
             </div>
           )}
 
-          <Dialog open={!!editRow} onOpenChange={(open) => !open && closeEdit()}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Edit Fee Collection</DialogTitle>
-              </DialogHeader>
-              {editRow && (
-                <div className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    Receipt {editRow.receipt_number} — {editRow.student_name} — ₹{Number(editRow.amount).toLocaleString()}
-                  </p>
-                  {editError && (
-                    <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{editError}</p>
-                  )}
-                  <div className="space-y-2">
-                    <Label>Payment Mode *</Label>
-                    <Select value={editPaymentMode} onValueChange={setEditPaymentMode}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {PAYMENT_MODES.map((m) => (
-                          <SelectItem key={m} value={m}>
-                            {m.charAt(0).toUpperCase() + m.slice(1)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit_remarks">Remarks * (compulsory for modification)</Label>
-                    <Input
-                      id="edit_remarks"
-                      value={editRemarks}
-                      onChange={(e) => setEditRemarks(e.target.value)}
-                      placeholder="Enter reason for modification"
-                      required
-                    />
-                  </div>
-                </div>
-              )}
-              <DialogFooter>
-                <Button variant="outline" onClick={closeEdit} disabled={editLoading}>
-                  Cancel
-                </Button>
-                <Button onClick={handleEditSave} disabled={editLoading}>
-                  {editLoading ? "Saving…" : "Save"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
         </div>
       </CardContent>
     </Card>

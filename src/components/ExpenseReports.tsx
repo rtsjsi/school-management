@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,6 +41,7 @@ export default function ExpenseReports() {
   const [expenseHeads, setExpenseHeads] = useState<ExpenseHead[]>([]);
   const [data, setData] = useState<Record<string, unknown>[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     createClient()
@@ -75,11 +77,11 @@ export default function ExpenseReports() {
     <Card>
       <CardContent className="pt-6">
         <div className="space-y-4">
-          <div className="flex flex-wrap gap-4 items-end">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
             <div className="space-y-2">
               <Label>Report Type</Label>
               <Select value={reportType} onValueChange={(v) => setReportType(v as ReportType)}>
-                <SelectTrigger className="w-36">
+                <SelectTrigger className="h-9 w-full min-w-0">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -91,6 +93,7 @@ export default function ExpenseReports() {
             <div className="space-y-2">
               <Label>From Date</Label>
               <Input
+                className="h-9 w-full min-w-0"
                 type="date"
                 value={fromDate}
                 onChange={(e) => setFromDate(e.target.value)}
@@ -100,6 +103,7 @@ export default function ExpenseReports() {
             <div className="space-y-2">
               <Label>To Date</Label>
               <Input
+                className="h-9 w-full min-w-0"
                 type="date"
                 value={toDate}
                 onChange={(e) => setToDate(e.target.value)}
@@ -109,7 +113,7 @@ export default function ExpenseReports() {
             <div className="space-y-2">
               <Label>Expense Head</Label>
               <Select value={expenseHeadId} onValueChange={setExpenseHeadId}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="h-9 w-full min-w-0">
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
@@ -123,7 +127,7 @@ export default function ExpenseReports() {
             <div className="space-y-2">
               <Label>Payment Mode</Label>
               <Select value={paymentMode} onValueChange={setPaymentMode}>
-                <SelectTrigger className="w-32">
+                <SelectTrigger className="h-9 w-full min-w-0">
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
@@ -142,7 +146,7 @@ export default function ExpenseReports() {
                     placeholder="Party, voucher, description…"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="w-48"
+                    className="h-9 w-full min-w-0"
                   />
                 </div>
                 <div className="space-y-2">
@@ -154,7 +158,7 @@ export default function ExpenseReports() {
                     placeholder="0"
                     value={minAmount}
                     onChange={(e) => setMinAmount(e.target.value)}
-                    className="w-24"
+                    className="h-9 w-full min-w-0"
                   />
                 </div>
                 <div className="space-y-2">
@@ -166,12 +170,12 @@ export default function ExpenseReports() {
                     placeholder="Any"
                     value={maxAmount}
                     onChange={(e) => setMaxAmount(e.target.value)}
-                    className="w-24"
+                    className="h-9 w-full min-w-0"
                   />
                 </div>
               </>
             )}
-            <Button onClick={fetchReport} disabled={loading}>
+            <Button className="h-9 w-full sm:w-auto" onClick={fetchReport} disabled={loading}>
               {loading ? "Loading…" : "Generate"}
             </Button>
           </div>
@@ -211,40 +215,66 @@ export default function ExpenseReports() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Date</TableHead>
-                      <TableHead>Voucher</TableHead>
+                      <TableHead className="hidden sm:table-cell">Voucher</TableHead>
                       <TableHead>Head</TableHead>
-                      <TableHead>Party</TableHead>
+                      <TableHead className="hidden sm:table-cell">Party</TableHead>
                       <TableHead className="text-right">Amount</TableHead>
-                      <TableHead>Mode</TableHead>
-                      <TableHead>Expense By</TableHead>
-                      <TableHead className="max-w-[160px]">Description</TableHead>
+                      <TableHead className="hidden sm:table-cell">Mode</TableHead>
+                      <TableHead className="hidden sm:table-cell">Expense By</TableHead>
+                      <TableHead className="max-w-[160px] hidden sm:table-cell">Description</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {data.map((row: Record<string, unknown>) => (
+                    {data.flatMap((row: Record<string, unknown>) => [
                       <TableRow key={String(row.id)}>
                         <TableCell className="text-sm">
                           {row.expense_date
                             ? new Date(row.expense_date as string).toLocaleDateString()
                             : "—"}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="ml-1 h-8 px-2 sm:hidden"
+                            onClick={() =>
+                              setExpandedRows((prev) => ({
+                                ...prev,
+                                [String(row.id)]: !prev[String(row.id)],
+                              }))
+                            }
+                          >
+                            {expandedRows[String(row.id)] ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                            Details
+                          </Button>
                         </TableCell>
-                        <TableCell className="font-mono text-xs">{String(row.voucher ?? "—")}</TableCell>
+                        <TableCell className="font-mono text-xs hidden sm:table-cell">{String(row.voucher ?? "—")}</TableCell>
                         <TableCell>{String(row.expense_head ?? "—")}</TableCell>
-                        <TableCell>{String(row.party ?? "—")}</TableCell>
+                        <TableCell className="hidden sm:table-cell">{String(row.party ?? "—")}</TableCell>
                         <TableCell className="text-right font-medium">
                           {Number(row.amount ?? 0).toLocaleString()}
                         </TableCell>
-                        <TableCell className="capitalize">{String(row.account ?? "—")}</TableCell>
-                        <TableCell className="text-sm">{String(row.expense_by ?? "—")}</TableCell>
-                        <TableCell className="text-muted-foreground text-sm truncate max-w-[160px]">
+                        <TableCell className="capitalize hidden sm:table-cell">{String(row.account ?? "—")}</TableCell>
+                        <TableCell className="text-sm hidden sm:table-cell">{String(row.expense_by ?? "—")}</TableCell>
+                        <TableCell className="text-muted-foreground text-sm truncate max-w-[160px] hidden sm:table-cell">
                           {String(row.description ?? "—")}
                         </TableCell>
-                      </TableRow>
-                    ))}
+                      </TableRow>,
+                      expandedRows[String(row.id)] ? (
+                        <TableRow key={`${String(row.id)}-details`} className="sm:hidden bg-muted/30">
+                          <TableCell colSpan={3} className="text-sm space-y-1">
+                            <div><span className="text-muted-foreground">Voucher:</span> {String(row.voucher ?? "—")}</div>
+                            <div><span className="text-muted-foreground">Party:</span> {String(row.party ?? "—")}</div>
+                            <div><span className="text-muted-foreground">Mode:</span> {String(row.account ?? "—")}</div>
+                            <div><span className="text-muted-foreground">Expense By:</span> {String(row.expense_by ?? "—")}</div>
+                            <div><span className="text-muted-foreground">Description:</span> {String(row.description ?? "—")}</div>
+                          </TableCell>
+                        </TableRow>
+                      ) : null,
+                    ])}
                     <TableRow className="font-medium bg-muted/50">
-                      <TableCell colSpan={4}>Total</TableCell>
+                      <TableCell colSpan={2}>Total</TableCell>
                       <TableCell className="text-right">{totalAmount.toLocaleString()}</TableCell>
-                      <TableCell colSpan={3} />
+                      <TableCell colSpan={5} className="hidden sm:table-cell" />
                     </TableRow>
                   </TableBody>
                 </Table>

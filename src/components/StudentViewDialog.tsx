@@ -16,7 +16,7 @@ import { Eye, CheckCircle } from "lucide-react";
 interface StudentViewDialogProps {
   student: {
     id: string;
-    student_id?: string;
+    gr_number?: string;
     full_name: string;
     date_of_birth?: string;
     gender?: string;
@@ -25,7 +25,6 @@ interface StudentViewDialogProps {
     division?: string;
     roll_number?: number;
     admission_date?: string;
-    academic_year?: string;
     status?: string;
     parent_name?: string;
     parent_contact?: string;
@@ -91,9 +90,9 @@ export function StudentViewDialog({ student }: StudentViewDialogProps) {
               </div>
               <div>
                 <h2 className="text-xl font-bold">{student.full_name}</h2>
-                {student.student_id && (
+                {student.gr_number && (
                   <div className="text-sm text-muted-foreground">
-                    Student ID: {student.student_id}
+                    GR No: {student.gr_number}
                   </div>
                 )}
               </div>
@@ -123,10 +122,6 @@ export function StudentViewDialog({ student }: StudentViewDialogProps) {
                 <p className="text-lg">
                   {student.admission_date ? new Date(student.admission_date).toLocaleDateString() : "—"}
                 </p>
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-1">Academic Year</h3>
-                <p className="text-lg">{student.academic_year ?? "—"}</p>
               </div>
             </div>
           </div>

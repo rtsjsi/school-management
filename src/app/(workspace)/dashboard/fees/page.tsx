@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { getUser, canAccessFees, canEditFees } from "@/lib/auth";
-import { DollarSign } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import FeeStructureForm from "@/components/FeeStructureForm";
 import { FeeStructureListWithFilters } from "@/components/FeeStructureListWithFilters";
@@ -18,7 +17,7 @@ export default async function FeesPage() {
   const supabase = await createClient();
   const { data: allStudents } = await supabase
     .from("students")
-    .select("id, full_name, standard, division, roll_number, student_id, is_rte_quota, fee_concession_amount")
+    .select("id, full_name, standard, division, roll_number, gr_number, is_rte_quota, fee_concession_amount")
     .eq("status", "active")
     .order("full_name");
   const students = (allStudents ?? []).filter((s) => !(s as { is_rte_quota?: boolean }).is_rte_quota);
@@ -26,17 +25,7 @@ export default async function FeesPage() {
   const canEdit = canEditFees(user);
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="page-title flex items-center gap-2">
-          <DollarSign className="h-7 w-7 text-primary" />
-          Fees Management
-        </h1>
-        <p className="caption mt-1">
-          Fee structures, collection, outstanding tracking, and reports.
-        </p>
-      </div>
-
+    <div className="space-y-4">
       <Tabs defaultValue="collection" className="space-y-6">
         <TabsList className="flex flex-nowrap gap-1 w-full">
           <TabsTrigger value="collection">Fee Collection</TabsTrigger>

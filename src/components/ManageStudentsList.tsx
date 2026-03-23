@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pencil, BookOpen, UserPlus, LogOut } from "lucide-react";
+import { BookOpen, UserPlus, LogOut, ChevronDown, ChevronUp } from "lucide-react";
 import { fetchStandards, fetchAllDivisions } from "@/lib/lov";
 import {
   Dialog,
@@ -34,12 +34,12 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import StudentEntryForm from "@/components/StudentEntryForm";
-import { StudentEditForm } from "@/components/StudentEditForm";
+import { StudentEditDialog } from "@/components/StudentEditDialog";
 import { StudentViewDialog } from "@/components/StudentViewDialog";
 
 type StudentRow = {
   id: string;
-  student_id?: string;
+  gr_number?: string;
   full_name: string;
   email?: string;
   phone_number?: string;
@@ -60,7 +60,6 @@ type StudentRow = {
   guardian_contact?: string;
   notes?: string;
   created_at?: string;
-  academic_year?: string;
 };
 
 type EnrolmentRow = {
@@ -81,11 +80,11 @@ type ExitFormState = {
 function StudentEnrolmentsDialog({
   studentId,
   studentName,
-  studentCode,
+  grNumber,
 }: {
   studentId: string;
   studentName: string;
-  studentCode?: string;
+  grNumber?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -158,9 +157,9 @@ function StudentEnrolmentsDialog({
         <DialogHeader>
           <DialogTitle className="text-base">
             Enrolments — {studentName}
-            {studentCode && (
+            {grNumber && (
               <span className="font-mono text-xs font-normal text-muted-foreground ml-2">
-                ({studentCode})
+                (GR: {grNumber})
               </span>
             )}
           </DialogTitle>
@@ -198,50 +197,6 @@ function StudentEnrolmentsDialog({
             </Table>
           </div>
         )}
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function StudentEditDialog({
-  student,
-  onSaved,
-}: {
-  student: StudentRow & { [key: string]: unknown };
-  onSaved: () => void;
-}) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" variant="outline" className="gap-1 px-2">
-          <Pencil className="h-3 w-3" />
-          <span className="text-xs">Edit</span>
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-5xl">
-        <DialogHeader>
-          <DialogTitle className="text-base">
-            Edit student — {student.full_name}
-            {student.student_id && (
-              <span className="font-mono text-xs font-normal text-muted-foreground ml-2">
-                ({student.student_id})
-              </span>
-            )}
-          </DialogTitle>
-          <DialogDescription>Update student details. Changes will be saved immediately.</DialogDescription>
-        </DialogHeader>
-        <div className="max-h-[70vh] overflow-y-auto pr-1">
-          <StudentEditForm
-            student={student as unknown as Record<string, unknown> & { id: string; full_name: string }}
-            embedded
-            onSaved={() => {
-              setOpen(false);
-              onSaved();
-            }}
-          />
-        </div>
       </DialogContent>
     </Dialog>
   );
@@ -410,11 +365,12 @@ export function ManageStudentsList({
   const [standardFilter, setStandardFilter] = useState("all");
   const [divisionFilter, setDivisionFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [rteFilter, setRteFilter] = useState("all");
   const [standards, setStandards] = useState<{ id: string; name: string }[]>([]);
   const [divisions, setDivisions] = useState<{ id: string; name: string }[]>([]);
-  const [activeYearName, setActiveYearName] = useState<string | undefined>(undefined);
   const [addOpen, setAddOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [expandedStudentRows, setExpandedStudentRows] = useState<Record<string, boolean>>({});
 
   const supabase = useMemo(() => createClient(), []);
   const restrictByClass = allowedClassNames !== undefined;
@@ -437,14 +393,6 @@ export function ManageStudentsList({
       fetchStandards().then(setStandards);
       fetchAllDivisions().then(setDivisions);
     }
-    supabase
-      .from("academic_years")
-      .select("name")
-      .eq("status", "active")
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data?.name) setActiveYearName(data.name as string);
-      });
   }, [restrictByClass, allowedStandardsKey, allowedDivisionsKey, supabase]);
 
   useEffect(() => {
@@ -456,8 +404,10 @@ export function ManageStudentsList({
     if (standardFilter && standardFilter !== "all") q = q.eq("standard", standardFilter);
     if (divisionFilter && divisionFilter !== "all") q = q.eq("division", divisionFilter);
     if (statusFilter && statusFilter !== "all") q = q.eq("status", statusFilter);
+    if (rteFilter === "rte") q = q.eq("is_rte_quota", true);
+    if (rteFilter === "non-rte") q = q.eq("is_rte_quota", false);
     if (search.trim()) {
-      q = q.or(`full_name.ilike.%${search.trim()}%,student_id.ilike.%${search.trim()}%`);
+      q = q.or(`full_name.ilike.%${search.trim()}%,gr_number.ilike.%${search.trim()}%`);
     }
 
     (async () => {
@@ -470,7 +420,7 @@ export function ManageStudentsList({
       setStudents(rows);
       setLoading(false);
     })();
-  }, [search, standardFilter, divisionFilter, statusFilter, reloadKey, restrictByClass, allowedClassPairsKey, supabase]);
+  }, [search, standardFilter, divisionFilter, statusFilter, rteFilter, reloadKey, restrictByClass, allowedClassPairsKey, supabase]);
 
   const getStatusBadge = (status: string) => {
     const map: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -486,20 +436,21 @@ export function ManageStudentsList({
   return (
     <Card>
       <CardContent className="space-y-4 pt-6">
-        <div className="flex flex-wrap items-end gap-4 justify-between">
-          <div className="flex flex-wrap gap-4 items-end flex-1 min-w-[260px]">
-            <div className="space-y-2 flex-1 min-w-[180px]">
-              <Label>Search</Label>
+        <div className="w-full">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-6 lg:items-end">
+            <div className="space-y-1 w-full min-w-0 lg:col-span-2">
+              <Label className="text-xs">Search</Label>
               <Input
-                placeholder="Name or Student ID"
+                placeholder="Name or GR No."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                className="h-9"
               />
             </div>
-            <div className="space-y-2 w-28">
-              <Label>Standard</Label>
+            <div className="space-y-1 w-full min-w-0">
+              <Label className="text-xs">Standard</Label>
               <Select value={standardFilter} onValueChange={setStandardFilter}>
-                <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
+                <SelectTrigger className="h-9"><SelectValue placeholder="All" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All</SelectItem>
                   {standards.map((g) => (
@@ -508,10 +459,10 @@ export function ManageStudentsList({
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2 w-24">
-              <Label>Division</Label>
+            <div className="space-y-1 w-full min-w-0">
+              <Label className="text-xs">Division</Label>
               <Select value={divisionFilter} onValueChange={setDivisionFilter}>
-                <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
+                <SelectTrigger className="h-9"><SelectValue placeholder="All" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All</SelectItem>
                   {divisions.map((d) => (
@@ -520,10 +471,10 @@ export function ManageStudentsList({
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2 w-28">
-              <Label>Status</Label>
+            <div className="space-y-1 w-full min-w-0">
+              <Label className="text-xs">Status</Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
+                <SelectTrigger className="h-9"><SelectValue placeholder="All" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
@@ -534,28 +485,39 @@ export function ManageStudentsList({
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-1 w-full min-w-0">
+              <Label className="text-xs">RTE</Label>
+              <Select value={rteFilter} onValueChange={setRteFilter}>
+                <SelectTrigger className="h-9"><SelectValue placeholder="All" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="rte">RTE only</SelectItem>
+                  <SelectItem value="non-rte">Non-RTE</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {canEdit && (
+              <Dialog open={addOpen} onOpenChange={setAddOpen}>
+                <DialogTrigger asChild>
+                  <Button className="gap-1 h-9 px-3 w-full sm:w-auto lg:justify-self-end">
+                    <UserPlus className="h-4 w-4" />
+                    Add student
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-[95vw] sm:max-w-5xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+                  <DialogHeader>
+                    <DialogTitle className="text-base">Add new student</DialogTitle>
+                    <DialogDescription>
+                      Fill in the admission form to create a new student record.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="max-h-[70vh] overflow-y-auto pr-1">
+                    <StudentEntryForm />
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
           </div>
-          {canEdit && (
-            <Dialog open={addOpen} onOpenChange={setAddOpen}>
-              <DialogTrigger asChild>
-                <Button className="gap-1">
-                  <UserPlus className="h-4 w-4" />
-                  Add student
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-5xl">
-                <DialogHeader>
-                  <DialogTitle className="text-base">Add new student</DialogTitle>
-                  <DialogDescription>
-                    Fill in the admission form to create a new student record.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="max-h-[70vh] overflow-y-auto pr-1">
-                  <StudentEntryForm defaultAcademicYear={activeYearName} />
-                </div>
-              </DialogContent>
-            </Dialog>
-          )}
         </div>
 
         {loading ? (
@@ -568,22 +530,23 @@ export function ManageStudentsList({
               <TableHeader>
                 <TableRow>
                   {canEdit && <TableHead className="w-32 whitespace-nowrap">Actions</TableHead>}
-                  <TableHead>Name</TableHead>
-                  <TableHead>RTE</TableHead>
+                  <TableHead>Student Name</TableHead>
                   <TableHead>Standard</TableHead>
-                  <TableHead>Division</TableHead>
-                  <TableHead>Roll #</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-20 text-center">View</TableHead>
-                  {canEdit && <TableHead className="w-32 text-center">Enrolments</TableHead>}
-                  {canEdit && <TableHead className="w-28 text-right">Exit</TableHead>}
+                  <TableHead className="hidden sm:table-cell">Division</TableHead>
+                  <TableHead className="hidden sm:table-cell">Roll #</TableHead>
+                  <TableHead className="hidden sm:table-cell">GR No</TableHead>
+                  <TableHead>RTE</TableHead>
+                  <TableHead className="hidden sm:table-cell">Status</TableHead>
+                  <TableHead className="w-20 text-center hidden sm:table-cell">View</TableHead>
+                  {canEdit && <TableHead className="w-32 text-center hidden sm:table-cell">Enrolments</TableHead>}
+                  {canEdit && <TableHead className="w-28 text-right hidden sm:table-cell">Exit</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {students.map((s) => (
+                {students.flatMap((s) => [
                   <TableRow key={s.id}>
                     {canEdit && (
-                      <TableCell className="space-x-1">
+                      <TableCell className="space-x-1 align-top">
                         <StudentEditDialog
                           student={s}
                           onSaved={() => {
@@ -597,10 +560,6 @@ export function ManageStudentsList({
                         {s.full_name}
                         <div className="pointer-events-none absolute left-0 top-full z-20 mt-1 hidden min-w-[240px] rounded-md border bg-background p-3 text-xs shadow-md group-hover:block">
                           <div className="mb-1 font-semibold">Enrollment details</div>
-                          <div className="flex justify-between gap-2">
-                            <span className="text-muted-foreground">Academic year</span>
-                            <span>{s.academic_year ?? "—"}</span>
-                          </div>
                           <div className="flex justify-between gap-2">
                             <span className="text-muted-foreground">Standard</span>
                             <span>{s.standard ?? "—"}</span>
@@ -627,32 +586,48 @@ export function ManageStudentsList({
                           </div>
                         </div>
                       </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="mt-1 h-9 px-2 sm:hidden"
+                        onClick={() =>
+                          setExpandedStudentRows((prev) => ({
+                            ...prev,
+                            [s.id]: !prev[s.id],
+                          }))
+                        }
+                      >
+                        {expandedStudentRows[s.id] ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        Details
+                      </Button>
                     </TableCell>
+                    <TableCell>{s.standard ?? "—"}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{s.division ?? "—"}</TableCell>
+                    <TableCell className="text-center hidden sm:table-cell">{s.roll_number ?? "—"}</TableCell>
+                    <TableCell className="font-mono text-xs hidden sm:table-cell">{s.gr_number ?? "—"}</TableCell>
                     <TableCell>
                       {s.is_rte_quota ? <Badge variant="secondary">RTE</Badge> : "—"}
                     </TableCell>
-                    <TableCell>{s.standard ?? "—"}</TableCell>
-                    <TableCell>{s.division ?? "—"}</TableCell>
-                    <TableCell className="text-center">{s.roll_number ?? "—"}</TableCell>
-                    <TableCell>
+                    <TableCell className="hidden sm:table-cell">
                       <Badge variant={getStatusBadge(s.status || "active")}>
                         {s.status || "active"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-center">
+                    <TableCell className="text-center hidden sm:table-cell">
                       <StudentViewDialog student={s} />
                     </TableCell>
                     {canEdit && (
-                      <TableCell className="text-center">
+                      <TableCell className="text-center hidden sm:table-cell">
                         <StudentEnrolmentsDialog
                           studentId={s.id}
                           studentName={s.full_name}
-                          studentCode={s.student_id}
+                          grNumber={s.gr_number}
                         />
                       </TableCell>
                     )}
                     {canEdit && (
-                      <TableCell className="text-right">
+                      <TableCell className="text-right hidden sm:table-cell">
                         <StudentExitDialog
                           studentId={s.id}
                           studentName={s.full_name}
@@ -663,8 +638,38 @@ export function ManageStudentsList({
                         />
                       </TableCell>
                     )}
-                  </TableRow>
-                ))}
+                  </TableRow>,
+                  expandedStudentRows[s.id] ? (
+                    <TableRow key={`${s.id}-mobile-details`} className="sm:hidden bg-muted/30">
+                      <TableCell colSpan={canEdit ? 4 : 3} className="text-sm space-y-1">
+                        <div><span className="text-muted-foreground">Division:</span> {s.division ?? "—"}</div>
+                        <div><span className="text-muted-foreground">Roll #:</span> {s.roll_number ?? "—"}</div>
+                        <div><span className="text-muted-foreground">GR No:</span> {s.gr_number ?? "—"}</div>
+                        <div><span className="text-muted-foreground">Status:</span> {s.status ?? "active"}</div>
+                        <div className="pt-1 flex flex-wrap gap-2">
+                          <StudentViewDialog student={s} />
+                          {canEdit && (
+                            <>
+                              <StudentEnrolmentsDialog
+                                studentId={s.id}
+                                studentName={s.full_name}
+                                grNumber={s.gr_number}
+                              />
+                              <StudentExitDialog
+                                studentId={s.id}
+                                studentName={s.full_name}
+                                currentStatus={s.status}
+                                onExited={() => {
+                                  setReloadKey((k) => k + 1);
+                                }}
+                              />
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : null,
+                ])}
               </TableBody>
             </Table>
           </div>

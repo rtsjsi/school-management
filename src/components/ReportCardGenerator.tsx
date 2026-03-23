@@ -10,7 +10,7 @@ import { generateReportCardPDF } from "@/lib/report-card-pdf";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 
 type Exam = { id: string; name: string; standard: string | null; term: string | null };
-type Student = { id: string; full_name: string; standard: string | null; division: string | null; roll_number?: number; student_id?: string; academic_year?: string };
+type Student = { id: string; full_name: string; standard: string | null; division: string | null; roll_number?: number; gr_number?: string };
 type Subject = { id: string; name: string; evaluation_type?: string; max_marks?: number | null };
 type ExamResultSubject = { student_id: string; subject_id: string; score: number | null; max_score: number | null; grade: string | null; is_absent: boolean };
 
@@ -53,7 +53,7 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
   useEffect(() => {
     supabase
       .from("students")
-      .select("id, full_name, standard, division, roll_number, student_id, academic_year")
+      .select("id, full_name, standard, division, roll_number, gr_number")
       .eq("status", "active")
       .order("full_name")
       .then(({ data }) => {
@@ -133,8 +133,7 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
         standard: student.standard ?? undefined,
         division: student.division ?? undefined,
         rollNumber: student.roll_number,
-        studentId: student.student_id,
-        academicYear: student.academic_year as string | undefined,
+        studentId: student.gr_number,
         examName: exam.name,
         subjects: reportSubjects,
       });
