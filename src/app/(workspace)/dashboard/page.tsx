@@ -37,7 +37,7 @@ export default async function DashboardPage() {
 
   const { data: activeYear } = await supabase
     .from("academic_years")
-    .select("name")
+    .select("name, start_date, end_date")
     .eq("status", "active")
     .maybeSingle();
   const activeYearName = activeYear?.name ?? null;
@@ -56,10 +56,18 @@ export default async function DashboardPage() {
     return q;
   };
 
-  const newAdmissionsPromise = activeYearName
-    ? (applyClassFilter
-        ? studentCountQuery({ count: "exact", head: true }, { academic_year: activeYearName })
-        : supabase.from("students").select("*", { count: "exact", head: true }).eq("academic_year", activeYearName))
+  const hasYearRange = !!activeYear?.start_date && !!activeYear?.end_date;
+  const newAdmissionsCountQuery = () => {
+    let q = supabase.from("students").select("*", { count: "exact", head: true });
+    if (studentIdFilter && studentIdFilter.length > 0) q = q.in("id", studentIdFilter);
+    return q;
+  };
+  const newAdmissionsPromise = hasYearRange
+    ? (restrictToZeroStudents
+        ? Promise.resolve({ count: 0 } as { count: number | null })
+        : newAdmissionsCountQuery()
+            .gte("admission_date", activeYear.start_date)
+            .lte("admission_date", activeYear.end_date))
     : Promise.resolve({ count: null } as { count: number | null });
 
   const [

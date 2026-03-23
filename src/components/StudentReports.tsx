@@ -29,7 +29,6 @@ type StudentReportRow = {
   standard?: string | null;
   division?: string | null;
   roll_number?: number | null;
-  academic_year?: string | null;
   status?: string | null;
   is_rte_quota?: boolean | null;
 };
@@ -55,7 +54,7 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
       setLoading(true);
       const { data } = await supabase
         .from("students")
-        .select("id, gr_number, full_name, standard, division, roll_number, academic_year, status, is_rte_quota")
+        .select("id, gr_number, full_name, standard, division, roll_number, status, is_rte_quota")
         .order("standard", { ascending: true })
         .order("division", { ascending: true })
         .order("roll_number", { ascending: true })
@@ -103,7 +102,6 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
       "Roll No": r.roll_number ?? "",
       "RTE Flag": r.is_rte_quota ? "Yes" : "No",
       Status: r.status ?? "",
-      "Academic Year": r.academic_year ?? "",
     }));
 
     if (reportRows.length === 0) {
@@ -169,7 +167,6 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
       doc.text("Roll", 121, y);
       doc.text("RTE", 136, y);
       doc.text("Status", 150, y);
-      doc.text("Year", 175, y);
       y += 3;
       doc.line(10, y, 286, y);
       y += 5;
@@ -185,7 +182,6 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
         doc.text(String(row["Roll No"] || "—"), 121, y, { maxWidth: 10 });
         doc.text(String(row["RTE Flag"] || "—"), 136, y, { maxWidth: 12 });
         doc.text(String(row.Status || "—"), 150, y, { maxWidth: 22 });
-        doc.text(String(row["Academic Year"] || "—"), 175, y, { maxWidth: 28 });
         y += 5;
       }
       doc.save("students-report.pdf");
@@ -276,7 +272,6 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
                   <TableHead>Roll #</TableHead>
                   <TableHead>RTE</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Academic Year</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -289,7 +284,6 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
                     <TableCell>{row.roll_number ?? "—"}</TableCell>
                     <TableCell>{row.is_rte_quota ? "Yes" : "No"}</TableCell>
                     <TableCell className="capitalize">{row.status ?? "—"}</TableCell>
-                    <TableCell>{row.academic_year ?? "—"}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

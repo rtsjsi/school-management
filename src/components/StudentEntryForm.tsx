@@ -19,7 +19,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StudentDocumentsPhotos } from "@/components/StudentDocumentsPhotos";
 import { CameraCaptureButton } from "@/components/CameraCapture";
 import { StandardDivisionYearSelects } from "@/components/StandardDivisionYearSelects";
-import { AcademicYearSelect } from "@/components/AcademicYearSelect";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Upload, FileText, ImageIcon } from "lucide-react";
@@ -75,7 +74,6 @@ const defaultForm = () => ({
   division: "",
   roll_number: "",
   admission_date: "",
-  academic_year: "",
   status: "active",
   category: "",
   religion: "",
@@ -123,7 +121,7 @@ const defaultForm = () => ({
 });
 
 export default function StudentEntryForm({
-  defaultAcademicYear,
+  defaultAcademicYear: _defaultAcademicYear,
 }: {
   defaultAcademicYear?: string;
 } = {}) {
@@ -131,11 +129,7 @@ export default function StudentEntryForm({
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const getDefaultFormWithYear = () => ({
-    ...defaultForm(),
-    ...(defaultAcademicYear ? { academic_year: defaultAcademicYear } : {}),
-  });
-  const [form, setForm] = useState(getDefaultFormWithYear);
+  const [form, setForm] = useState(defaultForm);
   const [createdStudentId, setCreatedStudentId] = useState<string | null>(null);
   const [pendingPhotos, setPendingPhotos] = useState<PendingPhotos>({});
   const [pendingDocuments, setPendingDocuments] = useState<PendingDocuments>({});
@@ -153,7 +147,6 @@ export default function StudentEntryForm({
     { key: "standard", label: "Standard" },
     { key: "division", label: "Division" },
     { key: "admission_date", label: "Admission date" },
-    { key: "academic_year", label: "Academic year" },
     { key: "roll_number", label: "Roll number" },
     { key: "aadhar_no", label: "Aadhar No" },
     { key: "pen_no", label: "PEN No" },
@@ -200,7 +193,6 @@ export default function StudentEntryForm({
         division: form.division.trim() || null,
         roll_number: form.roll_number ? parseInt(form.roll_number) : null,
         admission_date: form.admission_date || null,
-        academic_year: form.academic_year.trim() || null,
         status: form.status,
         category: form.category || null,
         religion: form.religion.trim() || null,
@@ -340,7 +332,7 @@ export default function StudentEntryForm({
         setPendingPhotos({});
         setPendingDocuments({});
       } else {
-        setForm(getDefaultFormWithYear());
+        setForm(defaultForm());
       }
       router.refresh();
     } catch {
@@ -371,7 +363,7 @@ export default function StudentEntryForm({
           variant="outline"
           onClick={() => {
             setCreatedStudentId(null);
-            setForm(getDefaultFormWithYear());
+            setForm(defaultForm());
           }}
         >
           Add another student
@@ -746,20 +738,15 @@ export default function StudentEntryForm({
                 <Label htmlFor="admission_date">Admission date *</Label>
                 <Input id="admission_date" type="date" value={form.admission_date} onChange={(e) => set("admission_date", e.target.value)} required />
               </div>
-              <AcademicYearSelect
-                value={form.academic_year}
-                onChange={(v) => set("academic_year", v)}
-              />
               <StandardDivisionYearSelects
                 standard={form.standard}
                 division={form.division}
-                academicYear={form.academic_year}
+                academicYear=""
                 onStandardChange={(v) => {
                   set("standard", v);
                   set("division", "");
                 }}
                 onDivisionChange={(v) => set("division", v)}
-                onAcademicYearChange={(v) => set("academic_year", v)}
                 standardRequired
                 divisionRequired
                 showAcademicYear={false}

@@ -60,7 +60,6 @@ type StudentRow = {
   guardian_contact?: string;
   notes?: string;
   created_at?: string;
-  academic_year?: string;
 };
 
 type EnrolmentRow = {
@@ -597,10 +596,6 @@ export function ManageStudentsList({
                         {s.full_name}
                         <div className="pointer-events-none absolute left-0 top-full z-20 mt-1 hidden min-w-[240px] rounded-md border bg-background p-3 text-xs shadow-md group-hover:block">
                           <div className="mb-1 font-semibold">Enrollment details</div>
-                          <div className="flex justify-between gap-2">
-                            <span className="text-muted-foreground">Academic year</span>
-                            <span>{s.academic_year ?? "—"}</span>
-                          </div>
                           <div className="flex justify-between gap-2">
                             <span className="text-muted-foreground">Standard</span>
                             <span>{s.standard ?? "—"}</span>

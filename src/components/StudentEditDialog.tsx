@@ -26,7 +26,6 @@ import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
 import { StudentDocumentsPhotos } from "@/components/StudentDocumentsPhotos";
 import { StandardDivisionYearSelects } from "@/components/StandardDivisionYearSelects";
-import { AcademicYearSelect } from "@/components/AcademicYearSelect";
 import { upsertCurrentEnrollment } from "@/app/(workspace)/dashboard/students/actions";
 import { IN_STATES } from "@/lib/student-form";
 
@@ -41,7 +40,6 @@ interface StudentEditDialogProps {
     division?: string;
     roll_number?: number;
     admission_date?: string;
-    academic_year?: string;
     status?: string;
     parent_name?: string;
     parent_contact?: string;
@@ -80,7 +78,6 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
     division: student.division || "",
     roll_number: student.roll_number?.toString() || "",
     admission_date: student.admission_date || "",
-    academic_year: student.academic_year || "",
     status: student.status || "active",
     parent_name: student.parent_name || "",
     parent_contact: student.parent_contact || "",
@@ -116,7 +113,6 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
         division: form.division.trim() || null,
         roll_number: form.roll_number ? parseInt(form.roll_number) : null,
         admission_date: form.admission_date || null,
-        academic_year: form.academic_year || null,
         status: form.status,
         parent_name: form.parent_name.trim() || form.father_name.trim() || form.mother_name.trim() || null,
         parent_contact: form.parent_contact.trim() || null,
@@ -355,10 +351,6 @@ export function StudentEditDialog({ student }: StudentEditDialogProps) {
                     onChange={(e) => setForm((p) => ({ ...p, admission_date: e.target.value }))}
                   />
                 </div>
-                <AcademicYearSelect
-                  value={form.academic_year}
-                  onChange={(v) => setForm((p) => ({ ...p, academic_year: v }))}
-                />
               </div>
 
               <div className="space-y-2">

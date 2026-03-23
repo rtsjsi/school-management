@@ -28,7 +28,6 @@ import {
 } from "@/lib/student-form";
 import { StudentDocumentsPhotos } from "@/components/StudentDocumentsPhotos";
 import { StandardDivisionYearSelects } from "@/components/StandardDivisionYearSelects";
-import { AcademicYearSelect } from "@/components/AcademicYearSelect";
 
 interface StudentEditFormProps {
   student: Record<string, unknown> & { id: string; full_name: string };
@@ -58,7 +57,6 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
     { key: "standard", label: "Standard" },
     { key: "division", label: "Division" },
     { key: "admission_date", label: "Admission date" },
-    { key: "academic_year", label: "Academic year" },
     { key: "roll_number", label: "Roll number" },
     { key: "aadhar_no", label: "Aadhar No" },
     { key: "pen_no", label: "PEN No" },
@@ -488,20 +486,15 @@ export function StudentEditForm({ student, embedded = false, onSaved }: StudentE
                 <Label>Admission date *</Label>
                 <Input type="date" value={form.admission_date} onChange={(e) => set("admission_date", e.target.value)} required />
               </div>
-              <AcademicYearSelect
-                value={form.academic_year}
-                onChange={(v) => set("academic_year", v)}
-              />
               <StandardDivisionYearSelects
                 standard={form.standard}
                 division={form.division}
-                academicYear={form.academic_year}
+                academicYear=""
                 onStandardChange={(v) => {
                   set("standard", v);
                   set("division", "");
                 }}
                 onDivisionChange={(v) => set("division", v)}
-                onAcademicYearChange={(v) => set("academic_year", v)}
                 standardRequired
                 divisionRequired
                 showAcademicYear={false}
