@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pencil, BookOpen, UserPlus, LogOut } from "lucide-react";
+import { Pencil, BookOpen, UserPlus, LogOut, Download } from "lucide-react";
 import { fetchStandards, fetchAllDivisions } from "@/lib/lov";
 import {
   Dialog,
@@ -409,6 +409,7 @@ export function ManageStudentsList({
   const [standardFilter, setStandardFilter] = useState("all");
   const [divisionFilter, setDivisionFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [rteFilter, setRteFilter] = useState("all");
   const [standards, setStandards] = useState<{ id: string; name: string }[]>([]);
   const [divisions, setDivisions] = useState<{ id: string; name: string }[]>([]);
   const [activeYearName, setActiveYearName] = useState<string | undefined>(undefined);
@@ -455,6 +456,8 @@ export function ManageStudentsList({
     if (standardFilter && standardFilter !== "all") q = q.eq("standard", standardFilter);
     if (divisionFilter && divisionFilter !== "all") q = q.eq("division", divisionFilter);
     if (statusFilter && statusFilter !== "all") q = q.eq("status", statusFilter);
+    if (rteFilter === "rte") q = q.eq("is_rte_quota", true);
+    if (rteFilter === "non-rte") q = q.eq("is_rte_quota", false);
     if (search.trim()) {
       q = q.or(`full_name.ilike.%${search.trim()}%,gr_number.ilike.%${search.trim()}%`);
     }
@@ -469,7 +472,103 @@ export function ManageStudentsList({
       setStudents(rows);
       setLoading(false);
     })();
-  }, [search, standardFilter, divisionFilter, statusFilter, reloadKey, restrictByClass, allowedClassPairsKey, supabase]);
+  }, [search, standardFilter, divisionFilter, statusFilter, rteFilter, reloadKey, restrictByClass, allowedClassPairsKey, supabase]);
+
+  const exportStudents = async (format: "csv" | "xlsx" | "pdf") => {
+    const rows = students.map((s) => ({
+      "GR No": s.gr_number ?? "",
+      Name: s.full_name,
+      Standard: s.standard ?? "",
+      Division: s.division ?? "",
+      "Roll No": s.roll_number ?? "",
+      RTE: s.is_rte_quota ? "Yes" : "No",
+      Status: s.status ?? "active",
+      "Admission Date": s.admission_date ? new Date(s.admission_date).toLocaleDateString("en-CA") : "",
+    }));
+
+    if (rows.length === 0) {
+      alert("No students to export for current filters.");
+      return;
+    }
+
+    if (format === "csv") {
+      const header = Object.keys(rows[0]).join(",");
+      const body = rows
+        .map((r) =>
+          Object.values(r)
+            .map((v) => {
+              const text = String(v ?? "");
+              if (text.includes(",") || text.includes("\"") || text.includes("\n")) {
+                return `"${text.replace(/"/g, "\"\"")}"`;
+              }
+              return text;
+            })
+            .join(",")
+        )
+        .join("\n");
+      const blob = new Blob(["\uFEFF" + `${header}\n${body}`], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "students.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+      return;
+    }
+
+    if (format === "xlsx") {
+      const XLSX = await import("xlsx");
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Students");
+      const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+      const blob = new Blob([wbout], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "students.xlsx";
+      a.click();
+      URL.revokeObjectURL(url);
+      return;
+    }
+
+    const { jsPDF } = await import("jspdf");
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    let y = 12;
+    doc.setFontSize(14);
+    doc.text("Students Report", 10, y);
+    y += 8;
+    doc.setFontSize(9);
+    doc.text("GR No", 10, y);
+    doc.text("Name", 30, y);
+    doc.text("Std", 100, y);
+    doc.text("Div", 115, y);
+    doc.text("Roll", 130, y);
+    doc.text("RTE", 145, y);
+    doc.text("Status", 160, y);
+    doc.text("Admission", 185, y);
+    y += 3;
+    doc.line(10, y, 286, y);
+    y += 5;
+    for (const r of rows) {
+      if (y > 195) {
+        doc.addPage();
+        y = 12;
+      }
+      doc.text(String(r["GR No"] || "—"), 10, y, { maxWidth: 18 });
+      doc.text(String(r.Name || "—"), 30, y, { maxWidth: 68 });
+      doc.text(String(r.Standard || "—"), 100, y, { maxWidth: 12 });
+      doc.text(String(r.Division || "—"), 115, y, { maxWidth: 10 });
+      doc.text(String(r["Roll No"] || "—"), 130, y, { maxWidth: 10 });
+      doc.text(String(r.RTE || "—"), 145, y, { maxWidth: 12 });
+      doc.text(String(r.Status || "—"), 160, y, { maxWidth: 20 });
+      doc.text(String(r["Admission Date"] || "—"), 185, y, { maxWidth: 24 });
+      y += 5;
+    }
+    doc.save("students.pdf");
+  };
 
   const getStatusBadge = (status: string) => {
     const map: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -533,28 +632,53 @@ export function ManageStudentsList({
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2 w-28">
+              <Label>RTE</Label>
+              <Select value={rteFilter} onValueChange={setRteFilter}>
+                <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="rte">RTE only</SelectItem>
+                  <SelectItem value="non-rte">Non-RTE</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          {canEdit && (
-            <Dialog open={addOpen} onOpenChange={setAddOpen}>
-              <DialogTrigger asChild>
-                <Button className="gap-1">
-                  <UserPlus className="h-4 w-4" />
-                  Add student
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-5xl">
-                <DialogHeader>
-                  <DialogTitle className="text-base">Add new student</DialogTitle>
-                  <DialogDescription>
-                    Fill in the admission form to create a new student record.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="max-h-[70vh] overflow-y-auto pr-1">
-                  <StudentEntryForm defaultAcademicYear={activeYearName} />
-                </div>
-              </DialogContent>
-            </Dialog>
-          )}
+          <div className="flex flex-wrap items-end gap-2">
+            <Button type="button" variant="outline" className="gap-1" onClick={() => exportStudents("csv")}>
+              <Download className="h-3 w-3" />
+              CSV
+            </Button>
+            <Button type="button" variant="outline" className="gap-1" onClick={() => exportStudents("xlsx")}>
+              <Download className="h-3 w-3" />
+              Excel
+            </Button>
+            <Button type="button" variant="outline" className="gap-1" onClick={() => exportStudents("pdf")}>
+              <Download className="h-3 w-3" />
+              PDF
+            </Button>
+            {canEdit && (
+              <Dialog open={addOpen} onOpenChange={setAddOpen}>
+                <DialogTrigger asChild>
+                  <Button className="gap-1">
+                    <UserPlus className="h-4 w-4" />
+                    Add student
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-5xl">
+                  <DialogHeader>
+                    <DialogTitle className="text-base">Add new student</DialogTitle>
+                    <DialogDescription>
+                      Fill in the admission form to create a new student record.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="max-h-[70vh] overflow-y-auto pr-1">
+                    <StudentEntryForm defaultAcademicYear={activeYearName} />
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
         </div>
 
         {loading ? (
