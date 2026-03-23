@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pencil, BookOpen, UserPlus, LogOut, FileSpreadsheet, FileType2, FileText } from "lucide-react";
+import { Pencil, BookOpen, UserPlus, LogOut, Download } from "lucide-react";
 import { fetchStandards, fetchAllDivisions } from "@/lib/lov";
 import {
   Dialog,
@@ -665,39 +665,36 @@ export function ManageStudentsList({
           <p className="text-sm text-muted-foreground py-8 text-center">No students found.</p>
         ) : (
           <div className="space-y-2">
-            <div className="flex justify-end gap-1">
+            <div className="flex justify-end gap-2">
               <Button
                 type="button"
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7"
-                title="Export CSV"
-                aria-label="Export CSV"
+                size="sm"
+                variant="outline"
+                className="gap-1 h-8"
                 onClick={() => exportStudents("csv")}
               >
-                <FileType2 className="h-3.5 w-3.5" />
+                <Download className="h-3 w-3" />
+                CSV
               </Button>
               <Button
                 type="button"
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7"
-                title="Export Excel"
-                aria-label="Export Excel"
+                size="sm"
+                variant="outline"
+                className="gap-1 h-8"
                 onClick={() => exportStudents("xlsx")}
               >
-                <FileSpreadsheet className="h-3.5 w-3.5" />
+                <Download className="h-3 w-3" />
+                Excel
               </Button>
               <Button
                 type="button"
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7"
-                title="Export PDF"
-                aria-label="Export PDF"
+                size="sm"
+                variant="outline"
+                className="gap-1 h-8"
                 onClick={() => exportStudents("pdf")}
               >
-                <FileText className="h-3.5 w-3.5" />
+                <Download className="h-3 w-3" />
+                PDF
               </Button>
             </div>
             <div className="overflow-x-auto rounded-md border">
