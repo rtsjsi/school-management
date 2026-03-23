@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -416,15 +416,23 @@ export function ManageStudentsList({
   const [addOpen, setAddOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const restrictByClass = allowedClassNames !== undefined;
   const allowedStandardNames = restrictByClass && allowedClassNames.length > 0 ? Array.from(new Set(allowedClassNames.map((p) => p.standardName))) : [];
   const allowedDivisionNames = restrictByClass && allowedClassNames.length > 0 ? Array.from(new Set(allowedClassNames.map((p) => p.divisionName))) : [];
+  const allowedStandardsKey = allowedStandardNames.join("\u0001");
+  const allowedDivisionsKey = allowedDivisionNames.join("\u0001");
+  const allowedClassPairsKey = useMemo(() => {
+    if (!allowedClassNames?.length) return "";
+    return allowedClassNames.map((p) => `${p.standardName}\0${p.divisionName}`).sort().join("|");
+  }, [allowedClassNames]);
 
   useEffect(() => {
     if (restrictByClass) {
-      setStandards(allowedStandardNames.map((name) => ({ id: name, name })));
-      setDivisions(allowedDivisionNames.map((name) => ({ id: name, name })));
+      const stdNames = allowedStandardsKey ? allowedStandardsKey.split("\u0001") : [];
+      const divNames = allowedDivisionsKey ? allowedDivisionsKey.split("\u0001") : [];
+      setStandards(stdNames.map((name) => ({ id: name, name })));
+      setDivisions(divNames.map((name) => ({ id: name, name })));
     } else {
       fetchStandards().then(setStandards);
       fetchAllDivisions().then(setDivisions);
@@ -437,7 +445,7 @@ export function ManageStudentsList({
       .then(({ data }) => {
         if (data?.name) setActiveYearName(data.name as string);
       });
-  }, [restrictByClass, allowedStandardNames.join(","), allowedDivisionNames.join(",")]);
+  }, [restrictByClass, allowedStandardsKey, allowedDivisionsKey, supabase]);
 
   useEffect(() => {
     let q = supabase
@@ -455,14 +463,14 @@ export function ManageStudentsList({
     (async () => {
       const { data } = await q;
       let rows = (data ?? []) as StudentRow[];
-      if (restrictByClass && allowedClassNames && allowedClassNames.length > 0) {
-        const set = new Set(allowedClassNames.map((p) => `${p.standardName}\0${p.divisionName}`));
-        rows = rows.filter((s) => set.has(`${s.standard ?? ""}\0${s.division ?? ""}`));
+      if (restrictByClass && allowedClassPairsKey) {
+        const allowedPairs = new Set(allowedClassPairsKey.split("|"));
+        rows = rows.filter((s) => allowedPairs.has(`${s.standard ?? ""}\0${s.division ?? ""}`));
       }
       setStudents(rows);
       setLoading(false);
     })();
-  }, [search, standardFilter, divisionFilter, statusFilter, reloadKey, restrictByClass, allowedClassNames?.length]);
+  }, [search, standardFilter, divisionFilter, statusFilter, reloadKey, restrictByClass, allowedClassPairsKey, supabase]);
 
   const getStatusBadge = (status: string) => {
     const map: Record<string, "default" | "secondary" | "destructive" | "outline"> = {

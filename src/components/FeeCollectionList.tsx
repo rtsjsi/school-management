@@ -67,7 +67,7 @@ async function printReceipt(row: CollectionRow, school: SchoolInfo) {
       feeType: data.feeType,
       collectedAt: data.collectedAt,
       amountInWords: amountInWords(data.amount),
-      receivedBy: data.collectedBy,
+      collectedBy: data.collectedBy,
       policyNotes: DEFAULT_POLICY_NOTES,
       chequeNumber: data.chequeNumber,
       chequeBank: data.chequeBank,
@@ -81,6 +81,7 @@ async function printReceipt(row: CollectionRow, school: SchoolInfo) {
       division: data.division,
       rollNumber: data.rollNumber,
       grNo: data.grNo,
+      totalFees: data.totalFees,
       outstandingAfterPayment: data.outstandingAfterPayment,
     });
     const url = URL.createObjectURL(pdfBlob);
@@ -101,7 +102,7 @@ async function generateAndPrintFallback(row: CollectionRow, school: SchoolInfo) 
     feeType: row.fee_type,
     collectedAt: row.collected_at,
     amountInWords: amountInWords(Number(row.amount)),
-    receivedBy: row.collected_by,
+    collectedBy: row.collected_by,
     policyNotes: DEFAULT_POLICY_NOTES,
     chequeNumber: row.cheque_number,
     chequeBank: row.cheque_bank,
@@ -138,7 +139,7 @@ async function downloadReceipt(row: CollectionRow, school: SchoolInfo) {
       feeType: data.feeType,
       collectedAt: data.collectedAt,
       amountInWords: amountInWords(data.amount),
-      receivedBy: data.collectedBy,
+      collectedBy: data.collectedBy,
       policyNotes: DEFAULT_POLICY_NOTES,
       chequeNumber: data.chequeNumber,
       chequeBank: data.chequeBank,
@@ -152,6 +153,7 @@ async function downloadReceipt(row: CollectionRow, school: SchoolInfo) {
       division: data.division,
       rollNumber: data.rollNumber,
       grNo: data.grNo,
+      totalFees: data.totalFees,
       outstandingAfterPayment: data.outstandingAfterPayment,
     });
     const url = URL.createObjectURL(pdfBlob);
@@ -174,7 +176,7 @@ async function downloadFallback(row: CollectionRow, school: SchoolInfo) {
     feeType: row.fee_type,
     collectedAt: row.collected_at,
     amountInWords: amountInWords(Number(row.amount)),
-    receivedBy: row.collected_by,
+    collectedBy: row.collected_by,
     policyNotes: DEFAULT_POLICY_NOTES,
     chequeNumber: row.cheque_number,
     chequeBank: row.cheque_bank,

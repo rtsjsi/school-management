@@ -1,0 +1,77 @@
+import { redirect } from "next/navigation";
+import { getUser, canAccessFees, canEditFees } from "@/lib/auth";
+import { DollarSign } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import FeeStructureForm from "@/components/FeeStructureForm";
+import { FeeStructureListWithFilters } from "@/components/FeeStructureListWithFilters";
+import FeeCollectionForm from "@/components/FeeCollectionForm";
+import FeeCollectionList from "@/components/FeeCollectionList";
+import OutstandingReport from "@/components/OutstandingReport";
+import FeeCollectionReport from "@/components/FeeCollectionReport";
+import { createClient } from "@/lib/supabase/server";
+
+export default async function FeesPage() {
+  const user = await getUser();
+  if (!user) redirect("/login");
+  if (!canAccessFees(user)) redirect("/welcome");
+
+  const supabase = await createClient();
+  const { data: allStudents } = await supabase
+    .from("students")
+    .select("id, full_name, standard, division, roll_number, student_id, is_rte_quota, fee_concession_amount")
+    .eq("status", "active")
+    .order("full_name");
+  const students = (allStudents ?? []).filter((s) => !(s as { is_rte_quota?: boolean }).is_rte_quota);
+
+  const canEdit = canEditFees(user);
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h1 className="page-title flex items-center gap-2">
+          <DollarSign className="h-7 w-7 text-primary" />
+          Fees Management
+        </h1>
+        <p className="caption mt-1">
+          Fee structures, collection, outstanding tracking, and reports.
+        </p>
+      </div>
+
+      <Tabs defaultValue="collection" className="space-y-6">
+        <TabsList className="flex flex-nowrap gap-1 w-full">
+          <TabsTrigger value="collection">Fee Collection</TabsTrigger>
+          <TabsTrigger value="outstanding">Outstanding</TabsTrigger>
+          <TabsTrigger value="reports">Reports</TabsTrigger>
+          <TabsTrigger value="structure">Fee Structure</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="collection" className="space-y-6">
+          {canEdit && students && students.length > 0 && (
+            <FeeCollectionForm
+              students={students}
+              collectorProfileId={user.id}
+              collectorFullName={user.fullName ?? user.email ?? "Staff"}
+            />
+          )}
+          {canEdit && students && students.length === 0 && (
+            <p className="text-sm text-muted-foreground">Add students first to collect fees.</p>
+          )}
+          <FeeCollectionList />
+        </TabsContent>
+
+        <TabsContent value="outstanding" className="space-y-6">
+          <OutstandingReport />
+        </TabsContent>
+
+        <TabsContent value="reports" className="space-y-6">
+          <FeeCollectionReport />
+        </TabsContent>
+
+        <TabsContent value="structure" className="space-y-6">
+          {canEdit && <FeeStructureForm />}
+          <FeeStructureListWithFilters canEdit={canEdit} />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}

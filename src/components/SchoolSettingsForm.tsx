@@ -3,13 +3,14 @@
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import NextImage from "next/image";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { updateSchoolSettings } from "@/app/dashboard/school-settings/actions";
+import { updateSchoolSettings } from "@/app/(workspace)/dashboard/school-settings/actions";
 import { Building2, ImageIcon, FileSignature, Upload } from "lucide-react";
 
 const BUCKET = "school-assets";
@@ -229,8 +230,15 @@ export function SchoolSettingsForm({
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-center gap-4">
             {logoPreview && (
-              <div className="w-32 h-32 border rounded-lg overflow-hidden bg-muted flex items-center justify-center">
-                <img src={logoPreview} alt="School logo" className="max-w-full max-h-full object-contain" />
+              <div className="relative w-32 h-32 border rounded-lg overflow-hidden bg-muted flex items-center justify-center">
+                <NextImage
+                  src={logoPreview}
+                  alt="School logo"
+                  fill
+                  sizes="128px"
+                  className="object-contain p-1"
+                  unoptimized
+                />
               </div>
             )}
             <div className="space-y-2">
@@ -275,11 +283,14 @@ export function SchoolSettingsForm({
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-center gap-4">
             {signaturePreview && (
-              <div className="w-48 h-20 border rounded-lg overflow-hidden bg-muted flex items-center justify-center">
-                <img
+              <div className="relative w-48 h-20 border rounded-lg overflow-hidden bg-muted">
+                <NextImage
                   src={signaturePreview}
                   alt="Principal signature"
-                  className="max-w-full max-h-full object-contain"
+                  fill
+                  sizes="192px"
+                  className="object-contain p-1"
+                  unoptimized
                 />
               </div>
             )}

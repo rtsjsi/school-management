@@ -42,14 +42,17 @@ export function StandardDivisionYearSelects({
 
   useEffect(() => {
     fetchStandards().then(setStandards);
-    fetchAcademicYears().then((y) => {
-      setYears(y);
-      if (onAcademicYearChange && !academicYear && y.length > 0) {
-        const active = y.find((x) => x.status === "active") ?? y[0];
-        if (active?.name) onAcademicYearChange(active.name);
-      }
-    });
   }, []);
+
+  useEffect(() => {
+    fetchAcademicYears().then(setYears);
+  }, []);
+
+  useEffect(() => {
+    if (!onAcademicYearChange || academicYear || years.length === 0) return;
+    const active = years.find((x) => x.status === "active") ?? years[0];
+    if (active?.name) onAcademicYearChange(active.name);
+  }, [years, academicYear, onAcademicYearChange]);
 
   useEffect(() => {
     if (standard) {

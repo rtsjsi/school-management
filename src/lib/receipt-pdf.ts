@@ -1,5 +1,4 @@
 import { jsPDF } from "jspdf";
-import { getFeeTypeLabel } from "@/lib/utils";
 import { drawWrappedText } from "./pdf-utils";
 
 const ONES = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
@@ -39,6 +38,14 @@ export function amountInWords(amount: number): string {
   return words.toUpperCase() + " RUPEES ONLY";
 }
 
+/** Receipt PDF currency: INR prefix + Indian grouping (e.g. INR 12,345.67). */
+export function formatInrAmount(value: number): string {
+  return `INR ${Number(value).toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
 export interface ReceiptData {
   receiptNumber: string;
   studentName: string;
@@ -56,7 +63,8 @@ export interface ReceiptData {
   concessionAmount?: number;
   periodLabel?: string;
   amountInWords?: string;
-  receivedBy?: string;
+  /** Display name from profiles.full_name (collector) */
+  collectedBy?: string;
   policyNotes?: string[];
   schoolName?: string;
   schoolAddress?: string;
@@ -66,17 +74,21 @@ export interface ReceiptData {
   division?: string;
   rollNumber?: number | string;
   grNo?: string;
+  /** Annual net fee liability for the student (academic year); enables fee summary on receipt. */
+  totalFees?: number;
+  /** Balance due after this payment (0 if fully paid for the year). */
   outstandingAfterPayment?: number;
 }
 
+/** Academic / India FY-style quarters (Apr–Mar year), not calendar Jan–Dec Q1–Q4. */
 const QUARTER_MONTHS: Record<number, string> = {
-  1: "Jan-Mar",
-  2: "Apr-Jun",
-  3: "Jul-Sep",
-  4: "Oct-Dec",
+  1: "Apr-Jun",
+  2: "Jul-Sep",
+  3: "Oct-Dec",
+  4: "Jan-Mar",
 };
 
-function quarterLabel(quarter: number): string {
+export function quarterLabel(quarter: number): string {
   const months = QUARTER_MONTHS[quarter] ?? "—";
   return `Q${quarter} (${months})`;
 }
@@ -200,10 +212,10 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
   drawAlignedField("GR No", String(data.grNo ?? "—"), y);
   y += lh;
 
-  drawAlignedField("Year", data.academicYear || "—", y);
+  drawAlignedField("Period", periodText, y);
   y += lh;
 
-  drawAlignedField("Period", periodText, y);
+  drawAlignedField("Year", data.academicYear || "—", y);
   y += lh;
 
   drawAlignedField("Mode", data.paymentMode ? data.paymentMode.charAt(0).toUpperCase() + data.paymentMode.slice(1) : "—", y);
@@ -212,54 +224,79 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
   doc.line(margin, y, w - margin, y);
   y += blockGap;
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.4);
-  doc.text("Fees", w / 2, y, { align: "center" });
-  y += lh;
-
-  const feeLabel = getFeeTypeLabel(data.feeType);
-  const amountText = `Rs. ${Number(data.amount || 0).toFixed(2)}`;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7.9);
-  doc.text(`${feeLabel || "Fee"} :`, leftX, y);
-  doc.text(amountText.replace("Rs. ", ""), rightX, y, { align: "right" });
-  y += lh + 0.3;
-
-  // Empty body area line like printed receipt block
-  doc.line(margin, y, w - margin, y);
-  y += blockGap;
-
+  const amountFormatted = formatInrAmount(Number(data.amount || 0));
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9.3);
-  doc.text("Total Fee :", leftX, y);
-  doc.text(amountText.replace("Rs. ", ""), rightX, y, { align: "right" });
+  doc.text("Fee Amount :", leftX, y);
+  doc.text(amountFormatted, rightX, y, { align: "right" });
+  doc.setFont("helvetica", "normal");
   doc.setFontSize(7.9);
   y += lh;
 
+  doc.setTextColor(0, 0, 0);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.2);
+  y += 1;
   y = drawWrappedText(doc, amountWords, leftX, y, contentW, smallLh);
-  if (data.outstandingAfterPayment != null) {
-    y += 0.8;
+
+  if (data.totalFees != null) {
+    y += 1.2;
+    const totalFees = Number(data.totalFees);
+    const outstanding = Math.max(0, Number(data.outstandingAfterPayment ?? 0));
+    const feesPaid = Math.max(0, totalFees - outstanding);
+    const bandPadX = 2.8;
+    const innerLeft = margin + bandPadX;
+    const innerRight = w - margin - bandPadX;
+    const rowGap = 3.9;
+    const captionH = 3.8;
+    const bandTop = y;
+    const bandH = 3.2 + rowGap * 3 + captionH;
+    // Black & white print: light gray panel + black border/text only
+    doc.setFillColor(242, 242, 242);
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.25);
+    doc.roundedRect(margin, bandTop, contentW, bandH, 1.2, 1.2, "FD");
+
+    let rowY = bandTop + 4.2;
+    doc.setFontSize(7.2);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont("helvetica", "normal");
+    doc.text("Total Fees", innerLeft, rowY);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(7.3);
-    doc.text("Outstanding :", leftX, y);
-    doc.text(`Rs. ${data.outstandingAfterPayment.toFixed(2)}`, rightX, y, { align: "right" });
+    doc.text(formatInrAmount(totalFees), innerRight, rowY, { align: "right" });
+    rowY += rowGap;
+
+    doc.setFont("helvetica", "normal");
+    doc.text("Fees Paid", innerLeft, rowY);
+    doc.setFont("helvetica", "bold");
+    doc.text(formatInrAmount(feesPaid), innerRight, rowY, { align: "right" });
+    rowY += rowGap;
+
+    doc.setFont("helvetica", "normal");
+    doc.text("Outstanding Fees", innerLeft, rowY);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.6);
+    doc.text(formatInrAmount(outstanding), innerRight, rowY, { align: "right" });
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6);
+    doc.setTextColor(80, 80, 80);
+    doc.text(`As on fee collection date · ${dateStr || "—"}`, innerLeft, bandTop + bandH - 2.2);
+
+    doc.setFontSize(7.2);
+    doc.setTextColor(0, 0, 0);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7.2);
-    y += smallLh;
+    y = bandTop + bandH + 1.4;
   }
-  y += 1.4;
-
-  doc.line(margin, y, w - margin, y);
-  y += blockGap - 0.4;
+  y += 4.2;
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
   doc.text("Note :", leftX, y);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.3);
-  doc.text("Received By,", rightX, y, { align: "right" });
+  doc.text("Collected By", rightX, y, { align: "right" });
   y += lh;
 
   doc.setFont("helvetica", "normal");
@@ -282,24 +319,17 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.2);
-  doc.text(data.receivedBy ?? "", rightX, sectionTopY, { align: "right" });
-  const boxW = 26;
-  const boxH = 16;
-  const boxX = rightX - boxW;
-  const boxY = sectionTopY + 2;
-  doc.setLineWidth(0.2);
-  doc.rect(boxX, boxY, boxW, boxH);
-
-  if (data.paymentMode === "cheque" || data.paymentMode === "online") {
-    const refY = Math.min(h - 1.2, sectionTopY + boxH + 9);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(6.6);
-    if (data.paymentMode === "cheque") {
-      doc.text(`Cheque: ${data.chequeNumber ?? "—"}  Bank: ${data.chequeBank ?? "—"}`, leftX, refY);
-    } else {
-      doc.text(`Txn ID: ${data.onlineTransactionId ?? "—"}`, leftX, refY);
-    }
-  }
+  const sigW = 30;
+  const sigLeft = rightX - sigW;
+  /** Printed name sits just under the notes row; leave a tall gap above the rule so signers can sign by hand. */
+  const nameY = sectionTopY + 1.2;
+  const spaceAboveSignLineMm = 9;
+  doc.text(data.collectedBy ?? "", rightX, nameY, { align: "right" });
+  doc.setLineWidth(0.25);
+  doc.setDrawColor(0, 0, 0);
+  const signLineY = nameY + 3.2 + spaceAboveSignLineMm;
+  doc.line(sigLeft, signLineY, rightX, signLineY);
+  doc.setFontSize(7.2);
 
   return doc.output("blob");
 }

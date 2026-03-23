@@ -15,12 +15,17 @@ export async function GET(request: NextRequest) {
         id, student_id, receipt_number, amount, fee_type, quarter, academic_year, payment_mode,
         collected_at, collected_by, cheque_number, cheque_bank, cheque_date,
         online_transaction_id, online_transaction_ref,
-        students(full_name, standard, division, roll_number, student_id)
+        students(full_name, standard, division, roll_number, student_id, fee_concession_amount),
+        collector:profiles!collected_by(full_name)
       `)
       .eq("id", id)
       .single();
 
     if (error || !c) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    const col = (c as { collector?: { full_name?: string } | { full_name?: string }[] }).collector;
+    const collectorProfile = Array.isArray(col) ? col[0] : col;
+    const collectedByName = collectorProfile?.full_name?.trim() || null;
 
     const s = Array.isArray(c.students) ? c.students[0] : c.students;
     const student = s as {
@@ -35,6 +40,7 @@ export async function GET(request: NextRequest) {
     if (!studentId) return NextResponse.json({ error: "Invalid collection" }, { status: 400 });
 
     let outstandingAfterPayment: number | undefined;
+    let totalFees: number | undefined;
     const { data: structures } = await supabase
       .from("fee_structures")
       .select("standards(name), fee_structure_items(fee_type, quarter, amount)")
@@ -48,13 +54,25 @@ export async function GET(request: NextRequest) {
     if (structure) {
       const items = (structure.fee_structure_items as { fee_type: string; quarter: number; amount: number }[]) ?? [];
       const totalDues = annualNetFeeLiability(items, student?.fee_concession_amount ?? null);
+      totalFees = totalDues;
+      /** Cumulative paid up to and including this receipt (as on fee collection date), not all-time if later payments exist. */
       const { data: paidRows } = await supabase
         .from("fee_collections")
-        .select("amount")
+        .select("id, amount, collected_at")
         .eq("student_id", studentId)
-        .eq("academic_year", c.academic_year);
-      const totalPaid = (paidRows ?? []).reduce((sum, r) => sum + Number(r.amount), 0);
-      outstandingAfterPayment = Math.max(0, totalDues - totalPaid);
+        .eq("academic_year", c.academic_year)
+        .order("collected_at", { ascending: true })
+        .order("id", { ascending: true });
+      const collectionId = (c as { id: string }).id;
+      const collectionTime = new Date((c as { collected_at: string }).collected_at).getTime();
+      let totalPaidAsOfCollection = 0;
+      for (const r of paidRows ?? []) {
+        const rTime = new Date(r.collected_at).getTime();
+        if (rTime < collectionTime || (rTime === collectionTime && r.id <= collectionId)) {
+          totalPaidAsOfCollection += Number(r.amount);
+        }
+      }
+      outstandingAfterPayment = Math.max(0, totalDues - totalPaidAsOfCollection);
     }
 
     return NextResponse.json({
@@ -66,7 +84,7 @@ export async function GET(request: NextRequest) {
       academicYear: c.academic_year,
       feeType: c.fee_type,
       collectedAt: c.collected_at,
-      collectedBy: c.collected_by,
+      collectedBy: collectedByName,
       chequeNumber: c.cheque_number,
       chequeBank: c.cheque_bank,
       chequeDate: c.cheque_date,
@@ -76,6 +94,7 @@ export async function GET(request: NextRequest) {
       division: student?.division,
       rollNumber: student?.roll_number,
       grNo: student?.student_id,
+      totalFees,
       outstandingAfterPayment,
     });
   } catch {

@@ -28,7 +28,7 @@ import {
   type PendingPhotos,
   type PendingDocuments,
 } from "@/lib/student-uploads";
-import { upsertCurrentEnrollment } from "@/app/dashboard/students/actions";
+import { upsertCurrentEnrollment } from "@/app/(workspace)/dashboard/students/actions";
 import { useToast } from "@/hooks/use-toast";
 import { IN_STATES } from "@/lib/student-form";
 

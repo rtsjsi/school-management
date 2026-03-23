@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -24,10 +24,19 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const school = useSchoolSettings();
-  const allowedStandardSet = allowedClassNames?.length ? new Set(allowedClassNames.map((p) => p.standardName)) : null;
-  const allowedPairSet = allowedClassNames?.length ? new Set(allowedClassNames.map((p) => `${p.standardName}\0${p.divisionName}`)) : null;
+  const allowedStandardSet = useMemo(
+    () => (allowedClassNames?.length ? new Set(allowedClassNames.map((p) => p.standardName)) : null),
+    [allowedClassNames]
+  );
+  const allowedPairSet = useMemo(
+    () =>
+      allowedClassNames?.length
+        ? new Set(allowedClassNames.map((p) => `${p.standardName}\0${p.divisionName}`))
+        : null,
+    [allowedClassNames]
+  );
 
   useEffect(() => {
     supabase
@@ -39,7 +48,7 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
         if (allowedStandardSet) list = list.filter((e) => e.standard && allowedStandardSet.has(e.standard));
         setExams(list);
       });
-  }, [supabase, allowedStandardSet?.size]);
+  }, [supabase, allowedStandardSet]);
 
   useEffect(() => {
     supabase
@@ -52,7 +61,7 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
         if (allowedPairSet) list = list.filter((s) => allowedPairSet.has(`${s.standard ?? ""}\0${s.division ?? ""}`));
         setStudents(list);
       });
-  }, [supabase, allowedPairSet?.size]);
+  }, [supabase, allowedPairSet]);
 
   const handleGenerate = async () => {
     if (!selectedExamId || !selectedStudentId) {

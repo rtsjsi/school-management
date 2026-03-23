@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   getProfileAllowedClasses,
   setProfileAllowedClasses,
   type AllowedClassPair,
-} from "@/app/dashboard/administration/actions";
+} from "@/app/(workspace)/dashboard/administration/actions";
 import { fetchStandards } from "@/lib/lov";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -50,7 +50,7 @@ export function UserClassAccessDialog({
   const [addStandardId, setAddStandardId] = useState<string>("");
   const [addDivisionId, setAddDivisionId] = useState<string>("");
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -72,11 +72,11 @@ export function UserClassAccessDialog({
     } finally {
       setLoading(false);
     }
-  };
+  }, [profileId]);
 
   useEffect(() => {
-    if (open) loadData();
-  }, [open, profileId]);
+    if (open) void loadData();
+  }, [open, loadData]);
 
   const divisionsForStandard = addStandardId
     ? divisions.filter((d) => d.standard_id === addStandardId)

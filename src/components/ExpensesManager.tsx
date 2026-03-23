@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import ExpenseEntryForm from "@/components/ExpenseEntryForm";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,7 +12,7 @@ export default function ExpensesManager({ canEdit = true }: { canEdit?: boolean 
   const [expenseHeads, setExpenseHeads] = useState<ExpenseHead[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     (async () => {
@@ -23,7 +23,7 @@ export default function ExpensesManager({ canEdit = true }: { canEdit?: boolean 
       setExpenseHeads((headsRes.data ?? []) as ExpenseHead[]);
       setEmployees((employeesRes.data ?? []) as Employee[]);
     })();
-  }, []);
+  }, [supabase]);
 
   if (!canEdit) return null;
 

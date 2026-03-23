@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { getPromotionCandidates, runPromotion, type EnrollmentOutcome } from "@/app/dashboard/promotion/actions";
+import { getPromotionCandidates, runPromotion, type EnrollmentOutcome } from "@/app/(workspace)/dashboard/promotion/actions";
 
 export function PromotionRunner() {
   const router = useRouter();

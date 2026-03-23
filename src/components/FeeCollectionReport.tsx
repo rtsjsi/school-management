@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getFeeTypeLabel } from "@/lib/utils";
 import { generateReceiptPDF, amountInWords } from "@/lib/receipt-pdf";
-import { updateFeeCollection } from "@/app/dashboard/fees/actions";
+import { updateFeeCollection } from "@/app/(workspace)/dashboard/fees/actions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -197,7 +197,7 @@ export default function FeeCollectionReport() {
         feeType: d.feeType,
         collectedAt: d.collectedAt,
         amountInWords: amountInWords(d.amount),
-        receivedBy: d.collectedBy,
+        collectedBy: d.collectedBy,
         policyNotes: DEFAULT_POLICY_NOTES,
         chequeNumber: d.chequeNumber,
         chequeBank: d.chequeBank,
@@ -211,6 +211,7 @@ export default function FeeCollectionReport() {
         division: d.division,
         rollNumber: d.rollNumber,
         grNo: d.grNo,
+        totalFees: d.totalFees,
         outstandingAfterPayment: d.outstandingAfterPayment,
       });
       const url = URL.createObjectURL(pdfBlob);
@@ -252,7 +253,7 @@ export default function FeeCollectionReport() {
         feeType: d.feeType,
         collectedAt: d.collectedAt,
         amountInWords: amountInWords(d.amount),
-        receivedBy: d.collectedBy,
+        collectedBy: d.collectedBy,
         policyNotes: DEFAULT_POLICY_NOTES,
         chequeNumber: d.chequeNumber,
         chequeBank: d.chequeBank,
@@ -266,6 +267,7 @@ export default function FeeCollectionReport() {
         division: d.division,
         rollNumber: d.rollNumber,
         grNo: d.grNo,
+        totalFees: d.totalFees,
         outstandingAfterPayment: d.outstandingAfterPayment,
       });
       const url = URL.createObjectURL(pdfBlob);

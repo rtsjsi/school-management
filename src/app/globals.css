@@ -94,20 +94,27 @@
   * {
     @apply border-border;
   }
-  /* Lock document scroll; dashboard uses its own scroll region (.content-area) */
+  /* Allow document scroll (auth, marketing). Dashboard pins to 100dvh and scrolls inside .content-area. */
   html {
-    height: 100%;
-    overflow: hidden;
+    min-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
-  @supports (height: 100dvh) {
+  @supports (min-height: 100dvh) {
     html {
-      height: 100dvh;
+      min-height: 100dvh;
     }
   }
   body {
     @apply bg-background text-foreground antialiased;
-    height: 100%;
-    overflow: hidden;
+    min-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+  @supports (min-height: 100dvh) {
+    body {
+      min-height: 100dvh;
+    }
   }
   /* Number inputs: no up/down spinners app-wide */
   input[type="number"] {

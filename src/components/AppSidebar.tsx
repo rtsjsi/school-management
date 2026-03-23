@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
+  Home,
   GraduationCap,
   BookOpen,
   DollarSign,
@@ -16,6 +18,7 @@ import {
   Banknote,
 } from "lucide-react";
 import type { AuthUser } from "@/lib/auth";
+import type { UserRole } from "@/types/auth";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -24,17 +27,64 @@ type NavItem = {
   href: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
-  roles?: ("principal" | "admin" | "teacher" | "auditor")[];
+  roles?: UserRole[];
 };
 
+const ALL_DASHBOARD_ROLES: UserRole[] = [
+  "principal",
+  "admin",
+  "teacher",
+  "auditor",
+  "clerk",
+  "payroll",
+];
+
+const ACADEMIC_STUDENT_EXAM_ROLES: UserRole[] = ["principal", "admin", "teacher", "auditor"];
+
 const navItems: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/academic-setup", label: "Academic setup", icon: BookOpen },
-  { href: "/dashboard/students", label: "Students management", icon: GraduationCap },
-  { href: "/dashboard/fees", label: "Fees management", icon: DollarSign, roles: ["principal", "admin", "auditor"] },
-  { href: "/dashboard/expenses", label: "Expense management", icon: Banknote, roles: ["principal", "admin", "auditor"] },
-  { href: "/dashboard/payroll", label: "Payroll", icon: Wallet, roles: ["principal", "admin", "auditor"] },
-  { href: "/dashboard/exams", label: "Exam management", icon: FileQuestion },
+  { href: "/welcome", label: "Home", icon: Home, roles: ALL_DASHBOARD_ROLES },
+  {
+    href: "/dashboard",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    roles: ALL_DASHBOARD_ROLES,
+  },
+  {
+    href: "/dashboard/academic-setup",
+    label: "Academic setup",
+    icon: BookOpen,
+    roles: ACADEMIC_STUDENT_EXAM_ROLES,
+  },
+  {
+    href: "/dashboard/students",
+    label: "Students management",
+    icon: GraduationCap,
+    roles: ACADEMIC_STUDENT_EXAM_ROLES,
+  },
+  {
+    href: "/dashboard/fees",
+    label: "Fees management",
+    icon: DollarSign,
+    roles: ["principal", "admin", "auditor", "clerk"],
+  },
+  {
+    href: "/dashboard/expenses",
+    label: "Expense management",
+    icon: Banknote,
+    roles: ["principal", "admin", "auditor"],
+  },
+  {
+    href: "/dashboard/payroll",
+    label: "Payroll",
+    icon: Wallet,
+    roles: ["principal", "admin", "auditor", "payroll"],
+  },
+  {
+    href: "/dashboard/exams",
+    label: "Exam management",
+    icon: FileQuestion,
+    roles: ACADEMIC_STUDENT_EXAM_ROLES,
+  },
   { href: "/dashboard/administration", label: "Administration", icon: Building2, roles: ["principal"] },
 ];
 
@@ -62,17 +112,19 @@ export function AppSidebar({ user }: { user: AuthUser }) {
     <div className="flex h-full w-64 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-foreground/10">
       <div className="flex h-14 shrink-0 items-center gap-3 border-b border-sidebar-foreground/10 px-3 py-2">
         <Link
-          href="/dashboard"
+          href="/welcome"
           className="flex min-w-0 flex-1 items-center gap-3 hover:opacity-90 transition-opacity"
           onClick={() => setMobileOpen(false)}
           title={school.name}
         >
           {school.logoUrl ? (
-            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md bg-sidebar-foreground/10 flex items-center justify-center">
-              <img
+            <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md bg-sidebar-foreground/10">
+              <Image
                 src={school.logoUrl}
                 alt=""
-                className="h-full w-full object-contain"
+                fill
+                sizes="40px"
+                className="object-contain p-0.5"
               />
             </div>
           ) : (
@@ -96,7 +148,12 @@ export function AppSidebar({ user }: { user: AuthUser }) {
       </div>
       <nav className="flex-1 min-h-0 space-y-0.5 p-2.5 overflow-y-auto scrollbar-hide">
         {items.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive =
+            item.href === "/welcome"
+              ? pathname === "/welcome"
+              : item.href === "/dashboard"
+                ? pathname === "/dashboard"
+                : pathname === item.href || pathname.startsWith(`${item.href}/`);
           const Icon = item.icon;
           return (
             <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}>
@@ -131,10 +188,10 @@ export function AppSidebar({ user }: { user: AuthUser }) {
         >
           <Menu className="h-5 w-5" />
         </Button>
-        <Link href="/dashboard" className="flex min-w-0 flex-1 items-center gap-2">
+        <Link href="/welcome" className="flex min-w-0 flex-1 items-center gap-2">
           {school.logoUrl ? (
-            <div className="h-8 w-8 shrink-0 overflow-hidden rounded bg-muted flex items-center justify-center">
-              <img src={school.logoUrl} alt="" className="h-full w-full object-contain" />
+            <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded bg-muted">
+              <Image src={school.logoUrl} alt="" fill sizes="32px" className="object-contain p-0.5" />
             </div>
           ) : (
             <div className="h-8 w-8 shrink-0 rounded bg-muted flex items-center justify-center">

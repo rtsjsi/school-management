@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { createStandard, updateStandard, createDivision } from "@/app/dashboard/classes/actions";
+import { createStandard, updateStandard, createDivision } from "@/app/(workspace)/dashboard/classes/actions";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -56,19 +56,19 @@ export function ClassManagement() {
   const [addError, setAddError] = useState<string | null>(null);
   const [addLoading, setAddLoading] = useState(false);
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
-  const loadStandards = () => {
+  const loadStandards = useCallback(() => {
     supabase
       .from("standards")
       .select("id, name, section, sort_order")
       .order("sort_order")
       .then(({ data }) => setStandards((data ?? []) as StandardRow[]));
-  };
+  }, [supabase]);
 
   useEffect(() => {
     loadStandards();
-  }, []);
+  }, [loadStandards]);
 
   type StandardWithDivisions = {
     id: string;
@@ -337,18 +337,18 @@ function StandardRow({
   const [addDivName, setAddDivName] = useState("");
   const [addDivLoading, setAddDivLoading] = useState(false);
 
-  const loadDivisions = () => {
+  const loadDivisions = useCallback(() => {
     createClient()
       .from("standard_divisions")
       .select("id, name, sort_order")
       .eq("standard_id", row.id)
       .order("sort_order")
       .then(({ data }) => setDivisions((data ?? []) as DivisionRow[]));
-  };
+  }, [row.id]);
 
   useEffect(() => {
     loadDivisions();
-  }, [row.id]);
+  }, [loadDivisions]);
 
   const handleSave = async () => {
     setLoading(true);

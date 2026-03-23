@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { generatePayslipPDF } from "@/lib/payslip-pdf";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 import { Card, CardContent } from "@/components/ui/card";
@@ -83,7 +83,7 @@ export default function PayslipGenerator() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = () => {
+  const fetchData = useCallback(() => {
     setLoading(true);
     setError(null);
     fetch(`/api/payslip-data?monthYear=${monthYear}`)
@@ -100,11 +100,11 @@ export default function PayslipGenerator() {
         setData(null);
       })
       .finally(() => setLoading(false));
-  };
+  }, [monthYear]);
 
   useEffect(() => {
     fetchData();
-  }, [monthYear]);
+  }, [fetchData]);
 
   const downloadAll = () => {
     if (!data?.rows?.length) return;

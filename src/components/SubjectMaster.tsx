@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { createSubject } from "@/app/dashboard/classes/actions";
+import { createSubject } from "@/app/(workspace)/dashboard/classes/actions";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -48,7 +48,7 @@ export function SubjectMaster() {
   const [addError, setAddError] = useState<string | null>(null);
   const [addLoading, setAddLoading] = useState(false);
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     supabase
@@ -56,9 +56,9 @@ export function SubjectMaster() {
       .select("id, name, section")
       .order("sort_order")
       .then(({ data }) => setStandards((data ?? []) as StandardRow[]));
-  }, []);
+  }, [supabase]);
 
-  const loadSubjects = () => {
+  const loadSubjects = useCallback(() => {
     if (!selectedStandardId) return;
     supabase
       .from("subjects")
@@ -66,7 +66,7 @@ export function SubjectMaster() {
       .eq("standard_id", selectedStandardId)
       .order("sort_order")
       .then(({ data }) => setSubjects((data ?? []) as SubjectRow[]));
-  };
+  }, [supabase, selectedStandardId]);
 
   useEffect(() => {
     if (!selectedStandardId) {
@@ -74,7 +74,7 @@ export function SubjectMaster() {
       return;
     }
     loadSubjects();
-  }, [selectedStandardId]);
+  }, [selectedStandardId, loadSubjects]);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -222,7 +222,7 @@ function SubjectRow({
 
   const handleSave = async () => {
     setLoading(true);
-    const { updateSubject } = await import("@/app/dashboard/classes/actions");
+    const { updateSubject } = await import("@/app/(workspace)/dashboard/classes/actions");
     const result = await updateSubject(subject.id, name, evalType);
     setLoading(false);
     if (result.ok) {

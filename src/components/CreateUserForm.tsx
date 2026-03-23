@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createUser } from "@/app/dashboard/users/actions";
+import { createUser } from "@/app/(workspace)/dashboard/users/actions";
 import { ROLES } from "@/types/auth";
 import type { UserRole } from "@/types/auth";
 import { SubmitButton } from "@/components/ui/SubmitButton";

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { setExamSubjectMaxMarks } from "@/app/dashboard/exams/actions";
+import { setExamSubjectMaxMarks } from "@/app/(workspace)/dashboard/exams/actions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +21,7 @@ export function ExamSubjectsConfig({ exam }: { exam: Exam }) {
   const [saving, setSaving] = useState(false);
   const [open, setOpen] = useState(false);
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     if (!open || !exam.standard || exam.standard === "All") return;
@@ -53,7 +53,7 @@ export function ExamSubjectsConfig({ exam }: { exam: Exam }) {
       });
       setMaxMarks(map);
     })().finally(() => setLoading(false));
-  }, [open, exam.id, exam.standard]);
+  }, [open, exam.id, exam.standard, supabase]);
 
   const handleSave = async () => {
     setSaving(true);

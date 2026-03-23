@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
+import { NavigationProgress } from "@/components/NavigationProgress";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -27,8 +28,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${plusJakarta.variable} font-sans antialiased bg-background text-foreground h-full min-h-0 overflow-hidden`}
+        className={`${plusJakarta.variable} font-sans antialiased bg-background text-foreground min-h-dvh`}
       >
+        <NavigationProgress />
         {children}
         <Toaster />
       </body>

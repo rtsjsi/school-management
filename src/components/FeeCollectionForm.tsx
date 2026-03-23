@@ -45,10 +45,14 @@ function formatStudentDisplay(s: StudentOption): string {
 
 export default function FeeCollectionForm({
   students,
-  receivedBy,
+  collectorProfileId,
+  collectorFullName,
 }: {
   students: StudentOption[];
-  receivedBy?: string;
+  /** Stored as fee_collections.collected_by (profiles.id) */
+  collectorProfileId: string;
+  /** Shown on receipt PDF (profiles.full_name) */
+  collectorFullName: string;
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -272,7 +276,7 @@ export default function FeeCollectionForm({
           online_transaction_ref: form.payment_mode === "online" ? form.online_transaction_ref.trim() || null : null,
           receipt_number: receiptNumber,
           collected_at: collectedAt,
-          collected_by: receivedBy ?? null,
+          collected_by: collectorProfileId,
         })
         .select("id, students(full_name), collected_at")
         .single();
@@ -294,6 +298,7 @@ export default function FeeCollectionForm({
       const selectedStudent = students.find((s) => s.id === form.student_id);
 
       let outstandingAfterPayment: number | undefined;
+      let totalFees: number | undefined;
       const { data: structures } = await supabase
         .from("fee_structures")
         .select("id, standards(name), fee_structure_items(fee_type, quarter, amount)")
@@ -307,14 +312,25 @@ export default function FeeCollectionForm({
       if (structure) {
         const items = (structure.fee_structure_items as { fee_type: string; quarter: number; amount: number }[]) ?? [];
         const totalDues = annualNetFeeLiability(items, selectedStudent?.fee_concession_amount ?? null);
+        totalFees = totalDues;
+        const collectionRow = collection as { id?: string; collected_at?: string };
         const { data: paidRows } = await supabase
           .from("fee_collections")
-          .select("amount")
+          .select("id, amount, collected_at")
           .eq("student_id", form.student_id)
-          .eq("academic_year", form.academic_year);
-        const totalPaid = (paidRows ?? []).reduce((s, r) => s + Number(r.amount), 0);
-        const outstanding = Math.max(0, totalDues - totalPaid);
-        if (outstanding > 0) outstandingAfterPayment = outstanding;
+          .eq("academic_year", form.academic_year)
+          .order("collected_at", { ascending: true })
+          .order("id", { ascending: true });
+        const cid = collectionRow.id ?? "";
+        const cTime = new Date(collectionRow.collected_at ?? Date.now()).getTime();
+        let totalPaidAsOf = 0;
+        for (const r of paidRows ?? []) {
+          const rTime = new Date(r.collected_at).getTime();
+          if (rTime < cTime || (rTime === cTime && r.id <= cid)) {
+            totalPaidAsOf += Number(r.amount);
+          }
+        }
+        outstandingAfterPayment = Math.max(0, totalDues - totalPaidAsOf);
       }
 
       const pdfBlob = await generateReceiptPDF({
@@ -327,7 +343,7 @@ export default function FeeCollectionForm({
         feeType: COLLECTION_FEE_TYPE,
         collectedAt: new Date((collection as { collected_at?: string })?.collected_at ?? Date.now()).toISOString(),
         amountInWords: amountInWords(amount),
-        receivedBy,
+        collectedBy: collectorFullName,
         policyNotes: DEFAULT_POLICY_NOTES,
         chequeNumber: form.payment_mode === "cheque" ? form.cheque_number : undefined,
         chequeBank: form.payment_mode === "cheque" ? form.cheque_bank : undefined,
@@ -341,6 +357,7 @@ export default function FeeCollectionForm({
         division: selectedStudent?.division,
         rollNumber: selectedStudent?.roll_number,
         grNo: selectedStudent?.student_id ?? selectedStudent?.id?.slice(0, 8),
+        totalFees,
         outstandingAfterPayment,
       });
 

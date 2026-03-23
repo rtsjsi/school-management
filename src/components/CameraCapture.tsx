@@ -114,11 +114,11 @@ export function CameraCaptureButton({
   useEffect(() => {
     if (!showCamera || !streamRef.current || !videoRef.current) return;
     const stream = streamRef.current;
+    const videoEl = videoRef.current;
     attachStreamToVideo(stream);
     const fallback = setTimeout(() => setVideoReady(true), 1500);
     return () => {
-      const v = videoRef.current;
-      if (v) v.srcObject = null;
+      videoEl.srcObject = null;
       clearTimeout(fallback);
     };
   }, [showCamera]);
