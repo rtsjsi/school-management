@@ -3,6 +3,9 @@ import { getUser } from "@/lib/auth";
 import { getSchoolSettings } from "@/lib/school-settings";
 import { AppWelcomePage } from "@/components/AppWelcomePage";
 
+/** Fresh render so rotating thank-you / weather stay per-visit, not cached. */
+export const dynamic = "force-dynamic";
+
 /**
  * In-app welcome — first screen after sign-in for everyone.
  * Stats overview lives at /dashboard.

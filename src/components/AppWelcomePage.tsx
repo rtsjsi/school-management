@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatWelcomeDate, getThoughtOfTheDay } from "@/lib/thought-of-the-day";
 import { getOnThisDayLine } from "@/lib/on-this-day";
 import { getWelcomeWeather } from "@/lib/welcome-weather";
+import { getRandomWelcomeThankYou } from "@/lib/welcome-thank-you";
 
 type Props = {
   user: AuthUser;
@@ -21,10 +22,11 @@ export async function AppWelcomePage({ user, schoolName }: Props) {
   const todayLabel = formatWelcomeDate();
   const onThisDay = getOnThisDayLine();
   const weather = await getWelcomeWeather();
+  const thankYou = getRandomWelcomeThankYou();
 
   return (
     <div className="flex flex-col gap-3 sm:gap-4">
-      {/* Header — welcome + short thank-you line (no inner box) */}
+      {/* Header — welcome + rotating appreciation message */}
       <div className="w-full shrink-0 rounded-xl border border-border/80 bg-gradient-to-br from-primary/5 via-background to-muted/30 px-4 py-3 shadow-sm sm:px-5 sm:py-3.5">
         <div className="flex items-start gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary sm:h-11 sm:w-11">
@@ -43,8 +45,8 @@ export async function AppWelcomePage({ user, schoolName }: Props) {
             <p className="mt-1 text-xs text-muted-foreground break-words" title={schoolName}>
               {schoolName}
             </p>
-            <p className="mt-2 max-w-prose text-sm leading-relaxed text-muted-foreground">
-              Thank you for your work — use the sidebar when you&apos;re ready.
+            <p className="mt-3 max-w-prose text-[13px] leading-relaxed text-muted-foreground sm:text-sm">
+              {thankYou}
             </p>
           </div>
         </div>
