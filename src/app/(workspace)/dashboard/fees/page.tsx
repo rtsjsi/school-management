@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { getUser, canAccessFees, canEditFees } from "@/lib/auth";
-import { DollarSign } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import FeeStructureForm from "@/components/FeeStructureForm";
 import { FeeStructureListWithFilters } from "@/components/FeeStructureListWithFilters";
@@ -27,16 +26,6 @@ export default async function FeesPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="page-title flex items-center gap-2">
-          <DollarSign className="h-7 w-7 text-primary" />
-          Fees Management
-        </h1>
-        <p className="caption mt-1">
-          Fee structures, collection, outstanding tracking, and reports.
-        </p>
-      </div>
-
       <Tabs defaultValue="collection" className="space-y-6">
         <TabsList className="flex flex-nowrap gap-1 w-full">
           <TabsTrigger value="collection">Fee Collection</TabsTrigger>
