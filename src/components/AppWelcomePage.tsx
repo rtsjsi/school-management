@@ -1,4 +1,4 @@
-import { GraduationCap, Lightbulb, CalendarDays, Heart, ScrollText, CloudSun } from "lucide-react";
+import { GraduationCap, Lightbulb, CalendarDays, ScrollText, CloudSun } from "lucide-react";
 import type { AuthUser } from "@/lib/auth";
 import { ROLES } from "@/types/auth";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +24,7 @@ export async function AppWelcomePage({ user, schoolName }: Props) {
 
   return (
     <div className="flex flex-col gap-3 sm:gap-4">
-      {/* Header — welcome + thank you in one box */}
+      {/* Header — welcome + short thank-you line (no inner box) */}
       <div className="w-full shrink-0 rounded-xl border border-border/80 bg-gradient-to-br from-primary/5 via-background to-muted/30 px-4 py-3 shadow-sm sm:px-5 sm:py-3.5">
         <div className="flex items-start gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary sm:h-11 sm:w-11">
@@ -43,13 +43,9 @@ export async function AppWelcomePage({ user, schoolName }: Props) {
             <p className="mt-1 text-xs text-muted-foreground break-words" title={schoolName}>
               {schoolName}
             </p>
-            <div className="mt-3 flex gap-2 rounded-lg border border-primary/10 bg-background/60 px-2.5 py-2 sm:px-3">
-              <Heart className="mt-0.5 h-4 w-4 shrink-0 text-primary/80" aria-hidden />
-              <p className="text-[11px] leading-snug text-muted-foreground sm:text-xs sm:leading-relaxed">
-                <span className="font-medium text-foreground">Thank you for being here.</span> Your effort helps our
-                students and keeps the school running — open any section from the sidebar when you&apos;re ready.
-              </p>
-            </div>
+            <p className="mt-2 max-w-prose text-sm leading-relaxed text-muted-foreground">
+              Thank you for your work — use the sidebar when you&apos;re ready.
+            </p>
           </div>
         </div>
       </div>
