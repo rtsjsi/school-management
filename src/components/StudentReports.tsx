@@ -149,12 +149,99 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
       }
     };
 
-    const exportColumns = Array.from(
+    const addFormFieldOrder = [
+      "full_name",
+      "date_of_birth",
+      "gender",
+      "blood_group",
+      "present_address_line1",
+      "present_address_line2",
+      "present_city",
+      "present_taluka",
+      "present_district",
+      "present_state",
+      "present_pincode",
+      "present_country",
+      "permanent_address_line1",
+      "permanent_address_line2",
+      "permanent_city",
+      "permanent_taluka",
+      "permanent_district",
+      "permanent_state",
+      "permanent_pincode",
+      "permanent_country",
+      "mother_tongue",
+      "standard",
+      "division",
+      "roll_number",
+      "admission_date",
+      "status",
+      "category",
+      "religion",
+      "caste",
+      "birth_place",
+      "last_school",
+      "previous_school_address",
+      "previous_school_state_unique_id",
+      "birth_certificate_number",
+      "aadhar_no",
+      "pen_no",
+      "apaar_id",
+      "father_name",
+      "mother_name",
+      "parent_name",
+      "parent_contact",
+      "mother_contact",
+      "parent_email",
+      "guardian_name",
+      "guardian_contact",
+      "guardian_email",
+      "emergency_contact_name",
+      "emergency_contact_number",
+      "fee_concession_amount",
+      "fee_concession_reason",
+      "height",
+      "weight",
+      "hobby",
+      "sign_of_identity",
+      "father_education",
+      "father_occupation",
+      "mother_education",
+      "mother_occupation",
+      "whatsapp_no",
+      "account_holder_name",
+      "bank_name",
+      "bank_branch",
+      "bank_ifsc",
+      "account_no",
+      "guardian_education",
+      "guardian_occupation",
+      "udise_id",
+      "gr_number",
+      "second_language",
+      "is_rte_quota",
+      "id",
+      "created_at",
+      "created_by",
+      "updated_at",
+      "updated_by",
+      "exit_date",
+      "exit_reason",
+      "exit_notes",
+    ] as const;
+
+    const rowKeys = Array.from(
       filteredRows.reduce((set, row) => {
         Object.keys(row).forEach((k) => set.add(k));
         return set;
       }, new Set<string>())
-    ).sort((a, b) => a.localeCompare(b));
+    );
+
+    const orderedKnownKeys = addFormFieldOrder.filter((k) => rowKeys.includes(k));
+    const extraKeys = rowKeys
+      .filter((k) => !orderedKnownKeys.includes(k))
+      .sort((a, b) => a.localeCompare(b));
+    const exportColumns = [...orderedKnownKeys, ...extraKeys];
 
     const exportRowsFull = filteredRows.map((row) => {
       const out: Record<string, string | number | boolean> = {};
@@ -164,17 +251,7 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
       return out;
     });
 
-    const reportRows = filteredRows.map((r) => ({
-      "Student Name": r.full_name,
-      Standard: r.standard ?? "",
-      Division: r.division ?? "",
-      "Roll No": r.roll_number ?? "",
-      "GR No": r.gr_number ?? "",
-      "RTE Flag": r.is_rte_quota ? "Yes" : "No",
-      Status: r.status ?? "",
-    }));
-
-    if (reportRows.length === 0) {
+    if (filteredRows.length === 0) {
       alert("No students match the selected filters.");
       return;
     }
@@ -266,32 +343,10 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
               <TableHeader>
                 <TableRow>
                   <TableHead>Student Name</TableHead>
-                  <TableHead>Date of Birth</TableHead>
-                  <TableHead>Gender</TableHead>
-                  <TableHead>Blood Group</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Mother Tongue</TableHead>
-                  <TableHead>Second Language</TableHead>
-                  <TableHead>Admission Date</TableHead>
                   <TableHead>Standard</TableHead>
                   <TableHead>Division</TableHead>
                   <TableHead>Roll #</TableHead>
                   <TableHead>GR No</TableHead>
-                  <TableHead>UDISE ID</TableHead>
-                  <TableHead>Aadhar No</TableHead>
-                  <TableHead>PEN No</TableHead>
-                  <TableHead>APAAR ID</TableHead>
-                  <TableHead>Father Name</TableHead>
-                  <TableHead>Mother Name</TableHead>
-                  <TableHead>Parent Contact</TableHead>
-                  <TableHead>Parent Email</TableHead>
-                  <TableHead>Guardian Name</TableHead>
-                  <TableHead>Guardian Contact</TableHead>
-                  <TableHead>Present Address</TableHead>
-                  <TableHead>City</TableHead>
-                  <TableHead>District</TableHead>
-                  <TableHead>State</TableHead>
-                  <TableHead>Pincode</TableHead>
                   <TableHead>RTE</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
@@ -300,32 +355,10 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
                 {filteredRows.map((row) => (
                   <TableRow key={row.id}>
                     <TableCell className="font-medium">{row.full_name}</TableCell>
-                    <TableCell>{row.date_of_birth ? new Date(row.date_of_birth).toLocaleDateString() : "—"}</TableCell>
-                    <TableCell className="capitalize">{row.gender ?? "—"}</TableCell>
-                    <TableCell>{row.blood_group ?? "—"}</TableCell>
-                    <TableCell className="uppercase">{row.category ?? "—"}</TableCell>
-                    <TableCell>{row.mother_tongue ?? "—"}</TableCell>
-                    <TableCell>{row.second_language ?? "—"}</TableCell>
-                    <TableCell>{row.admission_date ? new Date(row.admission_date).toLocaleDateString() : "—"}</TableCell>
                     <TableCell>{row.standard ?? "—"}</TableCell>
                     <TableCell>{row.division ?? "—"}</TableCell>
                     <TableCell>{row.roll_number ?? "—"}</TableCell>
                     <TableCell className="font-mono text-xs">{row.gr_number ?? "—"}</TableCell>
-                    <TableCell>{row.udise_id ?? "—"}</TableCell>
-                    <TableCell>{row.aadhar_no ?? "—"}</TableCell>
-                    <TableCell>{row.pen_no ?? "—"}</TableCell>
-                    <TableCell>{row.apaar_id ?? "—"}</TableCell>
-                    <TableCell>{row.father_name ?? "—"}</TableCell>
-                    <TableCell>{row.mother_name ?? "—"}</TableCell>
-                    <TableCell>{row.parent_contact ?? "—"}</TableCell>
-                    <TableCell>{row.parent_email ?? "—"}</TableCell>
-                    <TableCell>{row.guardian_name ?? "—"}</TableCell>
-                    <TableCell>{row.guardian_contact ?? "—"}</TableCell>
-                    <TableCell>{row.present_address_line1 ?? "—"}</TableCell>
-                    <TableCell>{row.present_city ?? "—"}</TableCell>
-                    <TableCell>{row.present_district ?? "—"}</TableCell>
-                    <TableCell>{row.present_state ?? "—"}</TableCell>
-                    <TableCell>{row.present_pincode ?? "—"}</TableCell>
                     <TableCell>{row.is_rte_quota ? "Yes" : "No"}</TableCell>
                     <TableCell className="capitalize">{row.status ?? "—"}</TableCell>
                   </TableRow>
