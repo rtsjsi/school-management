@@ -511,9 +511,7 @@ export function ManageStudentsList({
                       Fill in the admission form to create a new student record.
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="max-h-[70vh] overflow-y-auto pr-1">
-                    <StudentEntryForm />
-                  </div>
+                  <StudentEntryForm />
                 </DialogContent>
               </Dialog>
             )}

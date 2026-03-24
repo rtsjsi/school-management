@@ -577,17 +577,15 @@ export function StudentEditDialog({ student, onSaved }: StudentEditDialogProps) 
             Update student information for {student.full_name}
           </DialogDescription>
         </DialogHeader>
-        <div className="max-h-[70vh] overflow-y-auto pr-1">
-          <StudentEditFormInline
-            student={student as Record<string, unknown> & { id: string; full_name: string }}
-            onCancel={() => setOpen(false)}
-            onSaved={() => {
-              setOpen(false);
-              if (onSaved) onSaved();
-              router.refresh();
-            }}
-          />
-        </div>
+        <StudentEditFormInline
+          student={student as Record<string, unknown> & { id: string; full_name: string }}
+          onCancel={() => setOpen(false)}
+          onSaved={() => {
+            setOpen(false);
+            if (onSaved) onSaved();
+            router.refresh();
+          }}
+        />
       </DialogContent>
     </Dialog>
   );
