@@ -20,24 +20,24 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from("fee_collections")
       .select(
-        "id, receipt_number, amount, fee_type, quarter, academic_year, payment_mode, collected_at, collected_by, modified_by, cheque_number, cheque_bank, cheque_date, online_transaction_id, online_transaction_ref, students(full_name, standard, division, roll_number, gr_number), collector:profiles!collected_by(full_name)"
+        "id, receipt_number, amount, fee_type, quarter, academic_year, payment_mode, collection_date, collected_by, modified_by, cheque_number, cheque_bank, cheque_date, online_transaction_id, online_transaction_ref, students(full_name, standard, division, roll_number, gr_number), collector:profiles!collected_by(full_name)"
       );
 
     // Date range
     if (dateFrom) {
-      query = query.gte("collected_at", `${dateFrom}T00:00:00`);
+      query = query.gte("collection_date", dateFrom);
     }
     if (dateTo) {
-      query = query.lte("collected_at", `${dateTo}T23:59:59`);
+      query = query.lte("collection_date", dateTo);
     }
 
     // Month filter (overrides date range if both provided)
     if (month) {
       const [y, m] = month.split("-");
-      const start = `${y}-${m}-01T00:00:00`;
+      const start = `${y}-${m}-01`;
       const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate();
-      const end = `${y}-${m}-${lastDay}T23:59:59`;
-      query = query.gte("collected_at", start).lte("collected_at", end);
+      const end = `${y}-${m}-${String(lastDay).padStart(2, "0")}`;
+      query = query.gte("collection_date", start).lte("collection_date", end);
     }
 
     if (academicYear) query = query.eq("academic_year", academicYear);
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     if (paymentMode) query = query.eq("payment_mode", paymentMode);
     if (studentId) query = query.eq("student_id", studentId);
 
-    let q = query.order("collected_at", { ascending: false });
+    let q = query.order("collection_date", { ascending: false });
     if (limit) {
       const n = Math.min(parseInt(limit, 10) || 20, 100);
       q = q.limit(n);
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
         quarter: row.quarter,
         academic_year: row.academic_year,
         payment_mode: row.payment_mode,
-        collected_at: row.collected_at,
+        collection_date: row.collection_date,
         collected_by: collectedByName,
         cheque_number: row.cheque_number,
         cheque_bank: row.cheque_bank,

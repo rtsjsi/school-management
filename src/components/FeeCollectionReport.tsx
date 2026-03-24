@@ -42,7 +42,7 @@ type ReportRow = {
   quarter: number;
   academic_year: string;
   payment_mode: string;
-  collected_at: string;
+  collection_date: string;
   collected_by?: string;
   cheque_number?: string;
   cheque_bank?: string;
@@ -147,7 +147,7 @@ export default function FeeCollectionReport() {
         quarter: row.quarter,
         academicYear: row.academic_year,
         feeType: row.fee_type,
-        collectedAt: row.collected_at,
+        collectedAt: new Date(`${row.collection_date}T12:00:00`).toISOString(),
         collectedBy: row.collected_by,
         chequeNumber: row.cheque_number,
         chequeBank: row.cheque_bank,
@@ -203,7 +203,7 @@ export default function FeeCollectionReport() {
         quarter: row.quarter,
         academicYear: row.academic_year,
         feeType: row.fee_type,
-        collectedAt: row.collected_at,
+        collectedAt: new Date(`${row.collection_date}T12:00:00`).toISOString(),
         collectedBy: row.collected_by,
         chequeNumber: row.cheque_number,
         chequeBank: row.cheque_bank,
@@ -450,7 +450,7 @@ export default function FeeCollectionReport() {
                         <TableCell className="hidden sm:table-cell">Q{row.quarter}</TableCell>
                         <TableCell className="capitalize hidden sm:table-cell">{row.payment_mode}</TableCell>
                         <TableCell className="text-muted-foreground text-sm hidden sm:table-cell">
-                          {row.collected_at ? new Date(row.collected_at).toLocaleDateString() : "—"}
+                          {row.collection_date ? new Date(`${row.collection_date}T12:00:00`).toLocaleDateString() : "—"}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">{row.collected_by ?? "—"}</TableCell>
                         <TableCell>
@@ -471,7 +471,7 @@ export default function FeeCollectionReport() {
                             <div><span className="text-muted-foreground">Type:</span> {getFeeTypeLabel(row.fee_type)}</div>
                             <div><span className="text-muted-foreground">Quarter:</span> Q{row.quarter}</div>
                             <div><span className="text-muted-foreground">Mode:</span> {row.payment_mode}</div>
-                            <div><span className="text-muted-foreground">Date:</span> {row.collected_at ? new Date(row.collected_at).toLocaleDateString() : "—"}</div>
+                            <div><span className="text-muted-foreground">Date:</span> {row.collection_date ? new Date(`${row.collection_date}T12:00:00`).toLocaleDateString() : "—"}</div>
                             <div><span className="text-muted-foreground">Collected By:</span> {row.collected_by ?? "—"}</div>
                           </TableCell>
                         </TableRow>

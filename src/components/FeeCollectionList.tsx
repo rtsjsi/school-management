@@ -28,7 +28,7 @@ type CollectionRow = {
   quarter: number;
   academic_year: string;
   payment_mode: string;
-  collected_at: string;
+  collection_date: string;
   collected_by?: string;
   cheque_number?: string;
   cheque_bank?: string;
@@ -100,7 +100,7 @@ async function generateAndPrintFallback(row: CollectionRow, school: SchoolInfo) 
     quarter: row.quarter,
     academicYear: row.academic_year,
     feeType: row.fee_type,
-    collectedAt: row.collected_at,
+    collectedAt: new Date(`${row.collection_date}T12:00:00`).toISOString(),
     amountInWords: amountInWords(Number(row.amount)),
     collectedBy: row.collected_by,
     policyNotes: DEFAULT_POLICY_NOTES,
@@ -174,7 +174,7 @@ async function downloadFallback(row: CollectionRow, school: SchoolInfo) {
     quarter: row.quarter,
     academicYear: row.academic_year,
     feeType: row.fee_type,
-    collectedAt: row.collected_at,
+    collectedAt: new Date(`${row.collection_date}T12:00:00`).toISOString(),
     amountInWords: amountInWords(Number(row.amount)),
     collectedBy: row.collected_by,
     policyNotes: DEFAULT_POLICY_NOTES,
@@ -250,7 +250,7 @@ export default function FeeCollectionList() {
                   <TableCell>{Number(row.amount).toLocaleString()}</TableCell>
                   <TableCell>Q{row.quarter}</TableCell>
                   <TableCell className="text-muted-foreground text-sm">
-                    {row.collected_at ? new Date(row.collected_at).toLocaleDateString() : "—"}
+                    {row.collection_date ? new Date(`${row.collection_date}T12:00:00`).toLocaleDateString() : "—"}
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
