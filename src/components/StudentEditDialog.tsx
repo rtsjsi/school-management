@@ -356,7 +356,7 @@ function StudentEditFormInline({ student, onSaved, onCancel }: StudentEditFormPr
                 <Input value={form.mother_name} onChange={(e) => set("mother_name", e.target.value)} required />
               </div>
               <div className="space-y-2">
-                <Label>Parent contact *</Label>
+                <Label htmlFor="parent_contact">Father contact *</Label>
                 <Input type="tel" value={form.parent_contact} onChange={(e) => set("parent_contact", e.target.value)} required />
               </div>
               <div className="space-y-2">
@@ -577,17 +577,15 @@ export function StudentEditDialog({ student, onSaved }: StudentEditDialogProps) 
             Update student information for {student.full_name}
           </DialogDescription>
         </DialogHeader>
-        <div className="max-h-[70vh] overflow-y-auto pr-1">
-          <StudentEditFormInline
-            student={student as Record<string, unknown> & { id: string; full_name: string }}
-            onCancel={() => setOpen(false)}
-            onSaved={() => {
-              setOpen(false);
-              if (onSaved) onSaved();
-              router.refresh();
-            }}
-          />
-        </div>
+        <StudentEditFormInline
+          student={student as Record<string, unknown> & { id: string; full_name: string }}
+          onCancel={() => setOpen(false)}
+          onSaved={() => {
+            setOpen(false);
+            if (onSaved) onSaved();
+            router.refresh();
+          }}
+        />
       </DialogContent>
     </Dialog>
   );
