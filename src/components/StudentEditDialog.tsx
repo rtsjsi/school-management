@@ -356,7 +356,7 @@ function StudentEditFormInline({ student, onSaved, onCancel }: StudentEditFormPr
                 <Input value={form.mother_name} onChange={(e) => set("mother_name", e.target.value)} required />
               </div>
               <div className="space-y-2">
-                <Label>Parent contact *</Label>
+                <Label htmlFor="parent_contact">Father contact *</Label>
                 <Input type="tel" value={form.parent_contact} onChange={(e) => set("parent_contact", e.target.value)} required />
               </div>
               <div className="space-y-2">
