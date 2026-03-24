@@ -150,6 +150,10 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
     };
 
     const addFormFieldOrder = [
+      "standard",
+      "division",
+      "roll_number",
+      "gr_number",
       "full_name",
       "date_of_birth",
       "gender",
@@ -171,9 +175,6 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
       "permanent_pincode",
       "permanent_country",
       "mother_tongue",
-      "standard",
-      "division",
-      "roll_number",
       "admission_date",
       "status",
       "category",
@@ -217,7 +218,6 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
       "guardian_education",
       "guardian_occupation",
       "udise_id",
-      "gr_number",
       "second_language",
       "is_rte_quota",
       "id",
