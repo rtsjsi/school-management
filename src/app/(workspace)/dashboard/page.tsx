@@ -26,11 +26,8 @@ export default async function DashboardPage() {
   const allowedStudentIds = applyClassFilter ? await getStudentIdsForAllowedClasses(user.id) : null;
 
   const now = new Date();
-  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10) + "T00:00:00";
-  const thisMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
-
-  const monthStart = thisMonthStart.slice(0, 10);
-  const monthEnd = thisMonthEnd.slice(0, 10);
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
 
   const { data: activeYear } = await supabase
     .from("academic_years")
@@ -86,8 +83,8 @@ export default async function DashboardPage() {
     supabase
       .from("fee_collections")
       .select("amount")
-      .gte("collected_at", thisMonthStart)
-      .lte("collected_at", thisMonthEnd),
+      .gte("collection_date", monthStart)
+      .lte("collection_date", monthEnd),
     supabase
       .from("expenses")
       .select("amount")

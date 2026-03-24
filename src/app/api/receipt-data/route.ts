@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
       .from("fee_collections")
       .select(`
         id, student_id, receipt_number, amount, fee_type, quarter, academic_year, payment_mode,
-        collected_at, collected_by, cheque_number, cheque_bank, cheque_date,
+        collection_date, collected_by, cheque_number, cheque_bank, cheque_date,
         online_transaction_id, online_transaction_ref,
         students(full_name, standard, division, roll_number, gr_number, fee_concession_amount),
         collector:profiles!collected_by(full_name)
@@ -58,16 +58,16 @@ export async function GET(request: NextRequest) {
       /** Cumulative paid up to and including this receipt (as on fee collection date), not all-time if later payments exist. */
       const { data: paidRows } = await supabase
         .from("fee_collections")
-        .select("id, amount, collected_at")
+        .select("id, amount, collection_date")
         .eq("student_id", studentId)
         .eq("academic_year", c.academic_year)
-        .order("collected_at", { ascending: true })
+        .order("collection_date", { ascending: true })
         .order("id", { ascending: true });
       const collectionId = (c as { id: string }).id;
-      const collectionTime = new Date((c as { collected_at: string }).collected_at).getTime();
+      const collectionTime = new Date(`${(c as { collection_date: string }).collection_date}T12:00:00`).getTime();
       let totalPaidAsOfCollection = 0;
       for (const r of paidRows ?? []) {
-        const rTime = new Date(r.collected_at).getTime();
+        const rTime = new Date(`${r.collection_date}T12:00:00`).getTime();
         if (rTime < collectionTime || (rTime === collectionTime && r.id <= collectionId)) {
           totalPaidAsOfCollection += Number(r.amount);
         }
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
       quarter: c.quarter,
       academicYear: c.academic_year,
       feeType: c.fee_type,
-      collectedAt: c.collected_at,
+      collectedAt: new Date(`${c.collection_date}T12:00:00`).toISOString(),
       collectedBy: collectedByName,
       chequeNumber: c.cheque_number,
       chequeBank: c.cheque_bank,

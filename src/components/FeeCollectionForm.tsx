@@ -35,32 +35,6 @@ type StudentOption = {
   fee_concession_amount?: number | null;
 };
 
-function formatIsoDateToMdy(isoDate: string): string {
-  const [yyyy, mm, dd] = isoDate.split("-");
-  if (!yyyy || !mm || !dd) return "";
-  return `${mm}-${dd}-${yyyy}`;
-}
-
-function parseMdyToIsoDate(input: string): string | null {
-  const trimmed = input.trim();
-  const match = /^(\d{2})-(\d{2})-(\d{4})$/.exec(trimmed);
-  if (!match) return null;
-  const mm = Number(match[1]);
-  const dd = Number(match[2]);
-  const yyyy = Number(match[3]);
-  if (mm < 1 || mm > 12) return null;
-  if (dd < 1 || dd > 31) return null;
-  const dt = new Date(Date.UTC(yyyy, mm - 1, dd));
-  if (
-    dt.getUTCFullYear() !== yyyy ||
-    dt.getUTCMonth() !== mm - 1 ||
-    dt.getUTCDate() !== dd
-  ) {
-    return null;
-  }
-  return `${String(yyyy).padStart(4, "0")}-${String(mm).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
-}
-
 function formatStudentDisplay(s: StudentOption): string {
   const cls = s.standard
     ? ` (${s.standard}${s.division ? "-" + s.division : ""})`
@@ -100,9 +74,6 @@ export default function FeeCollectionForm({
     online_transaction_ref: "",
     collection_date: todayIso,
   });
-  const [collectionDateInput, setCollectionDateInput] = useState<string>(() =>
-    formatIsoDateToMdy(todayIso)
-  );
 
   const school = useSchoolSettings();
   const classes = useMemo(() => {
@@ -260,9 +231,9 @@ export default function FeeCollectionForm({
     try {
       const supabase = createClient();
 
-      const collectionDateIso = parseMdyToIsoDate(collectionDateInput);
+      const collectionDateIso = form.collection_date;
       if (!collectionDateIso) {
-        const message = "Collection date must be in MM-DD-YYYY format.";
+        const message = "Collection date is required.";
         setError(message);
         toast({
           variant: "destructive",
@@ -272,10 +243,6 @@ export default function FeeCollectionForm({
         setLoading(false);
         return;
       }
-
-      const collectedAt = collectionDateIso
-        ? new Date(collectionDateIso + "T12:00:00").toISOString()
-        : new Date().toISOString();
 
       const { data: existingCollections } = await supabase
         .from("fee_collections")
@@ -318,10 +285,10 @@ export default function FeeCollectionForm({
             form.payment_mode === "online" ? form.online_transaction_id.trim() : null,
           online_transaction_ref: form.payment_mode === "online" ? form.online_transaction_ref.trim() || null : null,
           receipt_number: receiptNumber,
-          collected_at: collectedAt,
+          collection_date: collectionDateIso,
           collected_by: collectorProfileId,
         })
-        .select("id, students(full_name), collected_at")
+        .select("id, students(full_name), collection_date")
         .single();
 
       if (err) {
@@ -356,19 +323,21 @@ export default function FeeCollectionForm({
         const items = (structure.fee_structure_items as { fee_type: string; quarter: number; amount: number }[]) ?? [];
         const totalDues = annualNetFeeLiability(items, selectedStudent?.fee_concession_amount ?? null);
         totalFees = totalDues;
-        const collectionRow = collection as { id?: string; collected_at?: string };
+        const collectionRow = collection as { id?: string; collection_date?: string };
         const { data: paidRows } = await supabase
           .from("fee_collections")
-          .select("id, amount, collected_at")
+          .select("id, amount, collection_date")
           .eq("student_id", form.student_id)
           .eq("academic_year", form.academic_year)
-          .order("collected_at", { ascending: true })
+          .order("collection_date", { ascending: true })
           .order("id", { ascending: true });
         const cid = collectionRow.id ?? "";
-        const cTime = new Date(collectionRow.collected_at ?? Date.now()).getTime();
+        const cTime = new Date(
+          collectionRow.collection_date ? `${collectionRow.collection_date}T12:00:00` : Date.now()
+        ).getTime();
         let totalPaidAsOf = 0;
         for (const r of paidRows ?? []) {
-          const rTime = new Date(r.collected_at).getTime();
+          const rTime = new Date(`${r.collection_date}T12:00:00`).getTime();
           if (rTime < cTime || (rTime === cTime && r.id <= cid)) {
             totalPaidAsOf += Number(r.amount);
           }
@@ -384,7 +353,9 @@ export default function FeeCollectionForm({
         quarter: parseInt(form.quarter),
         academicYear: form.academic_year,
         feeType: COLLECTION_FEE_TYPE,
-        collectedAt: new Date((collection as { collected_at?: string })?.collected_at ?? Date.now()).toISOString(),
+        collectedAt: new Date(
+          ((collection as { collection_date?: string })?.collection_date ?? todayIso) + "T12:00:00"
+        ).toISOString(),
         amountInWords: amountInWords(amount),
         collectedBy: collectorFullName,
         policyNotes: DEFAULT_POLICY_NOTES,
@@ -468,7 +439,6 @@ export default function FeeCollectionForm({
         online_transaction_ref: "",
         collection_date: todayIso,
       });
-      setCollectionDateInput(formatIsoDateToMdy(todayIso));
       fetch("/api/receipt-number")
         .then((r) => r.json())
         .then((d) => d.receiptNumber && setReceiptNumber(d.receiptNumber))
@@ -509,20 +479,9 @@ export default function FeeCollectionForm({
             </Label>
             <Input
               id="collection_date"
-              type="text"
-              inputMode="numeric"
-              placeholder="MM-DD-YYYY"
-              value={collectionDateInput}
-              onChange={(e) => setCollectionDateInput(e.target.value)}
-              onBlur={() => {
-                const parsed = parseMdyToIsoDate(collectionDateInput);
-                if (parsed) {
-                  setForm((p) => ({ ...p, collection_date: parsed }));
-                  setCollectionDateInput(formatIsoDateToMdy(parsed));
-                } else {
-                  setCollectionDateInput(formatIsoDateToMdy(form.collection_date));
-                }
-              }}
+              type="date"
+              value={form.collection_date}
+              onChange={(e) => setForm((p) => ({ ...p, collection_date: e.target.value }))}
               className="h-9 text-sm w-[11rem]"
             />
           </div>
