@@ -35,18 +35,18 @@ type StudentOption = {
   fee_concession_amount?: number | null;
 };
 
-function formatIsoDateToMdy(isoDate: string): string {
+function formatIsoDateToDmy(isoDate: string): string {
   const [yyyy, mm, dd] = isoDate.split("-");
   if (!yyyy || !mm || !dd) return "";
-  return `${mm}-${dd}-${yyyy}`;
+  return `${dd}/${mm}/${yyyy}`;
 }
 
-function parseMdyToIsoDate(input: string): string | null {
+function parseDmyToIsoDate(input: string): string | null {
   const trimmed = input.trim();
-  const match = /^(\d{2})-(\d{2})-(\d{4})$/.exec(trimmed);
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(trimmed);
   if (!match) return null;
-  const mm = Number(match[1]);
-  const dd = Number(match[2]);
+  const dd = Number(match[1]);
+  const mm = Number(match[2]);
   const yyyy = Number(match[3]);
   if (mm < 1 || mm > 12) return null;
   if (dd < 1 || dd > 31) return null;
@@ -101,7 +101,7 @@ export default function FeeCollectionForm({
     collection_date: todayIso,
   });
   const [collectionDateInput, setCollectionDateInput] = useState<string>(() =>
-    formatIsoDateToMdy(todayIso)
+    formatIsoDateToDmy(todayIso)
   );
 
   const school = useSchoolSettings();
@@ -260,9 +260,9 @@ export default function FeeCollectionForm({
     try {
       const supabase = createClient();
 
-      const collectionDateIso = parseMdyToIsoDate(collectionDateInput);
+      const collectionDateIso = parseDmyToIsoDate(collectionDateInput);
       if (!collectionDateIso) {
-        const message = "Collection date must be in MM-DD-YYYY format.";
+        const message = "Collection date must be in DD/MM/YYYY format.";
         setError(message);
         toast({
           variant: "destructive",
@@ -468,7 +468,7 @@ export default function FeeCollectionForm({
         online_transaction_ref: "",
         collection_date: todayIso,
       });
-      setCollectionDateInput(formatIsoDateToMdy(todayIso));
+      setCollectionDateInput(formatIsoDateToDmy(todayIso));
       fetch("/api/receipt-number")
         .then((r) => r.json())
         .then((d) => d.receiptNumber && setReceiptNumber(d.receiptNumber))
@@ -511,16 +511,16 @@ export default function FeeCollectionForm({
               id="collection_date"
               type="text"
               inputMode="numeric"
-              placeholder="MM-DD-YYYY"
+              placeholder="DD/MM/YYYY"
               value={collectionDateInput}
               onChange={(e) => setCollectionDateInput(e.target.value)}
               onBlur={() => {
-                const parsed = parseMdyToIsoDate(collectionDateInput);
+                const parsed = parseDmyToIsoDate(collectionDateInput);
                 if (parsed) {
                   setForm((p) => ({ ...p, collection_date: parsed }));
-                  setCollectionDateInput(formatIsoDateToMdy(parsed));
+                  setCollectionDateInput(formatIsoDateToDmy(parsed));
                 } else {
-                  setCollectionDateInput(formatIsoDateToMdy(form.collection_date));
+                  setCollectionDateInput(formatIsoDateToDmy(form.collection_date));
                 }
               }}
               className="h-9 text-sm w-[11rem]"
