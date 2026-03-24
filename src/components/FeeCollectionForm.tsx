@@ -35,6 +35,32 @@ type StudentOption = {
   fee_concession_amount?: number | null;
 };
 
+function formatIsoDateToMdy(isoDate: string): string {
+  const [yyyy, mm, dd] = isoDate.split("-");
+  if (!yyyy || !mm || !dd) return "";
+  return `${mm}-${dd}-${yyyy}`;
+}
+
+function parseMdyToIsoDate(input: string): string | null {
+  const trimmed = input.trim();
+  const match = /^(\d{2})-(\d{2})-(\d{4})$/.exec(trimmed);
+  if (!match) return null;
+  const mm = Number(match[1]);
+  const dd = Number(match[2]);
+  const yyyy = Number(match[3]);
+  if (mm < 1 || mm > 12) return null;
+  if (dd < 1 || dd > 31) return null;
+  const dt = new Date(Date.UTC(yyyy, mm - 1, dd));
+  if (
+    dt.getUTCFullYear() !== yyyy ||
+    dt.getUTCMonth() !== mm - 1 ||
+    dt.getUTCDate() !== dd
+  ) {
+    return null;
+  }
+  return `${String(yyyy).padStart(4, "0")}-${String(mm).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
+}
+
 function formatStudentDisplay(s: StudentOption): string {
   const cls = s.standard
     ? ` (${s.standard}${s.division ? "-" + s.division : ""})`
@@ -56,6 +82,7 @@ export default function FeeCollectionForm({
 }) {
   const router = useRouter();
   const { toast } = useToast();
+  const todayIso = new Date().toISOString().slice(0, 10);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [receiptNumber, setReceiptNumber] = useState<string>("");
@@ -71,8 +98,11 @@ export default function FeeCollectionForm({
     cheque_date: "",
     online_transaction_id: "",
     online_transaction_ref: "",
-    collection_date: new Date().toISOString().slice(0, 10),
+    collection_date: todayIso,
   });
+  const [collectionDateInput, setCollectionDateInput] = useState<string>(() =>
+    formatIsoDateToMdy(todayIso)
+  );
 
   const school = useSchoolSettings();
   const classes = useMemo(() => {
@@ -230,8 +260,21 @@ export default function FeeCollectionForm({
     try {
       const supabase = createClient();
 
-      const collectedAt = form.collection_date
-        ? new Date(form.collection_date + "T12:00:00").toISOString()
+      const collectionDateIso = parseMdyToIsoDate(collectionDateInput);
+      if (!collectionDateIso) {
+        const message = "Collection date must be in MM-DD-YYYY format.";
+        setError(message);
+        toast({
+          variant: "destructive",
+          title: "Invalid collection date",
+          description: message,
+        });
+        setLoading(false);
+        return;
+      }
+
+      const collectedAt = collectionDateIso
+        ? new Date(collectionDateIso + "T12:00:00").toISOString()
         : new Date().toISOString();
 
       const { data: existingCollections } = await supabase
@@ -423,8 +466,9 @@ export default function FeeCollectionForm({
         cheque_date: "",
         online_transaction_id: "",
         online_transaction_ref: "",
-        collection_date: new Date().toISOString().slice(0, 10),
+        collection_date: todayIso,
       });
+      setCollectionDateInput(formatIsoDateToMdy(todayIso));
       fetch("/api/receipt-number")
         .then((r) => r.json())
         .then((d) => d.receiptNumber && setReceiptNumber(d.receiptNumber))
@@ -465,9 +509,20 @@ export default function FeeCollectionForm({
             </Label>
             <Input
               id="collection_date"
-              type="date"
-              value={form.collection_date}
-              onChange={(e) => setForm((p) => ({ ...p, collection_date: e.target.value }))}
+              type="text"
+              inputMode="numeric"
+              placeholder="MM-DD-YYYY"
+              value={collectionDateInput}
+              onChange={(e) => setCollectionDateInput(e.target.value)}
+              onBlur={() => {
+                const parsed = parseMdyToIsoDate(collectionDateInput);
+                if (parsed) {
+                  setForm((p) => ({ ...p, collection_date: parsed }));
+                  setCollectionDateInput(formatIsoDateToMdy(parsed));
+                } else {
+                  setCollectionDateInput(formatIsoDateToMdy(form.collection_date));
+                }
+              }}
               className="h-9 text-sm w-[11rem]"
             />
           </div>
