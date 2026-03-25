@@ -13,10 +13,26 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { getPromotionCandidates, runPromotion, type EnrollmentOutcome } from "@/app/(workspace)/dashboard/promotion/actions";
+
+function describeClientError(e: unknown): string {
+  if (e instanceof Error) {
+    const parts: string[] = [e.message];
+    let c: unknown = e.cause;
+    for (let i = 0; i < 4 && c instanceof Error; i++) {
+      parts.push(c.message);
+      c = c.cause;
+    }
+    return parts.join(" — ");
+  }
+  return String(e);
+}
 
 export function PromotionRunner() {
   const router = useRouter();
+  const { toast } = useToast();
   const [years, setYears] = useState<{ id: string; name: string }[]>([]);
   const [standards, setStandards] = useState<{ id: string; name: string }[]>([]);
   const [divisions, setDivisions] = useState<{ id: string; name: string; standard_id: string }[]>([]);
@@ -79,7 +95,7 @@ export function PromotionRunner() {
       setOutcomes(enhanced);
       setSelectedEnrollmentIds(new Set(enhanced.map((o) => o.enrollmentId)));
     } catch (e) {
-      setError(String(e));
+      setError(describeClientError(e));
     } finally {
       setLoading(false);
     }
@@ -112,20 +128,24 @@ export function PromotionRunner() {
     if (!selectedYearId || !selectedStandard || !selectedDivision || selectedEnrollmentIds.size === 0) return;
     const selected = outcomes.filter((o) => selectedEnrollmentIds.has(o.enrollmentId));
     if (selected.length === 0) return;
+    const promotedCount = selected.length;
     setRunning(true);
     setError(null);
     try {
       const result = await runPromotion(selectedYearId, selected);
       if (result.ok) {
+        toast({
+          title: "Promotion completed",
+          description: `Successfully processed ${promotedCount} student${promotedCount === 1 ? "" : "s"}. Enrollments are updated for the next academic year.`,
+        });
         router.refresh();
         setOutcomes([]);
         setSelectedEnrollmentIds(new Set());
-        setSelectedYearId("");
       } else {
         setError(result.error);
       }
     } catch (e) {
-      setError(String(e));
+      setError(describeClientError(e));
     } finally {
       setRunning(false);
     }
@@ -138,6 +158,7 @@ export function PromotionRunner() {
           <Label>Academic year to close</Label>
           <Select
             value={selectedYearId}
+            disabled={loading || running}
             onValueChange={(v) => {
               setSelectedYearId(v);
               setOutcomes([]);
@@ -160,6 +181,7 @@ export function PromotionRunner() {
           <Label>Standard *</Label>
           <Select
             value={selectedStandard}
+            disabled={loading || running}
             onValueChange={(v) => {
               setSelectedStandard(v);
               setSelectedDivision("");
@@ -182,7 +204,7 @@ export function PromotionRunner() {
           <Select
             value={selectedDivision}
             onValueChange={setSelectedDivision}
-            disabled={!selectedStandard}
+            disabled={!selectedStandard || loading || running}
           >
             <SelectTrigger>
               <SelectValue placeholder={selectedStandard ? "Select division" : "Select standard first"} />
@@ -200,11 +222,38 @@ export function PromotionRunner() {
       <div className="flex gap-2">
         <Button
           onClick={handleLoad}
-          disabled={!selectedYearId || !selectedStandard || !selectedDivision || loading}
+          disabled={
+            !selectedYearId ||
+            !selectedStandard ||
+            !selectedDivision ||
+            loading ||
+            running
+          }
         >
-          {loading ? "Loading…" : "Load enrollments"}
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+              Loading…
+            </>
+          ) : (
+            "Load enrollments"
+          )}
         </Button>
       </div>
+      {(loading || running) && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex items-center gap-2 rounded-md border border-primary/25 bg-primary/5 px-3 py-2.5 text-sm text-foreground"
+        >
+          <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" aria-hidden />
+          <span>
+            {loading
+              ? "Loading enrollment list…"
+              : "Running promotion… This may take a moment. Do not close this page."}
+          </span>
+        </div>
+      )}
       {error && <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>}
       {filteredOutcomes.length > 0 && (
         <div className="space-y-4">
@@ -215,6 +264,7 @@ export function PromotionRunner() {
                 <Button
                   type="button"
                   variant="outline"
+                  disabled={running || loading}
                   onClick={() =>
                     setSelectedEnrollmentIds(new Set(filteredOutcomes.map((o) => o.enrollmentId)))
                   }
@@ -224,13 +274,16 @@ export function PromotionRunner() {
                 <Button
                   type="button"
                   variant="outline"
+                  disabled={running || loading}
                   onClick={() => setSelectedEnrollmentIds(new Set())}
                 >
                   Clear
                 </Button>
               </div>
             </div>
-            <div className="rounded-md border max-h-[380px] overflow-y-auto">
+            <div
+              className={`rounded-md border max-h-[380px] overflow-y-auto transition-opacity ${running ? "pointer-events-none opacity-60" : ""}`}
+            >
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/50">
@@ -252,6 +305,7 @@ export function PromotionRunner() {
                       <tr key={o.enrollmentId} className="border-b">
                         <td className="p-2">
                           <Checkbox
+                            disabled={running || loading}
                             checked={selectedEnrollmentIds.has(o.enrollmentId)}
                             onCheckedChange={(checked) =>
                               setSelectedEnrollmentIds((prev) => {
@@ -281,6 +335,7 @@ export function PromotionRunner() {
                         <td className="p-2">
                           {o.nextStandardId && nextDivisions.length > 0 ? (
                             <Select
+                              disabled={running || loading}
                               value={o.nextDivisionId ?? undefined}
                               onValueChange={(val) =>
                                 setOutcomes((prev) =>
@@ -319,8 +374,15 @@ export function PromotionRunner() {
               </table>
             </div>
           </div>
-          <Button onClick={handleRun} disabled={running || selectedEnrollmentIds.size === 0}>
-            {running ? "Running…" : "Run Promotion"}
+          <Button onClick={handleRun} disabled={running || loading || selectedEnrollmentIds.size === 0}>
+            {running ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                Running…
+              </>
+            ) : (
+              "Run Promotion"
+            )}
           </Button>
         </div>
       )}
