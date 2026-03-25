@@ -141,7 +141,6 @@ export function PromotionRunner() {
         router.refresh();
         setOutcomes([]);
         setSelectedEnrollmentIds(new Set());
-        setSelectedYearId("");
       } else {
         setError(result.error);
       }
