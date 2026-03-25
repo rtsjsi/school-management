@@ -15,6 +15,19 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { getPromotionCandidates, runPromotion, type EnrollmentOutcome } from "@/app/(workspace)/dashboard/promotion/actions";
 
+function describeClientError(e: unknown): string {
+  if (e instanceof Error) {
+    const parts: string[] = [e.message];
+    let c: unknown = e.cause;
+    for (let i = 0; i < 4 && c instanceof Error; i++) {
+      parts.push(c.message);
+      c = c.cause;
+    }
+    return parts.join(" — ");
+  }
+  return String(e);
+}
+
 export function PromotionRunner() {
   const router = useRouter();
   const [years, setYears] = useState<{ id: string; name: string }[]>([]);
@@ -79,7 +92,7 @@ export function PromotionRunner() {
       setOutcomes(enhanced);
       setSelectedEnrollmentIds(new Set(enhanced.map((o) => o.enrollmentId)));
     } catch (e) {
-      setError(String(e));
+      setError(describeClientError(e));
     } finally {
       setLoading(false);
     }
@@ -125,7 +138,7 @@ export function PromotionRunner() {
         setError(result.error);
       }
     } catch (e) {
-      setError(String(e));
+      setError(describeClientError(e));
     } finally {
       setRunning(false);
     }

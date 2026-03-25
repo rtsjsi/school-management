@@ -2,6 +2,29 @@
 
 import { createClient } from "@/lib/supabase/server";
 
+function formatServerActionError(e: unknown): string {
+  if (e instanceof Error) {
+    const base = e.message;
+    const causeText =
+      e.cause instanceof Error
+        ? e.cause.message
+        : e.cause != null
+          ? String(e.cause)
+          : "";
+    if (base === "fetch failed" || base.includes("fetch failed")) {
+      return [
+        "Could not reach Supabase from the app server (network error).",
+        causeText && `Details: ${causeText}`,
+        "Verify NEXT_PUBLIC_SUPABASE_URL, your internet connection, VPN/firewall, and that the Supabase project is reachable.",
+      ]
+        .filter(Boolean)
+        .join(" ");
+    }
+    return causeText ? `${base} (${causeText})` : base;
+  }
+  return String(e);
+}
+
 export type EnrollmentOutcome = {
   enrollmentId: string;
   studentId: string;
@@ -130,7 +153,7 @@ export async function getPromotionCandidates(academicYearId: string): Promise<En
 
 export type RunPromotionResult = { ok: true } | { ok: false; error: string };
 
-export async function runPromotion(
+async function runPromotionImpl(
   academicYearId: string,
   outcomes: EnrollmentOutcome[]
 ): Promise<RunPromotionResult> {
@@ -198,4 +221,15 @@ export async function runPromotion(
   }
 
   return { ok: true };
+}
+
+export async function runPromotion(
+  academicYearId: string,
+  outcomes: EnrollmentOutcome[]
+): Promise<RunPromotionResult> {
+  try {
+    return await runPromotionImpl(academicYearId, outcomes);
+  } catch (e) {
+    return { ok: false, error: formatServerActionError(e) };
+  }
 }
