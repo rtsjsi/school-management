@@ -22,7 +22,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { FileText, Download, Printer, ChevronDown, ChevronUp } from "lucide-react";
+import { FileText, Download, Printer, ChevronDown, ChevronUp, Table2 } from "lucide-react";
+import { exportFeeCollectionExcel, exportFeeCollectionPdf } from "@/lib/fee-collection-report-export";
 import { fetchStandards, fetchAcademicYears } from "@/lib/lov";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 
@@ -130,6 +131,37 @@ export default function FeeCollectionReport() {
         setSummary(null);
       })
       .finally(() => setLoading(false));
+  };
+
+  const exportFileBase = () =>
+    `fee-collections-${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}`;
+
+  const buildExportSubtitle = (): string => {
+    const parts: string[] = [];
+    if (useMonth) parts.push(`Month: ${month}`);
+    else parts.push(`Period: ${dateFrom} to ${dateTo}`);
+    if (academicYear) parts.push(`Academic year: ${academicYear}`);
+    if (quarter) parts.push(`Quarter: Q${quarter}`);
+    if (paymentMode) parts.push(`Payment: ${paymentMode}`);
+    if (standardFilter) parts.push(`Standard: ${standardFilter}`);
+    if (studentId) {
+      const s = students.find((x) => x.id === studentId);
+      if (s) parts.push(`Student: ${s.full_name}`);
+    }
+    return parts.join(" · ");
+  };
+
+  const handleExportExcel = () => {
+    if (!data?.length) return;
+    exportFeeCollectionExcel(data, exportFileBase());
+  };
+
+  const handleExportPdf = () => {
+    if (!data?.length) return;
+    exportFeeCollectionPdf(data, exportFileBase(), {
+      schoolName: school.name || "Fee collection report",
+      subtitle: buildExportSubtitle(),
+    });
   };
 
   const getReceiptData = async (row: ReportRow) => {
@@ -403,7 +435,20 @@ export default function FeeCollectionReport() {
           )}
 
           {data !== null && (
-            <div className="border rounded-lg overflow-x-auto">
+            <div className="space-y-3">
+              {data.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" variant="outline" size="sm" className="gap-1" onClick={handleExportExcel}>
+                    <Table2 className="h-4 w-4" aria-hidden />
+                    Export Excel
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" className="gap-1" onClick={handleExportPdf}>
+                    <FileText className="h-4 w-4" aria-hidden />
+                    Export PDF
+                  </Button>
+                </div>
+              )}
+              <div className="border rounded-lg overflow-x-auto">
               {data.length > 0 ? (
                 <Table>
                   <TableHeader>
@@ -482,6 +527,7 @@ export default function FeeCollectionReport() {
               ) : (
                 <p className="p-6 text-sm text-muted-foreground text-center">No collections match the selected filters.</p>
               )}
+              </div>
             </div>
           )}
 

@@ -1,0 +1,88 @@
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
+import { getFeeTypeLabel } from "@/lib/utils";
+
+export type FeeReportExportRow = {
+  receipt_number: string;
+  student_name?: string;
+  student_standard?: string;
+  student_division?: string;
+  student_roll_number?: number;
+  student_gr_no?: string;
+  amount: number;
+  fee_type: string;
+  quarter: number;
+  academic_year: string;
+  payment_mode: string;
+  collection_date: string;
+  collected_by?: string;
+};
+
+function formatDate(isoDate: string): string {
+  if (!isoDate) return "";
+  return new Date(`${isoDate}T12:00:00`).toLocaleDateString();
+}
+
+export function exportFeeCollectionExcel(rows: FeeReportExportRow[], fileBase: string): void {
+  const sheetData = rows.map((row) => ({
+    Receipt: row.receipt_number,
+    Student: row.student_name ?? "",
+    Standard: row.student_standard ?? "",
+    Division: row.student_division ?? "",
+    Roll: row.student_roll_number ?? "",
+    "GR No": row.student_gr_no ?? "",
+    Amount: row.amount,
+    Type: getFeeTypeLabel(row.fee_type),
+    Quarter: `Q${row.quarter}`,
+    "Academic year": row.academic_year,
+    Mode: row.payment_mode,
+    Date: formatDate(row.collection_date),
+    "Collected by": row.collected_by ?? "",
+  }));
+  const ws = XLSX.utils.json_to_sheet(sheetData);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Collections");
+  XLSX.writeFile(wb, `${fileBase}.xlsx`);
+}
+
+export function exportFeeCollectionPdf(
+  rows: FeeReportExportRow[],
+  fileBase: string,
+  opts: { schoolName?: string; subtitle?: string }
+): void {
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  doc.setFontSize(12);
+  doc.text(opts.schoolName?.trim() || "Fee collection report", 14, 12);
+  let startY = 18;
+  if (opts.subtitle?.trim()) {
+    doc.setFontSize(9);
+    doc.setTextColor(80, 80, 80);
+    doc.text(opts.subtitle.trim(), 14, 18);
+    doc.setTextColor(0, 0, 0);
+    startY = 24;
+  }
+
+  const body = rows.map((row) => [
+    row.receipt_number,
+    String(row.student_name ?? "—").slice(0, 32),
+    [row.student_standard, row.student_division].filter(Boolean).join(" ") || "—",
+    String(row.amount),
+    getFeeTypeLabel(row.fee_type),
+    `Q${row.quarter}`,
+    String(row.payment_mode),
+    formatDate(row.collection_date) || "—",
+    String(row.collected_by ?? "—").slice(0, 22),
+  ]);
+
+  autoTable(doc, {
+    startY,
+    head: [["Receipt", "Student", "Std / Div", "Amount", "Type", "Qtr", "Mode", "Date", "Collected by"]],
+    body,
+    styles: { fontSize: 7, cellPadding: 1.5 },
+    headStyles: { fillColor: [30, 64, 175], textColor: 255 },
+    alternateRowStyles: { fillColor: [248, 250, 252] },
+  });
+
+  doc.save(`${fileBase}.pdf`);
+}
