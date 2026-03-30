@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getFeeTypeLabel } from "@/lib/utils";
+import { formatFeeCollectionDisplayDate, getFeeTypeLabel } from "@/lib/utils";
 import { generateReceiptPDF, amountInWords } from "@/lib/receipt-pdf";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -495,7 +495,7 @@ export default function FeeCollectionReport() {
                         <TableCell className="hidden sm:table-cell">Q{row.quarter}</TableCell>
                         <TableCell className="capitalize hidden sm:table-cell">{row.payment_mode}</TableCell>
                         <TableCell className="text-muted-foreground text-sm hidden sm:table-cell">
-                          {row.collection_date ? new Date(`${row.collection_date}T12:00:00`).toLocaleDateString() : "—"}
+                          {formatFeeCollectionDisplayDate(row.collection_date)}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">{row.collected_by ?? "—"}</TableCell>
                         <TableCell>
@@ -516,7 +516,7 @@ export default function FeeCollectionReport() {
                             <div><span className="text-muted-foreground">Type:</span> {getFeeTypeLabel(row.fee_type)}</div>
                             <div><span className="text-muted-foreground">Quarter:</span> Q{row.quarter}</div>
                             <div><span className="text-muted-foreground">Mode:</span> {row.payment_mode}</div>
-                            <div><span className="text-muted-foreground">Date:</span> {row.collection_date ? new Date(`${row.collection_date}T12:00:00`).toLocaleDateString() : "—"}</div>
+                            <div><span className="text-muted-foreground">Date:</span> {formatFeeCollectionDisplayDate(row.collection_date)}</div>
                             <div><span className="text-muted-foreground">Collected By:</span> {row.collected_by ?? "—"}</div>
                           </TableCell>
                         </TableRow>

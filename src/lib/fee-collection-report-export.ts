@@ -1,7 +1,7 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
-import { getFeeTypeLabel } from "@/lib/utils";
+import { formatFeeCollectionDisplayDate, getFeeTypeLabel } from "@/lib/utils";
 
 export type FeeReportExportRow = {
   receipt_number: string;
@@ -18,11 +18,6 @@ export type FeeReportExportRow = {
   collection_date: string;
   collected_by?: string;
 };
-
-function formatDate(isoDate: string): string {
-  if (!isoDate) return "";
-  return new Date(`${isoDate}T12:00:00`).toLocaleDateString();
-}
 
 function totalAmount(rows: FeeReportExportRow[]): number {
   return rows.reduce((sum, r) => sum + Number(r.amount), 0);
@@ -57,7 +52,7 @@ export function exportFeeCollectionExcel(rows: FeeReportExportRow[], fileBase: s
     Quarter: `Q${row.quarter}`,
     "Academic year": row.academic_year,
     Mode: row.payment_mode,
-    Date: formatDate(row.collection_date),
+    Date: formatFeeCollectionDisplayDate(row.collection_date, ""),
     "Collected by": row.collected_by ?? "",
   }));
 
@@ -100,7 +95,7 @@ export function exportFeeCollectionPdf(
     getFeeTypeLabel(row.fee_type),
     `Q${row.quarter}`,
     String(row.payment_mode),
-    formatDate(row.collection_date) || "—",
+    formatFeeCollectionDisplayDate(row.collection_date, ""),
     String(row.collected_by ?? "—").slice(0, 22),
   ]);
 

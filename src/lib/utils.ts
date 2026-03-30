@@ -20,3 +20,19 @@ export const FEE_TYPE_LABELS: Record<string, string> = {
 export function getFeeTypeLabel(feeType: string): string {
   return FEE_TYPE_LABELS[feeType] ?? feeType.charAt(0).toUpperCase() + feeType.slice(1).replace(/_/g, " ");
 }
+
+/**
+ * Fee collection / receipt dates shown as DD/MM/YYYY (not tied to the browser or OS locale).
+ * Accepts YYYY-MM-DD or an ISO datetime string.
+ */
+export function formatFeeCollectionDisplayDate(
+  value: string | null | undefined,
+  emptyDisplay: string = "—"
+): string {
+  if (value == null || String(value).trim() === "") return emptyDisplay;
+  const ymd = String(value).trim().slice(0, 10);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd);
+  if (!match) return String(value).trim();
+  const [, y, m, d] = match;
+  return `${d}/${m}/${y}`;
+}
