@@ -1,4 +1,5 @@
 import { jsPDF } from "jspdf";
+import { formatFeeCollectionDisplayDate } from "./utils";
 import { drawWrappedText } from "./pdf-utils";
 
 const ONES = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
@@ -122,13 +123,7 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
 
   const schoolName = data.schoolName ?? "SCHOOL NAME";
   const schoolAddress = data.schoolAddress ?? "Address";
-  const dateStr = data.collectedAt
-    ? new Date(data.collectedAt).toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      })
-    : "";
+  const dateStr = data.collectedAt ? formatFeeCollectionDisplayDate(data.collectedAt, "") : "";
   const periodText = data.periodLabel ?? quarterLabel(data.quarter);
   const amountWords = data.amountInWords ?? amountInWords(data.amount);
   const logoDataUrl = data.schoolLogoDataUrl ?? (data.schoolLogoUrl ? await urlToDataUrl(data.schoolLogoUrl) : null);
