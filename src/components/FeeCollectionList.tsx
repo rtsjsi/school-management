@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Download, Printer } from "lucide-react";
+import { formatFeeCollectionDisplayDate } from "@/lib/utils";
 
 type CollectionRow = {
   id: string;
@@ -250,7 +251,7 @@ export default function FeeCollectionList() {
                   <TableCell>{Number(row.amount).toLocaleString()}</TableCell>
                   <TableCell>Q{row.quarter}</TableCell>
                   <TableCell className="text-muted-foreground text-sm">
-                    {row.collection_date ? new Date(`${row.collection_date}T12:00:00`).toLocaleDateString() : "—"}
+                    {formatFeeCollectionDisplayDate(row.collection_date)}
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
