@@ -104,6 +104,8 @@ export function exportFeeCollectionPdf(
     startY = 24;
   }
 
+  const tableFontSize = 7;
+
   const body = rows.map((row) => [
     row.receipt_number,
     String(row.student_name ?? "—").slice(0, 32),
@@ -117,16 +119,42 @@ export function exportFeeCollectionPdf(
   ]);
 
   const sum = totalAmount(rows);
-  const foot: string[][] = [["Total amount", "", "", `₹${sum.toLocaleString("en-IN")}`, "", "", "", "", ""]];
+  const foot: import("jspdf-autotable").RowInput[] = [
+    [
+      {
+        content: `Total amount: ₹${sum.toLocaleString("en-IN")}`,
+        colSpan: 9,
+        styles: { halign: "right" },
+      },
+    ],
+  ];
 
   autoTable(doc, {
     startY,
     head: [["Receipt", "Student", "Std / Div", "Amount", "Type", "Qtr", "Mode", "Date", "Collected by"]],
     body,
     foot,
-    styles: { fontSize: 7, cellPadding: 1.5 },
-    headStyles: { fillColor: [30, 64, 175], textColor: 255 },
-    footStyles: { fillColor: [226, 232, 240], textColor: 0, fontStyle: "bold", fontSize: 8 },
+    styles: {
+      fontSize: tableFontSize,
+      cellPadding: 1.5,
+      font: "helvetica",
+      textColor: [15, 23, 42],
+    },
+    headStyles: {
+      fillColor: [30, 64, 175],
+      textColor: 255,
+      fontStyle: "bold",
+      fontSize: tableFontSize,
+      font: "helvetica",
+    },
+    footStyles: {
+      fillColor: [241, 245, 249],
+      textColor: [15, 23, 42],
+      fontStyle: "bold",
+      fontSize: tableFontSize,
+      font: "helvetica",
+      cellPadding: 1.5,
+    },
     alternateRowStyles: { fillColor: [248, 250, 252] },
   });
 
