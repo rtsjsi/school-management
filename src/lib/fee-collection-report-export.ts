@@ -23,7 +23,24 @@ function totalAmount(rows: FeeReportExportRow[]): number {
   return rows.reduce((sum, r) => sum + Number(r.amount), 0);
 }
 
-const emptyExcelRow = (): Record<string, string | number> => ({
+/** One row in the fee collection Excel sheet (data, blank separator, or total). */
+type FeeCollectionExcelRow = {
+  Receipt: string;
+  Student: string;
+  Standard: string;
+  Division: string;
+  Roll: string | number;
+  "GR No": string;
+  Amount: string | number;
+  Type: string;
+  Quarter: string;
+  "Academic year": string;
+  Mode: string;
+  Date: string;
+  "Collected by": string;
+};
+
+const emptyExcelRow = (): FeeCollectionExcelRow => ({
   Receipt: "",
   Student: "",
   Standard: "",
@@ -40,7 +57,7 @@ const emptyExcelRow = (): Record<string, string | number> => ({
 });
 
 export function exportFeeCollectionExcel(rows: FeeReportExportRow[], fileBase: string): void {
-  const sheetData = rows.map((row) => ({
+  const sheetData: FeeCollectionExcelRow[] = rows.map((row) => ({
     Receipt: row.receipt_number,
     Student: row.student_name ?? "",
     Standard: row.student_standard ?? "",
