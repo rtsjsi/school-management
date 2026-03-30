@@ -7,7 +7,8 @@ export type SubjectActionResult = { ok: true } | { ok: false; error: string };
 export async function createSubject(
   standardId: string,
   name: string,
-  evaluationType: "grade" | "mark"
+  evaluationType: "grade" | "mark",
+  subjectTeacherId: string | null = null
 ): Promise<SubjectActionResult> {
   const supabase = await createClient();
   const trimmed = name.trim();
@@ -18,6 +19,7 @@ export async function createSubject(
     name: trimmed,
     evaluation_type: evaluationType,
     sort_order: 999,
+    subject_teacher_id: subjectTeacherId || null,
   });
 
   if (error) return { ok: false, error: error.message };
@@ -27,7 +29,8 @@ export async function createSubject(
 export async function updateSubject(
   id: string,
   name: string,
-  evaluationType: "grade" | "mark"
+  evaluationType: "grade" | "mark",
+  subjectTeacherId: string | null = null
 ): Promise<SubjectActionResult> {
   const supabase = await createClient();
   const trimmed = name.trim();
@@ -35,7 +38,11 @@ export async function updateSubject(
 
   const { error } = await supabase
     .from("subjects")
-    .update({ name: trimmed, evaluation_type: evaluationType })
+    .update({
+      name: trimmed,
+      evaluation_type: evaluationType,
+      subject_teacher_id: subjectTeacherId || null,
+    })
     .eq("id", id);
 
   if (error) return { ok: false, error: error.message };
