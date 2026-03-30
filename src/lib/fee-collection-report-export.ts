@@ -24,6 +24,26 @@ function formatDate(isoDate: string): string {
   return new Date(`${isoDate}T12:00:00`).toLocaleDateString();
 }
 
+function totalAmount(rows: FeeReportExportRow[]): number {
+  return rows.reduce((sum, r) => sum + Number(r.amount), 0);
+}
+
+const emptyExcelRow = (): Record<string, string | number> => ({
+  Receipt: "",
+  Student: "",
+  Standard: "",
+  Division: "",
+  Roll: "",
+  "GR No": "",
+  Amount: "",
+  Type: "",
+  Quarter: "",
+  "Academic year": "",
+  Mode: "",
+  Date: "",
+  "Collected by": "",
+});
+
 export function exportFeeCollectionExcel(rows: FeeReportExportRow[], fileBase: string): void {
   const sheetData = rows.map((row) => ({
     Receipt: row.receipt_number,
@@ -40,6 +60,15 @@ export function exportFeeCollectionExcel(rows: FeeReportExportRow[], fileBase: s
     Date: formatDate(row.collection_date),
     "Collected by": row.collected_by ?? "",
   }));
+
+  const total = totalAmount(rows);
+  sheetData.push(emptyExcelRow());
+  sheetData.push({
+    ...emptyExcelRow(),
+    Receipt: "Total amount",
+    Amount: total,
+  });
+
   const ws = XLSX.utils.json_to_sheet(sheetData);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Collections");
@@ -75,12 +104,17 @@ export function exportFeeCollectionPdf(
     String(row.collected_by ?? "—").slice(0, 22),
   ]);
 
+  const sum = totalAmount(rows);
+  const foot: string[][] = [["Total amount", "", "", `₹${sum.toLocaleString("en-IN")}`, "", "", "", "", ""]];
+
   autoTable(doc, {
     startY,
     head: [["Receipt", "Student", "Std / Div", "Amount", "Type", "Qtr", "Mode", "Date", "Collected by"]],
     body,
+    foot,
     styles: { fontSize: 7, cellPadding: 1.5 },
     headStyles: { fillColor: [30, 64, 175], textColor: 255 },
+    footStyles: { fillColor: [226, 232, 240], textColor: 0, fontStyle: "bold", fontSize: 8 },
     alternateRowStyles: { fillColor: [248, 250, 252] },
   });
 
