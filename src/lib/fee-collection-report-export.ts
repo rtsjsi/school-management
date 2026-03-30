@@ -119,18 +119,22 @@ export function exportFeeCollectionPdf(
   ]);
 
   const sum = totalAmount(rows);
+  // Use "Rs." instead of ₹ — standard PDF fonts often corrupt U+20B9 (shows as junk / clips).
+  const totalLine = `Total amount: Rs. ${sum.toLocaleString("en-IN")}`;
   const foot: import("jspdf-autotable").RowInput[] = [
     [
+      { content: "", colSpan: 3 },
       {
-        content: `Total amount: ₹${sum.toLocaleString("en-IN")}`,
-        colSpan: 9,
-        styles: { halign: "right" },
+        content: totalLine,
+        colSpan: 6,
+        styles: { halign: "right", valign: "middle" },
       },
     ],
   ];
 
   autoTable(doc, {
     startY,
+    margin: { left: 12, right: 12 },
     head: [["Receipt", "Student", "Std / Div", "Amount", "Type", "Qtr", "Mode", "Date", "Collected by"]],
     body,
     foot,
