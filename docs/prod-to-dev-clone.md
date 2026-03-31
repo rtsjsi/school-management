@@ -4,10 +4,12 @@ Single command to fully clone the production Supabase database and storage into 
 
 ## What it does
 
-1. **Exports** all data from prod (auth users, all public tables, storage bucket files) to local `tmp/prod-export/`.
+1. **Exports** all data from prod (auth users, all public tables, storage bucket files) to `Clone/<timestamp>/`.
 2. **Flushes** all dev data (auth users, public tables).
 3. **Imports** everything into dev with all IDs preserved.
 4. Sets a default password (`Angel@123`) for all dev users.
+
+Each run creates a new timestamped folder under `Clone/`, so you always have historical backups.
 
 ## Tables cloned
 
@@ -41,8 +43,21 @@ npm run clone:prod-to-dev
 ## Output
 
 - Console shows progress for each step.
-- `tmp/clone-result.json` contains the final import summary.
-- `tmp/prod-export/` contains the exported data (also serves as a backup).
+- `Clone/<timestamp>/_clone-result.json` contains the final import summary.
+- Each run creates a new `Clone/<timestamp>/` folder with the full exported data as a backup.
+
+Example folder structure:
+```
+Clone/
+  2026-03-31_14-30-00/
+    auth.users.json
+    public.profiles.json
+    ...
+    storage/
+    _clone-result.json
+  2026-04-01_09-00-00/
+    ...
+```
 
 ## Safety notes
 

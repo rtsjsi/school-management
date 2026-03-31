@@ -8,7 +8,9 @@ const { spawnSync } = require("child_process");
 const { createClient } = require("@supabase/supabase-js");
 
 const repoRoot = process.cwd();
-const exportDir = path.join(repoRoot, "tmp", "prod-export");
+const timestamp = new Date().toISOString().replace(/[:.]/g, "-").replace("T", "_").slice(0, 19);
+const cloneRoot = path.join(repoRoot, "Clone");
+const exportDir = path.join(cloneRoot, timestamp);
 const DEFAULT_DEV_PASSWORD = "Angel@123";
 
 const PUBLIC_TABLES = [
@@ -366,7 +368,8 @@ async function main() {
   console.log(`CLONE COMPLETE. rows=${totalRows}, inserted=${totalOk}, failed=${totalFail}`);
   console.log("=".repeat(60));
 
-  writeJson(path.join(repoRoot, "tmp", "clone-result.json"), summary);
+  writeJson(path.join(exportDir, "_clone-result.json"), summary);
+  console.log(`Backup saved to: ${exportDir}`);
 }
 
 main().catch((err) => {
