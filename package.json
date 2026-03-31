@@ -13,6 +13,7 @@
     "db:push": "node scripts/by-branch.js db push",
     "push:all": "git push && npm run db:push",
     "supabase:link": "node scripts/by-branch.js link",
+    "clone:prod-to-dev": "node scripts/clone-prod-to-dev.js",
     "student-import-maps": "npx tsx scripts/student-import-maps.ts",
     "import-students-from-csv": "npx tsx scripts/import-students-from-csv.ts",
     "import-students-from-aems-xls": "npx tsx scripts/import-students-from-aems-xls-direct.ts",
@@ -60,7 +61,7 @@
     "eslint": "^8",
     "eslint-config-next": "14.2.35",
     "postcss": "^8",
-    "supabase": "^2.78.1",
+    "supabase": "^2.84.5",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
   }
