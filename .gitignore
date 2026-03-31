@@ -39,6 +39,12 @@ supabase/backups
 # local data (student lists, report cards, exports — do not commit)
 /data_files/
 
+# clone backups (prod-to-dev snapshots)
+/Clone/
+
+# temp files
+/tmp/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
