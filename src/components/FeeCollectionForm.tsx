@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { generateReceiptPDF, amountInWords } from "@/lib/receipt-pdf";
 import { AcademicYearSelect } from "@/components/AcademicYearSelect";
@@ -60,11 +61,17 @@ export default function FeeCollectionForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [receiptNumber, setReceiptNumber] = useState<string>("");
-  const [structureAmount, setStructureAmount] = useState<number | null>(null);
+  const [selectedQuarter, setSelectedQuarter] = useState<1 | 2 | 3 | 4>(1);
+  const [quarterSummary, setQuarterSummary] = useState<
+    Record<1 | 2 | 3 | 4, { net: number; paid: number }>
+  >({
+    1: { net: 0, paid: 0 },
+    2: { net: 0, paid: 0 },
+    3: { net: 0, paid: 0 },
+    4: { net: 0, paid: 0 },
+  });
   const [form, setForm] = useState({
     student_id: "",
-    amount: "",
-    quarter: "1",
     academic_year: "",
     payment_mode: "cash" as string,
     cheque_number: "",
@@ -132,7 +139,13 @@ export default function FeeCollectionForm({
 
   useEffect(() => {
     if (!selectedStudent?.standard || !form.academic_year) {
-      setStructureAmount(null);
+      setQuarterSummary({
+        1: { net: 0, paid: 0 },
+        2: { net: 0, paid: 0 },
+        3: { net: 0, paid: 0 },
+        4: { net: 0, paid: 0 },
+      });
+      setSelectedQuarter(1);
       return;
     }
     const supabase = createClient();
@@ -148,26 +161,52 @@ export default function FeeCollectionForm({
         return std && std === (selectedStudent.standard ?? "");
       });
       if (!structure) {
-        setStructureAmount(null);
+        setQuarterSummary({
+          1: { net: 0, paid: 0 },
+          2: { net: 0, paid: 0 },
+          3: { net: 0, paid: 0 },
+          4: { net: 0, paid: 0 },
+        });
+        setSelectedQuarter(1);
         return;
       }
       const items = (structure.fee_structure_items as { fee_type: string; quarter: number; amount: number }[]) ?? [];
       const lines = linesWithNetAfterConcession(items, selectedStudent.fee_concession_amount ?? null);
-      const quarterNum = parseInt(form.quarter);
-      const totalForQuarter = lines
-        .filter((l) => l.quarter === quarterNum)
-        .reduce((sum, l) => sum + l.net, 0);
-      setStructureAmount(totalForQuarter > 0 ? totalForQuarter : null);
-    })();
-  }, [selectedStudent?.standard, selectedStudent?.fee_concession_amount, form.quarter, form.academic_year]);
+      const netByQuarter: Record<1 | 2 | 3 | 4, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
+      for (const line of lines) {
+        if (line.quarter >= 1 && line.quarter <= 4) {
+          netByQuarter[line.quarter as 1 | 2 | 3 | 4] += Number(line.net ?? 0);
+        }
+      }
 
-  useEffect(() => {
-    if (structureAmount != null) {
-      setForm((p) => ({ ...p, amount: String(structureAmount) }));
-    } else {
-      setForm((p) => ({ ...p, amount: "" }));
-    }
-  }, [structureAmount]);
+      const { data: paidRows } = await supabase
+        .from("fee_collections")
+        .select("quarter, amount")
+        .eq("student_id", form.student_id)
+        .eq("academic_year", form.academic_year)
+        .eq("fee_type", COLLECTION_FEE_TYPE);
+
+      const paidByQuarter: Record<1 | 2 | 3 | 4, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
+      for (const row of paidRows ?? []) {
+        const q = Number(row.quarter);
+        if (q >= 1 && q <= 4) {
+          paidByQuarter[q as 1 | 2 | 3 | 4] += Number(row.amount ?? 0);
+        }
+      }
+
+      setQuarterSummary({
+        1: { net: netByQuarter[1], paid: paidByQuarter[1] },
+        2: { net: netByQuarter[2], paid: paidByQuarter[2] },
+        3: { net: netByQuarter[3], paid: paidByQuarter[3] },
+        4: { net: netByQuarter[4], paid: paidByQuarter[4] },
+      });
+
+      const firstDueQuarter = ([1, 2, 3, 4] as const).find(
+        (q) => netByQuarter[q] - paidByQuarter[q] > 0
+      );
+      setSelectedQuarter(firstDueQuarter ?? 1);
+    })();
+  }, [selectedStudent?.standard, selectedStudent?.fee_concession_amount, form.student_id, form.academic_year]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -182,10 +221,11 @@ export default function FeeCollectionForm({
       });
       return;
     }
-    const amount = parseFloat(form.amount);
-    if (isNaN(amount) || amount < 0) {
+    const amountDueForQuarter = Math.max(0, quarterSummary[selectedQuarter].net - quarterSummary[selectedQuarter].paid);
+    const amount = Number(amountDueForQuarter.toFixed(2));
+    if (amount <= 0) {
       const message =
-        "Amount is required. Ensure fee structure exists for this student's standard and quarter.";
+        "No due fees for selected quarter. Please select a quarter with pending due fees.";
       setError(message);
       toast({
         variant: "destructive",
@@ -249,7 +289,7 @@ export default function FeeCollectionForm({
         .select("id")
         .eq("student_id", form.student_id)
         .eq("academic_year", form.academic_year)
-        .eq("quarter", parseInt(form.quarter))
+        .eq("quarter", selectedQuarter)
         .eq("fee_type", COLLECTION_FEE_TYPE)
         .limit(1);
 
@@ -272,7 +312,7 @@ export default function FeeCollectionForm({
           student_id: form.student_id,
           amount,
           fee_type: COLLECTION_FEE_TYPE,
-          quarter: parseInt(form.quarter),
+          quarter: selectedQuarter,
           academic_year: form.academic_year,
           payment_mode: form.payment_mode,
           cheque_number: form.payment_mode === "cheque" ? form.cheque_number.trim() : null,
@@ -350,7 +390,7 @@ export default function FeeCollectionForm({
         studentName,
         amount,
         paymentMode: form.payment_mode,
-        quarter: parseInt(form.quarter),
+        quarter: selectedQuarter,
         academicYear: form.academic_year,
         feeType: COLLECTION_FEE_TYPE,
         collectedAt: new Date(
@@ -428,8 +468,6 @@ export default function FeeCollectionForm({
       setStudentInput("");
       setForm({
         student_id: "",
-        amount: "",
-        quarter: "1",
         academic_year: form.academic_year,
         payment_mode: "cash",
         cheque_number: "",
@@ -439,6 +477,7 @@ export default function FeeCollectionForm({
         online_transaction_ref: "",
         collection_date: todayIso,
       });
+      setSelectedQuarter(1);
       fetch("/api/receipt-number")
         .then((r) => r.json())
         .then((d) => d.receiptNumber && setReceiptNumber(d.receiptNumber))
@@ -608,52 +647,85 @@ export default function FeeCollectionForm({
           </div>
           <div className="space-y-1 min-w-0 flex-1 sm:flex-initial">
             <span className="text-xs font-medium text-muted-foreground block">Quarter *</span>
-            <div className="flex gap-1 flex-wrap" role="group" aria-label="Quarter">
+            <div className="flex gap-3 flex-wrap items-center" role="group" aria-label="Quarter">
               {([1, 2, 3, 4] as const).map((q) => (
-                <Button
+                (() => {
+                  const due = quarterSummary[q].net - quarterSummary[q].paid;
+                  const isDisabled = due <= 0;
+                  return (
+                <label
                   key={q}
-                  type="button"
-                  variant={form.quarter === String(q) ? "default" : "outline"}
-                  size="sm"
                   className={cn(
-                    "h-9 min-w-[2.75rem] px-2 text-sm font-medium",
-                    form.quarter === String(q) ? "" : "border-muted-foreground/25 text-muted-foreground"
+                    "flex items-center gap-1 text-sm",
+                    selectedQuarter === q ? "text-foreground font-medium" : "text-muted-foreground",
+                    isDisabled && "opacity-50 cursor-not-allowed"
                   )}
-                  onClick={() => setForm((p) => ({ ...p, quarter: String(q) }))}
                 >
+                  <Checkbox
+                    checked={selectedQuarter === q}
+                    disabled={isDisabled}
+                    onCheckedChange={(checked) => {
+                      if (checked && !isDisabled) setSelectedQuarter(q);
+                    }}
+                  />
                   Q{q}
-                </Button>
+                </label>
+                  );
+                })()
               ))}
             </div>
           </div>
           <div className="space-y-1 w-full sm:w-36 sm:ml-auto shrink-0">
             <Label htmlFor="amount" className="text-xs font-medium text-muted-foreground">
-              Net ₹ *
+              Due ₹ *
             </Label>
             <Input
               id="amount"
               type="number"
               min={0}
               step={0.01}
-              value={form.amount}
+              value={Math.max(0, quarterSummary[selectedQuarter].net - quarterSummary[selectedQuarter].paid)}
               readOnly
               title={concessionTitle}
               className={cn(
                 "h-9 text-base font-semibold tabular-nums bg-muted/80 border-transparent",
                 concessionTitle && "cursor-help"
               )}
-              placeholder={
-                structureAmount === null && selectedStudent ? "—" : "0"
-              }
+              placeholder="0"
             />
           </div>
+        </div>
+
+        <div className="border rounded-md overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40">
+              <tr>
+                <th className="text-left px-3 py-2 font-medium">Quarter</th>
+                <th className="text-right px-3 py-2 font-medium">Net Fees</th>
+                <th className="text-right px-3 py-2 font-medium">Paid Fees</th>
+              </tr>
+            </thead>
+            <tbody>
+              {([1, 2, 3, 4] as const).map((q) => (
+                <tr key={q} className="border-t">
+                  <td className="px-3 py-2">Q{q}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">
+                    {quarterSummary[q].net.toLocaleString("en-IN")}
+                  </td>
+                  <td className="px-3 py-2 text-right tabular-nums">
+                    {quarterSummary[q].paid.toLocaleString("en-IN")}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
 
         {/* Payment */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 pt-1 border-t border-border/50">
           <div className="space-y-1">
             <Label htmlFor="payment_mode" className="text-xs font-medium text-muted-foreground">
-              Pay *
+              Payment Method *
             </Label>
             <Select
               value={form.payment_mode}

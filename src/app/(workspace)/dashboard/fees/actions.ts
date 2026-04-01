@@ -60,18 +60,40 @@ export async function updateFeeStructure(
 
 export type FeeCollectionActionResult = { ok: true } | { ok: false; error: string };
 
+type FeeCollectionPaymentUpdateInput = {
+  paymentMode: string;
+  chequeNumber?: string | null;
+  chequeBank?: string | null;
+  chequeDate?: string | null;
+  onlineTransactionId?: string | null;
+  onlineTransactionRef?: string | null;
+  modificationRemarks: string;
+};
+
 export async function updateFeeCollection(
   id: string,
-  paymentMode: string,
-  modificationRemarks: string
+  data: FeeCollectionPaymentUpdateInput
 ): Promise<FeeCollectionActionResult> {
-  const remarks = modificationRemarks?.trim();
+  const remarks = data.modificationRemarks?.trim();
   if (!remarks) {
     return { ok: false, error: "Remarks are compulsory when modifying a fee collection entry." };
   }
   const validModes = ["cash", "cheque", "online"];
-  if (!validModes.includes(paymentMode)) {
+  if (!validModes.includes(data.paymentMode)) {
     return { ok: false, error: "Invalid payment mode." };
+  }
+  const paymentMode = data.paymentMode;
+  const chequeNumber = data.chequeNumber?.trim() || null;
+  const chequeBank = data.chequeBank?.trim() || null;
+  const chequeDate = data.chequeDate?.trim() || null;
+  const onlineTransactionId = data.onlineTransactionId?.trim() || null;
+  const onlineTransactionRef = data.onlineTransactionRef?.trim() || null;
+
+  if (paymentMode === "cheque" && !chequeNumber) {
+    return { ok: false, error: "Cheque number is required for cheque payment mode." };
+  }
+  if (paymentMode === "online" && !onlineTransactionId) {
+    return { ok: false, error: "Transaction ID is required for online payment mode." };
   }
 
   const supabase = await createClient();
@@ -86,6 +108,11 @@ export async function updateFeeCollection(
     .from("fee_collections")
     .update({
       payment_mode: paymentMode,
+      cheque_number: paymentMode === "cheque" ? chequeNumber : null,
+      cheque_bank: paymentMode === "cheque" ? chequeBank : null,
+      cheque_date: paymentMode === "cheque" ? chequeDate : null,
+      online_transaction_id: paymentMode === "online" ? onlineTransactionId : null,
+      online_transaction_ref: paymentMode === "online" ? onlineTransactionRef : null,
       modification_remarks: remarks,
       modified_by: user.id,
       updated_at: new Date().toISOString(),

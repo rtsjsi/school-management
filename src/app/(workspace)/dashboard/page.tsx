@@ -2,8 +2,8 @@ import { redirect } from "next/navigation";
 import { getUser, canViewFinance, isClerk, isPayrollRole, canAccessFees, canAccessPayroll } from "@/lib/auth";
 import { shouldApplyClassFilter, getStudentIdsForAllowedClasses } from "@/lib/class-access";
 import { createClient } from "@/lib/supabase/server";
+import { linesWithNetAfterConcession } from "@/lib/fee-concession";
 import {
-  BookOpen,
   GraduationCap,
   UserPlus,
   IndianRupee,
@@ -68,16 +68,17 @@ export default async function DashboardPage() {
     studentsCountRes,
     activeStudentsCountRes,
     employeesCountRes,
-    standardsCountRes,
     rteStudentsCountRes,
     newAdmissionsCountRes,
     feeCollectedResult,
     expensesResult,
+    outstandingStudentsResult,
+    outstandingStructuresResult,
+    outstandingCollectionsResult,
   ] = await Promise.all([
     studentCountQuery({ count: "exact", head: true }),
     studentCountQuery({ count: "exact", head: true }, { status: "active" }),
     supabase.from("employees").select("*", { count: "exact", head: true }),
-    supabase.from("standards").select("*", { count: "exact", head: true }),
     studentCountQuery({ count: "exact", head: true }, { status: "active", is_rte_quota: true }),
     newAdmissionsPromise,
     supabase
@@ -90,12 +91,37 @@ export default async function DashboardPage() {
       .select("amount")
       .gte("expense_date", monthStart)
       .lte("expense_date", monthEnd),
+    activeYearName
+      ? (() => {
+          let q = supabase
+            .from("students")
+            .select("id, standard, fee_concession_amount, is_rte_quota")
+            .eq("status", "active");
+          if (studentIdFilter && studentIdFilter.length > 0) q = q.in("id", studentIdFilter);
+          return q;
+        })()
+      : Promise.resolve({ data: [] as unknown[] }),
+    activeYearName
+      ? supabase
+          .from("fee_structures")
+          .select("id, standards(name), fee_structure_items(fee_type, quarter, amount)")
+          .eq("academic_year", activeYearName)
+      : Promise.resolve({ data: [] as unknown[] }),
+    activeYearName
+      ? (() => {
+          let q = supabase
+            .from("fee_collections")
+            .select("student_id, quarter, fee_type, amount")
+            .eq("academic_year", activeYearName);
+          if (studentIdFilter && studentIdFilter.length > 0) q = q.in("student_id", studentIdFilter);
+          return q;
+        })()
+      : Promise.resolve({ data: [] as unknown[] }),
   ]);
 
   const studentsCount = studentsCountRes.count ?? 0;
   const activeStudentsCount = activeStudentsCountRes.count ?? 0;
   const employeesCount = employeesCountRes.count ?? 0;
-  const standardsCount = standardsCountRes.count ?? 0;
   const rteStudentsCount = rteStudentsCountRes.count ?? 0;
   const newAdmissionsCount = newAdmissionsCountRes.count ?? 0;
 
@@ -105,18 +131,55 @@ export default async function DashboardPage() {
   );
   const expensesThisMonth = (expensesResult.data ?? []).reduce((sum, r) => sum + Number(r.amount ?? 0), 0);
   const netThisMonth = feeCollected - expensesThisMonth;
+  const outstandingByQuarter: Record<1 | 2 | 3 | 4, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
+  let outstandingCurrentYear = 0;
+
+  if (activeYearName) {
+    const paidMap = new Map<string, number>();
+    (outstandingCollectionsResult.data ?? []).forEach((c: { student_id: string; quarter: number; fee_type: string; amount: number }) => {
+      const key = `${c.student_id}-${c.quarter}-${c.fee_type}`;
+      paidMap.set(key, (paidMap.get(key) ?? 0) + Number(c.amount ?? 0));
+    });
+
+    const structures = (outstandingStructuresResult.data ?? []) as {
+      standards?: { name?: string } | { name?: string }[] | null;
+      fee_structure_items?: { fee_type: string; quarter: number; amount: number }[];
+    }[];
+    const studentsForOutstanding = (outstandingStudentsResult.data ?? []) as {
+      id: string;
+      standard?: string | null;
+      is_rte_quota?: boolean | null;
+      fee_concession_amount?: number | null;
+    }[];
+
+    for (const s of studentsForOutstanding) {
+      if (s.is_rte_quota) continue;
+      const structure = structures.find((st) => {
+        const std = Array.isArray(st.standards)
+          ? (st.standards[0] as { name?: string })?.name
+          : (st.standards as { name?: string } | null)?.name;
+        return std && std === (s.standard ?? "");
+      });
+      if (!structure) continue;
+
+      const items = structure.fee_structure_items ?? [];
+      const lines = linesWithNetAfterConcession(items, s.fee_concession_amount ?? null);
+      for (const line of lines) {
+        if (line.quarter < 1 || line.quarter > 4) continue;
+        const key = `${s.id}-${line.quarter}-${line.fee_type}`;
+        const paid = paidMap.get(key) ?? 0;
+        const outstanding = Math.max(0, Number(line.net ?? 0) - paid);
+        outstandingByQuarter[line.quarter as 1 | 2 | 3 | 4] += outstanding;
+        outstandingCurrentYear += outstanding;
+      }
+    }
+  }
 
   const limitedOpsRole = isClerk(user) || isPayrollRole(user);
 
   const academicStatCards = limitedOpsRole
     ? []
     : [
-        {
-          title: "Standards",
-          value: String(standardsCount ?? 0),
-          description: "View standards",
-          icon: BookOpen,
-        },
         {
           title: "Active students",
           value: String(activeStudentsCount ?? 0),
@@ -136,6 +199,41 @@ export default async function DashboardPage() {
           icon: AlertCircle,
         },
       ];
+
+  const outstandingCards = canAccessFees(user)
+    ? [
+        {
+          title: "Outstanding fees (current year)",
+          value: formatCurrency(outstandingCurrentYear),
+          description: activeYearName || "Set active academic year",
+          icon: AlertCircle,
+        },
+        {
+          title: "Outstanding Q1",
+          value: formatCurrency(outstandingByQuarter[1]),
+          description: activeYearName || "Set active academic year",
+          icon: AlertCircle,
+        },
+        {
+          title: "Outstanding Q2",
+          value: formatCurrency(outstandingByQuarter[2]),
+          description: activeYearName || "Set active academic year",
+          icon: AlertCircle,
+        },
+        {
+          title: "Outstanding Q3",
+          value: formatCurrency(outstandingByQuarter[3]),
+          description: activeYearName || "Set active academic year",
+          icon: AlertCircle,
+        },
+        {
+          title: "Outstanding Q4",
+          value: formatCurrency(outstandingByQuarter[4]),
+          description: activeYearName || "Set active academic year",
+          icon: AlertCircle,
+        },
+      ]
+    : [];
 
   const financeAdminCards = canViewFinance(user)
     ? [
@@ -163,6 +261,7 @@ export default async function DashboardPage() {
           description: "Staff & teachers",
           icon: UserPlus,
         },
+        ...outstandingCards,
       ]
     : [];
 
@@ -175,6 +274,7 @@ export default async function DashboardPage() {
             description: "Collections this month",
             icon: IndianRupee,
           },
+          ...outstandingCards,
         ]
       : [];
 
