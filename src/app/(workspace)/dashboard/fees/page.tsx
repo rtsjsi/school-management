@@ -29,7 +29,6 @@ export default async function FeesPage() {
       <Tabs defaultValue="collection" className="space-y-6">
         <TabsList className="flex flex-nowrap gap-1 w-full">
           <TabsTrigger value="collection">Fee Collection</TabsTrigger>
-          <TabsTrigger value="outstanding">Outstanding</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
           <TabsTrigger value="structure">Fee Structure</TabsTrigger>
         </TabsList>
@@ -48,12 +47,26 @@ export default async function FeesPage() {
           <FeeCollectionList />
         </TabsContent>
 
-        <TabsContent value="outstanding" className="space-y-6">
-          <OutstandingReport />
-        </TabsContent>
-
         <TabsContent value="reports" className="space-y-6">
-          <FeeCollectionReport />
+          <Tabs defaultValue="collection-report" className="space-y-4">
+            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 gap-1 h-auto p-1">
+              <TabsTrigger value="collection-report" className="py-2">
+                Collection Report
+              </TabsTrigger>
+              <TabsTrigger value="outstanding-report" className="py-2">
+                Outstanding Report
+              </TabsTrigger>
+            </TabsList>
+            <p className="text-xs text-muted-foreground">
+              Choose a report type to generate and analyze fee data.
+            </p>
+            <TabsContent value="collection-report" className="space-y-6">
+              <FeeCollectionReport />
+            </TabsContent>
+            <TabsContent value="outstanding-report" className="space-y-6">
+              <OutstandingReport />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
         <TabsContent value="structure" className="space-y-6">
