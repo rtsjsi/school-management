@@ -564,7 +564,7 @@ export default function FeeCollectionForm({
                 <Calendar
                   mode="single"
                   selected={isoToLocalDate(form.collection_date)}
-                  captionLayout="dropdown-years"
+                  captionLayout="dropdown"
                   startMonth={new Date(1950, 0)}
                   endMonth={new Date(2100, 11)}
                   onSelect={(date) => {
