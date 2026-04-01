@@ -1,6 +1,7 @@
 "use client";
 
 import { CalendarDays } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -42,8 +43,10 @@ export function DatePicker({
   startMonth = new Date(1950, 0),
   endMonth = new Date(2100, 11),
 }: DatePickerProps) {
+  const [open, setOpen] = useState(false);
+
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           type="button"
@@ -64,6 +67,7 @@ export function DatePicker({
           onSelect={(date) => {
             if (!date) return;
             onChange(localDateToIso(date));
+            setOpen(false);
           }}
           initialFocus
         />
