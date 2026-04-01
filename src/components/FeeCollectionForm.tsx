@@ -9,12 +9,15 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { generateReceiptPDF, amountInWords } from "@/lib/receipt-pdf";
 import { AcademicYearSelect } from "@/components/AcademicYearSelect";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 import { useToast } from "@/hooks/use-toast";
 import { annualNetFeeLiability, linesWithNetAfterConcession } from "@/lib/fee-concession";
+import { CalendarDays } from "lucide-react";
 
 const PAYMENT_MODES = ["cash", "cheque", "online"] as const;
 /** Stored on `fee_collections` / receipt label; amount field sums all fee types for the quarter. */
@@ -32,24 +35,17 @@ function formatIsoToDisplayDate(iso: string): string {
   return `${day}-${month}-${year}`;
 }
 
-function parseDisplayDateToIso(display: string): string | null {
-  const trimmed = display.trim();
-  const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(trimmed);
-  if (!m) return null;
-  const [, dd, mm, yyyy] = m;
-  const day = Number(dd);
-  const month = Number(mm);
-  const year = Number(yyyy);
-  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
-  const dt = new Date(year, month - 1, day);
-  if (
-    dt.getFullYear() !== year ||
-    dt.getMonth() !== month - 1 ||
-    dt.getDate() !== day
-  ) {
-    return null;
-  }
-  return `${yyyy}-${mm}-${dd}`;
+function isoToLocalDate(iso: string): Date | undefined {
+  const [year, month, day] = iso.split("-").map((n) => Number(n));
+  if (!year || !month || !day) return undefined;
+  return new Date(year, month - 1, day);
+}
+
+function localDateToIso(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
 type StudentOption = {
@@ -105,7 +101,7 @@ export default function FeeCollectionForm({
     cheque_date: "",
     online_transaction_id: "",
     online_transaction_ref: "",
-    collection_date: formatIsoToDisplayDate(todayIso),
+    collection_date: todayIso,
   });
 
   const school = useSchoolSettings();
@@ -307,9 +303,9 @@ export default function FeeCollectionForm({
     try {
       const supabase = createClient();
 
-      const collectionDateIso = parseDisplayDateToIso(form.collection_date);
+      const collectionDateIso = form.collection_date;
       if (!collectionDateIso) {
-        const message = "Collection date must be in DD-MM-YYYY format.";
+        const message = "Collection date is required.";
         setError(message);
         toast({
           variant: "destructive",
@@ -511,7 +507,7 @@ export default function FeeCollectionForm({
         cheque_date: "",
         online_transaction_id: "",
         online_transaction_ref: "",
-        collection_date: formatIsoToDisplayDate(todayIso),
+        collection_date: todayIso,
       });
       setSelectedQuarter(1);
       fetch("/api/receipt-number")
@@ -552,15 +548,31 @@ export default function FeeCollectionForm({
             <Label htmlFor="collection_date" className="text-xs font-medium text-muted-foreground">
               Collection Date *
             </Label>
-            <Input
-              id="collection_date"
-              type="text"
-              value={form.collection_date}
-              onChange={(e) => setForm((p) => ({ ...p, collection_date: e.target.value }))}
-              placeholder="DD-MM-YYYY"
-              inputMode="numeric"
-              className="h-9 text-sm w-[11rem]"
-            />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  id="collection_date"
+                  type="button"
+                  variant="outline"
+                  className="h-9 text-sm w-[11rem] justify-start font-normal"
+                >
+                  <CalendarDays className="h-4 w-4 mr-2" />
+                  {form.collection_date ? formatIsoToDisplayDate(form.collection_date) : "DD-MM-YYYY"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={isoToLocalDate(form.collection_date)}
+                  onSelect={(date) => {
+                    if (!date) return;
+                    setForm((p) => ({ ...p, collection_date: localDateToIso(date) }));
+                  }}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+            <p className="text-[11px] text-muted-foreground">Format: DD-MM-YYYY</p>
           </div>
           <div className="space-y-1 min-w-0 max-w-full sm:max-w-[min(100%,24rem)] text-right ml-auto">
             <Label className="text-xs font-medium text-muted-foreground block">Receipt No.</Label>
