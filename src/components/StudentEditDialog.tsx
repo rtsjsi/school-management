@@ -16,6 +16,7 @@ import { CATEGORIES, IN_STATES, studentFormFromRecord, formToPayload, type Stude
 import { StudentDocumentsPhotos } from "@/components/StudentDocumentsPhotos";
 import { StandardDivisionYearSelects } from "@/components/StandardDivisionYearSelects";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface StudentEditDialogProps {
   student: Record<string, unknown> & {
@@ -109,7 +110,7 @@ function StudentEditFormInline({ student, onSaved, onCancel }: StudentEditFormPr
               </div>
               <div className="space-y-2">
                 <Label>Date of birth *</Label>
-                <Input type="date" value={form.date_of_birth} onChange={(e) => set("date_of_birth", e.target.value)} />
+                <DatePicker value={form.date_of_birth} onChange={(isoDate) => set("date_of_birth", isoDate)} />
               </div>
               <div className="space-y-2">
                 <Label>Blood group *</Label>
@@ -393,7 +394,7 @@ function StudentEditFormInline({ student, onSaved, onCancel }: StudentEditFormPr
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Admission date *</Label>
-                <Input type="date" value={form.admission_date} onChange={(e) => set("admission_date", e.target.value)} />
+                <DatePicker value={form.admission_date} onChange={(isoDate) => set("admission_date", isoDate)} />
               </div>
               <StandardDivisionYearSelects
                 standard={form.standard}

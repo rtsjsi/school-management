@@ -784,13 +784,10 @@ export default function FeeCollectionForm({
                 <Label htmlFor="cheque_date" className="text-xs font-medium text-muted-foreground">
                   Chq date *
                 </Label>
-                <Input
-                  id="cheque_date"
-                  type="date"
+                <DatePicker
                   value={form.cheque_date}
-                  onChange={(e) => setForm((p) => ({ ...p, cheque_date: e.target.value }))}
+                  onChange={(isoDate) => setForm((p) => ({ ...p, cheque_date: isoDate }))}
                   className="h-9 text-sm"
-                  required
                 />
               </div>
             </>

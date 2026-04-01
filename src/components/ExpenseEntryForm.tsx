@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -228,12 +229,7 @@ export default function ExpenseEntryForm({
       )}
       <div className="space-y-2">
         <Label htmlFor="expense-date">Date</Label>
-        <Input
-          id="expense-date"
-          type="date"
-          value={form.expense_date}
-          onChange={(e) => setForm((p) => ({ ...p, expense_date: e.target.value }))}
-        />
+        <DatePicker value={form.expense_date} onChange={(isoDate) => setForm((p) => ({ ...p, expense_date: isoDate }))} />
       </div>
       <div className="space-y-2">
         <Label htmlFor="expense-voucher">Voucher</Label>
@@ -350,12 +346,7 @@ export default function ExpenseEntryForm({
             </div>
             <div className="space-y-2">
               <Label htmlFor="expense-cheque-date">Cheque Date</Label>
-              <Input
-                id="expense-cheque-date"
-                type="date"
-                value={form.cheque_date}
-                onChange={(e) => setForm((p) => ({ ...p, cheque_date: e.target.value }))}
-              />
+              <DatePicker value={form.cheque_date} onChange={(isoDate) => setForm((p) => ({ ...p, cheque_date: isoDate }))} />
             </div>
           </div>
         </div>

@@ -20,6 +20,7 @@ import { StudentDocumentsPhotos } from "@/components/StudentDocumentsPhotos";
 import { CameraCaptureButton } from "@/components/CameraCapture";
 import { StandardDivisionYearSelects } from "@/components/StandardDivisionYearSelects";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import Link from "next/link";
 import { Upload, FileText, ImageIcon } from "lucide-react";
 import {
@@ -357,7 +358,7 @@ export default function StudentEntryForm() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="date_of_birth">Date of birth *</Label>
-                <Input id="date_of_birth" type="date" value={form.date_of_birth} onChange={(e) => set("date_of_birth", e.target.value)} />
+                <DatePicker value={form.date_of_birth} onChange={(isoDate) => set("date_of_birth", isoDate)} />
               </div>
               <div className="space-y-2">
                 <Label>Blood group *</Label>
@@ -687,7 +688,7 @@ export default function StudentEntryForm() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="admission_date">Admission date *</Label>
-                <Input id="admission_date" type="date" value={form.admission_date} onChange={(e) => set("admission_date", e.target.value)} />
+                <DatePicker value={form.admission_date} onChange={(isoDate) => set("admission_date", isoDate)} />
               </div>
               <StandardDivisionYearSelects
                 standard={form.standard}
