@@ -649,21 +649,29 @@ export default function FeeCollectionForm({
             <span className="text-xs font-medium text-muted-foreground block">Quarter *</span>
             <div className="flex gap-3 flex-wrap items-center" role="group" aria-label="Quarter">
               {([1, 2, 3, 4] as const).map((q) => (
+                (() => {
+                  const due = quarterSummary[q].net - quarterSummary[q].paid;
+                  const isDisabled = due <= 0;
+                  return (
                 <label
                   key={q}
                   className={cn(
                     "flex items-center gap-1 text-sm",
-                    selectedQuarter === q ? "text-foreground font-medium" : "text-muted-foreground"
+                    selectedQuarter === q ? "text-foreground font-medium" : "text-muted-foreground",
+                    isDisabled && "opacity-50 cursor-not-allowed"
                   )}
                 >
                   <Checkbox
                     checked={selectedQuarter === q}
+                    disabled={isDisabled}
                     onCheckedChange={(checked) => {
-                      if (checked) setSelectedQuarter(q);
+                      if (checked && !isDisabled) setSelectedQuarter(q);
                     }}
                   />
                   Q{q}
                 </label>
+                  );
+                })()
               ))}
             </div>
           </div>
