@@ -29,7 +29,6 @@ import {
   Printer,
   ChevronDown,
   ChevronUp,
-  Table2,
   CalendarRange,
   Calendar,
   LayoutGrid,
@@ -43,10 +42,7 @@ import {
   Filter,
   X,
 } from "lucide-react";
-import {
-  exportFeeCollectionExcel,
-  exportFeeCollectionPdf,
-} from "@/lib/fee-collection-report-export";
+import { exportFeeCollectionPdf } from "@/lib/fee-collection-report-export";
 import { fetchStandards, fetchAcademicYears } from "@/lib/lov";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 
@@ -305,16 +301,12 @@ export default function FeeCollectionReport() {
     return parts.join("  ·  ");
   };
 
-  const handleExportExcel = () => {
-    if (!data?.length) return;
-    exportFeeCollectionExcel(data, exportFileBase());
-  };
-
   const handleExportPdf = () => {
-    if (!data?.length) return;
+    if (!data?.length || !summary) return;
     exportFeeCollectionPdf(data, exportFileBase(), {
-      schoolName: school.name || "Fee collection report",
+      schoolName: school.name || "Fee Collection Report",
       subtitle: buildExportSubtitle(),
+      summary,
     });
   };
 
@@ -656,10 +648,6 @@ export default function FeeCollectionReport() {
             <div className="space-y-3">
               {data.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  <Button type="button" variant="outline" size="sm" className="gap-1" onClick={handleExportExcel}>
-                    <Table2 className="h-4 w-4" aria-hidden />
-                    Export Excel
-                  </Button>
                   <Button type="button" variant="outline" size="sm" className="gap-1" onClick={handleExportPdf}>
                     <FileText className="h-4 w-4" aria-hidden />
                     Export PDF
