@@ -130,51 +130,9 @@ export default function StudentEntryForm() {
   const [pendingPhotos, setPendingPhotos] = useState<PendingPhotos>({});
   const [pendingDocuments, setPendingDocuments] = useState<PendingDocuments>({});
 
-  const requiredFields: { key: keyof ReturnType<typeof defaultForm>; label: string }[] = [
-    { key: "full_name", label: "Full name" },
-    { key: "date_of_birth", label: "Date of birth" },
-    { key: "gender", label: "Gender" },
-    { key: "blood_group", label: "Blood group" },
-    { key: "category", label: "Category" },
-    { key: "father_name", label: "Father name" },
-    { key: "mother_name", label: "Mother name" },
-    { key: "parent_contact", label: "Parent contact" },
-    { key: "whatsapp_no", label: "WhatsApp no" },
-    { key: "standard", label: "Standard" },
-    { key: "division", label: "Division" },
-    { key: "admission_date", label: "Admission date" },
-    { key: "roll_number", label: "Roll number" },
-    { key: "aadhar_no", label: "Aadhar No" },
-    { key: "pen_no", label: "PEN No" },
-    { key: "apaar_id", label: "APAR ID" },
-    { key: "udise_id", label: "UDISE ID" },
-    { key: "gr_number", label: "GR Number" },
-
-    // Structured present address (best practice)
-    { key: "present_address_line1", label: "Present address line 1" },
-    { key: "present_city", label: "Present city" },
-    { key: "present_district", label: "Present district" },
-    { key: "present_state", label: "Present state" },
-    { key: "present_pincode", label: "Present pincode" },
-  ];
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    for (const { key, label } of requiredFields) {
-      const val = form[key];
-      const str = typeof val === "string" ? val.trim() : "";
-      if (!str) {
-        const message = `${label} is required.`;
-        setError(message);
-        toast({
-          variant: "destructive",
-          title: "Please check the form",
-          description: message,
-        });
-        return;
-      }
-    }
 
     setLoading(true);
     try {
@@ -384,7 +342,7 @@ export default function StudentEntryForm() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="full_name">Full name *</Label>
-                <Input id="full_name" value={form.full_name} onChange={(e) => set("full_name", e.target.value)} placeholder="Student full name" required />
+                <Input id="full_name" value={form.full_name} onChange={(e) => set("full_name", e.target.value)} placeholder="Student full name" />
               </div>
               <div className="space-y-2">
                 <Label>Gender *</Label>
@@ -399,7 +357,7 @@ export default function StudentEntryForm() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="date_of_birth">Date of birth *</Label>
-                <Input id="date_of_birth" type="date" value={form.date_of_birth} onChange={(e) => set("date_of_birth", e.target.value)} required />
+                <Input id="date_of_birth" type="date" value={form.date_of_birth} onChange={(e) => set("date_of_birth", e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Blood group *</Label>
@@ -455,23 +413,23 @@ export default function StudentEntryForm() {
               </div>
               <div className="space-y-2">
                 <Label>Aadhar No *</Label>
-                <Input value={form.aadhar_no} onChange={(e) => set("aadhar_no", e.target.value)} placeholder="12-digit" required />
+                <Input value={form.aadhar_no} onChange={(e) => set("aadhar_no", e.target.value)} placeholder="12-digit" />
               </div>
               <div className="space-y-2">
                 <Label>PEN No *</Label>
-                <Input value={form.pen_no} onChange={(e) => set("pen_no", e.target.value)} required />
+                <Input value={form.pen_no} onChange={(e) => set("pen_no", e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>APAR ID *</Label>
-                <Input value={form.apaar_id} onChange={(e) => set("apaar_id", e.target.value)} required />
+                <Input value={form.apaar_id} onChange={(e) => set("apaar_id", e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>UDISE ID *</Label>
-                <Input value={form.udise_id} onChange={(e) => set("udise_id", e.target.value)} required />
+                <Input value={form.udise_id} onChange={(e) => set("udise_id", e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>GR Number *</Label>
-                <Input value={form.gr_number} onChange={(e) => set("gr_number", e.target.value)} required />
+                <Input value={form.gr_number} onChange={(e) => set("gr_number", e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Roll number *</Label>
@@ -480,7 +438,6 @@ export default function StudentEntryForm() {
                   value={form.roll_number}
                   onChange={(e) => set("roll_number", e.target.value)}
                   min={0}
-                  required
                 />
               </div>
             </div>
@@ -501,7 +458,6 @@ export default function StudentEntryForm() {
                 onChange={(e) => set("present_address_line1", e.target.value)}
                 placeholder="House/Flat, Society/Street, Area"
                 rows={2}
-                required
               />
             </div>
             <div className="space-y-2 sm:col-span-2">
@@ -515,7 +471,7 @@ export default function StudentEntryForm() {
             </div>
             <div className="space-y-2">
               <Label>Present city *</Label>
-              <Input value={form.present_city} onChange={(e) => set("present_city", e.target.value)} required />
+              <Input value={form.present_city} onChange={(e) => set("present_city", e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label>Present taluka/tehsil</Label>
@@ -523,7 +479,7 @@ export default function StudentEntryForm() {
             </div>
             <div className="space-y-2">
               <Label>Present district *</Label>
-              <Input value={form.present_district} onChange={(e) => set("present_district", e.target.value)} required />
+              <Input value={form.present_district} onChange={(e) => set("present_district", e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label>Present state *</Label>
@@ -544,7 +500,6 @@ export default function StudentEntryForm() {
                 value={form.present_pincode}
                 onChange={(e) => set("present_pincode", e.target.value.replace(/[^\d]/g, "").slice(0, 6))}
                 placeholder="6-digit"
-                required
               />
             </div>
             <div className="space-y-2">
@@ -653,15 +608,15 @@ export default function StudentEntryForm() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="father_name">Father name *</Label>
-                <Input id="father_name" value={form.father_name} onChange={(e) => set("father_name", e.target.value)} required />
+                <Input id="father_name" value={form.father_name} onChange={(e) => set("father_name", e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="mother_name">Mother name *</Label>
-                <Input id="mother_name" value={form.mother_name} onChange={(e) => set("mother_name", e.target.value)} required />
+                <Input id="mother_name" value={form.mother_name} onChange={(e) => set("mother_name", e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="parent_contact">Father contact *</Label>
-                <Input id="parent_contact" type="tel" value={form.parent_contact} onChange={(e) => set("parent_contact", e.target.value)} required />
+                <Input id="parent_contact" type="tel" value={form.parent_contact} onChange={(e) => set("parent_contact", e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Mother contact</Label>
@@ -673,7 +628,7 @@ export default function StudentEntryForm() {
               </div>
               <div className="space-y-2">
                 <Label>WhatsApp no *</Label>
-                <Input type="tel" value={form.whatsapp_no} onChange={(e) => set("whatsapp_no", e.target.value)} required />
+                <Input type="tel" value={form.whatsapp_no} onChange={(e) => set("whatsapp_no", e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Emergency contact name</Label>
@@ -732,7 +687,7 @@ export default function StudentEntryForm() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="admission_date">Admission date *</Label>
-                <Input id="admission_date" type="date" value={form.admission_date} onChange={(e) => set("admission_date", e.target.value)} required />
+                <Input id="admission_date" type="date" value={form.admission_date} onChange={(e) => set("admission_date", e.target.value)} />
               </div>
               <StandardDivisionYearSelects
                 standard={form.standard}
@@ -743,8 +698,6 @@ export default function StudentEntryForm() {
                   set("division", "");
                 }}
                 onDivisionChange={(v) => set("division", v)}
-                standardRequired
-                divisionRequired
                 showAcademicYear={false}
               />
               <div className="flex items-center space-x-2 sm:col-span-2">
