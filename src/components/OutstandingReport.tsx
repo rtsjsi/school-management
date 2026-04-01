@@ -81,16 +81,6 @@ type Summary = {
   totalPaid: number;
 };
 
-function computeSummary(data: OutstandingRow[]): Summary {
-  const studentIds = new Set(data.map((r) => r.student_id));
-  return {
-    totalStudents: studentIds.size,
-    totalOutstanding: data.reduce((s, r) => s + r.outstanding, 0),
-    totalFees: data.reduce((s, r) => s + r.total, 0),
-    totalPaid: data.reduce((s, r) => s + r.paid, 0),
-  };
-}
-
 export default function OutstandingReport() {
   const school = useSchoolSettings();
 
@@ -105,6 +95,7 @@ export default function OutstandingReport() {
   const [years, setYears] = useState<{ id: string; name: string }[]>([]);
 
   const [data, setData] = useState<OutstandingRow[] | null>(null);
+  const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -133,15 +124,11 @@ export default function OutstandingReport() {
     return students.filter((s) => s.standard === standardFilter);
   }, [students, standardFilter]);
 
-  const summary = useMemo<Summary | null>(() => {
-    if (!data || data.length === 0) return null;
-    return computeSummary(data);
-  }, [data]);
-
   const fetchReport = useCallback(() => {
     if (!academicYear) return;
     setLoading(true);
     setData(null);
+    setSummary(null);
     const params = new URLSearchParams();
     params.set("academicYear", academicYear);
 
@@ -162,8 +149,14 @@ export default function OutstandingReport() {
 
     fetch(`/api/outstanding-report?${params}`)
       .then((r) => r.json())
-      .then((d) => setData(d.data ?? []))
-      .catch(() => setData([]))
+      .then((d) => {
+        setData(d.data ?? []);
+        setSummary(d.summary ?? null);
+      })
+      .catch(() => {
+        setData([]);
+        setSummary(null);
+      })
       .finally(() => setLoading(false));
   }, [preset, academicYear, quarter, standardFilter, studentId]);
 
@@ -218,6 +211,7 @@ export default function OutstandingReport() {
   const handleResetAndPreset = (p: OutstandingPreset) => {
     setPreset(p);
     setData(null);
+    setSummary(null);
     if (p !== "class-wise" && p !== "student-wise") {
       setStandardFilter("");
       setStudentId("");
@@ -377,7 +371,7 @@ export default function OutstandingReport() {
                 variant="ghost"
                 size="sm"
                 className="gap-1 text-muted-foreground"
-                onClick={() => setData(null)}
+                onClick={() => { setData(null); setSummary(null); }}
               >
                 <X className="h-3.5 w-3.5" />
                 Clear Results
