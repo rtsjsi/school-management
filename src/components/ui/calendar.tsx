@@ -14,6 +14,11 @@ export function Calendar({
   showOutsideDays = true,
   ...props
 }: CalendarProps) {
+  const usesDropdownCaption =
+    props.captionLayout === "dropdown" ||
+    props.captionLayout === "dropdown-months" ||
+    props.captionLayout === "dropdown-years";
+
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
@@ -22,9 +27,18 @@ export function Calendar({
         root: "w-fit",
         months: "flex flex-col",
         month: "space-y-3",
-        month_caption: "flex justify-center items-center relative h-8",
-        caption_label: "text-sm font-semibold",
-        nav: "absolute inset-x-0 top-0 flex items-center justify-between",
+        month_caption: cn(
+          "flex justify-center items-center relative min-h-8",
+          usesDropdownCaption && "justify-start gap-2"
+        ),
+        caption_label: cn("text-sm font-semibold", usesDropdownCaption && "sr-only"),
+        dropdowns: "flex items-center gap-2",
+        dropdown_root: "rounded-md border border-input bg-background",
+        dropdown: "h-8 rounded-md bg-transparent px-2 text-sm outline-none",
+        nav: cn(
+          "absolute inset-x-0 top-0 flex items-center justify-between",
+          usesDropdownCaption && "hidden"
+        ),
         nav_button: cn(
           buttonVariants({ variant: "outline", size: "icon" }),
           "h-7 w-7 bg-transparent p-0 opacity-80 hover:opacity-100"
