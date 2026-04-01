@@ -26,6 +26,32 @@ const DEFAULT_POLICY_NOTES = [
   "(3) Cheque payment subject to realisation.",
 ];
 
+function formatIsoToDisplayDate(iso: string): string {
+  const [year, month, day] = iso.split("-");
+  if (!year || !month || !day) return "";
+  return `${day}-${month}-${year}`;
+}
+
+function parseDisplayDateToIso(display: string): string | null {
+  const trimmed = display.trim();
+  const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(trimmed);
+  if (!m) return null;
+  const [, dd, mm, yyyy] = m;
+  const day = Number(dd);
+  const month = Number(mm);
+  const year = Number(yyyy);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  const dt = new Date(year, month - 1, day);
+  if (
+    dt.getFullYear() !== year ||
+    dt.getMonth() !== month - 1 ||
+    dt.getDate() !== day
+  ) {
+    return null;
+  }
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 type StudentOption = {
   id: string;
   full_name: string;
@@ -73,13 +99,13 @@ export default function FeeCollectionForm({
   const [form, setForm] = useState({
     student_id: "",
     academic_year: "",
-    payment_mode: "cash" as string,
+    payment_mode: "",
     cheque_number: "",
     cheque_bank: "",
     cheque_date: "",
     online_transaction_id: "",
     online_transaction_ref: "",
-    collection_date: todayIso,
+    collection_date: formatIsoToDisplayDate(todayIso),
   });
 
   const school = useSchoolSettings();
@@ -234,6 +260,16 @@ export default function FeeCollectionForm({
       });
       return;
     }
+    if (!form.payment_mode) {
+      const message = "Please select a payment method.";
+      setError(message);
+      toast({
+        variant: "destructive",
+        title: "Missing payment method",
+        description: message,
+      });
+      return;
+    }
     if (form.payment_mode === "cheque") {
       if (!form.cheque_number?.trim()) {
         const message = "Cheque number is required for cheque payment.";
@@ -271,9 +307,9 @@ export default function FeeCollectionForm({
     try {
       const supabase = createClient();
 
-      const collectionDateIso = form.collection_date;
+      const collectionDateIso = parseDisplayDateToIso(form.collection_date);
       if (!collectionDateIso) {
-        const message = "Collection date is required.";
+        const message = "Collection date must be in DD-MM-YYYY format.";
         setError(message);
         toast({
           variant: "destructive",
@@ -469,13 +505,13 @@ export default function FeeCollectionForm({
       setForm({
         student_id: "",
         academic_year: form.academic_year,
-        payment_mode: "cash",
+        payment_mode: "",
         cheque_number: "",
         cheque_bank: "",
         cheque_date: "",
         online_transaction_id: "",
         online_transaction_ref: "",
-        collection_date: todayIso,
+        collection_date: formatIsoToDisplayDate(todayIso),
       });
       setSelectedQuarter(1);
       fetch("/api/receipt-number")
@@ -518,9 +554,11 @@ export default function FeeCollectionForm({
             </Label>
             <Input
               id="collection_date"
-              type="date"
+              type="text"
               value={form.collection_date}
               onChange={(e) => setForm((p) => ({ ...p, collection_date: e.target.value }))}
+              placeholder="DD-MM-YYYY"
+              inputMode="numeric"
               className="h-9 text-sm w-[11rem]"
             />
           </div>
@@ -728,11 +766,11 @@ export default function FeeCollectionForm({
               Payment Method *
             </Label>
             <Select
-              value={form.payment_mode}
+              value={form.payment_mode || undefined}
               onValueChange={(v) => setForm((p) => ({ ...p, payment_mode: v }))}
             >
               <SelectTrigger id="payment_mode" className="h-9 text-sm">
-                <SelectValue />
+                <SelectValue placeholder="Select payment method" />
               </SelectTrigger>
               <SelectContent>
                 {PAYMENT_MODES.map((m) => (

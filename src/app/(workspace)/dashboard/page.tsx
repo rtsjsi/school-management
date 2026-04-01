@@ -136,7 +136,13 @@ export default async function DashboardPage() {
 
   if (activeYearName) {
     const paidMap = new Map<string, number>();
-    (outstandingCollectionsResult.data ?? []).forEach((c: { student_id: string; quarter: number; fee_type: string; amount: number }) => {
+    const outstandingCollections = (outstandingCollectionsResult.data ?? []) as {
+      student_id: string;
+      quarter: number;
+      fee_type: string;
+      amount: number;
+    }[];
+    outstandingCollections.forEach((c) => {
       const key = `${c.student_id}-${c.quarter}-${c.fee_type}`;
       paidMap.set(key, (paidMap.get(key) ?? 0) + Number(c.amount ?? 0));
     });
