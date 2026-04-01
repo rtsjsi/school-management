@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -278,12 +279,7 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
             </div>
             <div className="space-y-2">
               <Label>Joining Date *</Label>
-              <Input
-                type="date"
-                value={form.joining_date}
-                onChange={(e) => setForm((p) => ({ ...p, joining_date: e.target.value }))}
-                required
-              />
+              <DatePicker value={form.joining_date} onChange={(isoDate) => setForm((p) => ({ ...p, joining_date: isoDate }))} />
             </div>
             <div className="space-y-2">
               <Label>Shift *</Label>

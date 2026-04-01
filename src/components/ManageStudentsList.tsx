@@ -36,6 +36,7 @@ import {
 import StudentEntryForm from "@/components/StudentEntryForm";
 import { StudentEditDialog } from "@/components/StudentEditDialog";
 import { StudentViewDialog } from "@/components/StudentViewDialog";
+import { DatePicker } from "@/components/ui/date-picker";
 
 type StudentRow = {
   id: string;
@@ -286,12 +287,7 @@ function StudentExitDialog({
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="exit_date">Exit date</Label>
-            <Input
-              id="exit_date"
-              type="date"
-              value={form.exit_date}
-              onChange={(e) => setForm((p) => ({ ...p, exit_date: e.target.value }))}
-            />
+            <DatePicker value={form.exit_date} onChange={(isoDate) => setForm((p) => ({ ...p, exit_date: isoDate }))} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="exit_reason">Reason</Label>

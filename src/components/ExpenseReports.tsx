@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -92,23 +93,11 @@ export default function ExpenseReports() {
             </div>
             <div className="space-y-2">
               <Label>From Date</Label>
-              <Input
-                className="h-9 w-full min-w-0"
-                type="date"
-                value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
-                placeholder="dd-mm-yyyy"
-              />
+              <DatePicker value={fromDate} onChange={setFromDate} className="h-9 w-full min-w-0" />
             </div>
             <div className="space-y-2">
               <Label>To Date</Label>
-              <Input
-                className="h-9 w-full min-w-0"
-                type="date"
-                value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
-                placeholder="dd-mm-yyyy"
-              />
+              <DatePicker value={toDate} onChange={setToDate} className="h-9 w-full min-w-0" />
             </div>
             <div className="space-y-2">
               <Label>Expense Head</Label>

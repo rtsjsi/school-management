@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
@@ -89,7 +90,7 @@ export default function HolidayForm() {
             </div>
             <div className="space-y-2">
               <Label>Date *</Label>
-              <Input type="date" value={form.date} onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))} required />
+              <DatePicker value={form.date} onChange={(isoDate) => setForm((p) => ({ ...p, date: isoDate }))} />
             </div>
             <div className="space-y-2">
               <Label>Name *</Label>

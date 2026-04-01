@@ -6,6 +6,7 @@ import { generateReceiptPDF, amountInWords } from "@/lib/receipt-pdf";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Select,
   SelectContent,
@@ -539,11 +540,11 @@ export default function FeeCollectionReport() {
                 <>
                   <div className="space-y-1.5">
                     <Label className="text-xs">From Date</Label>
-                    <Input className="h-9" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+                    <DatePicker value={dateFrom} onChange={setDateFrom} className="h-9" />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">To Date</Label>
-                    <Input className="h-9" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+                    <DatePicker value={dateTo} onChange={setDateTo} className="h-9" />
                   </div>
                 </>
               )}

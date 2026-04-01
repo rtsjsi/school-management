@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DatePicker } from "@/components/ui/date-picker";
 import { useToast } from "@/hooks/use-toast";
 import { updateFeeCollection } from "@/app/(workspace)/dashboard/fees/actions";
 import {
@@ -428,11 +429,10 @@ export default function FeeCollectionList() {
                 </div>
                 <div className="space-y-2">
                   <Label>Cheque Date</Label>
-                  <Input
-                    className="h-9"
-                    type="date"
+                  <DatePicker
                     value={editForm.cheque_date}
-                    onChange={(e) => setEditForm((prev) => ({ ...prev, cheque_date: e.target.value }))}
+                    onChange={(isoDate) => setEditForm((prev) => ({ ...prev, cheque_date: isoDate }))}
+                    className="h-9"
                   />
                 </div>
                 <div className="space-y-2 sm:col-span-2">
