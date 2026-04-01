@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DatePicker } from "@/components/ui/date-picker";
 import { cn } from "@/lib/utils";
 import { generateReceiptPDF, amountInWords } from "@/lib/receipt-pdf";
 import { AcademicYearSelect } from "@/components/AcademicYearSelect";
@@ -25,32 +26,6 @@ const DEFAULT_POLICY_NOTES = [
   "(2) Fees are not transferable.",
   "(3) Cheque payment subject to realisation.",
 ];
-
-function formatIsoToDisplayDate(iso: string): string {
-  const [year, month, day] = iso.split("-");
-  if (!year || !month || !day) return "";
-  return `${day}-${month}-${year}`;
-}
-
-function parseDisplayDateToIso(display: string): string | null {
-  const trimmed = display.trim();
-  const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(trimmed);
-  if (!m) return null;
-  const [, dd, mm, yyyy] = m;
-  const day = Number(dd);
-  const month = Number(mm);
-  const year = Number(yyyy);
-  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
-  const dt = new Date(year, month - 1, day);
-  if (
-    dt.getFullYear() !== year ||
-    dt.getMonth() !== month - 1 ||
-    dt.getDate() !== day
-  ) {
-    return null;
-  }
-  return `${yyyy}-${mm}-${dd}`;
-}
 
 type StudentOption = {
   id: string;
@@ -105,7 +80,7 @@ export default function FeeCollectionForm({
     cheque_date: "",
     online_transaction_id: "",
     online_transaction_ref: "",
-    collection_date: formatIsoToDisplayDate(todayIso),
+    collection_date: todayIso,
   });
 
   const school = useSchoolSettings();
@@ -307,9 +282,9 @@ export default function FeeCollectionForm({
     try {
       const supabase = createClient();
 
-      const collectionDateIso = parseDisplayDateToIso(form.collection_date);
+      const collectionDateIso = form.collection_date;
       if (!collectionDateIso) {
-        const message = "Collection date must be in DD-MM-YYYY format.";
+        const message = "Collection date is required.";
         setError(message);
         toast({
           variant: "destructive",
@@ -511,7 +486,7 @@ export default function FeeCollectionForm({
         cheque_date: "",
         online_transaction_id: "",
         online_transaction_ref: "",
-        collection_date: formatIsoToDisplayDate(todayIso),
+        collection_date: todayIso,
       });
       setSelectedQuarter(1);
       fetch("/api/receipt-number")
@@ -552,14 +527,10 @@ export default function FeeCollectionForm({
             <Label htmlFor="collection_date" className="text-xs font-medium text-muted-foreground">
               Collection Date *
             </Label>
-            <Input
-              id="collection_date"
-              type="text"
+            <DatePicker
               value={form.collection_date}
-              onChange={(e) => setForm((p) => ({ ...p, collection_date: e.target.value }))}
-              placeholder="DD-MM-YYYY"
-              inputMode="numeric"
-              className="h-9 text-sm w-[11rem]"
+              onChange={(isoDate) => setForm((p) => ({ ...p, collection_date: isoDate }))}
+              className="w-[11rem]"
             />
           </div>
           <div className="space-y-1 min-w-0 max-w-full sm:max-w-[min(100%,24rem)] text-right ml-auto">

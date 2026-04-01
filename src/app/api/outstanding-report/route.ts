@@ -55,6 +55,9 @@ export async function GET(request: NextRequest) {
     };
 
     const defaulters: Defaulter[] = [];
+    let summaryTotalFees = 0;
+    let summaryTotalPaid = 0;
+    const studentsWithDues = new Set<string>();
 
     for (const s of students ?? []) {
       if ((s as { is_rte_quota?: boolean }).is_rte_quota) continue;
@@ -79,7 +82,6 @@ export async function GET(request: NextRequest) {
       const quarterFilter = quarter ? parseInt(quarter) : null;
 
       if (quarterFilter) {
-        // Till-quarter: cumulative outstanding from Q1 through selected quarter, per fee_type
         const byFeeType: Record<string, { total: number; paid: number }> = {};
         for (let q = 1; q <= quarterFilter; q++) {
           for (const line of lines) {
@@ -94,8 +96,11 @@ export async function GET(request: NextRequest) {
           }
         }
         for (const [ft, v] of Object.entries(byFeeType)) {
+          summaryTotalFees += v.total;
+          summaryTotalPaid += v.paid;
           const outstandingTill = v.total - v.paid;
           if (outstandingTill > 0) {
+            studentsWithDues.add(s.id);
             defaulters.push({
               student_id: s.id,
               full_name: s.full_name ?? "—",
@@ -113,13 +118,15 @@ export async function GET(request: NextRequest) {
           }
         }
       } else {
-        // No quarter filter: show each quarter separately
         for (const line of lines) {
           const total = line.net;
           const key = `${s.id}-${line.quarter}-${line.fee_type}`;
           const paid = paidMap.get(key) ?? 0;
+          summaryTotalFees += total;
+          summaryTotalPaid += paid;
           const outstanding = total - paid;
           if (outstanding > 0) {
+            studentsWithDues.add(s.id);
             defaulters.push({
               student_id: s.id,
               full_name: s.full_name ?? "—",
@@ -146,11 +153,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       data: defaulters,
       academicYear: ay,
+      summary: {
+        totalStudents: studentsWithDues.size,
+        totalOutstanding: summaryTotalFees - summaryTotalPaid,
+        totalFees: summaryTotalFees,
+        totalPaid: summaryTotalPaid,
+      },
     });
   } catch {
     return NextResponse.json({
       data: [],
       academicYear: "",
+      summary: { totalStudents: 0, totalOutstanding: 0, totalFees: 0, totalPaid: 0 },
     });
   }
 }

@@ -1,50 +1,50 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import { formatFeeCollectionDisplayDate, getFeeTypeLabel } from "@/lib/utils";
+import { getFeeTypeLabel } from "@/lib/utils";
 import {
   C, fmtINR,
   drawSummaryCard, drawPdfHeader, drawFilterStrip, drawPageFooter,
 } from "@/lib/pdf-theme";
 
-export type FeeReportExportRow = {
-  receipt_number: string;
-  student_name?: string;
-  student_standard?: string;
-  student_division?: string;
-  student_roll_number?: number;
-  student_gr_no?: string;
-  amount: number;
-  fee_type: string;
+export type OutstandingExportRow = {
+  student_id: string;
+  full_name: string;
+  standard: string;
+  division: string;
+  roll_number?: number;
+  gr_number?: string;
   quarter: number;
-  academic_year: string;
-  payment_mode: string;
-  collection_date: string;
-  collected_by?: string;
+  quarter_label?: string;
+  fee_type: string;
+  total: number;
+  paid: number;
+  outstanding: number;
 };
 
-export type FeeReportSummary = {
-  totalCount: number;
-  totalAmount: number;
-  byMode: { payment_mode: string; count: number; total: number }[];
+export type OutstandingSummary = {
+  totalStudents: number;
+  totalOutstanding: number;
+  totalFees: number;
+  totalPaid: number;
 };
 
-export type FeeReportPdfOptions = {
+export type OutstandingPdfOptions = {
   schoolName?: string;
   subtitle?: string;
-  summary?: FeeReportSummary;
+  summary?: OutstandingSummary;
 };
 
-export function exportFeeCollectionPdf(
-  rows: FeeReportExportRow[],
+export function exportOutstandingPdf(
+  rows: OutstandingExportRow[],
   fileBase: string,
-  opts: FeeReportPdfOptions,
+  opts: OutstandingPdfOptions,
 ): void {
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const marginL = 12;
   const marginR = 12;
   const contentW = pageW - marginL - marginR;
-  const reportTitle = "Fees Collection Report";
+  const reportTitle = "Outstanding Fees Report";
 
   let curY = drawPdfHeader(doc, { schoolName: opts.schoolName, reportTitle }, marginL, marginR, contentW);
 
@@ -55,35 +55,35 @@ export function exportFeeCollectionPdf(
   // Summary cards
   const summary = opts.summary;
   if (summary) {
-    const modeCards = summary.byMode;
-    const totalCards = 2 + modeCards.length;
     const cardGap = 3;
+    const totalCards = 4;
     const cardW = (contentW - cardGap * (totalCards - 1)) / totalCards;
     const cardH = 20;
 
     drawSummaryCard(
       doc, marginL, curY, cardW, cardH,
-      "Total Collections", String(summary.totalCount),
-      summary.totalCount === 1 ? "receipt" : "receipts",
+      "Students with Dues", String(summary.totalStudents),
+      summary.totalStudents === 1 ? "student" : "students",
       C.foreground,
     );
 
     drawSummaryCard(
-      doc, marginL + cardW + cardGap, curY, cardW, cardH,
-      "Total Amount", fmtINR(summary.totalAmount), null,
-      C.green600,
+      doc, marginL + (cardW + cardGap), curY, cardW, cardH,
+      "Total Outstanding", fmtINR(summary.totalOutstanding), null,
+      C.destructive,
     );
 
-    modeCards.forEach((m, i) => {
-      const x = marginL + (cardW + cardGap) * (i + 2);
-      const modeLabel = m.payment_mode.charAt(0).toUpperCase() + m.payment_mode.slice(1);
-      drawSummaryCard(
-        doc, x, curY, cardW, cardH,
-        modeLabel, fmtINR(m.total),
-        `${m.count} receipt${m.count !== 1 ? "s" : ""}`,
-        C.foreground,
-      );
-    });
+    drawSummaryCard(
+      doc, marginL + (cardW + cardGap) * 2, curY, cardW, cardH,
+      "Total Fees", fmtINR(summary.totalFees), null,
+      C.foreground,
+    );
+
+    drawSummaryCard(
+      doc, marginL + (cardW + cardGap) * 3, curY, cardW, cardH,
+      "Total Paid", fmtINR(summary.totalPaid), null,
+      C.green600,
+    );
 
     curY += cardH + 5;
   }
@@ -91,27 +91,31 @@ export function exportFeeCollectionPdf(
   // Data table
   const body = rows.map((row, idx) => [
     String(idx + 1),
-    row.receipt_number,
-    String(row.student_name ?? "—").slice(0, 30),
-    [row.student_standard, row.student_division].filter(Boolean).join(" ") || "—",
-    fmtINR(Number(row.amount)),
+    String(row.full_name).slice(0, 28),
+    row.gr_number ?? "—",
+    row.standard,
+    row.division || "—",
+    row.quarter_label ?? `Q${row.quarter}`,
     getFeeTypeLabel(row.fee_type),
-    `Q${row.quarter}`,
-    String(row.payment_mode).charAt(0).toUpperCase() + String(row.payment_mode).slice(1),
-    formatFeeCollectionDisplayDate(row.collection_date, ""),
-    String(row.collected_by ?? "—").slice(0, 20),
+    fmtINR(row.total),
+    fmtINR(row.paid),
+    fmtINR(row.outstanding),
   ]);
 
-  const sum = rows.reduce((s, r) => s + Number(r.amount), 0);
+  const totalOutstanding = rows.reduce((s, r) => s + r.outstanding, 0);
+  const totalFees = rows.reduce((s, r) => s + r.total, 0);
+  const totalPaid = rows.reduce((s, r) => s + r.paid, 0);
 
   autoTable(doc, {
     startY: curY,
     margin: { left: marginL, right: marginR },
-    head: [["#", "Receipt", "Student", "Std / Div", "Amount", "Type", "Qtr", "Mode", "Date", "Collected By"]],
+    head: [["#", "Student", "GR No.", "Std", "Div", "Quarter", "Fee Type", "Total", "Paid", "Outstanding"]],
     body,
     foot: [[
-      { content: "", colSpan: 4 },
-      { content: `Total: ${fmtINR(sum)}`, colSpan: 6, styles: { halign: "right" as const, fontStyle: "bold" as const, fontSize: 8.5 } },
+      { content: "", colSpan: 7 },
+      { content: fmtINR(totalFees), styles: { halign: "right" as const, fontStyle: "bold" as const } },
+      { content: fmtINR(totalPaid), styles: { halign: "right" as const, fontStyle: "bold" as const } },
+      { content: fmtINR(totalOutstanding), styles: { halign: "right" as const, fontStyle: "bold" as const } },
     ]],
     theme: "grid",
     styles: {
@@ -141,7 +145,9 @@ export function exportFeeCollectionPdf(
     alternateRowStyles: { fillColor: C.background },
     columnStyles: {
       0: { cellWidth: 8, halign: "center" },
-      4: { halign: "right", fontStyle: "bold" },
+      7: { halign: "right" },
+      8: { halign: "right" },
+      9: { halign: "right", fontStyle: "bold" },
     },
     didDrawPage: (data) => {
       const currentPage = (doc as unknown as { internal: { getCurrentPageInfo: () => { pageNumber: number } } }).internal.getCurrentPageInfo().pageNumber;

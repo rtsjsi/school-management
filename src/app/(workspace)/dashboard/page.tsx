@@ -9,14 +9,20 @@ import {
   IndianRupee,
   AlertCircle,
   TrendingUp,
+  TrendingDown,
+  Users,
+  BookOpen,
+  Receipt,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-function formatCurrency(n: number) {
+function fmt(n: number) {
   return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
 }
 
-/** Stats / summary at /dashboard — sidebar label “Dashboard”. */
+function fmtNum(n: number) {
+  return new Intl.NumberFormat("en-IN").format(n);
+}
+
 export default async function DashboardPage() {
   const user = await getUser();
   if (!user) redirect("/login");
@@ -28,6 +34,7 @@ export default async function DashboardPage() {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
+  const monthLabel = now.toLocaleDateString("en-IN", { month: "long", year: "numeric" });
 
   const { data: activeYear } = await supabase
     .from("academic_years")
@@ -126,13 +133,14 @@ export default async function DashboardPage() {
   const newAdmissionsCount = newAdmissionsCountRes.count ?? 0;
 
   const feeCollected = (feeCollectedResult.data ?? []).reduce(
-    (sum, r) => sum + Number(r.amount ?? 0),
-    0
+    (sum, r) => sum + Number(r.amount ?? 0), 0
   );
   const expensesThisMonth = (expensesResult.data ?? []).reduce((sum, r) => sum + Number(r.amount ?? 0), 0);
   const netThisMonth = feeCollected - expensesThisMonth;
   const outstandingByQuarter: Record<1 | 2 | 3 | 4, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
   let outstandingCurrentYear = 0;
+  let totalFeesCurrentYear = 0;
+  let totalPaidCurrentYear = 0;
 
   if (activeYearName) {
     const paidMap = new Map<string, number>();
@@ -174,7 +182,10 @@ export default async function DashboardPage() {
         if (line.quarter < 1 || line.quarter > 4) continue;
         const key = `${s.id}-${line.quarter}-${line.fee_type}`;
         const paid = paidMap.get(key) ?? 0;
-        const outstanding = Math.max(0, Number(line.net ?? 0) - paid);
+        const feeAmount = Number(line.net ?? 0);
+        totalFeesCurrentYear += feeAmount;
+        totalPaidCurrentYear += Math.min(paid, feeAmount);
+        const outstanding = Math.max(0, feeAmount - paid);
         outstandingByQuarter[line.quarter as 1 | 2 | 3 | 4] += outstanding;
         outstandingCurrentYear += outstanding;
       }
@@ -182,145 +193,242 @@ export default async function DashboardPage() {
   }
 
   const limitedOpsRole = isClerk(user) || isPayrollRole(user);
+  const showAcademicSection = !limitedOpsRole;
+  const showFinanceSection = canViewFinance(user);
+  const showOutstandingSection = canAccessFees(user);
+  const showClerkFeeCard = canAccessFees(user) && !canViewFinance(user);
+  const showPayrollCard = canAccessPayroll(user) && !canViewFinance(user) && isPayrollRole(user);
 
-  const academicStatCards = limitedOpsRole
-    ? []
-    : [
-        {
-          title: "Active students",
-          value: String(activeStudentsCount ?? 0),
-          description: `${studentsCount ?? 0} total enrolled`,
-          icon: GraduationCap,
-        },
-        {
-          title: "New admissions (current year)",
-          value: String(newAdmissionsCount ?? 0),
-          description: activeYearName ? activeYearName : "Set active academic year",
-          icon: UserPlus,
-        },
-        {
-          title: "RTE quota students",
-          value: String(rteStudentsCount ?? 0),
-          description: "Active students under RTE",
-          icon: AlertCircle,
-        },
-      ];
+  const collectionPct = totalFeesCurrentYear > 0
+    ? Math.round((totalPaidCurrentYear / totalFeesCurrentYear) * 100)
+    : 0;
 
-  const outstandingCards = canAccessFees(user)
-    ? [
-        {
-          title: "Outstanding fees (current year)",
-          value: formatCurrency(outstandingCurrentYear),
-          description: activeYearName || "Set active academic year",
-          icon: AlertCircle,
-        },
-        {
-          title: "Outstanding Q1",
-          value: formatCurrency(outstandingByQuarter[1]),
-          description: activeYearName || "Set active academic year",
-          icon: AlertCircle,
-        },
-        {
-          title: "Outstanding Q2",
-          value: formatCurrency(outstandingByQuarter[2]),
-          description: activeYearName || "Set active academic year",
-          icon: AlertCircle,
-        },
-        {
-          title: "Outstanding Q3",
-          value: formatCurrency(outstandingByQuarter[3]),
-          description: activeYearName || "Set active academic year",
-          icon: AlertCircle,
-        },
-        {
-          title: "Outstanding Q4",
-          value: formatCurrency(outstandingByQuarter[4]),
-          description: activeYearName || "Set active academic year",
-          icon: AlertCircle,
-        },
-      ]
-    : [];
-
-  const financeAdminCards = canViewFinance(user)
-    ? [
-        {
-          title: "Fee collected (this month)",
-          value: formatCurrency(feeCollected),
-          description: "Collections this month",
-          icon: IndianRupee,
-        },
-        {
-          title: "Net this month",
-          value: formatCurrency(netThisMonth),
-          description: "Collections − expenses",
-          icon: TrendingUp,
-        },
-        {
-          title: "Expenses (this month)",
-          value: formatCurrency(expensesThisMonth),
-          description: "Approved expenses",
-          icon: TrendingUp,
-        },
-        {
-          title: "Total employees",
-          value: String(employeesCount ?? 0),
-          description: "Staff & teachers",
-          icon: UserPlus,
-        },
-        ...outstandingCards,
-      ]
-    : [];
-
-  const clerkFeeCards =
-    canAccessFees(user) && !canViewFinance(user)
-      ? [
-          {
-            title: "Fee collected (this month)",
-            value: formatCurrency(feeCollected),
-            description: "Collections this month",
-            icon: IndianRupee,
-          },
-          ...outstandingCards,
-        ]
-      : [];
-
-  const payrollEmployeeCard =
-    canAccessPayroll(user) && !canViewFinance(user) && isPayrollRole(user)
-      ? [
-          {
-            title: "Total employees",
-            value: String(employeesCount ?? 0),
-            description: "Staff & teachers",
-            icon: UserPlus,
-          },
-        ]
-      : [];
-
-  const statCards = [...academicStatCards, ...financeAdminCards, ...clerkFeeCards, ...payrollEmployeeCard];
+  const quarterLabels = ["Apr–Jun", "Jul–Sep", "Oct–Dec", "Jan–Mar"];
 
   return (
     <div className="space-y-8">
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {statCards.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={stat.title}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {stat.title}
-                </CardTitle>
-                <div className="rounded-lg bg-primary/10 p-2.5">
-                  <Icon className="h-4 w-4 text-primary" />
+      {/* ──── Academic Section ──── */}
+      {showAcademicSection && (
+        <section className="space-y-4">
+          <div className="flex items-center gap-2">
+            <BookOpen className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Academics</h2>
+            {activeYearName && (
+              <span className="ml-auto text-xs text-muted-foreground">{activeYearName}</span>
+            )}
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {/* Active Students — hero card */}
+            <div className="rounded-card border border-border bg-card p-5 shadow-card transition-shadow hover:shadow-card-hover">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">Active Students</p>
+                  <p className="text-3xl font-bold tracking-tight">{fmtNum(activeStudentsCount)}</p>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold tracking-tight text-foreground">{stat.value}</div>
-                <p className="text-xs text-muted-foreground mt-1">{stat.description}</p>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                <div className="rounded-xl bg-primary/10 p-2.5">
+                  <GraduationCap className="h-5 w-5 text-primary" />
+                </div>
+              </div>
+              <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
+                <span>{fmtNum(studentsCount)} total enrolled</span>
+                {rteStudentsCount > 0 && (
+                  <>
+                    <span className="text-border">|</span>
+                    <span>{fmtNum(rteStudentsCount)} RTE quota</span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* New Admissions */}
+            <div className="rounded-card border border-border bg-card p-5 shadow-card transition-shadow hover:shadow-card-hover">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">New Admissions</p>
+                  <p className="text-3xl font-bold tracking-tight">{fmtNum(newAdmissionsCount)}</p>
+                </div>
+                <div className="rounded-xl bg-green-500/10 p-2.5">
+                  <UserPlus className="h-5 w-5 text-green-600" />
+                </div>
+              </div>
+              <p className="mt-3 text-xs text-muted-foreground">
+                {activeYearName ?? "Set active academic year"}
+              </p>
+            </div>
+
+            {/* Employees — if visible */}
+            {(showFinanceSection || showPayrollCard) && (
+              <div className="rounded-card border border-border bg-card p-5 shadow-card transition-shadow hover:shadow-card-hover">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground">Total Employees</p>
+                    <p className="text-3xl font-bold tracking-tight">{fmtNum(employeesCount)}</p>
+                  </div>
+                  <div className="rounded-xl bg-violet-500/10 p-2.5">
+                    <Users className="h-5 w-5 text-violet-600" />
+                  </div>
+                </div>
+                <p className="mt-3 text-xs text-muted-foreground">Staff & teachers</p>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* ──── Finance Section ──── */}
+      {(showFinanceSection || showClerkFeeCard) && (
+        <section className="space-y-4">
+          <div className="flex items-center gap-2">
+            <IndianRupee className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+              Finance
+            </h2>
+            <span className="ml-auto text-xs text-muted-foreground">{monthLabel}</span>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {/* Fee Collected */}
+            <div className="rounded-card border border-border bg-card p-5 shadow-card transition-shadow hover:shadow-card-hover">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">Fee Collected</p>
+                  <p className="text-3xl font-bold tracking-tight text-green-600">{fmt(feeCollected)}</p>
+                </div>
+                <div className="rounded-xl bg-green-500/10 p-2.5">
+                  <IndianRupee className="h-5 w-5 text-green-600" />
+                </div>
+              </div>
+              <p className="mt-3 text-xs text-muted-foreground">Collections this month</p>
+            </div>
+
+            {showFinanceSection && (
+              <>
+                {/* Expenses */}
+                <div className="rounded-card border border-border bg-card p-5 shadow-card transition-shadow hover:shadow-card-hover">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground">Expenses</p>
+                      <p className="text-3xl font-bold tracking-tight">{fmt(expensesThisMonth)}</p>
+                    </div>
+                    <div className="rounded-xl bg-orange-500/10 p-2.5">
+                      <Receipt className="h-5 w-5 text-orange-600" />
+                    </div>
+                  </div>
+                  <p className="mt-3 text-xs text-muted-foreground">Approved expenses this month</p>
+                </div>
+
+                {/* Net */}
+                <div className="rounded-card border border-border bg-card p-5 shadow-card transition-shadow hover:shadow-card-hover">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground">Net Income</p>
+                      <p className={`text-3xl font-bold tracking-tight ${netThisMonth >= 0 ? "text-green-600" : "text-destructive"}`}>
+                        {fmt(netThisMonth)}
+                      </p>
+                    </div>
+                    <div className={`rounded-xl p-2.5 ${netThisMonth >= 0 ? "bg-green-500/10" : "bg-destructive/10"}`}>
+                      {netThisMonth >= 0
+                        ? <TrendingUp className="h-5 w-5 text-green-600" />
+                        : <TrendingDown className="h-5 w-5 text-destructive" />
+                      }
+                    </div>
+                  </div>
+                  <p className="mt-3 text-xs text-muted-foreground">Collections − expenses</p>
+                </div>
+              </>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* ──── Outstanding Fees Section ──── */}
+      {showOutstandingSection && activeYearName && (
+        <section className="space-y-4">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 text-destructive" />
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+              Outstanding Fees
+            </h2>
+            <span className="ml-auto text-xs text-muted-foreground">{activeYearName}</span>
+          </div>
+
+          {/* Total outstanding — featured card with progress */}
+          <div className="rounded-card border border-border bg-card p-5 shadow-card transition-shadow hover:shadow-card-hover">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="flex items-start gap-4 flex-1 min-w-0">
+                <div className="rounded-xl bg-destructive/10 p-3 shrink-0">
+                  <AlertCircle className="h-6 w-6 text-destructive" />
+                </div>
+                <div className="space-y-1 min-w-0">
+                  <p className="text-xs font-medium text-muted-foreground">Total Outstanding</p>
+                  <p className="text-3xl font-bold tracking-tight text-destructive">{fmt(outstandingCurrentYear)}</p>
+                </div>
+              </div>
+              {totalFeesCurrentYear > 0 && (
+                <div className="flex flex-col gap-1.5 sm:items-end sm:min-w-[180px]">
+                  <div className="flex items-center justify-between gap-4 text-xs text-muted-foreground w-full sm:justify-end">
+                    <span>Collected: {fmt(totalPaidCurrentYear)}</span>
+                    <span className="font-semibold text-foreground">{collectionPct}%</span>
+                  </div>
+                  <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-green-500 transition-all duration-500"
+                      style={{ width: `${Math.min(collectionPct, 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    of {fmt(totalFeesCurrentYear)} total fees
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Quarter breakdown — compact row */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {([1, 2, 3, 4] as const).map((q) => {
+              const qOutstanding = outstandingByQuarter[q];
+              return (
+                <div
+                  key={q}
+                  className="rounded-card border border-border bg-card p-4 shadow-card transition-shadow hover:shadow-card-hover"
+                >
+                  <p className="text-xs font-medium text-muted-foreground">Q{q} <span className="text-muted-foreground/70">({quarterLabels[q - 1]})</span></p>
+                  <p className={`text-lg font-bold tracking-tight mt-1 ${qOutstanding > 0 ? "text-destructive" : "text-green-600"}`}>
+                    {fmt(qOutstanding)}
+                  </p>
+                  {qOutstanding === 0 && (
+                    <p className="text-[10px] text-green-600 mt-0.5">All clear</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Payroll-only employee card (when no other sections show employees) */}
+      {showPayrollCard && !showAcademicSection && (
+        <section className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Payroll</h2>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="rounded-card border border-border bg-card p-5 shadow-card transition-shadow hover:shadow-card-hover">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">Total Employees</p>
+                  <p className="text-3xl font-bold tracking-tight">{fmtNum(employeesCount)}</p>
+                </div>
+                <div className="rounded-xl bg-violet-500/10 p-2.5">
+                  <Users className="h-5 w-5 text-violet-600" />
+                </div>
+              </div>
+              <p className="mt-3 text-xs text-muted-foreground">Staff & teachers</p>
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   );
 }
