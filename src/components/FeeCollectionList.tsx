@@ -380,7 +380,7 @@ export default function FeeCollectionList() {
                         }
                         aria-label="Download receipt"
                       >
-                        <Download className="h-3 w-3" />
+                        <Download className="h-3.5 w-3.5" />
                       </Button>
                       <Button
                         size="sm"
@@ -395,7 +395,7 @@ export default function FeeCollectionList() {
                         }
                         aria-label="Print receipt"
                       >
-                        <Printer className="h-3 w-3" />
+                        <Printer className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </TableCell>

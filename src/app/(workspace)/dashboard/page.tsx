@@ -7,7 +7,7 @@ import {
   GraduationCap,
   UserPlus,
   IndianRupee,
-  AlertCircle,
+  Wallet,
   TrendingUp,
   TrendingDown,
   Users,
@@ -344,7 +344,7 @@ export default async function DashboardPage() {
       {showOutstandingSection && activeYearName && (
         <section className="space-y-3 sm:space-y-4">
           <div className="flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 text-destructive" />
+            <Wallet className="h-4 w-4 text-destructive" />
             <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider sm:text-sm">
               Outstanding Fees
             </h2>
@@ -356,7 +356,7 @@ export default async function DashboardPage() {
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
               <div className="flex items-start gap-3 flex-1 min-w-0 sm:gap-4">
                 <div className="rounded-xl bg-destructive/10 p-2.5 shrink-0 sm:p-3">
-                  <AlertCircle className="h-5 w-5 text-destructive sm:h-6 sm:w-6" />
+                  <Wallet className="h-5 w-5 text-destructive sm:h-6 sm:w-6" />
                 </div>
                 <div className="space-y-1 min-w-0">
                   <p className="text-[10px] font-medium text-muted-foreground sm:text-xs">Total Outstanding</p>

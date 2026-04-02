@@ -32,7 +32,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, ChevronDown, ChevronRight, Download } from "lucide-react";
+import { Plus, Pencil, ChevronDown, ChevronRight } from "lucide-react";
+import { PdfIcon } from "@/components/ui/export-icons";
+import { useSchoolSettings } from "@/hooks/useSchoolSettings";
+import { exportStandardsPdf as exportStandardsReportPdf } from "@/lib/standards-report-export";
 
 type DivisionRow = { id: string; name: string; sort_order: number };
 
@@ -48,6 +51,7 @@ const SECTIONS = ["pre_primary", "primary", "secondary", "higher_secondary"] as 
 type StandardRow = { id: string; name: string; section: string; sort_order: number };
 
 export function ClassManagement() {
+  const school = useSchoolSettings();
   const router = useRouter();
   const [standards, setStandards] = useState<StandardRow[]>([]);
   const [addOpen, setAddOpen] = useState(false);
@@ -77,7 +81,7 @@ export function ClassManagement() {
     standard_divisions?: { name: string }[] | null;
   };
 
-  const exportStandards = async (format: "csv" | "xlsx" | "pdf") => {
+  const exportStandardsPdf = async () => {
     try {
       const { data, error } = await supabase
         .from("standards")
@@ -90,85 +94,22 @@ export function ClassManagement() {
       const standardsWithDivisions = (data ?? []) as StandardWithDivisions[];
       const rows =
         standardsWithDivisions.map((s) => ({
-          Standard: s.name,
-          Section: SECTION_LABELS[s.section] ?? s.section,
-          Divisions: ((s.standard_divisions as { name: string }[]) ?? []).map((d) => d.name).join(", "),
+          standard: s.name,
+          section: SECTION_LABELS[s.section] ?? s.section,
+          divisions: ((s.standard_divisions as { name: string }[]) ?? []).map((d) => d.name).join(", "),
+          divisionCount: ((s.standard_divisions as { name: string }[]) ?? []).length,
         })) ?? [];
       if (rows.length === 0) {
         alert("No standards to export.");
         return;
       }
-
-      if (format === "csv") {
-        const header = Object.keys(rows[0]).join(",");
-        const body = rows
-          .map((r) =>
-            Object.values(r)
-              .map((v) => {
-                const s = String(v ?? "");
-                if (s.includes(",") || s.includes("\"") || s.includes("\n")) {
-                  return `"${s.replace(/"/g, '""')}"`;
-                }
-                return s;
-              })
-              .join(",")
-          )
-          .join("\n");
-        const csv = `${header}\n${body}`;
-        const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "standards.csv";
-        a.click();
-        URL.revokeObjectURL(url);
-        return;
-      }
-
-      if (format === "xlsx") {
-        const XLSX = await import("xlsx");
-        const ws = XLSX.utils.json_to_sheet(rows);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Standards");
-        const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-        const blob = new Blob([wbout], {
-          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "standards.xlsx";
-        a.click();
-        URL.revokeObjectURL(url);
-        return;
-      }
-
-      if (format === "pdf") {
-        const { jsPDF } = await import("jspdf");
-        const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-        let y = 15;
-        doc.setFontSize(14);
-        doc.text("Standards", 10, y);
-        y += 8;
-        doc.setFontSize(10);
-        doc.text("Standard", 10, y);
-        doc.text("Section", 60, y);
-        doc.text("Divisions", 100, y);
-        y += 4;
-        doc.line(10, y, 200, y);
-        y += 4;
-        for (const row of rows) {
-          if (y > 280) {
-            doc.addPage();
-            y = 15;
-          }
-          doc.text(String(row.Standard), 10, y);
-          doc.text(String(row.Section), 60, y);
-          doc.text(String(row.Divisions ?? ""), 100, y, { maxWidth: 90 });
-          y += 5;
-        }
-        doc.save("standards.pdf");
-      }
+      const sections = Array.from(new Set(rows.map((r) => r.section)));
+      const subtitle = `${sections.join(", ")}  ·  ${rows.length} standard${rows.length !== 1 ? "s" : ""}`;
+      const fileBase = `standards-report-${new Date().toISOString().slice(0, 10)}`;
+      exportStandardsReportPdf(rows, fileBase, {
+        schoolName: school.name || "Standards Report",
+        subtitle,
+      });
     } catch {
       alert("Failed to export standards.");
     }
@@ -252,38 +193,15 @@ export function ClassManagement() {
             </DialogContent>
           </Dialog>
 
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="gap-1"
-              onClick={() => exportStandards("csv")}
-            >
-              <Download className="h-3 w-3" />
-              CSV
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="gap-1"
-              onClick={() => exportStandards("xlsx")}
-            >
-              <Download className="h-3 w-3" />
-              Excel
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="gap-1"
-              onClick={() => exportStandards("pdf")}
-            >
-              <Download className="h-3 w-3" />
-              PDF
-            </Button>
-          </div>
+          <Button
+            type="button"
+            size="sm"
+            className="gap-1.5 bg-red-600 hover:bg-red-700 text-white shadow-sm"
+            onClick={exportStandardsPdf}
+          >
+            <PdfIcon className="h-4 w-4" />
+            PDF
+          </Button>
         </div>
 
         {standards.length > 0 ? (

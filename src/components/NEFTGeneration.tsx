@@ -64,8 +64,8 @@ export default function NEFTGeneration() {
             {loading ? "Loading…" : "Preview"}
           </Button>
           {data && data.rows.length > 0 && (
-            <Button onClick={downloadNEFT}>
-              <FileDown className="h-4 w-4 mr-2" />
+            <Button size="sm" className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm" onClick={downloadNEFT}>
+              <FileDown className="h-4 w-4" />
               Download NEFT File
             </Button>
           )}

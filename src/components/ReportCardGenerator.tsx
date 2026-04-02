@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
+import { PdfIcon } from "@/components/ui/export-icons";
 import { generateReportCardPDF } from "@/lib/report-card-pdf";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 
@@ -191,8 +192,9 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
           </div>
         </div>
 
-        <Button onClick={handleGenerate} disabled={loading || !selectedExamId || !selectedStudentId}>
-          {loading ? "Generating…" : "Generate Report Card PDF"}
+        <Button size="sm" className="gap-1.5 bg-red-600 hover:bg-red-700 text-white shadow-sm" onClick={handleGenerate} disabled={loading || !selectedExamId || !selectedStudentId}>
+          <PdfIcon className="h-4 w-4" />
+          {loading ? "Generating…" : "Generate Report Card"}
         </Button>
       </CardContent>
     </Card>

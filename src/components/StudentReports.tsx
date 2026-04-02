@@ -12,7 +12,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Download, ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { ExcelIcon, PdfIcon } from "@/components/ui/export-icons";
+import { useSchoolSettings } from "@/hooks/useSchoolSettings";
+import { exportStudentsPdf } from "@/lib/student-report-export";
 import {
   Table,
   TableBody,
@@ -73,6 +76,7 @@ type StudentReportRow = {
 type AllowedClassNames = { standardName: string; divisionName: string }[];
 
 export function StudentReports({ allowedClassNames }: { allowedClassNames?: AllowedClassNames }) {
+  const school = useSchoolSettings();
   const supabase = useMemo(() => createClient(), []);
   const restrictByClass = allowedClassNames !== undefined;
   const allowedClassPairsKey = useMemo(() => {
@@ -132,134 +136,157 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
     });
   }, [rows, standardFilter, divisionFilter, rteFilter]);
 
-  const exportRows = () => {
-    const toLabel = (key: string) =>
-      key
-        .split("_")
-        .map((p) => (p ? p[0].toUpperCase() + p.slice(1) : p))
-        .join(" ");
+  const addFormFieldOrder = [
+    "standard",
+    "division",
+    "roll_number",
+    "gr_number",
+    "full_name",
+    "date_of_birth",
+    "gender",
+    "blood_group",
+    "present_address_line1",
+    "present_address_line2",
+    "present_city",
+    "present_taluka",
+    "present_district",
+    "present_state",
+    "present_pincode",
+    "present_country",
+    "permanent_address_line1",
+    "permanent_address_line2",
+    "permanent_city",
+    "permanent_taluka",
+    "permanent_district",
+    "permanent_state",
+    "permanent_pincode",
+    "permanent_country",
+    "mother_tongue",
+    "admission_date",
+    "status",
+    "category",
+    "religion",
+    "caste",
+    "birth_place",
+    "last_school",
+    "previous_school_address",
+    "previous_school_state_unique_id",
+    "birth_certificate_number",
+    "aadhar_no",
+    "pen_no",
+    "apaar_id",
+    "father_name",
+    "mother_name",
+    "parent_name",
+    "parent_contact",
+    "mother_contact",
+    "parent_email",
+    "guardian_name",
+    "guardian_contact",
+    "guardian_email",
+    "emergency_contact_name",
+    "emergency_contact_number",
+    "fee_concession_amount",
+    "fee_concession_reason",
+    "height",
+    "weight",
+    "hobby",
+    "sign_of_identity",
+    "father_education",
+    "father_occupation",
+    "mother_education",
+    "mother_occupation",
+    "whatsapp_no",
+    "account_holder_name",
+    "bank_name",
+    "bank_branch",
+    "bank_ifsc",
+    "account_no",
+    "guardian_education",
+    "guardian_occupation",
+    "udise_id",
+    "second_language",
+    "is_rte_quota",
+    "id",
+    "created_at",
+    "created_by",
+    "updated_at",
+    "updated_by",
+    "exit_date",
+    "exit_reason",
+    "exit_notes",
+  ] as const;
 
-    const normalizeExportValue = (value: unknown): string | number | boolean => {
-      if (value === null || value === undefined) return "";
-      if (typeof value === "boolean" || typeof value === "number") return value;
-      if (value instanceof Date) return value.toISOString();
-      if (typeof value === "string") return value;
-      try {
-        return JSON.stringify(value);
-      } catch {
-        return String(value);
-      }
-    };
+  const toLabel = (key: string) =>
+    key
+      .split("_")
+      .map((p) => (p ? p[0].toUpperCase() + p.slice(1) : p))
+      .join(" ");
 
-    const addFormFieldOrder = [
-      "standard",
-      "division",
-      "roll_number",
-      "gr_number",
-      "full_name",
-      "date_of_birth",
-      "gender",
-      "blood_group",
-      "present_address_line1",
-      "present_address_line2",
-      "present_city",
-      "present_taluka",
-      "present_district",
-      "present_state",
-      "present_pincode",
-      "present_country",
-      "permanent_address_line1",
-      "permanent_address_line2",
-      "permanent_city",
-      "permanent_taluka",
-      "permanent_district",
-      "permanent_state",
-      "permanent_pincode",
-      "permanent_country",
-      "mother_tongue",
-      "admission_date",
-      "status",
-      "category",
-      "religion",
-      "caste",
-      "birth_place",
-      "last_school",
-      "previous_school_address",
-      "previous_school_state_unique_id",
-      "birth_certificate_number",
-      "aadhar_no",
-      "pen_no",
-      "apaar_id",
-      "father_name",
-      "mother_name",
-      "parent_name",
-      "parent_contact",
-      "mother_contact",
-      "parent_email",
-      "guardian_name",
-      "guardian_contact",
-      "guardian_email",
-      "emergency_contact_name",
-      "emergency_contact_number",
-      "fee_concession_amount",
-      "fee_concession_reason",
-      "height",
-      "weight",
-      "hobby",
-      "sign_of_identity",
-      "father_education",
-      "father_occupation",
-      "mother_education",
-      "mother_occupation",
-      "whatsapp_no",
-      "account_holder_name",
-      "bank_name",
-      "bank_branch",
-      "bank_ifsc",
-      "account_no",
-      "guardian_education",
-      "guardian_occupation",
-      "udise_id",
-      "second_language",
-      "is_rte_quota",
-      "id",
-      "created_at",
-      "created_by",
-      "updated_at",
-      "updated_by",
-      "exit_date",
-      "exit_reason",
-      "exit_notes",
-    ] as const;
+  const normalizeExportValue = (value: unknown): string | number | boolean => {
+    if (value === null || value === undefined) return "";
+    if (typeof value === "boolean" || typeof value === "number") return value;
+    if (value instanceof Date) return value.toISOString();
+    if (typeof value === "string") return value;
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
+  };
 
+  const getExportData = () => {
     const rowKeys = Array.from(
       filteredRows.reduce((set, row) => {
         Object.keys(row).forEach((k) => set.add(k));
         return set;
-      }, new Set<string>())
+      }, new Set<string>()),
     );
 
     const orderedKnownKeys = addFormFieldOrder.filter((k) => rowKeys.includes(k)) as string[];
     const extraKeys = rowKeys
       .filter((k) => !orderedKnownKeys.includes(k))
       .sort((a, b) => a.localeCompare(b));
-    const exportColumns = [...orderedKnownKeys, ...extraKeys];
+    return { columns: [...orderedKnownKeys, ...extraKeys] };
+  };
 
+  const buildFilterSubtitle = () => {
+    const parts: string[] = [];
+    if (standardFilter !== "all") parts.push(`Standard: ${standardFilter}`);
+    if (divisionFilter !== "all") parts.push(`Division: ${divisionFilter}`);
+    if (rteFilter === "rte") parts.push("RTE Only");
+    else if (rteFilter === "non-rte") parts.push("Non-RTE Only");
+    parts.push(`${filteredRows.length} student${filteredRows.length !== 1 ? "s" : ""}`);
+    return parts.join("  ·  ");
+  };
+
+  const exportExcel = () => {
+    if (filteredRows.length === 0) {
+      alert("No students match the selected filters.");
+      return;
+    }
+    const { columns } = getExportData();
     const exportRowsFull = filteredRows.map((row) => {
       const out: Record<string, string | number | boolean> = {};
-      for (const col of exportColumns) {
+      for (const col of columns) {
         out[toLabel(col)] = normalizeExportValue(row[col]);
       }
       return out;
     });
 
-    if (filteredRows.length === 0) {
-      alert("No students match the selected filters.");
-      return;
-    }
-
     import("xlsx").then((XLSX) => {
       const ws = XLSX.utils.json_to_sheet(exportRowsFull);
+
+      const colWidths = columns.map((col) => {
+        const header = toLabel(col);
+        const maxDataLen = filteredRows.reduce((max, row) => {
+          const val = String(normalizeExportValue(row[col]));
+          return Math.max(max, val.length);
+        }, header.length);
+        return { wch: Math.min(Math.max(maxDataLen + 2, 10), 40) };
+      });
+      ws["!cols"] = colWidths;
+
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Students");
       const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
@@ -269,9 +296,21 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "students-report.xlsx";
+      a.download = `students-report-${new Date().toISOString().slice(0, 10)}.xlsx`;
       a.click();
       URL.revokeObjectURL(url);
+    });
+  };
+
+  const exportPdf = () => {
+    if (filteredRows.length === 0) {
+      alert("No students match the selected filters.");
+      return;
+    }
+    const fileBase = `students-report-${new Date().toISOString().slice(0, 10)}`;
+    exportStudentsPdf(filteredRows, fileBase, {
+      schoolName: school.name || "Student Data Report",
+      subtitle: buildFilterSubtitle(),
     });
   };
 
@@ -328,8 +367,12 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button type="button" size="sm" variant="outline" className="gap-1 h-9" onClick={exportRows}>
-              <Download className="h-3 w-3" />
+            <Button type="button" size="sm" className="gap-1.5 bg-red-600 hover:bg-red-700 text-white shadow-sm" onClick={exportPdf}>
+              <PdfIcon className="h-4 w-4" />
+              PDF
+            </Button>
+            <Button type="button" size="sm" className="gap-1.5 bg-green-700 hover:bg-green-800 text-white shadow-sm" onClick={exportExcel}>
+              <ExcelIcon className="h-4 w-4" />
               Excel
             </Button>
           </div>

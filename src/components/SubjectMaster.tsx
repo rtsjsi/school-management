@@ -33,6 +33,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Plus, Pencil } from "lucide-react";
+import { PdfIcon } from "@/components/ui/export-icons";
+import { useSchoolSettings } from "@/hooks/useSchoolSettings";
+import { exportSubjectsPdf as exportSubjectsReportPdf } from "@/lib/subjects-report-export";
 
 const NO_TEACHER_VALUE = "__none__";
 
@@ -46,6 +49,7 @@ type SubjectRow = {
 type EmployeeOption = { id: string; full_name: string };
 
 export function SubjectMaster() {
+  const school = useSchoolSettings();
   const router = useRouter();
   const [standards, setStandards] = useState<StandardRow[]>([]);
   const [employees, setEmployees] = useState<EmployeeOption[]>([]);
@@ -116,6 +120,26 @@ export function SubjectMaster() {
     }
   };
 
+  const exportSubjectsPdf = async () => {
+    if (!selectedStandardId || subjects.length === 0) return;
+    try {
+      const stdName = standards.find((s) => s.id === selectedStandardId)?.name ?? "Standard";
+      const rows = subjects.map((s) => ({
+        name: s.name,
+        evaluationType: s.evaluation_type === "grade" ? "Grade based" : "Mark based",
+        teacherName: employees.find((e) => e.id === s.subject_teacher_id)?.full_name ?? "—",
+      }));
+      const subtitle = `Standard: ${stdName}  ·  ${rows.length} subject${rows.length !== 1 ? "s" : ""}`;
+      const fileBase = `subjects-report-${stdName.toLowerCase().replace(/\s+/g, "-")}-${new Date().toISOString().slice(0, 10)}`;
+      exportSubjectsReportPdf(rows, fileBase, {
+        schoolName: school.name || "Subjects Report",
+        subtitle,
+      });
+    } catch {
+      alert("Failed to export subjects.");
+    }
+  };
+
   const selectedStandard = standards.find((c) => c.id === selectedStandardId);
 
   return (
@@ -138,6 +162,7 @@ export function SubjectMaster() {
             </Select>
           </div>
           {selectedStandardId && (
+            <>
             <Dialog open={addOpen} onOpenChange={setAddOpen}>
               <DialogTrigger asChild>
                 <Button size="sm" className="gap-1">
@@ -204,6 +229,18 @@ export function SubjectMaster() {
                 </form>
               </DialogContent>
             </Dialog>
+            {subjects.length > 0 && (
+              <Button
+                type="button"
+                size="sm"
+                className="gap-1.5 bg-red-600 hover:bg-red-700 text-white shadow-sm"
+                onClick={exportSubjectsPdf}
+              >
+                <PdfIcon className="h-4 w-4" />
+                PDF
+              </Button>
+            )}
+            </>
           )}
         </div>
 
