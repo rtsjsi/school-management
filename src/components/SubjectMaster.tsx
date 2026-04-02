@@ -34,6 +34,8 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Pencil } from "lucide-react";
 import { PdfIcon } from "@/components/ui/export-icons";
+import { useSchoolSettings } from "@/hooks/useSchoolSettings";
+import { exportSubjectsPdf as exportSubjectsReportPdf } from "@/lib/subjects-report-export";
 
 const NO_TEACHER_VALUE = "__none__";
 
@@ -47,6 +49,7 @@ type SubjectRow = {
 type EmployeeOption = { id: string; full_name: string };
 
 export function SubjectMaster() {
+  const school = useSchoolSettings();
   const router = useRouter();
   const [standards, setStandards] = useState<StandardRow[]>([]);
   const [employees, setEmployees] = useState<EmployeeOption[]>([]);
@@ -120,32 +123,18 @@ export function SubjectMaster() {
   const exportSubjectsPdf = async () => {
     if (!selectedStandardId || subjects.length === 0) return;
     try {
-      const { jsPDF } = await import("jspdf");
-      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       const stdName = standards.find((s) => s.id === selectedStandardId)?.name ?? "Standard";
-      let y = 15;
-      doc.setFontSize(14);
-      doc.text(`Subjects — ${stdName}`, 10, y);
-      y += 8;
-      doc.setFontSize(10);
-      doc.text("Subject", 10, y);
-      doc.text("Evaluation Type", 80, y);
-      doc.text("Subject Teacher", 130, y);
-      y += 4;
-      doc.line(10, y, 200, y);
-      y += 4;
-      for (const s of subjects) {
-        if (y > 280) {
-          doc.addPage();
-          y = 15;
-        }
-        doc.text(s.name, 10, y);
-        doc.text(s.evaluation_type === "grade" ? "Grade based" : "Mark based", 80, y);
-        const teacher = employees.find((e) => e.id === s.subject_teacher_id)?.full_name ?? "—";
-        doc.text(teacher, 130, y, { maxWidth: 65 });
-        y += 5;
-      }
-      doc.save(`subjects-${stdName.toLowerCase().replace(/\s+/g, "-")}.pdf`);
+      const rows = subjects.map((s) => ({
+        name: s.name,
+        evaluationType: s.evaluation_type === "grade" ? "Grade based" : "Mark based",
+        teacherName: employees.find((e) => e.id === s.subject_teacher_id)?.full_name ?? "—",
+      }));
+      const subtitle = `Standard: ${stdName}  ·  ${rows.length} subject${rows.length !== 1 ? "s" : ""}`;
+      const fileBase = `subjects-report-${stdName.toLowerCase().replace(/\s+/g, "-")}-${new Date().toISOString().slice(0, 10)}`;
+      exportSubjectsReportPdf(rows, fileBase, {
+        schoolName: school.name || "Subjects Report",
+        subtitle,
+      });
     } catch {
       alert("Failed to export subjects.");
     }

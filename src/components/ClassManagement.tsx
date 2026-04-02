@@ -34,6 +34,8 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Pencil, ChevronDown, ChevronRight } from "lucide-react";
 import { PdfIcon } from "@/components/ui/export-icons";
+import { useSchoolSettings } from "@/hooks/useSchoolSettings";
+import { exportStandardsPdf as exportStandardsReportPdf } from "@/lib/standards-report-export";
 
 type DivisionRow = { id: string; name: string; sort_order: number };
 
@@ -49,6 +51,7 @@ const SECTIONS = ["pre_primary", "primary", "secondary", "higher_secondary"] as 
 type StandardRow = { id: string; name: string; section: string; sort_order: number };
 
 export function ClassManagement() {
+  const school = useSchoolSettings();
   const router = useRouter();
   const [standards, setStandards] = useState<StandardRow[]>([]);
   const [addOpen, setAddOpen] = useState(false);
@@ -91,39 +94,22 @@ export function ClassManagement() {
       const standardsWithDivisions = (data ?? []) as StandardWithDivisions[];
       const rows =
         standardsWithDivisions.map((s) => ({
-          Standard: s.name,
-          Section: SECTION_LABELS[s.section] ?? s.section,
-          Divisions: ((s.standard_divisions as { name: string }[]) ?? []).map((d) => d.name).join(", "),
+          standard: s.name,
+          section: SECTION_LABELS[s.section] ?? s.section,
+          divisions: ((s.standard_divisions as { name: string }[]) ?? []).map((d) => d.name).join(", "),
+          divisionCount: ((s.standard_divisions as { name: string }[]) ?? []).length,
         })) ?? [];
       if (rows.length === 0) {
         alert("No standards to export.");
         return;
       }
-
-      const { jsPDF } = await import("jspdf");
-      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      let y = 15;
-      doc.setFontSize(14);
-      doc.text("Standards", 10, y);
-      y += 8;
-      doc.setFontSize(10);
-      doc.text("Standard", 10, y);
-      doc.text("Section", 60, y);
-      doc.text("Divisions", 100, y);
-      y += 4;
-      doc.line(10, y, 200, y);
-      y += 4;
-      for (const row of rows) {
-        if (y > 280) {
-          doc.addPage();
-          y = 15;
-        }
-        doc.text(String(row.Standard), 10, y);
-        doc.text(String(row.Section), 60, y);
-        doc.text(String(row.Divisions ?? ""), 100, y, { maxWidth: 90 });
-        y += 5;
-      }
-      doc.save("standards.pdf");
+      const sections = Array.from(new Set(rows.map((r) => r.section)));
+      const subtitle = `${sections.join(", ")}  ·  ${rows.length} standard${rows.length !== 1 ? "s" : ""}`;
+      const fileBase = `standards-report-${new Date().toISOString().slice(0, 10)}`;
+      exportStandardsReportPdf(rows, fileBase, {
+        schoolName: school.name || "Standards Report",
+        subtitle,
+      });
     } catch {
       alert("Failed to export standards.");
     }
