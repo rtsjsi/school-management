@@ -31,16 +31,16 @@ export function DashboardUserMenu({ user }: { user: AuthUser }) {
     <>
       <SignOutOverlay open={signingOut} />
       <div className="flex items-center gap-2 sm:gap-3">
-        <div className="hidden sm:block text-right">
-          <p className="text-sm font-medium text-foreground truncate max-w-[180px]" title={displayName}>
+        <div className="text-right min-w-0">
+          <p className="hidden text-sm font-medium text-foreground truncate max-w-[180px] sm:block" title={displayName}>
             {displayName}
           </p>
-          <p className="text-xs text-muted-foreground">{roleLabel}</p>
+          <p className="text-[10px] text-muted-foreground sm:text-xs">{roleLabel}</p>
         </div>
         <Button
           variant="outline"
           size="sm"
-          className="shrink-0 transition-opacity duration-200"
+          className="shrink-0 transition-opacity duration-200 h-8 px-2 sm:h-8 sm:px-3"
           onClick={() => void handleSignOut()}
           disabled={signingOut}
         >

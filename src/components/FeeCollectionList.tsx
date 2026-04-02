@@ -32,7 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Download, Pencil, Printer } from "lucide-react";
+import { Download, Pencil, Printer, ChevronDown, ChevronUp } from "lucide-react";
 import { formatFeeCollectionDisplayDate } from "@/lib/utils";
 
 type CollectionRow = {
@@ -313,40 +313,55 @@ export default function FeeCollectionList() {
     window.dispatchEvent(new Event("fee-collection-added"));
   };
 
+  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
+  const toggleRow = (id: string) => setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
+
   if (loading) return null;
   if (collections.length === 0) return null;
 
   return (
     <Card>
-      <CardContent className="pt-6">
-        <h3 className="font-medium mb-3">Latest 20 collections</h3>
+      <CardContent className="pt-4 sm:pt-6">
+        <h3 className="font-medium mb-3 text-sm sm:text-base">Latest 20 collections</h3>
         <div className="border rounded-lg overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Receipt</TableHead>
+                <TableHead className="hidden sm:table-cell">Receipt</TableHead>
                 <TableHead>Student</TableHead>
                 <TableHead>Amount</TableHead>
-                <TableHead>Qtr</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead className="w-24"></TableHead>
+                <TableHead className="hidden sm:table-cell">Qtr</TableHead>
+                <TableHead className="hidden sm:table-cell">Date</TableHead>
+                <TableHead className="w-20 sm:w-24"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {collections.map((row) => (
+              {collections.flatMap((row) => [
                 <TableRow key={row.id}>
-                  <TableCell className="font-mono text-xs">{row.receipt_number}</TableCell>
-                  <TableCell className="font-medium">{row.student_name ?? "—"}</TableCell>
+                  <TableCell className="font-mono text-xs hidden sm:table-cell">{row.receipt_number}</TableCell>
+                  <TableCell className="font-medium">
+                    {row.student_name ?? "—"}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => toggleRow(row.id)}
+                      className="ml-1 h-7 px-1.5 sm:hidden"
+                    >
+                      {expandedRows[row.id] ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                      <span className="text-[10px]">Details</span>
+                    </Button>
+                  </TableCell>
                   <TableCell>{Number(row.amount).toLocaleString()}</TableCell>
-                  <TableCell>Q{row.quarter}</TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
+                  <TableCell className="hidden sm:table-cell">Q{row.quarter}</TableCell>
+                  <TableCell className="text-muted-foreground hidden sm:table-cell">
                     {formatFeeCollectionDisplayDate(row.collection_date)}
                   </TableCell>
                   <TableCell>
-                    <div className="flex gap-1">
+                    <div className="flex gap-0.5 sm:gap-1">
                       <Button
                         size="sm"
                         variant="ghost"
+                        className="h-7 w-7 p-0 sm:h-8 sm:w-8"
                         onClick={() => openEdit(row)}
                         aria-label="Edit payment details"
                       >
@@ -355,6 +370,7 @@ export default function FeeCollectionList() {
                       <Button
                         size="sm"
                         variant="ghost"
+                        className="h-7 w-7 p-0 sm:h-8 sm:w-8"
                         onClick={() =>
                           downloadReceipt(row, {
                             name: school.name,
@@ -369,6 +385,7 @@ export default function FeeCollectionList() {
                       <Button
                         size="sm"
                         variant="ghost"
+                        className="h-7 w-7 p-0 sm:h-8 sm:w-8 hidden sm:inline-flex"
                         onClick={() =>
                           printReceipt(row, {
                             name: school.name,
@@ -382,8 +399,18 @@ export default function FeeCollectionList() {
                       </Button>
                     </div>
                   </TableCell>
-                </TableRow>
-              ))}
+                </TableRow>,
+                expandedRows[row.id] ? (
+                  <TableRow key={`${row.id}-details`} className="sm:hidden bg-muted/30">
+                    <TableCell colSpan={3} className="text-xs space-y-1">
+                      <div><span className="text-muted-foreground">Receipt:</span> {row.receipt_number}</div>
+                      <div><span className="text-muted-foreground">Quarter:</span> Q{row.quarter} &middot; {row.academic_year}</div>
+                      <div><span className="text-muted-foreground">Date:</span> {formatFeeCollectionDisplayDate(row.collection_date)}</div>
+                      <div><span className="text-muted-foreground">Mode:</span> {row.payment_mode}</div>
+                    </TableCell>
+                  </TableRow>
+                ) : null,
+              ])}
             </TableBody>
           </Table>
         </div>

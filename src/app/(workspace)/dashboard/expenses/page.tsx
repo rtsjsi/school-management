@@ -14,11 +14,11 @@ export default async function ExpensesPage() {
   const canEdit = isAdminOrAbove(user);
 
   return (
-    <div className="space-y-8">
-      <Tabs defaultValue="entry" className="space-y-6">
+    <div className="space-y-6 sm:space-y-8">
+      <Tabs defaultValue="entry" className="space-y-4 sm:space-y-6">
         <TabsList className="flex flex-nowrap gap-1 w-full">
-          <TabsTrigger value="entry">Add Expense</TabsTrigger>
-          <TabsTrigger value="heads">Expense Heads</TabsTrigger>
+          <TabsTrigger value="entry">Add</TabsTrigger>
+          <TabsTrigger value="heads">Heads</TabsTrigger>
           <TabsTrigger value="budgets">Budgets</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
         </TabsList>

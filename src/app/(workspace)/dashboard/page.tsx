@@ -206,30 +206,30 @@ export default async function DashboardPage() {
   const quarterLabels = ["Apr–Jun", "Jul–Sep", "Oct–Dec", "Jan–Mar"];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* ──── Academic Section ──── */}
       {showAcademicSection && (
-        <section className="space-y-4">
+        <section className="space-y-3 sm:space-y-4">
           <div className="flex items-center gap-2">
             <BookOpen className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Academics</h2>
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider sm:text-sm">Academics</h2>
             {activeYearName && (
-              <span className="ml-auto text-xs text-muted-foreground">{activeYearName}</span>
+              <span className="ml-auto text-[10px] text-muted-foreground sm:text-xs">{activeYearName}</span>
             )}
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 grid-cols-2 lg:grid-cols-3 sm:gap-4">
             {/* Active Students — hero card */}
-            <div className="rounded-card border border-border bg-card p-5 shadow-card transition-shadow hover:shadow-card-hover">
+            <div className="rounded-card border border-border bg-card p-3 shadow-card transition-shadow hover:shadow-card-hover col-span-2 sm:col-span-1 sm:p-5">
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
-                  <p className="text-xs font-medium text-muted-foreground">Active Students</p>
-                  <p className="text-3xl font-bold tracking-tight">{fmtNum(activeStudentsCount)}</p>
+                  <p className="text-[10px] font-medium text-muted-foreground sm:text-xs">Active Students</p>
+                  <p className="text-2xl font-bold tracking-tight sm:text-3xl">{fmtNum(activeStudentsCount)}</p>
                 </div>
-                <div className="rounded-xl bg-primary/10 p-2.5">
-                  <GraduationCap className="h-5 w-5 text-primary" />
+                <div className="rounded-xl bg-primary/10 p-2 sm:p-2.5">
+                  <GraduationCap className="h-4 w-4 text-primary sm:h-5 sm:w-5" />
                 </div>
               </div>
-              <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
+              <div className="mt-2 flex items-center gap-2 text-[10px] text-muted-foreground sm:mt-3 sm:gap-3 sm:text-xs">
                 <span>{fmtNum(studentsCount)} total enrolled</span>
                 {rteStudentsCount > 0 && (
                   <>
@@ -241,34 +241,34 @@ export default async function DashboardPage() {
             </div>
 
             {/* New Admissions */}
-            <div className="rounded-card border border-border bg-card p-5 shadow-card transition-shadow hover:shadow-card-hover">
+            <div className="rounded-card border border-border bg-card p-3 shadow-card transition-shadow hover:shadow-card-hover sm:p-5">
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
-                  <p className="text-xs font-medium text-muted-foreground">New Admissions</p>
-                  <p className="text-3xl font-bold tracking-tight">{fmtNum(newAdmissionsCount)}</p>
+                  <p className="text-[10px] font-medium text-muted-foreground sm:text-xs">New Admissions</p>
+                  <p className="text-2xl font-bold tracking-tight sm:text-3xl">{fmtNum(newAdmissionsCount)}</p>
                 </div>
-                <div className="rounded-xl bg-green-500/10 p-2.5">
-                  <UserPlus className="h-5 w-5 text-green-600" />
+                <div className="rounded-xl bg-green-500/10 p-2 sm:p-2.5">
+                  <UserPlus className="h-4 w-4 text-green-600 sm:h-5 sm:w-5" />
                 </div>
               </div>
-              <p className="mt-3 text-xs text-muted-foreground">
+              <p className="mt-2 text-[10px] text-muted-foreground sm:mt-3 sm:text-xs">
                 {activeYearName ?? "Set active academic year"}
               </p>
             </div>
 
             {/* Employees — if visible */}
             {(showFinanceSection || showPayrollCard) && (
-              <div className="rounded-card border border-border bg-card p-5 shadow-card transition-shadow hover:shadow-card-hover">
+              <div className="rounded-card border border-border bg-card p-3 shadow-card transition-shadow hover:shadow-card-hover sm:p-5">
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
-                    <p className="text-xs font-medium text-muted-foreground">Total Employees</p>
-                    <p className="text-3xl font-bold tracking-tight">{fmtNum(employeesCount)}</p>
+                    <p className="text-[10px] font-medium text-muted-foreground sm:text-xs">Total Employees</p>
+                    <p className="text-2xl font-bold tracking-tight sm:text-3xl">{fmtNum(employeesCount)}</p>
                   </div>
-                  <div className="rounded-xl bg-violet-500/10 p-2.5">
-                    <Users className="h-5 w-5 text-violet-600" />
+                  <div className="rounded-xl bg-violet-500/10 p-2 sm:p-2.5">
+                    <Users className="h-4 w-4 text-violet-600 sm:h-5 sm:w-5" />
                   </div>
                 </div>
-                <p className="mt-3 text-xs text-muted-foreground">Staff & teachers</p>
+                <p className="mt-2 text-[10px] text-muted-foreground sm:mt-3 sm:text-xs">Staff & teachers</p>
               </div>
             )}
           </div>
@@ -277,62 +277,62 @@ export default async function DashboardPage() {
 
       {/* ──── Finance Section ──── */}
       {(showFinanceSection || showClerkFeeCard) && (
-        <section className="space-y-4">
+        <section className="space-y-3 sm:space-y-4">
           <div className="flex items-center gap-2">
             <IndianRupee className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider sm:text-sm">
               Finance
             </h2>
-            <span className="ml-auto text-xs text-muted-foreground">{monthLabel}</span>
+            <span className="ml-auto text-[10px] text-muted-foreground sm:text-xs">{monthLabel}</span>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 grid-cols-2 lg:grid-cols-3 sm:gap-4">
             {/* Fee Collected */}
-            <div className="rounded-card border border-border bg-card p-5 shadow-card transition-shadow hover:shadow-card-hover">
+            <div className="rounded-card border border-border bg-card p-3 shadow-card transition-shadow hover:shadow-card-hover col-span-2 sm:col-span-1 sm:p-5">
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
-                  <p className="text-xs font-medium text-muted-foreground">Fee Collected</p>
-                  <p className="text-3xl font-bold tracking-tight text-green-600">{fmt(feeCollected)}</p>
+                  <p className="text-[10px] font-medium text-muted-foreground sm:text-xs">Fee Collected</p>
+                  <p className="text-2xl font-bold tracking-tight text-green-600 sm:text-3xl">{fmt(feeCollected)}</p>
                 </div>
-                <div className="rounded-xl bg-green-500/10 p-2.5">
-                  <IndianRupee className="h-5 w-5 text-green-600" />
+                <div className="rounded-xl bg-green-500/10 p-2 sm:p-2.5">
+                  <IndianRupee className="h-4 w-4 text-green-600 sm:h-5 sm:w-5" />
                 </div>
               </div>
-              <p className="mt-3 text-xs text-muted-foreground">Collections this month</p>
+              <p className="mt-2 text-[10px] text-muted-foreground sm:mt-3 sm:text-xs">Collections this month</p>
             </div>
 
             {showFinanceSection && (
               <>
                 {/* Expenses */}
-                <div className="rounded-card border border-border bg-card p-5 shadow-card transition-shadow hover:shadow-card-hover">
+                <div className="rounded-card border border-border bg-card p-3 shadow-card transition-shadow hover:shadow-card-hover sm:p-5">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
-                      <p className="text-xs font-medium text-muted-foreground">Expenses</p>
-                      <p className="text-3xl font-bold tracking-tight">{fmt(expensesThisMonth)}</p>
+                      <p className="text-[10px] font-medium text-muted-foreground sm:text-xs">Expenses</p>
+                      <p className="text-2xl font-bold tracking-tight sm:text-3xl">{fmt(expensesThisMonth)}</p>
                     </div>
-                    <div className="rounded-xl bg-orange-500/10 p-2.5">
-                      <Receipt className="h-5 w-5 text-orange-600" />
+                    <div className="rounded-xl bg-orange-500/10 p-2 sm:p-2.5">
+                      <Receipt className="h-4 w-4 text-orange-600 sm:h-5 sm:w-5" />
                     </div>
                   </div>
-                  <p className="mt-3 text-xs text-muted-foreground">Approved expenses this month</p>
+                  <p className="mt-2 text-[10px] text-muted-foreground sm:mt-3 sm:text-xs">Approved expenses this month</p>
                 </div>
 
                 {/* Net */}
-                <div className="rounded-card border border-border bg-card p-5 shadow-card transition-shadow hover:shadow-card-hover">
+                <div className="rounded-card border border-border bg-card p-3 shadow-card transition-shadow hover:shadow-card-hover sm:p-5">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
-                      <p className="text-xs font-medium text-muted-foreground">Net Income</p>
-                      <p className={`text-3xl font-bold tracking-tight ${netThisMonth >= 0 ? "text-green-600" : "text-destructive"}`}>
+                      <p className="text-[10px] font-medium text-muted-foreground sm:text-xs">Net Income</p>
+                      <p className={`text-2xl font-bold tracking-tight sm:text-3xl ${netThisMonth >= 0 ? "text-green-600" : "text-destructive"}`}>
                         {fmt(netThisMonth)}
                       </p>
                     </div>
-                    <div className={`rounded-xl p-2.5 ${netThisMonth >= 0 ? "bg-green-500/10" : "bg-destructive/10"}`}>
+                    <div className={`rounded-xl p-2 sm:p-2.5 ${netThisMonth >= 0 ? "bg-green-500/10" : "bg-destructive/10"}`}>
                       {netThisMonth >= 0
-                        ? <TrendingUp className="h-5 w-5 text-green-600" />
-                        : <TrendingDown className="h-5 w-5 text-destructive" />
+                        ? <TrendingUp className="h-4 w-4 text-green-600 sm:h-5 sm:w-5" />
+                        : <TrendingDown className="h-4 w-4 text-destructive sm:h-5 sm:w-5" />
                       }
                     </div>
                   </div>
-                  <p className="mt-3 text-xs text-muted-foreground">Collections − expenses</p>
+                  <p className="mt-2 text-[10px] text-muted-foreground sm:mt-3 sm:text-xs">Collections − expenses</p>
                 </div>
               </>
             )}
@@ -342,40 +342,40 @@ export default async function DashboardPage() {
 
       {/* ──── Outstanding Fees Section ──── */}
       {showOutstandingSection && activeYearName && (
-        <section className="space-y-4">
+        <section className="space-y-3 sm:space-y-4">
           <div className="flex items-center gap-2">
             <AlertCircle className="h-4 w-4 text-destructive" />
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider sm:text-sm">
               Outstanding Fees
             </h2>
-            <span className="ml-auto text-xs text-muted-foreground">{activeYearName}</span>
+            <span className="ml-auto text-[10px] text-muted-foreground sm:text-xs">{activeYearName}</span>
           </div>
 
           {/* Total outstanding — featured card with progress */}
-          <div className="rounded-card border border-border bg-card p-5 shadow-card transition-shadow hover:shadow-card-hover">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-              <div className="flex items-start gap-4 flex-1 min-w-0">
-                <div className="rounded-xl bg-destructive/10 p-3 shrink-0">
-                  <AlertCircle className="h-6 w-6 text-destructive" />
+          <div className="rounded-card border border-border bg-card p-3 shadow-card transition-shadow hover:shadow-card-hover sm:p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+              <div className="flex items-start gap-3 flex-1 min-w-0 sm:gap-4">
+                <div className="rounded-xl bg-destructive/10 p-2.5 shrink-0 sm:p-3">
+                  <AlertCircle className="h-5 w-5 text-destructive sm:h-6 sm:w-6" />
                 </div>
                 <div className="space-y-1 min-w-0">
-                  <p className="text-xs font-medium text-muted-foreground">Total Outstanding</p>
-                  <p className="text-3xl font-bold tracking-tight text-destructive">{fmt(outstandingCurrentYear)}</p>
+                  <p className="text-[10px] font-medium text-muted-foreground sm:text-xs">Total Outstanding</p>
+                  <p className="text-2xl font-bold tracking-tight text-destructive sm:text-3xl">{fmt(outstandingCurrentYear)}</p>
                 </div>
               </div>
               {totalFeesCurrentYear > 0 && (
                 <div className="flex flex-col gap-1.5 sm:items-end sm:min-w-[180px]">
-                  <div className="flex items-center justify-between gap-4 text-xs text-muted-foreground w-full sm:justify-end">
+                  <div className="flex items-center justify-between gap-4 text-[10px] text-muted-foreground w-full sm:justify-end sm:text-xs">
                     <span>Collected: {fmt(totalPaidCurrentYear)}</span>
                     <span className="font-semibold text-foreground">{collectionPct}%</span>
                   </div>
-                  <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                  <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden sm:h-2">
                     <div
                       className="h-full rounded-full bg-green-500 transition-all duration-500"
                       style={{ width: `${Math.min(collectionPct, 100)}%` }}
                     />
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-[10px] text-muted-foreground sm:text-xs">
                     of {fmt(totalFeesCurrentYear)} total fees
                   </p>
                 </div>
@@ -384,16 +384,16 @@ export default async function DashboardPage() {
           </div>
 
           {/* Quarter breakdown — compact row */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
             {([1, 2, 3, 4] as const).map((q) => {
               const qOutstanding = outstandingByQuarter[q];
               return (
                 <div
                   key={q}
-                  className="rounded-card border border-border bg-card p-4 shadow-card transition-shadow hover:shadow-card-hover"
+                  className="rounded-card border border-border bg-card p-3 shadow-card transition-shadow hover:shadow-card-hover sm:p-4"
                 >
-                  <p className="text-xs font-medium text-muted-foreground">Q{q} <span className="text-muted-foreground/70">({quarterLabels[q - 1]})</span></p>
-                  <p className={`text-lg font-bold tracking-tight mt-1 ${qOutstanding > 0 ? "text-destructive" : "text-green-600"}`}>
+                  <p className="text-[10px] font-medium text-muted-foreground sm:text-xs">Q{q} <span className="text-muted-foreground/70">({quarterLabels[q - 1]})</span></p>
+                  <p className={`text-base font-bold tracking-tight mt-1 sm:text-lg ${qOutstanding > 0 ? "text-destructive" : "text-green-600"}`}>
                     {fmt(qOutstanding)}
                   </p>
                   {qOutstanding === 0 && (
@@ -408,23 +408,23 @@ export default async function DashboardPage() {
 
       {/* Payroll-only employee card (when no other sections show employees) */}
       {showPayrollCard && !showAcademicSection && (
-        <section className="space-y-4">
+        <section className="space-y-3 sm:space-y-4">
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Payroll</h2>
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider sm:text-sm">Payroll</h2>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="rounded-card border border-border bg-card p-5 shadow-card transition-shadow hover:shadow-card-hover">
+          <div className="grid gap-3 grid-cols-2 lg:grid-cols-3 sm:gap-4">
+            <div className="rounded-card border border-border bg-card p-3 shadow-card transition-shadow hover:shadow-card-hover col-span-2 sm:col-span-1 sm:p-5">
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
-                  <p className="text-xs font-medium text-muted-foreground">Total Employees</p>
-                  <p className="text-3xl font-bold tracking-tight">{fmtNum(employeesCount)}</p>
+                  <p className="text-[10px] font-medium text-muted-foreground sm:text-xs">Total Employees</p>
+                  <p className="text-2xl font-bold tracking-tight sm:text-3xl">{fmtNum(employeesCount)}</p>
                 </div>
-                <div className="rounded-xl bg-violet-500/10 p-2.5">
-                  <Users className="h-5 w-5 text-violet-600" />
+                <div className="rounded-xl bg-violet-500/10 p-2 sm:p-2.5">
+                  <Users className="h-4 w-4 text-violet-600 sm:h-5 sm:w-5" />
                 </div>
               </div>
-              <p className="mt-3 text-xs text-muted-foreground">Staff & teachers</p>
+              <p className="mt-2 text-[10px] text-muted-foreground sm:mt-3 sm:text-xs">Staff & teachers</p>
             </div>
           </div>
         </section>

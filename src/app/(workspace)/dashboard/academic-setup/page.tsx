@@ -24,13 +24,13 @@ export default async function AcademicSetupPage({
   const tab = validTabs.includes(tabParam) ? tabParam : "standards";
 
   return (
-    <div className="space-y-8">
-      <Tabs defaultValue={tab} className="space-y-6">
+    <div className="space-y-6 sm:space-y-8">
+      <Tabs defaultValue={tab} className="space-y-4 sm:space-y-6">
         <TabsList className="flex flex-nowrap gap-1 w-full">
-          <TabsTrigger value="standards">Standard management</TabsTrigger>
-          <TabsTrigger value="subjects">Subject management</TabsTrigger>
+          <TabsTrigger value="standards">Standards</TabsTrigger>
+          <TabsTrigger value="subjects">Subjects</TabsTrigger>
           {canPromote && (
-            <TabsTrigger value="promotion">Year-end promotion</TabsTrigger>
+            <TabsTrigger value="promotion">Promotion</TabsTrigger>
           )}
         </TabsList>
         <TabsContent value="standards" className="space-y-6">

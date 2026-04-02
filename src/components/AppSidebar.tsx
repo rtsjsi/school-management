@@ -146,7 +146,7 @@ export function AppSidebar({ user }: { user: AuthUser }) {
           <X className="h-5 w-5" />
         </Button>
       </div>
-      <nav className="flex-1 min-h-0 space-y-0.5 p-2.5 overflow-y-auto scrollbar-hide">
+      <nav className="flex-1 min-h-0 space-y-0.5 p-2 overflow-y-auto scrollbar-hide sm:p-2.5">
         {items.map((item) => {
           const isActive =
             item.href === "/welcome"
@@ -159,10 +159,10 @@ export function AppSidebar({ user }: { user: AuthUser }) {
             <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}>
               <span
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-200 border-l-2",
+                  "flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors duration-200 border-l-2 sm:py-2.5",
                   isActive
                     ? "bg-sidebar-foreground/15 text-sidebar-foreground border-sidebar-foreground/50"
-                    : "border-transparent text-sidebar-foreground/85 hover:bg-sidebar-foreground/10 hover:text-sidebar-foreground"
+                    : "border-transparent text-sidebar-foreground/85 hover:bg-sidebar-foreground/10 hover:text-sidebar-foreground active:bg-sidebar-foreground/20"
                 )}
               >
                 <Icon className="h-4 w-4 shrink-0 opacity-90" />
@@ -178,27 +178,27 @@ export function AppSidebar({ user }: { user: AuthUser }) {
   return (
     <>
       {/* Mobile header: full width on mobile, above main content */}
-      <div className="shrink-0 z-40 flex min-h-[3.5rem] items-center gap-2 border-b border-border bg-background px-3 py-2 lg:hidden">
+      <div className="shrink-0 z-40 flex h-12 items-center gap-2 border-b border-border bg-background px-2 lg:hidden">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setMobileOpen((o) => !o)}
           aria-label="Toggle menu"
-          className="rounded-lg shrink-0"
+          className="rounded-lg shrink-0 h-9 w-9"
         >
           <Menu className="h-5 w-5" />
         </Button>
         <Link href="/welcome" className="flex min-w-0 flex-1 items-center gap-2">
           {school.logoUrl ? (
-            <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded bg-muted">
-              <Image src={school.logoUrl} alt="" fill sizes="32px" className="object-contain p-0.5" />
+            <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded bg-muted">
+              <Image src={school.logoUrl} alt="" fill sizes="28px" className="object-contain p-0.5" />
             </div>
           ) : (
-            <div className="h-8 w-8 shrink-0 rounded bg-muted flex items-center justify-center">
-              <Building2 className="h-4 w-4 text-muted-foreground" />
+            <div className="h-7 w-7 shrink-0 rounded bg-muted flex items-center justify-center">
+              <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
             </div>
           )}
-          <span className="font-semibold text-sm text-foreground line-clamp-2 break-words">
+          <span className="font-semibold text-sm text-foreground truncate">
             {school.name}
           </span>
         </Link>
