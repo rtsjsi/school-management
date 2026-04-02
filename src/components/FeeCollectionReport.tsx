@@ -26,7 +26,6 @@ import {
 } from "@/components/ui/table";
 import {
   FileText,
-  FileDown,
   Download,
   Printer,
   ChevronDown,
@@ -47,6 +46,7 @@ import {
   Filter,
   X,
 } from "lucide-react";
+import { PdfIcon } from "@/components/ui/export-icons";
 import { exportFeeCollectionPdf } from "@/lib/fee-collection-report-export";
 import { fetchStandards, fetchAcademicYears } from "@/lib/lov";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
@@ -695,9 +695,9 @@ export default function FeeCollectionReport() {
             <div className="space-y-3">
               {data.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  <Button type="button" size="sm" className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm" onClick={handleExportPdf}>
-                    <FileDown className="h-4 w-4" aria-hidden />
-                    Export PDF
+                  <Button type="button" size="sm" className="gap-1.5 bg-red-600 hover:bg-red-700 text-white shadow-sm" onClick={handleExportPdf}>
+                    <PdfIcon className="h-4 w-4" aria-hidden />
+                    PDF
                   </Button>
                 </div>
               )}

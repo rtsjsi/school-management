@@ -12,7 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FileDown, ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { ExcelIcon } from "@/components/ui/export-icons";
 import {
   Table,
   TableBody,
@@ -328,9 +329,9 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button type="button" size="sm" className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm" onClick={exportRows}>
-              <FileDown className="h-4 w-4" />
-              Export Excel
+            <Button type="button" size="sm" className="gap-1.5 bg-green-700 hover:bg-green-800 text-white shadow-sm" onClick={exportRows}>
+              <ExcelIcon className="h-4 w-4" />
+              Excel
             </Button>
           </div>
         </div>

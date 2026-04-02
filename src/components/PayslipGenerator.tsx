@@ -16,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { FileDown, Printer, AlertCircle } from "lucide-react";
+import { PdfIcon } from "@/components/ui/export-icons";
 import type { PayslipRow } from "@/app/api/payslip-data/route";
 
 function downloadPayslip(row: PayslipRow, schoolName: string, schoolAddress: string) {
@@ -137,8 +138,8 @@ export default function PayslipGenerator() {
           </Button>
           {data && data.rows.length > 0 && (
             <>
-              <Button size="sm" className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm" onClick={downloadAll}>
-                <FileDown className="h-4 w-4" />
+              <Button size="sm" className="gap-1.5 bg-red-600 hover:bg-red-700 text-white shadow-sm" onClick={downloadAll}>
+                <PdfIcon className="h-4 w-4" />
                 Download All
               </Button>
               <Button size="sm" variant="outline" className="gap-1.5" onClick={printAll}>

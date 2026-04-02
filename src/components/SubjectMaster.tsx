@@ -32,7 +32,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, FileDown } from "lucide-react";
+import { Plus, Pencil } from "lucide-react";
+import { PdfIcon } from "@/components/ui/export-icons";
 
 const NO_TEACHER_VALUE = "__none__";
 
@@ -243,11 +244,11 @@ export function SubjectMaster() {
               <Button
                 type="button"
                 size="sm"
-                className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                className="gap-1.5 bg-red-600 hover:bg-red-700 text-white shadow-sm"
                 onClick={exportSubjectsPdf}
               >
-                <FileDown className="h-4 w-4" />
-                Export PDF
+                <PdfIcon className="h-4 w-4" />
+                PDF
               </Button>
             )}
             </>
