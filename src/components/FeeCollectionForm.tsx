@@ -524,14 +524,12 @@ export default function FeeCollectionForm({
         {/* Collection date (left) · Receipt no. (right, full number) */}
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1 shrink-0">
-            <Label htmlFor="collection_date" className="text-xs font-medium text-muted-foreground">
-              Collection Date *
+            <Label className="text-xs font-medium text-muted-foreground">
+              Collection Date
             </Label>
-            <DatePicker
-              value={form.collection_date}
-              onChange={(isoDate) => setForm((p) => ({ ...p, collection_date: isoDate }))}
-              className="w-[11rem]"
-            />
+            <p className="flex h-9 items-center rounded-md border border-input bg-muted/50 px-3 text-sm font-medium tabular-nums text-foreground w-[11rem]">
+              {new Date(form.collection_date + "T12:00:00").toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+            </p>
           </div>
           <div className="space-y-1 min-w-0 max-w-full sm:max-w-[min(100%,24rem)] text-right ml-auto">
             <Label className="text-xs font-medium text-muted-foreground block">Receipt No.</Label>
