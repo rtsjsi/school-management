@@ -151,6 +151,10 @@ export default function ExpenseReports() {
     () => (Array.isArray(data) && reportType === "summary" ? (data as SummaryRow[]) : []),
     [data, reportType],
   );
+  const listRowsForExport = useMemo(
+    () => listRows.map((r) => ({ ...r, amount: Number(r.amount ?? 0) })),
+    [listRows],
+  );
 
   const totalAmount = Array.isArray(data)
     ? data.reduce((s, r) => s + Number((r as ListRow).amount ?? (r as SummaryRow).total ?? 0), 0)
@@ -179,7 +183,7 @@ export default function ExpenseReports() {
   const handleExportPdf = () => {
     if (!data?.length) return;
     const fileBase = `expense-report-${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}`;
-    exportExpensePdf(listRows, summaryRows, fileBase, {
+    exportExpensePdf(listRowsForExport, summaryRows, fileBase, {
       schoolName: school.name || "Expense Report",
       subtitle: buildExportSubtitle(),
       reportType,
@@ -349,7 +353,7 @@ export default function ExpenseReports() {
                     <TableRow className="font-medium bg-muted/50">
                       <TableCell colSpan={2}>Total</TableCell>
                       <TableCell className="text-right">
-                        {data.reduce((s, r) => s + Number(r.total ?? 0), 0).toLocaleString()}
+                        {summaryRows.reduce((s, r) => s + Number(r.total ?? 0), 0).toLocaleString()}
                       </TableCell>
                     </TableRow>
                   </TableBody>
