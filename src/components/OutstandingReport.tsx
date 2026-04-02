@@ -33,6 +33,9 @@ import {
   FileText,
   ChevronDown,
   ChevronUp,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { fetchStandards, fetchAcademicYears } from "@/lib/lov";
 import { exportOutstandingPdf } from "@/lib/outstanding-report-export";
@@ -102,6 +105,47 @@ export default function OutstandingReport() {
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const toggleExpandRow = (key: string) => setExpandedRows((prev) => ({ ...prev, [key]: !prev[key] }));
 
+  type SortKey = "full_name" | "gr_number" | "standard" | "division" | "quarter" | "fee_type" | "total" | "paid" | "outstanding";
+  type SortDir = "asc" | "desc";
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
+
+  const sortedData = useMemo(() => {
+    if (!data || !sortKey) return data;
+    return [...data].sort((a, b) => {
+      let av: string | number = "";
+      let bv: string | number = "";
+      switch (sortKey) {
+        case "full_name": av = (a.full_name ?? "").toLowerCase(); bv = (b.full_name ?? "").toLowerCase(); break;
+        case "gr_number": av = a.gr_number ?? ""; bv = b.gr_number ?? ""; break;
+        case "standard": av = a.standard ?? ""; bv = b.standard ?? ""; break;
+        case "division": av = a.division ?? ""; bv = b.division ?? ""; break;
+        case "quarter": av = a.quarter; bv = b.quarter; break;
+        case "fee_type": av = a.fee_type ?? ""; bv = b.fee_type ?? ""; break;
+        case "total": av = Number(a.total); bv = Number(b.total); break;
+        case "paid": av = Number(a.paid); bv = Number(b.paid); break;
+        case "outstanding": av = Number(a.outstanding); bv = Number(b.outstanding); break;
+      }
+      if (av < bv) return sortDir === "asc" ? -1 : 1;
+      if (av > bv) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [data, sortKey, sortDir]);
+
+  const SortIcon = ({ col }: { col: SortKey }) => {
+    if (sortKey !== col) return <ArrowUpDown className="h-3 w-3 opacity-40" />;
+    return sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />;
+  };
+
   useEffect(() => {
     fetch("/api/students?limit=500&exclude_rte=1")
       .then((r) => r.json())
@@ -133,6 +177,7 @@ export default function OutstandingReport() {
     setLoading(true);
     setData(null);
     setSummary(null);
+    setSortKey(null);
     const params = new URLSearchParams();
     params.set("academicYear", academicYear);
 
@@ -445,19 +490,37 @@ export default function OutstandingReport() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Student</TableHead>
-                        <TableHead className="hidden sm:table-cell">GR No.</TableHead>
-                        <TableHead className="hidden sm:table-cell">Standard</TableHead>
-                        <TableHead className="hidden sm:table-cell">Division</TableHead>
-                        <TableHead className="hidden sm:table-cell">Quarter</TableHead>
-                        <TableHead className="hidden sm:table-cell">Fee Type</TableHead>
-                        <TableHead className="hidden sm:table-cell text-right">Total</TableHead>
-                        <TableHead className="hidden sm:table-cell text-right">Paid</TableHead>
-                        <TableHead className="text-right font-semibold">Outstanding</TableHead>
+                        <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("full_name")}>
+                          <span className="inline-flex items-center gap-1">Student <SortIcon col="full_name" /></span>
+                        </TableHead>
+                        <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("gr_number")}>
+                          <span className="inline-flex items-center gap-1">GR No. <SortIcon col="gr_number" /></span>
+                        </TableHead>
+                        <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("standard")}>
+                          <span className="inline-flex items-center gap-1">Standard <SortIcon col="standard" /></span>
+                        </TableHead>
+                        <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("division")}>
+                          <span className="inline-flex items-center gap-1">Division <SortIcon col="division" /></span>
+                        </TableHead>
+                        <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("quarter")}>
+                          <span className="inline-flex items-center gap-1">Quarter <SortIcon col="quarter" /></span>
+                        </TableHead>
+                        <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("fee_type")}>
+                          <span className="inline-flex items-center gap-1">Fee Type <SortIcon col="fee_type" /></span>
+                        </TableHead>
+                        <TableHead className="hidden sm:table-cell text-right cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("total")}>
+                          <span className="inline-flex items-center gap-1 justify-end">Total <SortIcon col="total" /></span>
+                        </TableHead>
+                        <TableHead className="hidden sm:table-cell text-right cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("paid")}>
+                          <span className="inline-flex items-center gap-1 justify-end">Paid <SortIcon col="paid" /></span>
+                        </TableHead>
+                        <TableHead className="text-right font-semibold cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("outstanding")}>
+                          <span className="inline-flex items-center gap-1 justify-end">Outstanding <SortIcon col="outstanding" /></span>
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {data.flatMap((row, i) => {
+                      {(sortedData ?? []).flatMap((row, i) => {
                         const rowKey = `${row.student_id}-${row.quarter}-${row.fee_type}-${i}`;
                         return [
                           <TableRow key={rowKey}>
