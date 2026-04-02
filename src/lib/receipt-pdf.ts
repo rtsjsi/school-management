@@ -214,7 +214,27 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
   y += lh;
 
   drawAlignedField("Mode", data.paymentMode ? data.paymentMode.charAt(0).toUpperCase() + data.paymentMode.slice(1) : "—", y);
-  y += blockGap + 0.6;
+  y += lh;
+
+  if (data.paymentMode === "cheque") {
+    if (data.chequeBank) {
+      drawAlignedField("Bank", data.chequeBank, y);
+      y += lh;
+    }
+    if (data.chequeNumber) {
+      drawAlignedField("Cheque No", data.chequeNumber, y);
+      y += lh;
+    }
+  }
+
+  if (data.paymentMode === "online") {
+    if (data.onlineTransactionId) {
+      drawAlignedField("Txn Ref ID", data.onlineTransactionId, y);
+      y += lh;
+    }
+  }
+
+  y += blockGap + 0.6 - lh;
 
   doc.line(margin, y, w - margin, y);
   y += blockGap;
