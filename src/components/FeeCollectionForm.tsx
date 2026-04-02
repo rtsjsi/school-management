@@ -528,7 +528,7 @@ export default function FeeCollectionForm({
               Collection Date
             </Label>
             <p className="flex h-9 items-center rounded-md border border-input bg-muted/50 px-3 text-sm font-medium tabular-nums text-foreground w-[11rem]">
-              {new Date(form.collection_date + "T12:00:00").toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+              {new Date(form.collection_date + "T12:00:00").toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" })}
             </p>
           </div>
           <div className="space-y-1 min-w-0 max-w-full sm:max-w-[min(100%,24rem)] text-right ml-auto">
