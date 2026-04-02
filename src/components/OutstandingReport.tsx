@@ -31,6 +31,8 @@ import {
   Filter,
   X,
   FileText,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { fetchStandards, fetchAcademicYears } from "@/lib/lov";
 import { exportOutstandingPdf } from "@/lib/outstanding-report-export";
@@ -97,6 +99,8 @@ export default function OutstandingReport() {
   const [data, setData] = useState<OutstandingRow[] | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(false);
+  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
+  const toggleExpandRow = (key: string) => setExpandedRows((prev) => ({ ...prev, [key]: !prev[key] }));
 
   useEffect(() => {
     fetch("/api/students?limit=500&exclude_rte=1")
@@ -223,12 +227,12 @@ export default function OutstandingReport() {
 
   return (
     <Card>
-      <CardContent className="pt-6">
-        <div className="space-y-6">
+      <CardContent className="pt-4 sm:pt-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Header */}
           <div className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-destructive" />
-            <h2 className="text-lg font-semibold">Outstanding Fees Report</h2>
+            <AlertCircle className="h-4 w-4 text-destructive sm:h-5 sm:w-5" />
+            <h2 className="text-base font-semibold sm:text-lg">Outstanding Fees Report</h2>
           </div>
 
           {/* Step 1: Report Type Presets */}
@@ -405,22 +409,22 @@ export default function OutstandingReport() {
 
           {/* Summary Cards */}
           {summary && data !== null && !loading && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="rounded-lg border bg-background p-3 space-y-1">
-                <p className="text-xs text-muted-foreground">Students with Dues</p>
-                <p className="text-2xl font-bold">{summary.totalStudents}</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+              <div className="rounded-lg border bg-background p-2.5 space-y-1 sm:p-3">
+                <p className="text-[10px] text-muted-foreground sm:text-xs">Students with Dues</p>
+                <p className="text-xl font-bold sm:text-2xl">{summary.totalStudents}</p>
               </div>
-              <div className="rounded-lg border bg-background p-3 space-y-1">
-                <p className="text-xs text-muted-foreground">Total Outstanding</p>
-                <p className="text-2xl font-bold text-destructive">₹{summary.totalOutstanding.toLocaleString("en-IN")}</p>
+              <div className="rounded-lg border bg-background p-2.5 space-y-1 sm:p-3">
+                <p className="text-[10px] text-muted-foreground sm:text-xs">Total Outstanding</p>
+                <p className="text-xl font-bold text-destructive sm:text-2xl">₹{summary.totalOutstanding.toLocaleString("en-IN")}</p>
               </div>
-              <div className="rounded-lg border bg-background p-3 space-y-1">
-                <p className="text-xs text-muted-foreground">Total Fees</p>
-                <p className="text-lg font-semibold">₹{summary.totalFees.toLocaleString("en-IN")}</p>
+              <div className="rounded-lg border bg-background p-2.5 space-y-1 sm:p-3">
+                <p className="text-[10px] text-muted-foreground sm:text-xs">Total Fees</p>
+                <p className="text-base font-semibold sm:text-lg">₹{summary.totalFees.toLocaleString("en-IN")}</p>
               </div>
-              <div className="rounded-lg border bg-background p-3 space-y-1">
-                <p className="text-xs text-muted-foreground">Total Paid</p>
-                <p className="text-lg font-semibold text-green-600">₹{summary.totalPaid.toLocaleString("en-IN")}</p>
+              <div className="rounded-lg border bg-background p-2.5 space-y-1 sm:p-3">
+                <p className="text-[10px] text-muted-foreground sm:text-xs">Total Paid</p>
+                <p className="text-base font-semibold text-green-600 sm:text-lg">₹{summary.totalPaid.toLocaleString("en-IN")}</p>
               </div>
             </div>
           )}
@@ -441,35 +445,59 @@ export default function OutstandingReport() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="sticky left-0 bg-background z-10">Student</TableHead>
-                        <TableHead>GR No.</TableHead>
-                        <TableHead>Standard</TableHead>
-                        <TableHead>Division</TableHead>
-                        <TableHead>Quarter</TableHead>
-                        <TableHead>Fee Type</TableHead>
-                        <TableHead className="text-right">Total</TableHead>
-                        <TableHead className="text-right">Paid</TableHead>
+                        <TableHead>Student</TableHead>
+                        <TableHead className="hidden sm:table-cell">GR No.</TableHead>
+                        <TableHead className="hidden sm:table-cell">Standard</TableHead>
+                        <TableHead className="hidden sm:table-cell">Division</TableHead>
+                        <TableHead className="hidden sm:table-cell">Quarter</TableHead>
+                        <TableHead className="hidden sm:table-cell">Fee Type</TableHead>
+                        <TableHead className="hidden sm:table-cell text-right">Total</TableHead>
+                        <TableHead className="hidden sm:table-cell text-right">Paid</TableHead>
                         <TableHead className="text-right font-semibold">Outstanding</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {data.map((row, i) => (
-                        <TableRow key={`${row.student_id}-${row.quarter}-${row.fee_type}-${i}`}>
-                          <TableCell className="sticky left-0 bg-background z-10 font-medium">
-                            {row.full_name}
-                          </TableCell>
-                          <TableCell className="font-mono text-xs">{row.gr_number ?? "—"}</TableCell>
-                          <TableCell>{row.standard}</TableCell>
-                          <TableCell>{row.division || "—"}</TableCell>
-                          <TableCell>{row.quarter_label ?? `Q${row.quarter}`}</TableCell>
-                          <TableCell>{getFeeTypeLabel(row.fee_type)}</TableCell>
-                          <TableCell className="text-right">₹{row.total.toLocaleString("en-IN")}</TableCell>
-                          <TableCell className="text-right">₹{row.paid.toLocaleString("en-IN")}</TableCell>
-                          <TableCell className="text-right font-semibold text-destructive">
-                            ₹{row.outstanding.toLocaleString("en-IN")}
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {data.flatMap((row, i) => {
+                        const rowKey = `${row.student_id}-${row.quarter}-${row.fee_type}-${i}`;
+                        return [
+                          <TableRow key={rowKey}>
+                            <TableCell className="font-medium">
+                              {row.full_name}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => toggleExpandRow(rowKey)}
+                                className="ml-1 h-7 px-1.5 sm:hidden"
+                              >
+                                {expandedRows[rowKey] ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                                <span className="text-[10px]">Details</span>
+                              </Button>
+                            </TableCell>
+                            <TableCell className="font-mono text-xs hidden sm:table-cell">{row.gr_number ?? "—"}</TableCell>
+                            <TableCell className="hidden sm:table-cell">{row.standard}</TableCell>
+                            <TableCell className="hidden sm:table-cell">{row.division || "—"}</TableCell>
+                            <TableCell className="hidden sm:table-cell">{row.quarter_label ?? `Q${row.quarter}`}</TableCell>
+                            <TableCell className="hidden sm:table-cell">{getFeeTypeLabel(row.fee_type)}</TableCell>
+                            <TableCell className="text-right hidden sm:table-cell">₹{row.total.toLocaleString("en-IN")}</TableCell>
+                            <TableCell className="text-right hidden sm:table-cell">₹{row.paid.toLocaleString("en-IN")}</TableCell>
+                            <TableCell className="text-right font-semibold text-destructive">
+                              ₹{row.outstanding.toLocaleString("en-IN")}
+                            </TableCell>
+                          </TableRow>,
+                          expandedRows[rowKey] ? (
+                            <TableRow key={`${rowKey}-details`} className="sm:hidden bg-muted/30">
+                              <TableCell colSpan={2} className="text-xs space-y-1">
+                                <div><span className="text-muted-foreground">GR No.:</span> {row.gr_number ?? "—"}</div>
+                                <div><span className="text-muted-foreground">Standard:</span> {row.standard} {row.division || ""}</div>
+                                <div><span className="text-muted-foreground">Quarter:</span> {row.quarter_label ?? `Q${row.quarter}`}</div>
+                                <div><span className="text-muted-foreground">Fee Type:</span> {getFeeTypeLabel(row.fee_type)}</div>
+                                <div><span className="text-muted-foreground">Total:</span> ₹{row.total.toLocaleString("en-IN")}</div>
+                                <div><span className="text-muted-foreground">Paid:</span> <span className="text-green-600">₹{row.paid.toLocaleString("en-IN")}</span></div>
+                              </TableCell>
+                            </TableRow>
+                          ) : null,
+                        ];
+                      })}
                     </TableBody>
                   </Table>
                 ) : (

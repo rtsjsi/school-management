@@ -50,44 +50,51 @@ export function AdministrationTabs({
         <TabsTrigger value="settings">School settings</TabsTrigger>
         <TabsTrigger value="academic-year">Academic year</TabsTrigger>
       </TabsList>
-      <TabsContent value="users" className="space-y-6">
-        <div className="grid gap-6 lg:grid-cols-2">
+      <TabsContent value="users" className="space-y-4 sm:space-y-6">
+        <div className="grid gap-4 lg:grid-cols-2 sm:gap-6">
           <Card>
-            <CardContent className="pt-6">
+            <CardContent className="pt-4 sm:pt-6">
               <CreateUserForm />
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="pt-6">
+            <CardContent className="pt-4 sm:pt-6">
               {profiles.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {profiles.map((p) => (
-                      <TableRow key={p.id}>
-                        <TableCell className="font-medium">{p.full_name || p.email || "—"}</TableCell>
-                        <TableCell className="text-muted-foreground">{p.email ?? "—"}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{ROLES[(p.role as UserRole) ?? "teacher"]}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right flex items-center justify-end gap-1">
-                          <UserClassAccessDialog
-                            profileId={p.id}
-                            displayName={p.full_name || p.email || "User"}
-                          />
-                          <UserResetPasswordDialog userId={p.id} userEmail={p.email ?? "—"} />
-                        </TableCell>
+                <div className="overflow-x-auto rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead className="hidden sm:table-cell">Email</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {profiles.map((p) => (
+                        <TableRow key={p.id}>
+                          <TableCell className="font-medium">
+                            <div>{p.full_name || p.email || "—"}</div>
+                            <div className="text-[10px] text-muted-foreground truncate max-w-[160px] sm:hidden">{p.email ?? ""}</div>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground hidden sm:table-cell">{p.email ?? "—"}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" className="text-[10px] sm:text-xs">{ROLES[(p.role as UserRole) ?? "teacher"]}</Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <UserClassAccessDialog
+                                profileId={p.id}
+                                displayName={p.full_name || p.email || "User"}
+                              />
+                              <UserResetPasswordDialog userId={p.id} userEmail={p.email ?? "—"} />
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               ) : (
                 <p className="text-sm text-muted-foreground py-8 text-center">No users yet. Create one above.</p>
               )}

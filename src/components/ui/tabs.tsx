@@ -14,8 +14,7 @@ const TabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      "inline-flex h-9 items-center justify-start rounded-lg bg-muted/80 p-1 text-muted-foreground overflow-x-auto overflow-y-hidden flex-nowrap w-full max-w-full flex-shrink-0 touch-pan-x [&>[role=tab]:not(:last-child)]:border-r [&>[role=tab]:not(:last-child)]:border-border/80",
-      "scrollbar-thin [scrollbar-width:thin]",
+      "inline-flex h-auto min-h-[2.5rem] items-center justify-start rounded-lg bg-muted/80 p-1 text-muted-foreground overflow-x-auto overflow-y-hidden flex-nowrap w-full max-w-full flex-shrink-0 touch-pan-x scrollbar-hide sm:h-9",
       className
     )}
     style={{ WebkitOverflowScrolling: "touch" } as React.CSSProperties}
@@ -31,7 +30,7 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "inline-flex items-center justify-center whitespace-nowrap rounded-md border border-transparent px-3 py-1 text-sm font-medium text-muted-foreground ring-offset-background transition-all duration-200 ease-out hover:text-foreground hover:bg-background/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-primary/30 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:shadow-primary/20",
+      "inline-flex items-center justify-center whitespace-nowrap rounded-md border border-transparent px-2.5 py-1.5 text-xs font-medium text-muted-foreground ring-offset-background transition-all duration-200 ease-out sm:px-3 sm:py-1 sm:text-sm hover:text-foreground hover:bg-background/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-primary/30 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:shadow-primary/20",
       className
     )}
     {...props}

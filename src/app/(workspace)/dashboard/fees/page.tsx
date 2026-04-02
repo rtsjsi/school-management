@@ -25,15 +25,15 @@ export default async function FeesPage() {
   const canEdit = canEditFees(user);
 
   return (
-    <div className="space-y-4">
-      <Tabs defaultValue="collection" className="space-y-6">
+    <div className="space-y-3 sm:space-y-4">
+      <Tabs defaultValue="collection" className="space-y-4 sm:space-y-6">
         <TabsList className="flex flex-nowrap gap-1 w-full">
-          <TabsTrigger value="collection">Fee Collection</TabsTrigger>
+          <TabsTrigger value="collection">Collection</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
-          <TabsTrigger value="structure">Fee Structure</TabsTrigger>
+          <TabsTrigger value="structure">Structure</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="collection" className="space-y-6">
+        <TabsContent value="collection" className="space-y-4 sm:space-y-6">
           {canEdit && students && students.length > 0 && (
             <FeeCollectionForm
               students={students}
@@ -47,29 +47,29 @@ export default async function FeesPage() {
           <FeeCollectionList />
         </TabsContent>
 
-        <TabsContent value="reports" className="space-y-6">
-          <Tabs defaultValue="collection-report" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 gap-1 h-auto p-1">
-              <TabsTrigger value="collection-report" className="py-2">
+        <TabsContent value="reports" className="space-y-4 sm:space-y-6">
+          <Tabs defaultValue="collection-report" className="space-y-3 sm:space-y-4">
+            <TabsList className="flex flex-nowrap gap-1 w-full">
+              <TabsTrigger value="collection-report">
                 Collection Report
               </TabsTrigger>
-              <TabsTrigger value="outstanding-report" className="py-2">
+              <TabsTrigger value="outstanding-report">
                 Outstanding Report
               </TabsTrigger>
             </TabsList>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[11px] text-muted-foreground sm:text-xs">
               Choose a report type to generate and analyze fee data.
             </p>
-            <TabsContent value="collection-report" className="space-y-6">
+            <TabsContent value="collection-report" className="space-y-4 sm:space-y-6">
               <FeeCollectionReport />
             </TabsContent>
-            <TabsContent value="outstanding-report" className="space-y-6">
+            <TabsContent value="outstanding-report" className="space-y-4 sm:space-y-6">
               <OutstandingReport />
             </TabsContent>
           </Tabs>
         </TabsContent>
 
-        <TabsContent value="structure" className="space-y-6">
+        <TabsContent value="structure" className="space-y-4 sm:space-y-6">
           {canEdit && <FeeStructureForm />}
           <FeeStructureListWithFilters canEdit={canEdit} />
         </TabsContent>

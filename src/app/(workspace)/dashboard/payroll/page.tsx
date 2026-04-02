@@ -21,16 +21,16 @@ export default async function PayrollPage() {
   if (!canAccessPayroll(user)) redirect("/welcome");
 
   return (
-    <div className="space-y-8">
-      <Tabs defaultValue="employees" className="space-y-6">
-        <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-          <TabsList className="inline-flex flex-nowrap w-max min-w-full justify-start gap-1">
-            <TabsTrigger value="employees">Employees</TabsTrigger>
+    <div className="space-y-6 sm:space-y-8">
+      <Tabs defaultValue="employees" className="space-y-4 sm:space-y-6">
+        <div className="w-full overflow-x-auto -mx-3 px-3 sm:-mx-4 sm:px-4 md:mx-0 md:px-0">
+          <TabsList className="inline-flex flex-nowrap w-max min-w-full justify-start gap-0.5 sm:gap-1">
+            <TabsTrigger value="employees">Staff</TabsTrigger>
             <TabsTrigger value="shifts">Shifts</TabsTrigger>
             <TabsTrigger value="holidays">Holidays</TabsTrigger>
             <TabsTrigger value="attendance">Attendance</TabsTrigger>
-            <TabsTrigger value="review">Review & Approve</TabsTrigger>
-            <TabsTrigger value="neft">NEFT File</TabsTrigger>
+            <TabsTrigger value="review">Review</TabsTrigger>
+            <TabsTrigger value="neft">NEFT</TabsTrigger>
             <TabsTrigger value="payslips">Payslips</TabsTrigger>
             <TabsTrigger value="reports">Reports</TabsTrigger>
           </TabsList>

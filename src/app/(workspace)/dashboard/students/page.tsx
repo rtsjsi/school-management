@@ -18,8 +18,8 @@ export default async function StudentsPage() {
   const allowedClassNames = applyClassFilter ? (await getAllowedClassNames(user.id)) ?? [] : null;
 
   return (
-    <div className="space-y-8">
-      <Tabs defaultValue="students" className="space-y-6">
+    <div className="space-y-6 sm:space-y-8">
+      <Tabs defaultValue="students" className="space-y-4 sm:space-y-6">
         <TabsList className="flex flex-nowrap gap-1 w-full">
           <TabsTrigger value="students">Students</TabsTrigger>
           <TabsTrigger value="report">Report</TabsTrigger>

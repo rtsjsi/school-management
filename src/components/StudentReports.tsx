@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Download } from "lucide-react";
+import { Download, ChevronDown, ChevronUp } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -85,6 +85,8 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
   const [standardFilter, setStandardFilter] = useState("all");
   const [divisionFilter, setDivisionFilter] = useState("all");
   const [rteFilter, setRteFilter] = useState("all");
+  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
+  const toggleRow = (id: string) => setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
 
   useEffect(() => {
     (async () => {
@@ -275,11 +277,11 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
 
   return (
     <Card>
-      <CardContent className="space-y-4 pt-6">
+      <CardContent className="space-y-3 pt-4 sm:space-y-4 sm:pt-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
-          <div className="grid w-full gap-3 sm:grid-cols-3 lg:w-auto">
-            <div className="space-y-2">
-              <Label>Standard</Label>
+          <div className="grid w-full gap-2 grid-cols-2 sm:grid-cols-3 sm:gap-3 lg:w-auto">
+            <div className="space-y-1.5 sm:space-y-2">
+              <Label className="text-xs sm:text-sm">Standard</Label>
               <Select value={standardFilter} onValueChange={setStandardFilter}>
                 <SelectTrigger className="h-9">
                   <SelectValue placeholder="All" />
@@ -294,8 +296,8 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>Division</Label>
+            <div className="space-y-1.5 sm:space-y-2">
+              <Label className="text-xs sm:text-sm">Division</Label>
               <Select value={divisionFilter} onValueChange={setDivisionFilter}>
                 <SelectTrigger className="h-9">
                   <SelectValue placeholder="All" />
@@ -310,8 +312,8 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>RTE Flag</Label>
+            <div className="space-y-1.5 col-span-2 sm:col-span-1 sm:space-y-2">
+              <Label className="text-xs sm:text-sm">RTE Flag</Label>
               <Select value={rteFilter} onValueChange={setRteFilter}>
                 <SelectTrigger className="h-9">
                   <SelectValue />
@@ -344,25 +346,46 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
                 <TableRow>
                   <TableHead>Student Name</TableHead>
                   <TableHead>Standard</TableHead>
-                  <TableHead>Division</TableHead>
-                  <TableHead>Roll #</TableHead>
-                  <TableHead>GR No</TableHead>
-                  <TableHead>RTE</TableHead>
+                  <TableHead className="hidden sm:table-cell">Division</TableHead>
+                  <TableHead className="hidden sm:table-cell">Roll #</TableHead>
+                  <TableHead className="hidden sm:table-cell">GR No</TableHead>
+                  <TableHead className="hidden sm:table-cell">RTE</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredRows.map((row) => (
+                {filteredRows.flatMap((row) => [
                   <TableRow key={row.id}>
-                    <TableCell className="font-medium">{row.full_name}</TableCell>
+                    <TableCell className="font-medium">
+                      {row.full_name}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleRow(row.id)}
+                        className="ml-1 h-7 px-1.5 sm:hidden"
+                      >
+                        {expandedRows[row.id] ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                        <span className="text-[10px]">Details</span>
+                      </Button>
+                    </TableCell>
                     <TableCell>{row.standard ?? "—"}</TableCell>
-                    <TableCell>{row.division ?? "—"}</TableCell>
-                    <TableCell>{row.roll_number ?? "—"}</TableCell>
-                    <TableCell className="font-mono text-xs">{row.gr_number ?? "—"}</TableCell>
-                    <TableCell>{row.is_rte_quota ? "Yes" : "No"}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{row.division ?? "—"}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{row.roll_number ?? "—"}</TableCell>
+                    <TableCell className="font-mono text-xs hidden sm:table-cell">{row.gr_number ?? "—"}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{row.is_rte_quota ? "Yes" : "No"}</TableCell>
                     <TableCell className="capitalize">{row.status ?? "—"}</TableCell>
-                  </TableRow>
-                ))}
+                  </TableRow>,
+                  expandedRows[row.id] ? (
+                    <TableRow key={`${row.id}-details`} className="sm:hidden bg-muted/30">
+                      <TableCell colSpan={3} className="text-xs space-y-1">
+                        <div><span className="text-muted-foreground">Div:</span> {row.division ?? "—"} &middot; <span className="text-muted-foreground">Roll:</span> {row.roll_number ?? "—"}</div>
+                        <div><span className="text-muted-foreground">GR No:</span> {row.gr_number ?? "—"}</div>
+                        <div><span className="text-muted-foreground">RTE:</span> {row.is_rte_quota ? "Yes" : "No"}</div>
+                        {row.parent_contact && <div><span className="text-muted-foreground">Contact:</span> {row.parent_contact}</div>}
+                      </TableCell>
+                    </TableRow>
+                  ) : null,
+                ])}
               </TableBody>
             </Table>
           </div>

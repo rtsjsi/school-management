@@ -28,7 +28,7 @@ export default async function DashboardLayout({
       <main className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden bg-background border-l border-border/80 lg:ml-64">
         <DashboardHeader user={user} />
         <div className="content-area flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden touch-pan-y">
-          <div className="container w-full min-w-0 max-w-7xl px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-8 lg:px-8 xl:max-w-[90rem] xl:px-10">
+          <div className="container w-full min-w-0 max-w-7xl px-3 py-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-6 md:py-8 lg:px-8 xl:max-w-[90rem] xl:px-10">
             {children}
           </div>
         </div>

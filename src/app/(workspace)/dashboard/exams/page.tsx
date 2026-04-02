@@ -17,8 +17,8 @@ export default async function ExamsPage() {
   const allowedClassNames = shouldApplyClassFilter(user) ? (await getAllowedClassNames(user.id)) ?? [] : null;
 
   return (
-    <div className="space-y-8">
-      <Tabs defaultValue="exams" className="space-y-6">
+    <div className="space-y-6 sm:space-y-8">
+      <Tabs defaultValue="exams" className="space-y-4 sm:space-y-6">
         <TabsList className="flex flex-nowrap gap-1 w-full">
           <TabsTrigger value="exams">Exams</TabsTrigger>
           <TabsTrigger value="marks">Record Marks</TabsTrigger>
