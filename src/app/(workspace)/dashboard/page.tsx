@@ -344,7 +344,7 @@ export default async function DashboardPage() {
       {showOutstandingSection && activeYearName && (
         <section className="space-y-3 sm:space-y-4">
           <div className="flex items-center gap-2">
-            <Wallet className="h-4 w-4 text-amber-600" />
+            <Wallet className="h-4 w-4 text-destructive" />
             <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider sm:text-sm">
               Outstanding Fees
             </h2>
@@ -355,12 +355,12 @@ export default async function DashboardPage() {
           <div className="rounded-card border border-border bg-card p-3 shadow-card transition-shadow hover:shadow-card-hover sm:p-5">
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
               <div className="flex items-start gap-3 flex-1 min-w-0 sm:gap-4">
-                <div className="rounded-xl bg-amber-100 dark:bg-amber-900/30 p-2.5 shrink-0 sm:p-3">
-                  <Wallet className="h-5 w-5 text-amber-600 sm:h-6 sm:w-6" />
+                <div className="rounded-xl bg-destructive/10 p-2.5 shrink-0 sm:p-3">
+                  <Wallet className="h-5 w-5 text-destructive sm:h-6 sm:w-6" />
                 </div>
                 <div className="space-y-1 min-w-0">
                   <p className="text-[10px] font-medium text-muted-foreground sm:text-xs">Total Outstanding</p>
-                  <p className="text-2xl font-bold tracking-tight text-amber-700 dark:text-amber-500 sm:text-3xl">{fmt(outstandingCurrentYear)}</p>
+                  <p className="text-2xl font-bold tracking-tight text-destructive sm:text-3xl">{fmt(outstandingCurrentYear)}</p>
                 </div>
               </div>
               {totalFeesCurrentYear > 0 && (
@@ -393,7 +393,7 @@ export default async function DashboardPage() {
                   className="rounded-card border border-border bg-card p-3 shadow-card transition-shadow hover:shadow-card-hover sm:p-4"
                 >
                   <p className="text-[10px] font-medium text-muted-foreground sm:text-xs">Q{q} <span className="text-muted-foreground/70">({quarterLabels[q - 1]})</span></p>
-                  <p className={`text-base font-bold tracking-tight mt-1 sm:text-lg ${qOutstanding > 0 ? "text-amber-700 dark:text-amber-500" : "text-green-600"}`}>
+                  <p className={`text-base font-bold tracking-tight mt-1 sm:text-lg ${qOutstanding > 0 ? "text-destructive" : "text-green-600"}`}>
                     {fmt(qOutstanding)}
                   </p>
                   {qOutstanding === 0 && (

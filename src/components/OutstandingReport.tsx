@@ -276,7 +276,7 @@ export default function OutstandingReport() {
         <div className="space-y-4 sm:space-y-6">
           {/* Header */}
           <div className="flex items-center gap-2">
-            <Wallet className="h-4 w-4 text-amber-600 sm:h-5 sm:w-5" />
+            <Wallet className="h-4 w-4 text-destructive sm:h-5 sm:w-5" />
             <h2 className="text-base font-semibold sm:text-lg">Outstanding Fees Report</h2>
           </div>
 
