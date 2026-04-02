@@ -137,12 +137,12 @@ export default function PayslipGenerator() {
           </Button>
           {data && data.rows.length > 0 && (
             <>
-              <Button variant="outline" onClick={downloadAll}>
-                <FileDown className="h-4 w-4 mr-2" />
+              <Button size="sm" className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm" onClick={downloadAll}>
+                <FileDown className="h-4 w-4" />
                 Download All
               </Button>
-              <Button variant="outline" onClick={printAll}>
-                <Printer className="h-4 w-4 mr-2" />
+              <Button size="sm" variant="outline" className="gap-1.5" onClick={printAll}>
+                <Printer className="h-4 w-4" />
                 Print All
               </Button>
             </>
@@ -190,20 +190,24 @@ export default function PayslipGenerator() {
                         {r.net_amount.toLocaleString()}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end gap-1">
                           <Button
                             variant="ghost"
                             size="sm"
+                            className="h-7 w-7 p-0 sm:h-8 sm:w-8"
                             onClick={() => downloadPayslip(r, school.name, school.address)}
+                            aria-label="Download payslip"
                           >
-                            <FileDown className="h-4 w-4" />
+                            <FileDown className="h-3.5 w-3.5" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
+                            className="h-7 w-7 p-0 sm:h-8 sm:w-8"
                             onClick={() => printPayslip(r, school.name, school.address)}
+                            aria-label="Print payslip"
                           >
-                            <Printer className="h-4 w-4" />
+                            <Printer className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                       </TableCell>

@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Download, ChevronDown, ChevronUp } from "lucide-react";
+import { FileDown, ChevronDown, ChevronUp } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -328,9 +328,9 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button type="button" size="sm" variant="outline" className="gap-1 h-9" onClick={exportRows}>
-              <Download className="h-3 w-3" />
-              Excel
+            <Button type="button" size="sm" className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm" onClick={exportRows}>
+              <FileDown className="h-4 w-4" />
+              Export Excel
             </Button>
           </div>
         </div>

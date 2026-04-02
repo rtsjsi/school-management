@@ -32,7 +32,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, ChevronDown, ChevronRight, Download } from "lucide-react";
+import { Plus, Pencil, ChevronDown, ChevronRight, FileDown } from "lucide-react";
 
 type DivisionRow = { id: string; name: string; sort_order: number };
 
@@ -256,31 +256,28 @@ export function ClassManagement() {
             <Button
               type="button"
               size="sm"
-              variant="outline"
-              className="gap-1"
+              className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
               onClick={() => exportStandards("csv")}
             >
-              <Download className="h-3 w-3" />
+              <FileDown className="h-4 w-4" />
               CSV
             </Button>
             <Button
               type="button"
               size="sm"
-              variant="outline"
-              className="gap-1"
+              className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
               onClick={() => exportStandards("xlsx")}
             >
-              <Download className="h-3 w-3" />
+              <FileDown className="h-4 w-4" />
               Excel
             </Button>
             <Button
               type="button"
               size="sm"
-              variant="outline"
-              className="gap-1"
+              className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
               onClick={() => exportStandards("pdf")}
             >
-              <Download className="h-3 w-3" />
+              <FileDown className="h-4 w-4" />
               PDF
             </Button>
           </div>

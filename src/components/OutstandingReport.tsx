@@ -30,7 +30,7 @@ import {
   Loader2,
   Filter,
   X,
-  FileText,
+  FileDown,
   ChevronDown,
   ChevronUp,
   ArrowUpDown,
@@ -479,8 +479,8 @@ export default function OutstandingReport() {
             <div className="space-y-3">
               {data.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  <Button type="button" variant="outline" size="sm" className="gap-1" onClick={handleExportPdf}>
-                    <FileText className="h-4 w-4" aria-hidden />
+                  <Button type="button" size="sm" className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm" onClick={handleExportPdf}>
+                    <FileDown className="h-4 w-4" aria-hidden />
                     Export PDF
                   </Button>
                 </div>

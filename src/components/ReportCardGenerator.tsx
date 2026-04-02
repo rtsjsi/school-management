@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
+import { FileDown } from "lucide-react";
 import { generateReportCardPDF } from "@/lib/report-card-pdf";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 
@@ -191,7 +192,8 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
           </div>
         </div>
 
-        <Button onClick={handleGenerate} disabled={loading || !selectedExamId || !selectedStudentId}>
+        <Button size="sm" className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm" onClick={handleGenerate} disabled={loading || !selectedExamId || !selectedStudentId}>
+          <FileDown className="h-4 w-4" />
           {loading ? "Generating…" : "Generate Report Card PDF"}
         </Button>
       </CardContent>
