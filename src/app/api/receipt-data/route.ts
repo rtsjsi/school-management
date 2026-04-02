@@ -55,20 +55,17 @@ export async function GET(request: NextRequest) {
       const items = (structure.fee_structure_items as { fee_type: string; quarter: number; amount: number }[]) ?? [];
       const totalDues = annualNetFeeLiability(items, student?.fee_concession_amount ?? null);
       totalFees = totalDues;
-      /** Cumulative paid up to and including this receipt (as on fee collection date), not all-time if later payments exist. */
       const { data: paidRows } = await supabase
         .from("fee_collections")
-        .select("id, amount, collection_date")
+        .select("id, amount, receipt_number, collection_date")
         .eq("student_id", studentId)
         .eq("academic_year", c.academic_year)
         .order("collection_date", { ascending: true })
-        .order("id", { ascending: true });
-      const collectionId = (c as { id: string }).id;
-      const collectionTime = new Date(`${(c as { collection_date: string }).collection_date}T12:00:00`).getTime();
+        .order("receipt_number", { ascending: true });
+      const currentReceipt = c.receipt_number ?? "";
       let totalPaidAsOfCollection = 0;
       for (const r of paidRows ?? []) {
-        const rTime = new Date(`${r.collection_date}T12:00:00`).getTime();
-        if (rTime < collectionTime || (rTime === collectionTime && r.id <= collectionId)) {
+        if ((r.receipt_number ?? "") <= currentReceipt) {
           totalPaidAsOfCollection += Number(r.amount);
         }
       }
