@@ -32,7 +32,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, FileDown } from "lucide-react";
 
 const NO_TEACHER_VALUE = "__none__";
 
@@ -116,6 +116,40 @@ export function SubjectMaster() {
     }
   };
 
+  const exportSubjectsPdf = async () => {
+    if (!selectedStandardId || subjects.length === 0) return;
+    try {
+      const { jsPDF } = await import("jspdf");
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const stdName = standards.find((s) => s.id === selectedStandardId)?.name ?? "Standard";
+      let y = 15;
+      doc.setFontSize(14);
+      doc.text(`Subjects — ${stdName}`, 10, y);
+      y += 8;
+      doc.setFontSize(10);
+      doc.text("Subject", 10, y);
+      doc.text("Evaluation Type", 80, y);
+      doc.text("Subject Teacher", 130, y);
+      y += 4;
+      doc.line(10, y, 200, y);
+      y += 4;
+      for (const s of subjects) {
+        if (y > 280) {
+          doc.addPage();
+          y = 15;
+        }
+        doc.text(s.name, 10, y);
+        doc.text(s.evaluation_type === "grade" ? "Grade based" : "Mark based", 80, y);
+        const teacher = employees.find((e) => e.id === s.subject_teacher_id)?.full_name ?? "—";
+        doc.text(teacher, 130, y, { maxWidth: 65 });
+        y += 5;
+      }
+      doc.save(`subjects-${stdName.toLowerCase().replace(/\s+/g, "-")}.pdf`);
+    } catch {
+      alert("Failed to export subjects.");
+    }
+  };
+
   const selectedStandard = standards.find((c) => c.id === selectedStandardId);
 
   return (
@@ -138,6 +172,7 @@ export function SubjectMaster() {
             </Select>
           </div>
           {selectedStandardId && (
+            <>
             <Dialog open={addOpen} onOpenChange={setAddOpen}>
               <DialogTrigger asChild>
                 <Button size="sm" className="gap-1">
@@ -204,6 +239,18 @@ export function SubjectMaster() {
                 </form>
               </DialogContent>
             </Dialog>
+            {subjects.length > 0 && (
+              <Button
+                type="button"
+                size="sm"
+                className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                onClick={exportSubjectsPdf}
+              >
+                <FileDown className="h-4 w-4" />
+                Export PDF
+              </Button>
+            )}
+            </>
           )}
         </div>
 
