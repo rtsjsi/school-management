@@ -374,22 +374,16 @@ export default function FeeCollectionForm({
         const items = (structure.fee_structure_items as { fee_type: string; quarter: number; amount: number }[]) ?? [];
         const totalDues = annualNetFeeLiability(items, selectedStudent?.fee_concession_amount ?? null);
         totalFees = totalDues;
-        const collectionRow = collection as { id?: string; collection_date?: string };
         const { data: paidRows } = await supabase
           .from("fee_collections")
-          .select("id, amount, collection_date")
+          .select("amount, receipt_number")
           .eq("student_id", form.student_id)
           .eq("academic_year", form.academic_year)
-          .order("collection_date", { ascending: true })
-          .order("id", { ascending: true });
-        const cid = collectionRow.id ?? "";
-        const cTime = new Date(
-          collectionRow.collection_date ? `${collectionRow.collection_date}T12:00:00` : Date.now()
-        ).getTime();
+          .order("receipt_number", { ascending: true });
+        const currentReceipt = receiptNumber ?? "";
         let totalPaidAsOf = 0;
         for (const r of paidRows ?? []) {
-          const rTime = new Date(`${r.collection_date}T12:00:00`).getTime();
-          if (rTime < cTime || (rTime === cTime && r.id <= cid)) {
+          if ((r.receipt_number ?? "") <= currentReceipt) {
             totalPaidAsOf += Number(r.amount);
           }
         }
