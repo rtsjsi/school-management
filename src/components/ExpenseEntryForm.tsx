@@ -155,6 +155,10 @@ export default function ExpenseEntryForm({
       setError("Cheque number is required for cheque payment.");
       return;
     }
+    if (form.account === "online" && !form.transaction_reference_id?.trim()) {
+      setError("Transaction ID is required for online payment.");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -308,64 +312,69 @@ export default function ExpenseEntryForm({
           )}
         </div>
       </div>
-      <div className="space-y-2">
-        <Label>Payment Mode</Label>
-        <Select value={form.account} onValueChange={(v) => setForm((p) => ({ ...p, account: v }))}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select mode" />
-          </SelectTrigger>
-          <SelectContent>
-            {PAYMENT_MODES.map((m) => (
-              <SelectItem key={m} value={m} className="capitalize">{m}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 pt-1 border-t border-border/50">
+        <div className="space-y-1">
+          <Label className="text-xs font-medium text-muted-foreground">Payment Method *</Label>
+          <Select value={form.account} onValueChange={(v) => setForm((p) => ({ ...p, account: v }))}>
+            <SelectTrigger className="h-9 text-sm">
+              <SelectValue placeholder="Select payment method" />
+            </SelectTrigger>
+            <SelectContent>
+              {PAYMENT_MODES.map((m) => (
+                <SelectItem key={m} value={m} className="capitalize">{m}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-      {form.account === "cheque" && (
-        <div className="space-y-4 p-4 border rounded-lg">
-          <h4 className="text-sm font-semibold">Cheque Details</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="expense-cheque-number">Cheque Number *</Label>
-              <Input
-                id="expense-cheque-number"
-                value={form.cheque_number}
-                onChange={(e) => setForm((p) => ({ ...p, cheque_number: e.target.value }))}
-                placeholder="e.g. 123456"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="expense-cheque-bank">Bank Name</Label>
+        {form.account === "cheque" && (
+          <>
+            <div className="space-y-1">
+              <Label htmlFor="expense-cheque-bank" className="text-xs font-medium text-muted-foreground">Bank</Label>
               <Input
                 id="expense-cheque-bank"
                 value={form.cheque_bank}
                 onChange={(e) => setForm((p) => ({ ...p, cheque_bank: e.target.value }))}
-                placeholder="Bank name"
+                placeholder="Bank"
+                className="h-9 text-sm"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="expense-cheque-date">Cheque Date</Label>
-              <DatePicker value={form.cheque_date} onChange={(isoDate) => setForm((p) => ({ ...p, cheque_date: isoDate }))} />
+            <div className="space-y-1">
+              <Label htmlFor="expense-cheque-number" className="text-xs font-medium text-muted-foreground">Chq # *</Label>
+              <Input
+                id="expense-cheque-number"
+                value={form.cheque_number}
+                onChange={(e) => setForm((p) => ({ ...p, cheque_number: e.target.value }))}
+                placeholder="No."
+                className="h-9 text-sm"
+                required
+              />
             </div>
-          </div>
-        </div>
-      )}
+            <div className="space-y-1">
+              <Label htmlFor="expense-cheque-date" className="text-xs font-medium text-muted-foreground">Chq date *</Label>
+              <DatePicker
+                value={form.cheque_date}
+                onChange={(isoDate) => setForm((p) => ({ ...p, cheque_date: isoDate }))}
+                className="h-9 text-sm"
+              />
+            </div>
+          </>
+        )}
 
-      {form.account === "online" && (
-        <div className="space-y-4 p-4 border rounded-lg">
-          <h4 className="text-sm font-semibold">Online Transaction Details</h4>
-          <div className="space-y-2">
-            <Label htmlFor="expense-txn-ref">Transaction Reference ID</Label>
+        {form.account === "online" && (
+          <div className="space-y-1">
+            <Label htmlFor="expense-txn-ref" className="text-xs font-medium text-muted-foreground">Txn ID *</Label>
             <Input
               id="expense-txn-ref"
               value={form.transaction_reference_id}
               onChange={(e) => setForm((p) => ({ ...p, transaction_reference_id: e.target.value }))}
-              placeholder="Reference or transaction ID"
+              placeholder="ID"
+              className="h-9 text-sm"
+              required
             />
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       <div className="space-y-2">
         <Label htmlFor="expense-desc">Description</Label>
