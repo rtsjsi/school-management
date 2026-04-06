@@ -19,19 +19,19 @@ const EMPLOYEE_TYPES = ["full_time", "part_time", "contract", "temporary"] as co
 interface EmployeeEditDialogProps {
   employee: {
     id: string;
-    employee_id?: string;
+    employee_id?: string | null;
     full_name: string;
-    email?: string;
-    phone_number?: string;
-    address?: string;
-    aadhaar?: string;
-    pan?: string;
-    role?: string;
-    department?: string;
-    employee_type?: string;
-    joining_date?: string;
-    shift_id?: string;
-    status?: string;
+    email?: string | null;
+    phone_number?: string | null;
+    address?: string | null;
+    aadhaar?: string | null;
+    pan?: string | null;
+    role?: string | null;
+    department?: string | null;
+    employee_type?: string | null;
+    joining_date?: string | null;
+    shift_id?: string | null;
+    status?: string | null;
     monthly_salary?: number | null;
     degree?: string | null;
     institution?: string | null;
