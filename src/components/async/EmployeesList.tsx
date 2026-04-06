@@ -2,6 +2,7 @@ import { getUser, isAdminOrAbove, isAuditor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import EmployeeEntryForm from "@/components/EmployeeEntryForm";
 import { EmployeeEditDialog } from "@/components/EmployeeEditDialog";
+import { EmployeesExportButtons } from "@/components/EmployeesExportButtons";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -44,6 +45,18 @@ export async function EmployeesList() {
 
   const canEdit = isAdminOrAbove(user);
   const shiftList = shifts ?? [];
+  const exportRows = (employees ?? []).map((e) => {
+    const shiftData = e.shifts as { name?: string } | { name?: string }[] | null;
+    const shiftName = Array.isArray(shiftData) ? shiftData[0]?.name : shiftData?.name;
+    return {
+      employee_id: e.employee_id ?? "—",
+      full_name: e.full_name ?? "—",
+      email: e.email ?? "—",
+      department: e.department ?? "—",
+      shift: shiftName ?? "—",
+      status: String(e.status ?? "active"),
+    };
+  });
 
   return (
     <>
@@ -73,6 +86,9 @@ export async function EmployeesList() {
         <CardContent className="pt-6">
           {employees && employees.length > 0 ? (
             <>
+              <div className="mb-3 flex justify-end">
+                <EmployeesExportButtons rows={exportRows} />
+              </div>
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
