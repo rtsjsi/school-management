@@ -29,7 +29,7 @@ export default function ExpensesManager({ canEdit = true }: { canEdit?: boolean 
 
   return (
     <div className="grid gap-6 lg:grid-cols-12">
-      <div className="lg:col-span-6">
+      <div className="lg:col-span-12">
         <Card>
           <CardContent className="pt-6">
             <ExpenseEntryForm expenseHeads={expenseHeads} employees={employees} />

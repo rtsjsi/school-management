@@ -115,7 +115,7 @@ export default function ExpenseEntryForm({
     party: initialValues?.party ?? "NIL",
     amount: initialValues?.amount?.toString() ?? "",
     expense_by: initialValues?.expense_by ?? "",
-    account: (initialValues?.account as string) ?? "cash",
+    account: (initialValues?.account as string) ?? "",
     description: initialValues?.description ?? "",
     expense_date: initialValues?.expense_date ?? new Date().toISOString().slice(0, 10),
     cheque_number: initialValues?.cheque_number ?? "",
@@ -132,7 +132,7 @@ export default function ExpenseEntryForm({
         party: initialValues.party ?? "NIL",
         amount: initialValues.amount?.toString() ?? "",
         expense_by: initialValues.expense_by ?? "",
-        account: initialValues.account ?? "cash",
+        account: initialValues.account ?? "",
         description: initialValues.description ?? "",
         expense_date: initialValues.expense_date ?? new Date().toISOString().slice(0, 10),
         cheque_number: initialValues.cheque_number ?? "",
@@ -151,8 +151,16 @@ export default function ExpenseEntryForm({
       setError("Enter a valid amount.");
       return;
     }
+    if (!form.account) {
+      setError("Please select a payment method.");
+      return;
+    }
     if (form.account === "cheque" && !form.cheque_number?.trim()) {
       setError("Cheque number is required for cheque payment.");
+      return;
+    }
+    if (form.account === "online" && !form.transaction_reference_id?.trim()) {
+      setError("Transaction ID is required for online payment.");
       return;
     }
 
@@ -188,7 +196,7 @@ export default function ExpenseEntryForm({
         party: "NIL",
         amount: "",
         expense_by: "",
-        account: "cash",
+        account: "",
         description: "",
         expense_date: new Date().toISOString().slice(0, 10),
         cheque_number: "",
@@ -212,7 +220,7 @@ export default function ExpenseEntryForm({
       party: "NIL",
       amount: "",
       expense_by: "",
-      account: "cash",
+      account: "",
       description: "",
       expense_date: new Date().toISOString().slice(0, 10),
       cheque_number: "",
@@ -223,30 +231,35 @@ export default function ExpenseEntryForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-3">
       {error && (
-        <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>
+        <p className="text-xs text-destructive bg-destructive/10 px-2 py-1.5 rounded-md">{error}</p>
       )}
       <div className="space-y-2">
-        <Label htmlFor="expense-date">Date</Label>
-        <DatePicker value={form.expense_date} onChange={(isoDate) => setForm((p) => ({ ...p, expense_date: isoDate }))} />
+        <Label htmlFor="expense-date" className="text-xs font-medium text-muted-foreground">Date</Label>
+        <DatePicker
+          value={form.expense_date}
+          onChange={(isoDate) => setForm((p) => ({ ...p, expense_date: isoDate }))}
+          className="h-9 text-sm"
+        />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="expense-voucher">Voucher</Label>
+        <Label htmlFor="expense-voucher" className="text-xs font-medium text-muted-foreground">Voucher</Label>
         <Input
           id="expense-voucher"
           value={form.voucher}
           onChange={(e) => setForm((p) => ({ ...p, voucher: e.target.value }))}
           placeholder="Voucher no"
+          className="h-9 text-sm"
         />
       </div>
       <div className="space-y-2">
-        <Label>Expense Head</Label>
+        <Label className="text-xs font-medium text-muted-foreground">Expense Head</Label>
         <Select
           value={form.expense_head_id}
           onValueChange={(v) => setForm((p) => ({ ...p, expense_head_id: v }))}
         >
-          <SelectTrigger>
+          <SelectTrigger className="h-9 text-sm">
             <SelectValue placeholder="Select head" />
           </SelectTrigger>
           <SelectContent>
@@ -260,16 +273,17 @@ export default function ExpenseEntryForm({
         )}
       </div>
       <div className="space-y-2">
-        <Label htmlFor="expense-party">Party</Label>
+        <Label htmlFor="expense-party" className="text-xs font-medium text-muted-foreground">Party</Label>
         <Input
           id="expense-party"
           value={form.party}
           onChange={(e) => setForm((p) => ({ ...p, party: e.target.value }))}
           placeholder="NIL"
+          className="h-9 text-sm"
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="expense-amount">Total Amount *</Label>
+        <Label htmlFor="expense-amount" className="text-xs font-medium text-muted-foreground">Total Amount *</Label>
         <Input
           id="expense-amount"
           type="number"
@@ -278,24 +292,25 @@ export default function ExpenseEntryForm({
           value={form.amount}
           onChange={(e) => setForm((p) => ({ ...p, amount: e.target.value }))}
           placeholder="0.00"
+          className="h-9 text-sm"
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="expense-by">Expense By</Label>
+        <Label htmlFor="expense-by" className="text-xs font-medium text-muted-foreground">Expense By</Label>
         <div className="flex gap-2">
           <Input
             id="expense-by"
             value={form.expense_by}
             onChange={(e) => setForm((p) => ({ ...p, expense_by: e.target.value }))}
             placeholder="e.g. Mrs Ranjeeta"
-            className="flex-1"
+            className="flex-1 h-9 text-sm"
           />
           {employees && employees.length > 0 && (
             <Select
               value={form.expense_by && employees.some((e) => e.full_name === form.expense_by) ? form.expense_by : "none"}
               onValueChange={(v) => v !== "none" && setForm((p) => ({ ...p, expense_by: v }))}
             >
-              <SelectTrigger className="w-32">
+              <SelectTrigger className="w-36 h-9 text-sm">
                 <SelectValue placeholder="From list" />
               </SelectTrigger>
               <SelectContent>
@@ -308,76 +323,89 @@ export default function ExpenseEntryForm({
           )}
         </div>
       </div>
-      <div className="space-y-2">
-        <Label>Payment Mode</Label>
-        <Select value={form.account} onValueChange={(v) => setForm((p) => ({ ...p, account: v }))}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select mode" />
-          </SelectTrigger>
-          <SelectContent>
-            {PAYMENT_MODES.map((m) => (
-              <SelectItem key={m} value={m} className="capitalize">{m}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 pt-1 border-t border-border/50">
+        <div className="space-y-1">
+          <Label htmlFor="expense-payment-method" className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+            Payment Method *
+          </Label>
+          <Select
+            value={form.account || undefined}
+            onValueChange={(v) => setForm((p) => ({ ...p, account: v }))}
+          >
+            <SelectTrigger id="expense-payment-method" className="h-9 text-sm">
+              <SelectValue placeholder="Select payment method" />
+            </SelectTrigger>
+            <SelectContent>
+              {PAYMENT_MODES.map((m) => (
+                <SelectItem key={m} value={m}>
+                  {m.charAt(0).toUpperCase() + m.slice(1)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-      {form.account === "cheque" && (
-        <div className="space-y-4 p-4 border rounded-lg">
-          <h4 className="text-sm font-semibold">Cheque Details</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="expense-cheque-number">Cheque Number *</Label>
-              <Input
-                id="expense-cheque-number"
-                value={form.cheque_number}
-                onChange={(e) => setForm((p) => ({ ...p, cheque_number: e.target.value }))}
-                placeholder="e.g. 123456"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="expense-cheque-bank">Bank Name</Label>
+        {form.account === "cheque" && (
+          <>
+            <div className="space-y-1">
+              <Label htmlFor="expense-cheque-bank" className="text-xs font-medium text-muted-foreground">Bank</Label>
               <Input
                 id="expense-cheque-bank"
                 value={form.cheque_bank}
                 onChange={(e) => setForm((p) => ({ ...p, cheque_bank: e.target.value }))}
-                placeholder="Bank name"
+                placeholder="Bank"
+                className="h-9 text-sm"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="expense-cheque-date">Cheque Date</Label>
-              <DatePicker value={form.cheque_date} onChange={(isoDate) => setForm((p) => ({ ...p, cheque_date: isoDate }))} />
+            <div className="space-y-1">
+              <Label htmlFor="expense-cheque-number" className="text-xs font-medium text-muted-foreground">Chq # *</Label>
+              <Input
+                id="expense-cheque-number"
+                value={form.cheque_number}
+                onChange={(e) => setForm((p) => ({ ...p, cheque_number: e.target.value }))}
+                placeholder="No."
+                className="h-9 text-sm"
+                required
+              />
             </div>
-          </div>
-        </div>
-      )}
+            <div className="space-y-1">
+              <Label htmlFor="expense-cheque-date" className="text-xs font-medium text-muted-foreground">Chq date *</Label>
+              <DatePicker
+                value={form.cheque_date}
+                onChange={(isoDate) => setForm((p) => ({ ...p, cheque_date: isoDate }))}
+                className="h-9 text-sm"
+              />
+            </div>
+          </>
+        )}
 
-      {form.account === "online" && (
-        <div className="space-y-4 p-4 border rounded-lg">
-          <h4 className="text-sm font-semibold">Online Transaction Details</h4>
-          <div className="space-y-2">
-            <Label htmlFor="expense-txn-ref">Transaction Reference ID</Label>
+        {form.account === "online" && (
+          <div className="space-y-1">
+            <Label htmlFor="expense-txn-ref" className="text-xs font-medium text-muted-foreground">Txn ID *</Label>
             <Input
               id="expense-txn-ref"
               value={form.transaction_reference_id}
               onChange={(e) => setForm((p) => ({ ...p, transaction_reference_id: e.target.value }))}
-              placeholder="Reference or transaction ID"
+              placeholder="ID"
+              className="h-9 text-sm"
+              required
             />
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       <div className="space-y-2">
-        <Label htmlFor="expense-desc">Description</Label>
+        <Label htmlFor="expense-desc" className="text-xs font-medium text-muted-foreground">Description</Label>
         <Input
           id="expense-desc"
           value={form.description}
           onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
           placeholder="Optional"
+          className="h-9 text-sm"
         />
       </div>
       <div className="flex flex-wrap gap-2 justify-start">
-        <SubmitButton loading={loading} loadingLabel="Saving…">
+        <SubmitButton loading={loading} loadingLabel="Saving…" className="h-9 px-4 text-sm font-semibold shadow-none">
           {editingId ? "Update" : "Add"} expense
         </SubmitButton>
         {editingId && (

@@ -171,6 +171,12 @@ export function canEditFees(user: AuthUser | null): boolean {
   return isAdminOrAbove(user) || isAccounts(user);
 }
 
+/** Expense module (entry, heads, budgets, reports). */
+export function canAccessExpenses(user: AuthUser | null): boolean {
+  if (!user) return false;
+  return isAdminOrAbove(user) || isAccounts(user) || isAuditor(user);
+}
+
 /** Payroll module (attendance, payslips, NEFT, etc.). */
 export function canAccessPayroll(user: AuthUser | null): boolean {
   if (!user) return false;

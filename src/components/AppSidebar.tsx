@@ -57,21 +57,21 @@ const navItems: NavItem[] = [
   },
   {
     href: "/dashboard/students",
-    label: "Students management",
+    label: "Students",
     icon: GraduationCap,
     roles: ACADEMIC_STUDENT_EXAM_ROLES,
   },
   {
     href: "/dashboard/fees",
-    label: "Fees management",
+    label: "Fees",
     icon: DollarSign,
     roles: ["principal", "admin", "auditor", "accounts"],
   },
   {
     href: "/dashboard/expenses",
-    label: "Expense management",
+    label: "Expenses",
     icon: Banknote,
-    roles: ["principal", "admin", "auditor"],
+    roles: ["principal", "admin", "auditor", "accounts"],
   },
   {
     href: "/dashboard/payroll",
@@ -81,7 +81,7 @@ const navItems: NavItem[] = [
   },
   {
     href: "/dashboard/exams",
-    label: "Exam management",
+    label: "Exams",
     icon: FileQuestion,
     roles: ACADEMIC_STUDENT_EXAM_ROLES,
   },
