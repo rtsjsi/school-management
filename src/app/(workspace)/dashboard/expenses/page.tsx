@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getUser, isAdminOrAbove, canViewFinance } from "@/lib/auth";
+import { getUser, isAdminOrAbove, canAccessExpenses } from "@/lib/auth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ExpensesManager from "@/components/ExpensesManager";
 import { ExpenseHeadsManager } from "@/components/ExpenseHeadsManager";
@@ -9,7 +9,7 @@ import { ExpenseBudgetsManager } from "@/components/ExpenseBudgetsManager";
 export default async function ExpensesPage() {
   const user = await getUser();
   if (!user) redirect("/login");
-  if (!canViewFinance(user)) redirect("/welcome");
+  if (!canAccessExpenses(user)) redirect("/welcome");
 
   const canEdit = isAdminOrAbove(user);
 

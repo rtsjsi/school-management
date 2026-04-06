@@ -71,7 +71,7 @@ const navItems: NavItem[] = [
     href: "/dashboard/expenses",
     label: "Expenses",
     icon: Banknote,
-    roles: ["principal", "admin", "auditor"],
+    roles: ["principal", "admin", "auditor", "accounts"],
   },
   {
     href: "/dashboard/payroll",
