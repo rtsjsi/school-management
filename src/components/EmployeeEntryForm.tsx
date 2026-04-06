@@ -137,6 +137,10 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
         bank_name: "", account_number: "", ifsc_code: "", account_holder_name: "",
         monthly_salary: "",
       });
+      toast({
+        title: "Employee added",
+        description: `${form.full_name.trim()} has been added successfully.`,
+      });
       router.refresh();
     } catch {
       const message = "Something went wrong.";
