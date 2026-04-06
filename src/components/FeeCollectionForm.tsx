@@ -10,6 +10,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DatePicker } from "@/components/ui/date-picker";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { generateReceiptPDF, amountInWords } from "@/lib/receipt-pdf";
 import { AcademicYearSelect } from "@/components/AcademicYearSelect";
@@ -101,7 +109,14 @@ export default function FeeCollectionForm({
   const [studentInput, setStudentInput] = useState("");
   const [studentSuggestionsOpen, setStudentSuggestionsOpen] = useState(false);
   const [paymentMethodSelectKey, setPaymentMethodSelectKey] = useState(0);
+  const [rtePopupOpen, setRtePopupOpen] = useState(false);
+  const [rtePopupStudentName, setRtePopupStudentName] = useState("");
   const studentComboRef = useRef<HTMLDivElement>(null);
+
+  const showRtePopup = (studentName: string) => {
+    setRtePopupStudentName(studentName);
+    setRtePopupOpen(true);
+  };
 
   const filteredStudents = useMemo(() => {
     return students.filter((s) => {
@@ -661,7 +676,7 @@ export default function FeeCollectionForm({
                               title: "RTE student selected",
                               description: message,
                             });
-                            window.alert(message);
+                            showRtePopup(s.full_name);
                             setStudentSuggestionsOpen(false);
                             return;
                           }
@@ -876,6 +891,24 @@ export default function FeeCollectionForm({
           </SubmitButton>
         </div>
       </form>
+
+      <Dialog open={rtePopupOpen} onOpenChange={setRtePopupOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>RTE Student</DialogTitle>
+            <DialogDescription>
+              {rtePopupStudentName
+                ? `${rtePopupStudentName} is under RTE quota, so no fee collection is required.`
+                : "This student is under RTE quota, so no fee collection is required."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" onClick={() => setRtePopupOpen(false)}>
+              OK
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
