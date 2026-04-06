@@ -246,13 +246,8 @@ export default function FeeCollectionForm({
       return;
     }
     if (selectedStudent?.is_rte_quota) {
-      const message = "This student is under RTE quota, so fee collection is not required.";
-      setError(message);
-      toast({
-        variant: "destructive",
-        title: "RTE student selected",
-        description: message,
-      });
+      setError(null);
+      showRtePopup(selectedStudent.full_name);
       return;
     }
     const amountDueForQuarter = Math.max(0, quarterSummary[selectedQuarter].net - quarterSummary[selectedQuarter].paid);
@@ -669,13 +664,7 @@ export default function FeeCollectionForm({
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => {
                           if (s.is_rte_quota) {
-                            const message = "This student is under RTE quota, so fee collection is not required.";
-                            setError(message);
-                            toast({
-                              variant: "destructive",
-                              title: "RTE student selected",
-                              description: message,
-                            });
+                            setError(null);
                             showRtePopup(s.full_name);
                             setStudentSuggestionsOpen(false);
                             return;
