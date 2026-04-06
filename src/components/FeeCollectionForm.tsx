@@ -98,6 +98,7 @@ export default function FeeCollectionForm({
   const [divisionFilter, setDivisionFilter] = useState("all");
   const [studentInput, setStudentInput] = useState("");
   const [studentSuggestionsOpen, setStudentSuggestionsOpen] = useState(false);
+  const [paymentMethodSelectKey, setPaymentMethodSelectKey] = useState(0);
   const studentComboRef = useRef<HTMLDivElement>(null);
 
   const filteredStudents = useMemo(() => {
@@ -487,6 +488,7 @@ export default function FeeCollectionForm({
         online_transaction_ref: "",
         collection_date: todayIso,
       });
+      setPaymentMethodSelectKey((k) => k + 1);
       setSelectedQuarter(1);
       fetch("/api/receipt-number")
         .then((r) => r.json())
@@ -748,6 +750,7 @@ export default function FeeCollectionForm({
               Payment Method *
             </Label>
             <Select
+              key={paymentMethodSelectKey}
               value={form.payment_mode || undefined}
               onValueChange={(v) => setForm((p) => ({ ...p, payment_mode: v }))}
             >
