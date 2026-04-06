@@ -6,7 +6,6 @@ const VALID_ROLES: UserRole[] = ["principal", "admin", "teacher", "auditor", "ac
 
 function normalizeRole(value: unknown): UserRole {
   const s = typeof value === "string" ? value.trim().toLowerCase() : "";
-  if (s === "clerk") return "accounts";
   if (VALID_ROLES.includes(s as UserRole)) return s as UserRole;
   return "teacher";
 }
