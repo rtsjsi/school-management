@@ -34,6 +34,7 @@ type StudentOption = {
   division?: string;
   roll_number?: number;
   gr_number?: string;
+  is_rte_quota?: boolean | null;
   fee_concession_amount?: number | null;
 };
 
@@ -42,7 +43,8 @@ function formatStudentDisplay(s: StudentOption): string {
     ? ` (${s.standard}${s.division ? "-" + s.division : ""})`
     : "";
   const gr = s.gr_number ? ` · ${s.gr_number}` : "";
-  return `${s.full_name}${cls}${gr}`;
+  const rte = s.is_rte_quota ? " · RTE" : "";
+  return `${s.full_name}${cls}${gr}${rte}`;
 }
 
 export default function FeeCollectionForm({
@@ -224,6 +226,16 @@ export default function FeeCollectionForm({
       toast({
         variant: "destructive",
         title: "Missing student",
+        description: message,
+      });
+      return;
+    }
+    if (selectedStudent?.is_rte_quota) {
+      const message = "This student is under RTE quota, so fee collection is not required.";
+      setError(message);
+      toast({
+        variant: "destructive",
+        title: "RTE student selected",
         description: message,
       });
       return;
@@ -641,6 +653,18 @@ export default function FeeCollectionForm({
                         )}
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => {
+                          if (s.is_rte_quota) {
+                            const message = "This student is under RTE quota, so fee collection is not required.";
+                            setError(message);
+                            toast({
+                              variant: "destructive",
+                              title: "RTE student selected",
+                              description: message,
+                            });
+                            window.alert(message);
+                            setStudentSuggestionsOpen(false);
+                            return;
+                          }
                           setForm((p) => ({ ...p, student_id: s.id }));
                           setStudentInput(formatStudentDisplay(s));
                           setStudentSuggestionsOpen(false);

@@ -20,7 +20,7 @@ export default async function FeesPage() {
     .select("id, full_name, standard, division, roll_number, gr_number, is_rte_quota, fee_concession_amount")
     .eq("status", "active")
     .order("full_name");
-  const students = (allStudents ?? []).filter((s) => !(s as { is_rte_quota?: boolean }).is_rte_quota);
+  const students = allStudents ?? [];
 
   const canEdit = canEditFees(user);
 
