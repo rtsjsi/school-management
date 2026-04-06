@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getUser, canViewFinance, isClerk, isPayrollRole, canAccessFees, canAccessPayroll } from "@/lib/auth";
+import { getUser, canViewFinance, isAccounts, isPayrollRole, canAccessFees, canAccessPayroll } from "@/lib/auth";
 import { shouldApplyClassFilter, getStudentIdsForAllowedClasses } from "@/lib/class-access";
 import { createClient } from "@/lib/supabase/server";
 import { linesWithNetAfterConcession } from "@/lib/fee-concession";
@@ -192,11 +192,11 @@ export default async function DashboardPage() {
     }
   }
 
-  const limitedOpsRole = isClerk(user) || isPayrollRole(user);
+  const limitedOpsRole = isAccounts(user) || isPayrollRole(user);
   const showAcademicSection = !limitedOpsRole;
   const showFinanceSection = canViewFinance(user);
   const showOutstandingSection = canAccessFees(user);
-  const showClerkFeeCard = canAccessFees(user) && !canViewFinance(user);
+  const showAccountsFeeCard = canAccessFees(user) && !canViewFinance(user);
   const showPayrollCard = canAccessPayroll(user) && !canViewFinance(user) && isPayrollRole(user);
 
   const collectionPct = totalFeesCurrentYear > 0
@@ -276,7 +276,7 @@ export default async function DashboardPage() {
       )}
 
       {/* ──── Finance Section ──── */}
-      {(showFinanceSection || showClerkFeeCard) && (
+      {(showFinanceSection || showAccountsFeeCard) && (
         <section className="space-y-3 sm:space-y-4">
           <div className="flex items-center gap-2">
             <IndianRupee className="h-4 w-4 text-primary" />

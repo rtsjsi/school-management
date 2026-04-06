@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { AuthUser } from "@/lib/auth";
-import { isAdminOrAbove, isClerk, isPayrollRole } from "@/lib/auth";
+import { isAdminOrAbove, isAccounts, isPayrollRole } from "@/lib/auth";
 
 export type AllowedClass = { standardId: string; divisionId: string };
 
@@ -17,7 +17,7 @@ export type AllowedClassNames = { standardName: string; divisionName: string }[]
 /** True if the user's data access should be restricted by allowed classes (teacher, auditor). */
 export function shouldApplyClassFilter(user: AuthUser | null): boolean {
   if (!user) return false;
-  if (isAdminOrAbove(user) || isClerk(user) || isPayrollRole(user)) return false;
+  if (isAdminOrAbove(user) || isAccounts(user) || isPayrollRole(user)) return false;
   return true;
 }
 
