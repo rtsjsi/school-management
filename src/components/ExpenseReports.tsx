@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useMemo } from "react";
 import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
   ChevronDown,
   ChevronUp,
   FileText,
@@ -56,6 +59,9 @@ type ListRow = {
   party?: string;
 };
 type SummaryRow = { payment_mode: string; count: number; total: number };
+type ListSortKey = "expense_date" | "voucher" | "expense_head" | "party" | "amount" | "account" | "expense_by";
+type SummarySortKey = "payment_mode" | "count" | "total";
+type SortDir = "asc" | "desc";
 
 const PRESET_CONFIG: {
   value: FilterPreset;
@@ -108,6 +114,10 @@ export default function ExpenseReports() {
   const [data, setData] = useState<(ListRow | SummaryRow)[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
+  const [listSortKey, setListSortKey] = useState<ListSortKey | null>(null);
+  const [summarySortKey, setSummarySortKey] = useState<SummarySortKey | null>(null);
+  const [listSortDir, setListSortDir] = useState<SortDir>("asc");
+  const [summarySortDir, setSummarySortDir] = useState<SortDir>("asc");
 
   useEffect(() => {
     const range = getPresetRange(preset);
@@ -151,6 +161,70 @@ export default function ExpenseReports() {
     () => (Array.isArray(data) && reportType === "summary" ? (data as SummaryRow[]) : []),
     [data, reportType],
   );
+  const sortedListRows = useMemo(() => {
+    if (!listSortKey) return listRows;
+    return [...listRows].sort((a, b) => {
+      let av: string | number = "";
+      let bv: string | number = "";
+      switch (listSortKey) {
+        case "expense_date":
+          av = a.expense_date ?? "";
+          bv = b.expense_date ?? "";
+          break;
+        case "voucher":
+          av = (a.voucher ?? "").toLowerCase();
+          bv = (b.voucher ?? "").toLowerCase();
+          break;
+        case "expense_head":
+          av = (a.expense_head ?? "").toLowerCase();
+          bv = (b.expense_head ?? "").toLowerCase();
+          break;
+        case "party":
+          av = (a.party ?? "").toLowerCase();
+          bv = (b.party ?? "").toLowerCase();
+          break;
+        case "amount":
+          av = Number(a.amount ?? 0);
+          bv = Number(b.amount ?? 0);
+          break;
+        case "account":
+          av = (a.account ?? "").toLowerCase();
+          bv = (b.account ?? "").toLowerCase();
+          break;
+        case "expense_by":
+          av = (a.expense_by ?? "").toLowerCase();
+          bv = (b.expense_by ?? "").toLowerCase();
+          break;
+      }
+      if (av < bv) return listSortDir === "asc" ? -1 : 1;
+      if (av > bv) return listSortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [listRows, listSortDir, listSortKey]);
+  const sortedSummaryRows = useMemo(() => {
+    if (!summarySortKey) return summaryRows;
+    return [...summaryRows].sort((a, b) => {
+      let av: string | number = "";
+      let bv: string | number = "";
+      switch (summarySortKey) {
+        case "payment_mode":
+          av = (a.payment_mode ?? "").toLowerCase();
+          bv = (b.payment_mode ?? "").toLowerCase();
+          break;
+        case "count":
+          av = Number(a.count ?? 0);
+          bv = Number(b.count ?? 0);
+          break;
+        case "total":
+          av = Number(a.total ?? 0);
+          bv = Number(b.total ?? 0);
+          break;
+      }
+      if (av < bv) return summarySortDir === "asc" ? -1 : 1;
+      if (av > bv) return summarySortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [summaryRows, summarySortDir, summarySortKey]);
   const listRowsForExport = useMemo(
     () => listRows.map((r) => ({ ...r, amount: Number(r.amount ?? 0) })),
     [listRows],
@@ -194,6 +268,30 @@ export default function ExpenseReports() {
     setPreset(next);
     setData(null);
     setExpandedRows({});
+  };
+  const handleListSort = (key: ListSortKey) => {
+    if (listSortKey === key) {
+      setListSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setListSortKey(key);
+      setListSortDir("asc");
+    }
+  };
+  const handleSummarySort = (key: SummarySortKey) => {
+    if (summarySortKey === key) {
+      setSummarySortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSummarySortKey(key);
+      setSummarySortDir("asc");
+    }
+  };
+  const ListSortIcon = ({ col }: { col: ListSortKey }) => {
+    if (listSortKey !== col) return <ArrowUpDown className="h-3 w-3 opacity-40" />;
+    return listSortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />;
+  };
+  const SummarySortIcon = ({ col }: { col: SummarySortKey }) => {
+    if (summarySortKey !== col) return <ArrowUpDown className="h-3 w-3 opacity-40" />;
+    return summarySortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />;
   };
 
   return (
@@ -335,13 +433,19 @@ export default function ExpenseReports() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Payment Mode</TableHead>
-                      <TableHead>Count</TableHead>
-                      <TableHead className="text-right">Total Amount</TableHead>
+                      <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleSummarySort("payment_mode")}>
+                        <span className="inline-flex items-center gap-1">Payment Mode <SummarySortIcon col="payment_mode" /></span>
+                      </TableHead>
+                      <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleSummarySort("count")}>
+                        <span className="inline-flex items-center gap-1">Count <SummarySortIcon col="count" /></span>
+                      </TableHead>
+                      <TableHead className="text-right cursor-pointer select-none hover:text-foreground" onClick={() => handleSummarySort("total")}>
+                        <span className="inline-flex items-center gap-1">Total Amount <SummarySortIcon col="total" /></span>
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {summaryRows.map((row: SummaryRow, i) => (
+                    {sortedSummaryRows.map((row: SummaryRow, i) => (
                       <TableRow key={i}>
                         <TableCell className="capitalize">{row.payment_mode ?? "—"}</TableCell>
                         <TableCell>{Number(row.count ?? 0)}</TableCell>
@@ -363,18 +467,32 @@ export default function ExpenseReports() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead className="hidden sm:table-cell">Voucher</TableHead>
-                      <TableHead>Head</TableHead>
-                      <TableHead className="hidden sm:table-cell">Party</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                      <TableHead className="hidden sm:table-cell">Mode</TableHead>
-                      <TableHead className="hidden sm:table-cell">Expense By</TableHead>
+                      <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleListSort("expense_date")}>
+                        <span className="inline-flex items-center gap-1">Date <ListSortIcon col="expense_date" /></span>
+                      </TableHead>
+                      <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleListSort("voucher")}>
+                        <span className="inline-flex items-center gap-1">Voucher <ListSortIcon col="voucher" /></span>
+                      </TableHead>
+                      <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleListSort("expense_head")}>
+                        <span className="inline-flex items-center gap-1">Head <ListSortIcon col="expense_head" /></span>
+                      </TableHead>
+                      <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleListSort("party")}>
+                        <span className="inline-flex items-center gap-1">Party <ListSortIcon col="party" /></span>
+                      </TableHead>
+                      <TableHead className="text-right cursor-pointer select-none hover:text-foreground" onClick={() => handleListSort("amount")}>
+                        <span className="inline-flex items-center gap-1">Amount <ListSortIcon col="amount" /></span>
+                      </TableHead>
+                      <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleListSort("account")}>
+                        <span className="inline-flex items-center gap-1">Mode <ListSortIcon col="account" /></span>
+                      </TableHead>
+                      <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleListSort("expense_by")}>
+                        <span className="inline-flex items-center gap-1">Expense By <ListSortIcon col="expense_by" /></span>
+                      </TableHead>
                       <TableHead className="max-w-[160px] hidden sm:table-cell">Description</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {listRows.flatMap((row: ListRow) => [
+                    {sortedListRows.flatMap((row: ListRow) => [
                       <TableRow key={String(row.id ?? "")}>
                         <TableCell className="text-sm">
                           {row.expense_date

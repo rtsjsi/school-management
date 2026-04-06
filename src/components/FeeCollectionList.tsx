@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { generateReceiptPDF, amountInWords } from "@/lib/receipt-pdf";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 import { Card, CardContent } from "@/components/ui/card";
@@ -32,7 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Download, Pencil, Printer, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Download, Pencil, Printer, ChevronDown, ChevronUp } from "lucide-react";
 import { formatFeeCollectionDisplayDate } from "@/lib/utils";
 
 type CollectionRow = {
@@ -315,6 +315,54 @@ export default function FeeCollectionList() {
 
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const toggleRow = (id: string) => setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
+  type SortKey = "receipt_number" | "student_name" | "amount" | "quarter" | "collection_date";
+  type SortDir = "asc" | "desc";
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
+  const sortedCollections = useMemo(() => {
+    if (!sortKey) return collections;
+    return [...collections].sort((a, b) => {
+      let av: string | number = "";
+      let bv: string | number = "";
+      switch (sortKey) {
+        case "receipt_number":
+          av = a.receipt_number ?? "";
+          bv = b.receipt_number ?? "";
+          break;
+        case "student_name":
+          av = (a.student_name ?? "").toLowerCase();
+          bv = (b.student_name ?? "").toLowerCase();
+          break;
+        case "amount":
+          av = Number(a.amount ?? 0);
+          bv = Number(b.amount ?? 0);
+          break;
+        case "quarter":
+          av = Number(a.quarter ?? 0);
+          bv = Number(b.quarter ?? 0);
+          break;
+        case "collection_date":
+          av = a.collection_date ?? "";
+          bv = b.collection_date ?? "";
+          break;
+      }
+      if (av < bv) return sortDir === "asc" ? -1 : 1;
+      if (av > bv) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [collections, sortDir, sortKey]);
+  const SortIcon = ({ col }: { col: SortKey }) => {
+    if (sortKey !== col) return <ArrowUpDown className="h-3 w-3 opacity-40" />;
+    return sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />;
+  };
 
   if (loading) return null;
   if (collections.length === 0) return null;
@@ -327,16 +375,26 @@ export default function FeeCollectionList() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="hidden sm:table-cell">Receipt</TableHead>
-                <TableHead>Student</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead className="hidden sm:table-cell">Qtr</TableHead>
-                <TableHead className="hidden sm:table-cell">Date</TableHead>
+                <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("receipt_number")}>
+                  <span className="inline-flex items-center gap-1">Receipt <SortIcon col="receipt_number" /></span>
+                </TableHead>
+                <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("student_name")}>
+                  <span className="inline-flex items-center gap-1">Student <SortIcon col="student_name" /></span>
+                </TableHead>
+                <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("amount")}>
+                  <span className="inline-flex items-center gap-1">Amount <SortIcon col="amount" /></span>
+                </TableHead>
+                <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("quarter")}>
+                  <span className="inline-flex items-center gap-1">Qtr <SortIcon col="quarter" /></span>
+                </TableHead>
+                <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("collection_date")}>
+                  <span className="inline-flex items-center gap-1">Date <SortIcon col="collection_date" /></span>
+                </TableHead>
                 <TableHead className="w-20 sm:w-24"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {collections.flatMap((row) => [
+              {sortedCollections.flatMap((row) => [
                 <TableRow key={row.id}>
                   <TableCell className="font-mono text-xs hidden sm:table-cell">{row.receipt_number}</TableCell>
                   <TableCell className="font-medium">

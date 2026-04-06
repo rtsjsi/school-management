@@ -35,7 +35,7 @@ const ALL_DASHBOARD_ROLES: UserRole[] = [
   "admin",
   "teacher",
   "auditor",
-  "clerk",
+  "accounts",
   "payroll",
 ];
 
@@ -65,7 +65,7 @@ const navItems: NavItem[] = [
     href: "/dashboard/fees",
     label: "Fees management",
     icon: DollarSign,
-    roles: ["principal", "admin", "auditor", "clerk"],
+    roles: ["principal", "admin", "auditor", "accounts"],
   },
   {
     href: "/dashboard/expenses",

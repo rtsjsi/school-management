@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BookOpen, UserPlus, LogOut, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, BookOpen, UserPlus, LogOut, ChevronDown, ChevronUp } from "lucide-react";
 import { fetchStandards, fetchAllDivisions } from "@/lib/lov";
 import {
   Dialog,
@@ -90,6 +90,10 @@ function StudentEnrolmentsDialog({
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<EnrolmentRow[]>([]);
+  type SortKey = "academicYear" | "standard" | "division" | "status" | "createdAt";
+  type SortDir = "asc" | "desc";
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
   const supabase = createClient();
 
   const loadEnrolments = async () => {
@@ -145,6 +149,50 @@ function StudentEnrolmentsDialog({
       await loadEnrolments();
     }
   };
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
+  const sortedRows = useMemo(() => {
+    if (!sortKey) return rows;
+    return [...rows].sort((a, b) => {
+      let av: string | number = "";
+      let bv: string | number = "";
+      switch (sortKey) {
+        case "academicYear":
+          av = a.academicYear.toLowerCase();
+          bv = b.academicYear.toLowerCase();
+          break;
+        case "standard":
+          av = a.standard.toLowerCase();
+          bv = b.standard.toLowerCase();
+          break;
+        case "division":
+          av = a.division.toLowerCase();
+          bv = b.division.toLowerCase();
+          break;
+        case "status":
+          av = a.status.toLowerCase();
+          bv = b.status.toLowerCase();
+          break;
+        case "createdAt":
+          av = a.createdAt ?? "";
+          bv = b.createdAt ?? "";
+          break;
+      }
+      if (av < bv) return sortDir === "asc" ? -1 : 1;
+      if (av > bv) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [rows, sortDir, sortKey]);
+  const SortIcon = ({ col }: { col: SortKey }) => {
+    if (sortKey !== col) return <ArrowUpDown className="h-3 w-3 opacity-40" />;
+    return sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />;
+  };
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -175,15 +223,25 @@ function StudentEnrolmentsDialog({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Academic Year</TableHead>
-                  <TableHead>Standard</TableHead>
-                  <TableHead>Division</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-muted-foreground">Created</TableHead>
+                  <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("academicYear")}>
+                    <span className="inline-flex items-center gap-1">Academic Year <SortIcon col="academicYear" /></span>
+                  </TableHead>
+                  <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("standard")}>
+                    <span className="inline-flex items-center gap-1">Standard <SortIcon col="standard" /></span>
+                  </TableHead>
+                  <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("division")}>
+                    <span className="inline-flex items-center gap-1">Division <SortIcon col="division" /></span>
+                  </TableHead>
+                  <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("status")}>
+                    <span className="inline-flex items-center gap-1">Status <SortIcon col="status" /></span>
+                  </TableHead>
+                  <TableHead className="text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("createdAt")}>
+                    <span className="inline-flex items-center gap-1">Created <SortIcon col="createdAt" /></span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rows.map((r) => (
+                {sortedRows.map((r) => (
                   <TableRow key={r.id}>
                     <TableCell>{r.academicYear}</TableCell>
                     <TableCell>{r.standard}</TableCell>
@@ -360,13 +418,17 @@ export function ManageStudentsList({
   const [search, setSearch] = useState("");
   const [standardFilter, setStandardFilter] = useState("all");
   const [divisionFilter, setDivisionFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("active");
   const [rteFilter, setRteFilter] = useState("all");
   const [standards, setStandards] = useState<{ id: string; name: string }[]>([]);
   const [divisions, setDivisions] = useState<{ id: string; name: string }[]>([]);
   const [addOpen, setAddOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [expandedStudentRows, setExpandedStudentRows] = useState<Record<string, boolean>>({});
+  type SortKey = "full_name" | "standard" | "division" | "roll_number" | "gr_number" | "is_rte_quota" | "status";
+  type SortDir = "asc" | "desc";
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
 
   const supabase = useMemo(() => createClient(), []);
   const restrictByClass = allowedClassNames !== undefined;
@@ -427,6 +489,58 @@ export function ManageStudentsList({
       suspended: "destructive",
     };
     return map[status] || "default";
+  };
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
+  const sortedStudents = useMemo(() => {
+    if (!sortKey) return students;
+    return [...students].sort((a, b) => {
+      let av: string | number = "";
+      let bv: string | number = "";
+      switch (sortKey) {
+        case "full_name":
+          av = (a.full_name ?? "").toLowerCase();
+          bv = (b.full_name ?? "").toLowerCase();
+          break;
+        case "standard":
+          av = (a.standard ?? "").toLowerCase();
+          bv = (b.standard ?? "").toLowerCase();
+          break;
+        case "division":
+          av = (a.division ?? "").toLowerCase();
+          bv = (b.division ?? "").toLowerCase();
+          break;
+        case "roll_number":
+          av = Number(a.roll_number ?? 0);
+          bv = Number(b.roll_number ?? 0);
+          break;
+        case "gr_number":
+          av = (a.gr_number ?? "").toLowerCase();
+          bv = (b.gr_number ?? "").toLowerCase();
+          break;
+        case "is_rte_quota":
+          av = a.is_rte_quota ? 1 : 0;
+          bv = b.is_rte_quota ? 1 : 0;
+          break;
+        case "status":
+          av = (a.status ?? "").toLowerCase();
+          bv = (b.status ?? "").toLowerCase();
+          break;
+      }
+      if (av < bv) return sortDir === "asc" ? -1 : 1;
+      if (av > bv) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [students, sortDir, sortKey]);
+  const SortIcon = ({ col }: { col: SortKey }) => {
+    if (sortKey !== col) return <ArrowUpDown className="h-3 w-3 opacity-40" />;
+    return sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />;
   };
 
   return (
@@ -524,20 +638,34 @@ export function ManageStudentsList({
               <TableHeader>
                 <TableRow>
                   {canEdit && <TableHead className="w-32 whitespace-nowrap">Actions</TableHead>}
-                  <TableHead>Student Name</TableHead>
-                  <TableHead>Standard</TableHead>
-                  <TableHead className="hidden sm:table-cell">Division</TableHead>
-                  <TableHead className="hidden sm:table-cell">Roll #</TableHead>
-                  <TableHead className="hidden sm:table-cell">GR No</TableHead>
-                  <TableHead>RTE</TableHead>
-                  <TableHead className="hidden sm:table-cell">Status</TableHead>
+                  <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("full_name")}>
+                    <span className="inline-flex items-center gap-1">Student Name <SortIcon col="full_name" /></span>
+                  </TableHead>
+                  <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("standard")}>
+                    <span className="inline-flex items-center gap-1">Standard <SortIcon col="standard" /></span>
+                  </TableHead>
+                  <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("division")}>
+                    <span className="inline-flex items-center gap-1">Division <SortIcon col="division" /></span>
+                  </TableHead>
+                  <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("roll_number")}>
+                    <span className="inline-flex items-center gap-1">Roll # <SortIcon col="roll_number" /></span>
+                  </TableHead>
+                  <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("gr_number")}>
+                    <span className="inline-flex items-center gap-1">GR No <SortIcon col="gr_number" /></span>
+                  </TableHead>
+                  <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("is_rte_quota")}>
+                    <span className="inline-flex items-center gap-1">RTE <SortIcon col="is_rte_quota" /></span>
+                  </TableHead>
+                  <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("status")}>
+                    <span className="inline-flex items-center gap-1">Status <SortIcon col="status" /></span>
+                  </TableHead>
                   <TableHead className="w-20 text-center hidden sm:table-cell">View</TableHead>
                   {canEdit && <TableHead className="w-32 text-center hidden sm:table-cell">Enrolments</TableHead>}
                   {canEdit && <TableHead className="w-28 text-right hidden sm:table-cell">Exit</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {students.flatMap((s) => [
+                {sortedStudents.flatMap((s) => [
                   <TableRow key={s.id}>
                     {canEdit && (
                       <TableCell className="space-x-1 align-top">
