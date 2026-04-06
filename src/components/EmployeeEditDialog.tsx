@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const ROLES = ["teacher", "staff", "admin", "other"] as const;
 const EMPLOYEE_TYPES = ["full_time", "part_time", "contract", "temporary"] as const;
@@ -45,6 +46,7 @@ interface EmployeeEditDialogProps {
 
 export function EmployeeEditDialog({ employee, shifts }: EmployeeEditDialogProps) {
   const router = useRouter();
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +78,11 @@ export function EmployeeEditDialog({ employee, shifts }: EmployeeEditDialogProps
     setError(null);
     if (!form.full_name.trim()) {
       setError("Full name is required.");
+      toast({
+        variant: "destructive",
+        title: "Please check the form",
+        description: "Full name is required.",
+      });
       return;
     }
     setLoading(true);
@@ -108,12 +115,26 @@ export function EmployeeEditDialog({ employee, shifts }: EmployeeEditDialogProps
         .eq("id", employee.id);
       if (err) {
         setError(err.message);
+        toast({
+          variant: "destructive",
+          title: "Could not update employee",
+          description: err.message,
+        });
         return;
       }
+      toast({
+        title: "Employee updated",
+        description: `${form.full_name.trim()} has been updated successfully.`,
+      });
       setOpen(false);
       router.refresh();
     } catch {
       setError("Something went wrong.");
+      toast({
+        variant: "destructive",
+        title: "Unexpected error",
+        description: "Something went wrong.",
+      });
     } finally {
       setLoading(false);
     }
@@ -140,33 +161,33 @@ export function EmployeeEditDialog({ employee, shifts }: EmployeeEditDialogProps
               <Input value={form.full_name} onChange={(e) => setForm((p) => ({ ...p, full_name: e.target.value }))} required />
             </div>
             <div className="space-y-2">
-              <Label>Email</Label>
-              <Input type="email" value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} />
+              <Label>Email *</Label>
+              <Input type="email" value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} required />
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Phone</Label>
-              <Input value={form.phone_number} onChange={(e) => setForm((p) => ({ ...p, phone_number: e.target.value }))} />
+              <Label>Phone *</Label>
+              <Input value={form.phone_number} onChange={(e) => setForm((p) => ({ ...p, phone_number: e.target.value }))} required />
             </div>
             <div className="space-y-2">
-              <Label>Address</Label>
-              <Input value={form.address} onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))} />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Aadhaar</Label>
-              <Input value={form.aadhaar} onChange={(e) => setForm((p) => ({ ...p, aadhaar: e.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <Label>PAN</Label>
-              <Input value={form.pan} onChange={(e) => setForm((p) => ({ ...p, pan: e.target.value }))} />
+              <Label>Address *</Label>
+              <Input value={form.address} onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))} required />
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Role</Label>
+              <Label>Aadhaar *</Label>
+              <Input value={form.aadhaar} onChange={(e) => setForm((p) => ({ ...p, aadhaar: e.target.value }))} required />
+            </div>
+            <div className="space-y-2">
+              <Label>PAN *</Label>
+              <Input value={form.pan} onChange={(e) => setForm((p) => ({ ...p, pan: e.target.value }))} required />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Role *</Label>
               <Select value={form.role} onValueChange={(v) => setForm((p) => ({ ...p, role: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -175,13 +196,13 @@ export function EmployeeEditDialog({ employee, shifts }: EmployeeEditDialogProps
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Department</Label>
-              <Input value={form.department} onChange={(e) => setForm((p) => ({ ...p, department: e.target.value }))} />
+              <Label>Department *</Label>
+              <Input value={form.department} onChange={(e) => setForm((p) => ({ ...p, department: e.target.value }))} required />
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Employee Type</Label>
+              <Label>Employee Type *</Label>
               <Select value={form.employee_type} onValueChange={(v) => setForm((p) => ({ ...p, employee_type: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -192,11 +213,11 @@ export function EmployeeEditDialog({ employee, shifts }: EmployeeEditDialogProps
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Monthly Salary (₹)</Label>
-              <Input type="number" min={0} step={0.01} value={form.monthly_salary} onChange={(e) => setForm((p) => ({ ...p, monthly_salary: e.target.value }))} placeholder="For NEFT" />
+              <Label>Monthly Salary (₹) *</Label>
+              <Input type="number" min={0} step={0.01} value={form.monthly_salary} onChange={(e) => setForm((p) => ({ ...p, monthly_salary: e.target.value }))} placeholder="For NEFT" required />
             </div>
             <div className="space-y-2">
-              <Label>Joining Date</Label>
+              <Label>Joining Date *</Label>
               <DatePicker value={form.joining_date} onChange={(isoDate) => setForm((p) => ({ ...p, joining_date: isoDate }))} />
             </div>
             <div className="space-y-2">
@@ -229,63 +250,70 @@ export function EmployeeEditDialog({ employee, shifts }: EmployeeEditDialogProps
             <h4 className="text-sm font-semibold">Qualification</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label>Degree</Label>
+                <Label>Degree *</Label>
                 <Input
                   value={form.degree}
                   onChange={(e) => setForm((p) => ({ ...p, degree: e.target.value }))}
                   placeholder="e.g. B.Ed"
+                  required
                 />
               </div>
               <div className="space-y-2">
-                <Label>Institution</Label>
+                <Label>Institution *</Label>
                 <Input
                   value={form.institution}
                   onChange={(e) => setForm((p) => ({ ...p, institution: e.target.value }))}
                   placeholder="College/University"
+                  required
                 />
               </div>
               <div className="space-y-2">
-                <Label>Year Passed</Label>
+                <Label>Year Passed *</Label>
                 <Input
                   type="number"
                   value={form.year_passed}
                   onChange={(e) => setForm((p) => ({ ...p, year_passed: e.target.value }))}
                   placeholder="2020"
+                  required
                 />
               </div>
             </div>
             <h4 className="text-sm font-semibold">Bank Account (Salary)</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Bank Name</Label>
+                <Label>Bank Name *</Label>
                 <Input
                   value={form.bank_name}
                   onChange={(e) => setForm((p) => ({ ...p, bank_name: e.target.value }))}
                   placeholder="Bank name"
+                  required
                 />
               </div>
               <div className="space-y-2">
-                <Label>Account Number</Label>
+                <Label>Account Number *</Label>
                 <Input
                   value={form.account_number}
                   onChange={(e) => setForm((p) => ({ ...p, account_number: e.target.value }))}
                   placeholder="Account number"
+                  required
                 />
               </div>
               <div className="space-y-2">
-                <Label>IFSC Code</Label>
+                <Label>IFSC Code *</Label>
                 <Input
                   value={form.ifsc_code}
                   onChange={(e) => setForm((p) => ({ ...p, ifsc_code: e.target.value }))}
                   placeholder="IFSC"
+                  required
                 />
               </div>
               <div className="space-y-2">
-                <Label>Account Holder Name</Label>
+                <Label>Account Holder Name *</Label>
                 <Input
                   value={form.account_holder_name}
                   onChange={(e) => setForm((p) => ({ ...p, account_holder_name: e.target.value }))}
                   placeholder="As per bank"
+                  required
                 />
               </div>
             </div>
