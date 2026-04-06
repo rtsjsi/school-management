@@ -418,7 +418,7 @@ export function ManageStudentsList({
   const [search, setSearch] = useState("");
   const [standardFilter, setStandardFilter] = useState("all");
   const [divisionFilter, setDivisionFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("active");
   const [rteFilter, setRteFilter] = useState("all");
   const [standards, setStandards] = useState<{ id: string; name: string }[]>([]);
   const [divisions, setDivisions] = useState<{ id: string; name: string }[]>([]);
