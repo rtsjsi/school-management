@@ -10,6 +10,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DatePicker } from "@/components/ui/date-picker";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { generateReceiptPDF, amountInWords } from "@/lib/receipt-pdf";
 import { AcademicYearSelect } from "@/components/AcademicYearSelect";
@@ -34,6 +42,7 @@ type StudentOption = {
   division?: string;
   roll_number?: number;
   gr_number?: string;
+  is_rte_quota?: boolean | null;
   fee_concession_amount?: number | null;
 };
 
@@ -42,7 +51,8 @@ function formatStudentDisplay(s: StudentOption): string {
     ? ` (${s.standard}${s.division ? "-" + s.division : ""})`
     : "";
   const gr = s.gr_number ? ` · ${s.gr_number}` : "";
-  return `${s.full_name}${cls}${gr}`;
+  const rte = s.is_rte_quota ? " · RTE" : "";
+  return `${s.full_name}${cls}${gr}${rte}`;
 }
 
 export default function FeeCollectionForm({
@@ -99,7 +109,14 @@ export default function FeeCollectionForm({
   const [studentInput, setStudentInput] = useState("");
   const [studentSuggestionsOpen, setStudentSuggestionsOpen] = useState(false);
   const [paymentMethodSelectKey, setPaymentMethodSelectKey] = useState(0);
+  const [rtePopupOpen, setRtePopupOpen] = useState(false);
+  const [rtePopupStudentName, setRtePopupStudentName] = useState("");
   const studentComboRef = useRef<HTMLDivElement>(null);
+
+  const showRtePopup = (studentName: string) => {
+    setRtePopupStudentName(studentName);
+    setRtePopupOpen(true);
+  };
 
   const filteredStudents = useMemo(() => {
     return students.filter((s) => {
@@ -226,6 +243,11 @@ export default function FeeCollectionForm({
         title: "Missing student",
         description: message,
       });
+      return;
+    }
+    if (selectedStudent?.is_rte_quota) {
+      setError(null);
+      showRtePopup(selectedStudent.full_name);
       return;
     }
     const amountDueForQuarter = Math.max(0, quarterSummary[selectedQuarter].net - quarterSummary[selectedQuarter].paid);
@@ -641,6 +663,12 @@ export default function FeeCollectionForm({
                         )}
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => {
+                          if (s.is_rte_quota) {
+                            setError(null);
+                            showRtePopup(s.full_name);
+                            setStudentSuggestionsOpen(false);
+                            return;
+                          }
                           setForm((p) => ({ ...p, student_id: s.id }));
                           setStudentInput(formatStudentDisplay(s));
                           setStudentSuggestionsOpen(false);
@@ -852,6 +880,24 @@ export default function FeeCollectionForm({
           </SubmitButton>
         </div>
       </form>
+
+      <Dialog open={rtePopupOpen} onOpenChange={setRtePopupOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>RTE Student</DialogTitle>
+            <DialogDescription>
+              {rtePopupStudentName
+                ? `${rtePopupStudentName} is under RTE quota, so no fee collection is required.`
+                : "This student is under RTE quota, so no fee collection is required."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" onClick={() => setRtePopupOpen(false)}>
+              OK
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
