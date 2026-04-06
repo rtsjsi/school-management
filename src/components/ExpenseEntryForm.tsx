@@ -115,7 +115,7 @@ export default function ExpenseEntryForm({
     party: initialValues?.party ?? "NIL",
     amount: initialValues?.amount?.toString() ?? "",
     expense_by: initialValues?.expense_by ?? "",
-    account: (initialValues?.account as string) ?? "cash",
+    account: (initialValues?.account as string) ?? "",
     description: initialValues?.description ?? "",
     expense_date: initialValues?.expense_date ?? new Date().toISOString().slice(0, 10),
     cheque_number: initialValues?.cheque_number ?? "",
@@ -132,7 +132,7 @@ export default function ExpenseEntryForm({
         party: initialValues.party ?? "NIL",
         amount: initialValues.amount?.toString() ?? "",
         expense_by: initialValues.expense_by ?? "",
-        account: initialValues.account ?? "cash",
+        account: initialValues.account ?? "",
         description: initialValues.description ?? "",
         expense_date: initialValues.expense_date ?? new Date().toISOString().slice(0, 10),
         cheque_number: initialValues.cheque_number ?? "",
@@ -149,6 +149,10 @@ export default function ExpenseEntryForm({
     const amount = parseFloat(form.amount);
     if (isNaN(amount) || amount < 0) {
       setError("Enter a valid amount.");
+      return;
+    }
+    if (!form.account) {
+      setError("Please select a payment method.");
       return;
     }
     if (form.account === "cheque" && !form.cheque_number?.trim()) {
@@ -192,7 +196,7 @@ export default function ExpenseEntryForm({
         party: "NIL",
         amount: "",
         expense_by: "",
-        account: "cash",
+        account: "",
         description: "",
         expense_date: new Date().toISOString().slice(0, 10),
         cheque_number: "",
@@ -216,7 +220,7 @@ export default function ExpenseEntryForm({
       party: "NIL",
       amount: "",
       expense_by: "",
-      account: "cash",
+      account: "",
       description: "",
       expense_date: new Date().toISOString().slice(0, 10),
       cheque_number: "",
@@ -314,14 +318,21 @@ export default function ExpenseEntryForm({
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 pt-1 border-t border-border/50">
         <div className="space-y-1">
-          <Label className="text-xs font-medium text-muted-foreground">Payment Method *</Label>
-          <Select value={form.account} onValueChange={(v) => setForm((p) => ({ ...p, account: v }))}>
-            <SelectTrigger className="h-9 text-sm">
+          <Label htmlFor="expense-payment-method" className="text-xs font-medium text-muted-foreground">
+            Payment Method *
+          </Label>
+          <Select
+            value={form.account || undefined}
+            onValueChange={(v) => setForm((p) => ({ ...p, account: v }))}
+          >
+            <SelectTrigger id="expense-payment-method" className="h-9 text-sm">
               <SelectValue placeholder="Select payment method" />
             </SelectTrigger>
             <SelectContent>
               {PAYMENT_MODES.map((m) => (
-                <SelectItem key={m} value={m} className="capitalize">{m}</SelectItem>
+                <SelectItem key={m} value={m}>
+                  {m.charAt(0).toUpperCase() + m.slice(1)}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
