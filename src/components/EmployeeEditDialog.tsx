@@ -27,7 +27,6 @@ interface EmployeeEditDialogProps {
     pan?: string;
     role?: string;
     department?: string;
-    designation?: string;
     employee_type?: string;
     joining_date?: string;
     shift_id?: string;
@@ -58,7 +57,6 @@ export function EmployeeEditDialog({ employee, shifts }: EmployeeEditDialogProps
     pan: employee.pan || "",
     role: employee.role || "staff",
     department: employee.department || "",
-    designation: employee.designation || "",
     employee_type: employee.employee_type || "full_time",
     joining_date: employee.joining_date || "",
     shift_id: employee.shift_id || "",
@@ -94,7 +92,6 @@ export function EmployeeEditDialog({ employee, shifts }: EmployeeEditDialogProps
           pan: form.pan.trim() || null,
           role: form.role,
           department: form.department.trim() || null,
-          designation: form.designation.trim() || null,
           employee_type: form.employee_type,
           joining_date: form.joining_date || null,
           shift_id: form.shift_id || null,
@@ -184,10 +181,6 @@ export function EmployeeEditDialog({ employee, shifts }: EmployeeEditDialogProps
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Designation</Label>
-              <Input value={form.designation} onChange={(e) => setForm((p) => ({ ...p, designation: e.target.value }))} />
-            </div>
-            <div className="space-y-2">
               <Label>Employee Type</Label>
               <Select value={form.employee_type} onValueChange={(v) => setForm((p) => ({ ...p, employee_type: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -208,9 +201,13 @@ export function EmployeeEditDialog({ employee, shifts }: EmployeeEditDialogProps
             </div>
             <div className="space-y-2">
               <Label>Shift</Label>
-              <Select value={form.shift_id} onValueChange={(v) => setForm((p) => ({ ...p, shift_id: v }))}>
+              <Select
+                value={form.shift_id || "none"}
+                onValueChange={(v) => setForm((p) => ({ ...p, shift_id: v === "none" ? "" : v }))}
+              >
                 <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">No shift</SelectItem>
                   {shifts.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                 </SelectContent>
               </Select>

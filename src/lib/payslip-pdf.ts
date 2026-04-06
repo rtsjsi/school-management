@@ -5,7 +5,6 @@ import { PDF_LAYOUT } from "./pdf-utils";
 export interface PayslipData {
   employee_code: string;
   full_name: string;
-  designation: string | null;
   department: string | null;
   joining_date: string | null;
   month_year: string;
@@ -93,10 +92,6 @@ export function generatePayslipPDF(data: PayslipData): Blob {
 
   doc.text("Employee Name", margin, y);
   doc.text(`: ${data.full_name}`, margin + labelW, y);
-  y += lh;
-
-  doc.text("Designation", margin, y);
-  doc.text(`: ${data.designation ?? "—"}`, margin + labelW, y);
   y += lh;
 
   doc.text("Department", margin, y);

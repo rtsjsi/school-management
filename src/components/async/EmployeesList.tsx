@@ -32,7 +32,7 @@ export async function EmployeesList() {
   const { data: employees } = await supabase
     .from("employees")
     .select(
-      "id, employee_id, full_name, email, phone_number, address, aadhaar, pan, role, department, designation, employee_type, joining_date, status, monthly_salary, degree, institution, year_passed, bank_name, account_number, ifsc_code, account_holder_name, shifts(name)"
+      "id, employee_id, full_name, email, phone_number, address, aadhaar, pan, role, department, employee_type, joining_date, status, monthly_salary, degree, institution, year_passed, bank_name, account_number, ifsc_code, account_holder_name, shifts(name)"
     )
     .order("created_at", { ascending: false })
     .limit(50);
@@ -56,16 +56,14 @@ export async function EmployeesList() {
                 Add employee
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-5xl">
+            <DialogContent className="max-w-[95vw] sm:max-w-5xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
               <DialogHeader>
                 <DialogTitle className="text-base">Add new employee</DialogTitle>
                 <DialogDescription>
                   Fill in the form to create a new employee record.
                 </DialogDescription>
               </DialogHeader>
-              <div className="max-h-[70vh] overflow-y-auto pr-1">
-                <EmployeeEntryForm shifts={shiftList} />
-              </div>
+              <EmployeeEntryForm shifts={shiftList} />
             </DialogContent>
           </Dialog>
         </div>
@@ -83,7 +81,6 @@ export async function EmployeesList() {
                       <TableHead>Name</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Department</TableHead>
-                      <TableHead>Designation</TableHead>
                       <TableHead>Shift</TableHead>
                       <TableHead>Status</TableHead>
                       {canEdit && <TableHead className="text-right">Actions</TableHead>}
@@ -99,7 +96,6 @@ export async function EmployeesList() {
                           <TableCell className="font-medium">{e.full_name}</TableCell>
                           <TableCell className="text-muted-foreground text-sm">{e.email ?? "—"}</TableCell>
                           <TableCell>{e.department ?? "—"}</TableCell>
-                          <TableCell>{e.designation ?? "—"}</TableCell>
                           <TableCell>{shiftName ?? "—"}</TableCell>
                           <TableCell>
                             <Badge variant={(e.status as string) === "active" ? "default" : "secondary"}>

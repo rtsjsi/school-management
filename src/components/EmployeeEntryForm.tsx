@@ -14,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 
 const ROLES = ["teacher", "staff", "admin", "other"] as const;
@@ -36,7 +35,6 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
     pan: "",
     role: "staff",
     department: "",
-    designation: "",
     employee_type: "full_time",
     joining_date: "",
     shift_id: "",
@@ -59,10 +57,8 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
     { key: "pan", label: "PAN" },
     { key: "role", label: "Role" },
     { key: "department", label: "Department" },
-    { key: "designation", label: "Designation" },
     { key: "employee_type", label: "Employee type" },
     { key: "joining_date", label: "Joining date" },
-    { key: "shift_id", label: "Shift" },
     { key: "monthly_salary", label: "Monthly salary" },
     { key: "degree", label: "Degree" },
     { key: "institution", label: "Institution" },
@@ -107,7 +103,6 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
           pan: form.pan.trim() || null,
           role: form.role,
           department: form.department.trim() || null,
-          designation: form.designation.trim() || null,
           employee_type: form.employee_type,
           joining_date: form.joining_date || null,
           shift_id: form.shift_id || null,
@@ -137,7 +132,7 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
 
       setForm({
         full_name: "", email: "", phone_number: "", address: "", aadhaar: "", pan: "",
-        role: "staff", department: "", designation: "", employee_type: "full_time",
+        role: "staff", department: "", employee_type: "full_time",
         joining_date: "", shift_id: "", degree: "", institution: "", year_passed: "",
         bank_name: "", account_number: "", ifsc_code: "", account_holder_name: "",
         monthly_salary: "",
@@ -157,8 +152,6 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
   };
 
   return (
-    <Card>
-      <CardContent className="pt-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>}
 
@@ -246,15 +239,6 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Designation *</Label>
-              <Input
-                value={form.designation}
-                onChange={(e) => setForm((p) => ({ ...p, designation: e.target.value }))}
-                placeholder="e.g. Senior Teacher"
-                required
-              />
-            </div>
-            <div className="space-y-2">
               <Label>Employee Type *</Label>
               <Select value={form.employee_type} onValueChange={(v) => setForm((p) => ({ ...p, employee_type: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -282,10 +266,14 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
               <DatePicker value={form.joining_date} onChange={(isoDate) => setForm((p) => ({ ...p, joining_date: isoDate }))} />
             </div>
             <div className="space-y-2">
-              <Label>Shift *</Label>
-              <Select value={form.shift_id} onValueChange={(v) => setForm((p) => ({ ...p, shift_id: v }))}>
+              <Label>Shift</Label>
+              <Select
+                value={form.shift_id || "none"}
+                onValueChange={(v) => setForm((p) => ({ ...p, shift_id: v === "none" ? "" : v }))}
+              >
                 <SelectTrigger><SelectValue placeholder="Select shift" /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">No shift</SelectItem>
                   {shifts.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -368,7 +356,5 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
           <SubmitButton loading={loading} loadingLabel="Adding…">Add Employee</SubmitButton>
         </div>
         </form>
-      </CardContent>
-    </Card>
   );
 }

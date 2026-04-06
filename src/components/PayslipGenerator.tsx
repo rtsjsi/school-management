@@ -23,7 +23,6 @@ function downloadPayslip(row: PayslipRow, schoolName: string, schoolAddress: str
   const pdfBlob = generatePayslipPDF({
     employee_code: row.employee_code,
     full_name: row.full_name,
-    designation: row.designation,
     department: row.department,
     joining_date: row.joining_date,
     month_year: row.month_year,
@@ -51,7 +50,6 @@ function printPayslip(row: PayslipRow, schoolName: string, schoolAddress: string
   const pdfBlob = generatePayslipPDF({
     employee_code: row.employee_code,
     full_name: row.full_name,
-    designation: row.designation,
     department: row.department,
     joining_date: row.joining_date,
     month_year: row.month_year,
@@ -168,7 +166,6 @@ export default function PayslipGenerator() {
                   <TableRow>
                     <TableHead>Employee</TableHead>
                     <TableHead>ID</TableHead>
-                    <TableHead>Designation</TableHead>
                     <TableHead>Present</TableHead>
                     <TableHead>Gross</TableHead>
                     <TableHead>Net</TableHead>
@@ -182,7 +179,6 @@ export default function PayslipGenerator() {
                       <TableCell className="font-mono text-xs">
                         {r.employee_code}
                       </TableCell>
-                      <TableCell>{r.designation ?? "—"}</TableCell>
                       <TableCell>
                         {r.present_days} / {r.working_days}
                       </TableCell>
