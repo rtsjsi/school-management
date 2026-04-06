@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, ChevronUp } from "lucide-react";
 import { ExcelIcon, PdfIcon } from "@/components/ui/export-icons";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 import { exportStudentsPdf } from "@/lib/student-report-export";
@@ -91,6 +91,10 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
   const [rteFilter, setRteFilter] = useState("all");
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const toggleRow = (id: string) => setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
+  type SortKey = "full_name" | "standard" | "division" | "roll_number" | "gr_number" | "is_rte_quota" | "status";
+  type SortDir = "asc" | "desc";
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
 
   useEffect(() => {
     (async () => {
@@ -135,6 +139,61 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
       return true;
     });
   }, [rows, standardFilter, divisionFilter, rteFilter]);
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
+
+  const sortedFilteredRows = useMemo(() => {
+    if (!sortKey) return filteredRows;
+    return [...filteredRows].sort((a, b) => {
+      let av: string | number = "";
+      let bv: string | number = "";
+      switch (sortKey) {
+        case "full_name":
+          av = (a.full_name ?? "").toLowerCase();
+          bv = (b.full_name ?? "").toLowerCase();
+          break;
+        case "standard":
+          av = (a.standard ?? "").toLowerCase();
+          bv = (b.standard ?? "").toLowerCase();
+          break;
+        case "division":
+          av = (a.division ?? "").toLowerCase();
+          bv = (b.division ?? "").toLowerCase();
+          break;
+        case "roll_number":
+          av = Number(a.roll_number ?? 0);
+          bv = Number(b.roll_number ?? 0);
+          break;
+        case "gr_number":
+          av = (a.gr_number ?? "").toLowerCase();
+          bv = (b.gr_number ?? "").toLowerCase();
+          break;
+        case "is_rte_quota":
+          av = a.is_rte_quota ? 1 : 0;
+          bv = b.is_rte_quota ? 1 : 0;
+          break;
+        case "status":
+          av = (a.status ?? "").toLowerCase();
+          bv = (b.status ?? "").toLowerCase();
+          break;
+      }
+      if (av < bv) return sortDir === "asc" ? -1 : 1;
+      if (av > bv) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [filteredRows, sortKey, sortDir]);
+
+  const SortIcon = ({ col }: { col: SortKey }) => {
+    if (sortKey !== col) return <ArrowUpDown className="h-3 w-3 opacity-40" />;
+    return sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />;
+  };
 
   const addFormFieldOrder = [
     "standard",
@@ -387,17 +446,31 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Student Name</TableHead>
-                  <TableHead>Standard</TableHead>
-                  <TableHead className="hidden sm:table-cell">Division</TableHead>
-                  <TableHead className="hidden sm:table-cell">Roll #</TableHead>
-                  <TableHead className="hidden sm:table-cell">GR No</TableHead>
-                  <TableHead className="hidden sm:table-cell">RTE</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("full_name")}>
+                    <span className="inline-flex items-center gap-1">Student Name <SortIcon col="full_name" /></span>
+                  </TableHead>
+                  <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("standard")}>
+                    <span className="inline-flex items-center gap-1">Standard <SortIcon col="standard" /></span>
+                  </TableHead>
+                  <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("division")}>
+                    <span className="inline-flex items-center gap-1">Division <SortIcon col="division" /></span>
+                  </TableHead>
+                  <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("roll_number")}>
+                    <span className="inline-flex items-center gap-1">Roll # <SortIcon col="roll_number" /></span>
+                  </TableHead>
+                  <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("gr_number")}>
+                    <span className="inline-flex items-center gap-1">GR No <SortIcon col="gr_number" /></span>
+                  </TableHead>
+                  <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("is_rte_quota")}>
+                    <span className="inline-flex items-center gap-1">RTE <SortIcon col="is_rte_quota" /></span>
+                  </TableHead>
+                  <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("status")}>
+                    <span className="inline-flex items-center gap-1">Status <SortIcon col="status" /></span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredRows.flatMap((row) => [
+                {sortedFilteredRows.flatMap((row) => [
                   <TableRow key={row.id}>
                     <TableCell className="font-medium">
                       {row.full_name}
