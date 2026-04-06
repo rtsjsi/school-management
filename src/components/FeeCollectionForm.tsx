@@ -98,6 +98,7 @@ export default function FeeCollectionForm({
   const [divisionFilter, setDivisionFilter] = useState("all");
   const [studentInput, setStudentInput] = useState("");
   const [studentSuggestionsOpen, setStudentSuggestionsOpen] = useState(false);
+  const [paymentMethodSelectKey, setPaymentMethodSelectKey] = useState(0);
   const studentComboRef = useRef<HTMLDivElement>(null);
 
   const filteredStudents = useMemo(() => {
@@ -135,6 +136,11 @@ export default function FeeCollectionForm({
       .then((d) => d.receiptNumber && setReceiptNumber(d.receiptNumber))
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (form.payment_mode !== "cash") return;
+    setForm((p) => (p.collection_date === todayIso ? p : { ...p, collection_date: todayIso }));
+  }, [form.payment_mode, todayIso]);
 
   const selectedStudent = students.find((s) => s.id === form.student_id);
 
@@ -482,6 +488,7 @@ export default function FeeCollectionForm({
         online_transaction_ref: "",
         collection_date: todayIso,
       });
+      setPaymentMethodSelectKey((k) => k + 1);
       setSelectedQuarter(1);
       fetch("/api/receipt-number")
         .then((r) => r.json())
@@ -521,9 +528,23 @@ export default function FeeCollectionForm({
             <Label className="text-xs font-medium text-muted-foreground">
               Collection Date
             </Label>
-            <p className="flex h-9 items-center rounded-md border border-input bg-muted/50 px-3 text-sm font-medium tabular-nums text-foreground w-[11rem]">
-              {new Date(form.collection_date + "T12:00:00").toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" })}
-            </p>
+            {form.payment_mode === "cash" ? (
+              <p className="flex h-9 items-center rounded-md border border-input bg-muted/50 px-3 text-sm font-medium tabular-nums text-foreground w-[11rem]">
+                {new Date(form.collection_date + "T12:00:00").toLocaleDateString("en-IN", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                })}
+              </p>
+            ) : (
+              <div className="w-[11rem]">
+                <DatePicker
+                  value={form.collection_date}
+                  onChange={(isoDate) => setForm((p) => ({ ...p, collection_date: isoDate }))}
+                  className="h-9 text-sm"
+                />
+              </div>
+            )}
           </div>
           <div className="space-y-1 min-w-0 max-w-full sm:max-w-[min(100%,24rem)] text-right ml-auto">
             <Label className="text-xs font-medium text-muted-foreground block">Receipt No.</Label>
@@ -729,6 +750,7 @@ export default function FeeCollectionForm({
               Payment Method *
             </Label>
             <Select
+              key={paymentMethodSelectKey}
               value={form.payment_mode || undefined}
               onValueChange={(v) => setForm((p) => ({ ...p, payment_mode: v }))}
             >
