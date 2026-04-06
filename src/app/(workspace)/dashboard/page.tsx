@@ -138,6 +138,7 @@ export default async function DashboardPage() {
   const expensesThisMonth = (expensesResult.data ?? []).reduce((sum, r) => sum + Number(r.amount ?? 0), 0);
   const netThisMonth = feeCollected - expensesThisMonth;
   const outstandingByQuarter: Record<1 | 2 | 3 | 4, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
+  const collectionsByQuarter: Record<1 | 2 | 3 | 4, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
   let outstandingCurrentYear = 0;
   let totalFeesCurrentYear = 0;
   let totalPaidCurrentYear = 0;
@@ -153,6 +154,9 @@ export default async function DashboardPage() {
     outstandingCollections.forEach((c) => {
       const key = `${c.student_id}-${c.quarter}-${c.fee_type}`;
       paidMap.set(key, (paidMap.get(key) ?? 0) + Number(c.amount ?? 0));
+      if (c.quarter >= 1 && c.quarter <= 4) {
+        collectionsByQuarter[c.quarter as 1 | 2 | 3 | 4] += Number(c.amount ?? 0);
+      }
     });
 
     const structures = (outstandingStructuresResult.data ?? []) as {
@@ -383,6 +387,22 @@ export default async function DashboardPage() {
             </div>
           </div>
 
+          {/* Total collection for active year */}
+          <div className="rounded-card border border-border bg-card p-3 shadow-card transition-shadow hover:shadow-card-hover sm:p-5">
+            <div className="flex items-start justify-between">
+              <div className="space-y-1">
+                <p className="text-[10px] font-medium text-muted-foreground sm:text-xs">Total Collection</p>
+                <p className="text-2xl font-bold tracking-tight text-green-600 sm:text-3xl">{fmt(totalPaidCurrentYear)}</p>
+              </div>
+              <div className="rounded-xl bg-green-500/10 p-2.5 sm:p-3">
+                <IndianRupee className="h-5 w-5 text-green-600 sm:h-6 sm:w-6" />
+              </div>
+            </div>
+            <p className="mt-2 text-[10px] text-muted-foreground sm:mt-3 sm:text-xs">
+              Current academic year
+            </p>
+          </div>
+
           {/* Quarter breakdown — compact row */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
             {([1, 2, 3, 4] as const).map((q) => {
@@ -402,6 +422,31 @@ export default async function DashboardPage() {
                 </div>
               );
             })}
+          </div>
+
+          {/* Quarter-wise total collection */}
+          <div className="space-y-2 pt-1">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">
+              Total Collection by Quarter
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+              {([1, 2, 3, 4] as const).map((q) => {
+                const qCollection = collectionsByQuarter[q];
+                return (
+                  <div
+                    key={`collection-${q}`}
+                    className="rounded-card border border-border bg-card p-3 shadow-card transition-shadow hover:shadow-card-hover sm:p-4"
+                  >
+                    <p className="text-[10px] font-medium text-muted-foreground sm:text-xs">
+                      Q{q} <span className="text-muted-foreground/70">({quarterLabels[q - 1]})</span>
+                    </p>
+                    <p className="text-base font-bold tracking-tight mt-1 text-green-600 sm:text-lg">
+                      {fmt(qCollection)}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </section>
       )}
