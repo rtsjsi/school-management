@@ -1,18 +1,8 @@
 import { getUser, isAdminOrAbove, isAuditor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import EmployeeEntryForm from "@/components/EmployeeEntryForm";
-import { EmployeeEditDialog } from "@/components/EmployeeEditDialog";
-import { EmployeesExportButtons } from "@/components/EmployeesExportButtons";
+import { EmployeesTable } from "@/components/EmployeesTable";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -33,7 +23,7 @@ export async function EmployeesList() {
   const { data: employees } = await supabase
     .from("employees")
     .select(
-      "id, employee_id, full_name, email, phone_number, address, aadhaar, pan, role, department, employee_type, joining_date, status, monthly_salary, degree, institution, year_passed, bank_name, account_number, ifsc_code, account_holder_name, shifts(name)"
+      "id, employee_id, full_name, email, phone_number, address, aadhaar, pan, role, department, employee_type, joining_date, status, monthly_salary, degree, institution, year_passed, bank_name, account_number, ifsc_code, account_holder_name, shift_id, shifts(name)"
     )
     .order("created_at", { ascending: false })
     .limit(50);
@@ -45,19 +35,6 @@ export async function EmployeesList() {
 
   const canEdit = isAdminOrAbove(user);
   const shiftList = shifts ?? [];
-  const exportRows = (employees ?? []).map((e) => {
-    const shiftData = e.shifts as { name?: string } | { name?: string }[] | null;
-    const shiftName = Array.isArray(shiftData) ? shiftData[0]?.name : shiftData?.name;
-    return {
-      employee_id: e.employee_id ?? "—",
-      full_name: e.full_name ?? "—",
-      email: e.email ?? "—",
-      department: e.department ?? "—",
-      shift: shiftName ?? "—",
-      status: String(e.status ?? "active"),
-    };
-  });
-
   return (
     <>
       {canEdit && (
@@ -85,51 +62,7 @@ export async function EmployeesList() {
       <Card>
         <CardContent className="pt-6">
           {employees && employees.length > 0 ? (
-            <>
-              <div className="mb-3 flex justify-end">
-                <EmployeesExportButtons rows={exportRows} />
-              </div>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Emp ID</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Department</TableHead>
-                      <TableHead>Shift</TableHead>
-                      <TableHead>Status</TableHead>
-                      {canEdit && <TableHead className="text-right">Actions</TableHead>}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {employees.map((e) => {
-                      const shiftData = e.shifts as { name?: string } | { name?: string }[] | null;
-                      const shiftName = Array.isArray(shiftData) ? shiftData[0]?.name : shiftData?.name;
-                      return (
-                        <TableRow key={e.id}>
-                          <TableCell className="font-mono text-xs">{e.employee_id ?? "—"}</TableCell>
-                          <TableCell className="font-medium">{e.full_name}</TableCell>
-                          <TableCell className="text-muted-foreground text-sm">{e.email ?? "—"}</TableCell>
-                          <TableCell>{e.department ?? "—"}</TableCell>
-                          <TableCell>{shiftName ?? "—"}</TableCell>
-                          <TableCell>
-                            <Badge variant={(e.status as string) === "active" ? "default" : "secondary"}>
-                              {e.status ?? "active"}
-                            </Badge>
-                          </TableCell>
-                          {canEdit && (
-                            <TableCell className="text-right">
-                              <EmployeeEditDialog employee={e} shifts={shiftList} />
-                            </TableCell>
-                          )}
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            </>
+            <EmployeesTable employees={employees} shiftList={shiftList} canEdit={canEdit} />
           ) : (
             <p className="text-sm text-muted-foreground py-8 text-center">
               No employees yet. Add one using the form.
