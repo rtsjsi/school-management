@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { computeEmployeeCompleteness, completenessBadgeClassNames } from "@/lib/master-data-completeness";
 
 export type StaffTableEmployee = {
   id: string;
@@ -47,7 +48,7 @@ function shiftNameFromRow(e: StaffTableEmployee): string {
   return Array.isArray(shiftData) ? shiftData[0]?.name ?? "—" : shiftData?.name ?? "—";
 }
 
-type SortKey = "employee_id" | "full_name" | "email" | "department" | "shift" | "status";
+type SortKey = "employee_id" | "full_name" | "email" | "department" | "shift" | "status" | "data_pct";
 type SortDir = "asc" | "desc";
 
 export function EmployeesTable({
@@ -100,6 +101,10 @@ export function EmployeesTable({
         case "status":
           av = (a.status ?? "active").toLowerCase();
           bv = (b.status ?? "active").toLowerCase();
+          break;
+        case "data_pct":
+          av = computeEmployeeCompleteness(a as unknown as Record<string, unknown>).percent;
+          bv = computeEmployeeCompleteness(b as unknown as Record<string, unknown>).percent;
           break;
       }
       if (av < bv) return sortDir === "asc" ? -1 : 1;
@@ -183,6 +188,14 @@ export function EmployeesTable({
                   Status <SortIcon col="status" />
                 </span>
               </TableHead>
+              <TableHead
+                className="cursor-pointer select-none hover:text-foreground text-center"
+                onClick={() => handleSort("data_pct")}
+              >
+                <span className="inline-flex items-center gap-1">
+                  Data&nbsp;% <SortIcon col="data_pct" />
+                </span>
+              </TableHead>
               {canEdit && <TableHead className="text-right">Actions</TableHead>}
             </TableRow>
           </TableHeader>
@@ -200,6 +213,18 @@ export function EmployeesTable({
                     <Badge variant={(e.status as string) === "active" ? "default" : "secondary"}>
                       {e.status ?? "active"}
                     </Badge>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {(() => {
+                      const pct = computeEmployeeCompleteness(e as unknown as Record<string, unknown>).percent;
+                      return (
+                        <span
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${completenessBadgeClassNames(pct)}`}
+                        >
+                          {pct}%
+                        </span>
+                      );
+                    })()}
                   </TableCell>
                   {canEdit && (
                     <TableCell className="text-right">

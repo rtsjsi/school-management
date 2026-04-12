@@ -36,6 +36,7 @@ import { Plus, Pencil, ChevronDown, ChevronRight } from "lucide-react";
 import { PdfIcon } from "@/components/ui/export-icons";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 import { exportStandardsPdf as exportStandardsReportPdf } from "@/lib/standards-report-export";
+import { computeStandardCompleteness, completenessBadgeClassNames } from "@/lib/master-data-completeness";
 
 type DivisionRow = { id: string; name: string; sort_order: number };
 
@@ -48,7 +49,13 @@ const SECTION_LABELS: Record<string, string> = {
 
 const SECTIONS = ["pre_primary", "primary", "secondary", "higher_secondary"] as const;
 
-type StandardRow = { id: string; name: string; section: string; sort_order: number };
+type StandardRow = {
+  id: string;
+  name: string;
+  section: string;
+  sort_order: number;
+  standard_divisions?: { id: string }[] | null;
+};
 
 export function ClassManagement() {
   const school = useSchoolSettings();
@@ -65,7 +72,7 @@ export function ClassManagement() {
   const loadStandards = useCallback(() => {
     supabase
       .from("standards")
-      .select("id, name, section, sort_order")
+      .select("id, name, section, sort_order, standard_divisions(id)")
       .order("sort_order")
       .then(({ data }) => setStandards((data ?? []) as StandardRow[]));
   }, [supabase]);
@@ -213,6 +220,7 @@ export function ClassManagement() {
                   <TableHead>Standard</TableHead>
                   <TableHead>Section</TableHead>
                   <TableHead>Divisions</TableHead>
+                  <TableHead className="text-center whitespace-nowrap">Data&nbsp;%</TableHead>
                   <TableHead className="w-24"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -295,6 +303,21 @@ function StandardRow({
     }
   };
 
+  const standardCompletenessRecord = useMemo(
+    () =>
+      ({
+        name: name.trim() || row.name,
+        section: section || row.section,
+        sort_order: row.sort_order,
+        standard_divisions:
+          divisions.length > 0
+            ? divisions.map((d) => ({ id: d.id }))
+            : (row.standard_divisions ?? []),
+      }) as Record<string, unknown>,
+    [divisions, name, row.name, row.section, row.sort_order, row.standard_divisions, section],
+  );
+  const standardDataPct = computeStandardCompleteness(standardCompletenessRecord).percent;
+
   if (editing) {
     return (
       <TableRow>
@@ -317,6 +340,13 @@ function StandardRow({
           </Select>
         </TableCell>
         <TableCell></TableCell>
+        <TableCell className="text-center">
+          <span
+            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${completenessBadgeClassNames(standardDataPct)}`}
+          >
+            {standardDataPct}%
+          </span>
+        </TableCell>
         <TableCell>
           <div className="flex gap-1">
             <Button size="sm" variant="outline" onClick={handleSave} disabled={loading}>
@@ -361,6 +391,13 @@ function StandardRow({
             <span className="text-sm text-muted-foreground">—</span>
           )}
         </TableCell>
+        <TableCell className="text-center">
+          <span
+            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${completenessBadgeClassNames(standardDataPct)}`}
+          >
+            {standardDataPct}%
+          </span>
+        </TableCell>
         <TableCell>
           <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>
             <Pencil className="h-3 w-3" />
@@ -369,7 +406,7 @@ function StandardRow({
       </TableRow>
       {expanded && (
         <TableRow className="bg-muted/30">
-          <TableCell colSpan={5} className="p-4">
+          <TableCell colSpan={6} className="p-4">
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">Divisions for {row.name}</span>

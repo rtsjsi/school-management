@@ -36,6 +36,7 @@ import { Plus, Pencil } from "lucide-react";
 import { PdfIcon } from "@/components/ui/export-icons";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 import { exportSubjectsPdf as exportSubjectsReportPdf } from "@/lib/subjects-report-export";
+import { computeSubjectCompleteness, completenessBadgeClassNames } from "@/lib/master-data-completeness";
 
 const NO_TEACHER_VALUE = "__none__";
 
@@ -253,6 +254,7 @@ export function SubjectMaster() {
                     <TableHead>Subject</TableHead>
                     <TableHead>Evaluation type</TableHead>
                     <TableHead>Subject teacher</TableHead>
+                    <TableHead className="text-center whitespace-nowrap">Data&nbsp;%</TableHead>
                     <TableHead className="w-20"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -298,6 +300,21 @@ function SubjectRow({
   const teacherDisplay =
     subject.subject_teacher_id &&
     employees.find((e) => e.id === subject.subject_teacher_id)?.full_name;
+
+  const subjectPctEditing = useMemo(
+    () =>
+      computeSubjectCompleteness({
+        name,
+        evaluation_type: evalType,
+        subject_teacher_id: teacherId === NO_TEACHER_VALUE ? null : teacherId,
+      } as Record<string, unknown>).percent,
+    [evalType, name, teacherId],
+  );
+
+  const subjectPctView = useMemo(
+    () => computeSubjectCompleteness(subject as unknown as Record<string, unknown>).percent,
+    [subject],
+  );
 
   const handleSave = async () => {
     setLoading(true);
@@ -349,6 +366,13 @@ function SubjectRow({
             </SelectContent>
           </Select>
         </TableCell>
+        <TableCell className="text-center">
+          <span
+            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${completenessBadgeClassNames(subjectPctEditing)}`}
+          >
+            {subjectPctEditing}%
+          </span>
+        </TableCell>
         <TableCell>
           <div className="flex gap-1">
             <Button size="sm" variant="outline" onClick={handleSave} disabled={loading}>
@@ -379,6 +403,13 @@ function SubjectRow({
         <span className="text-sm">{subject.evaluation_type === "grade" ? "Grade based" : "Mark based"}</span>
       </TableCell>
       <TableCell className="text-sm text-muted-foreground">{teacherDisplay ?? "—"}</TableCell>
+      <TableCell className="text-center">
+        <span
+          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${completenessBadgeClassNames(subjectPctView)}`}
+        >
+          {subjectPctView}%
+        </span>
+      </TableCell>
       <TableCell>
         <Button
           size="sm"
