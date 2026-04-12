@@ -1,8 +1,17 @@
 import { redirect } from "next/navigation";
+import type { LucideIcon } from "lucide-react";
 import { getUser, canViewFinance, isAccounts, isPayrollRole, canAccessFees, canAccessPayroll } from "@/lib/auth";
 import { shouldApplyClassFilter, getStudentIdsForAllowedClasses } from "@/lib/class-access";
 import { createClient } from "@/lib/supabase/server";
 import { linesWithNetAfterConcession } from "@/lib/fee-concession";
+import { computeOverallCompleteness } from "@/lib/student-completeness";
+import {
+  aggregateCompleteness,
+  computeEmployeeCompleteness,
+  computeStandardCompleteness,
+  computeSubjectCompleteness,
+  type AggregatedCompleteness,
+} from "@/lib/master-data-completeness";
 import {
   GraduationCap,
   UserPlus,
@@ -13,6 +22,10 @@ import {
   Users,
   BookOpen,
   Receipt,
+  ClipboardCheck,
+  LayoutGrid,
+  BookMarked,
+  BadgeCheck,
 } from "lucide-react";
 
 function fmt(n: number) {
@@ -21,6 +34,50 @@ function fmt(n: number) {
 
 function fmtNum(n: number) {
   return new Intl.NumberFormat("en-IN").format(n);
+}
+
+function MasterDataCompletenessCard({
+  title,
+  Icon,
+  summary,
+  footer,
+}: {
+  title: string;
+  Icon: LucideIcon;
+  summary: AggregatedCompleteness;
+  footer: string;
+}) {
+  if (summary.total === 0) return null;
+  const pct = summary.averagePercent;
+  const colorText =
+    pct >= 80 ? "text-green-600" : pct >= 50 ? "text-amber-600" : "text-destructive";
+  const colorIconWrap =
+    pct >= 80 ? "bg-green-500/10" : pct >= 50 ? "bg-amber-500/10" : "bg-destructive/10";
+  const colorIcon = pct >= 80 ? "text-green-600" : pct >= 50 ? "text-amber-600" : "text-destructive";
+  const colorBar = pct >= 80 ? "bg-green-500" : pct >= 50 ? "bg-amber-500" : "bg-destructive";
+
+  return (
+    <div className="rounded-card border border-border bg-card p-3 shadow-card transition-shadow hover:shadow-card-hover sm:p-5">
+      <div className="flex items-start justify-between">
+        <div className="space-y-1">
+          <p className="text-[10px] font-medium text-muted-foreground sm:text-xs">{title}</p>
+          <p className={`text-2xl font-bold tracking-tight sm:text-3xl ${colorText}`}>{pct}%</p>
+        </div>
+        <div className={`rounded-xl p-2 sm:p-2.5 ${colorIconWrap}`}>
+          <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${colorIcon}`} />
+        </div>
+      </div>
+      <div className="mt-2 space-y-1.5 sm:mt-3">
+        <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden sm:h-2">
+          <div
+            className={`h-full rounded-full transition-all duration-500 ${colorBar}`}
+            style={{ width: `${Math.min(pct, 100)}%` }}
+          />
+        </div>
+        <p className="text-[10px] text-muted-foreground sm:text-xs">{footer}</p>
+      </div>
+    </div>
+  );
 }
 
 export default async function DashboardPage() {
@@ -71,6 +128,32 @@ export default async function DashboardPage() {
             .lte("admission_date", activeYear.end_date))
     : Promise.resolve({ count: null } as { count: number | null });
 
+  const limitedOpsRole = isAccounts(user) || isPayrollRole(user);
+  const showAcademicSection = !limitedOpsRole;
+
+  const activeStudentsFullQuery = (() => {
+    if (restrictToZeroStudents) return Promise.resolve({ data: [] as Record<string, unknown>[] });
+    let q = supabase.from("students").select("*").eq("status", "active");
+    if (studentIdFilter && studentIdFilter.length > 0) q = q.in("id", studentIdFilter);
+    return q;
+  })();
+
+  const standardsMasterQuery = showAcademicSection
+    ? supabase.from("standards").select("id, name, section, sort_order, standard_divisions(id)").order("sort_order")
+    : Promise.resolve({ data: [] as Record<string, unknown>[] });
+
+  const subjectsMasterQuery = showAcademicSection
+    ? supabase.from("subjects").select("id, name, evaluation_type, subject_teacher_id")
+    : Promise.resolve({ data: [] as Record<string, unknown>[] });
+
+  const employeesMasterQuery = canAccessPayroll(user)
+    ? supabase
+        .from("employees")
+        .select(
+          "id, full_name, email, phone_number, address, aadhaar, pan, role, department, employee_type, joining_date, monthly_salary, degree, institution, year_passed, bank_name, account_number, ifsc_code, account_holder_name",
+        )
+    : Promise.resolve({ data: [] as Record<string, unknown>[] });
+
   const [
     studentsCountRes,
     activeStudentsCountRes,
@@ -82,6 +165,10 @@ export default async function DashboardPage() {
     outstandingStudentsResult,
     outstandingStructuresResult,
     outstandingCollectionsResult,
+    activeStudentsFullResult,
+    standardsMasterResult,
+    subjectsMasterResult,
+    employeesMasterResult,
   ] = await Promise.all([
     studentCountQuery({ count: "exact", head: true }),
     studentCountQuery({ count: "exact", head: true }, { status: "active" }),
@@ -124,6 +211,10 @@ export default async function DashboardPage() {
           return q;
         })()
       : Promise.resolve({ data: [] as unknown[] }),
+    activeStudentsFullQuery,
+    standardsMasterQuery,
+    subjectsMasterQuery,
+    employeesMasterQuery,
   ]);
 
   const studentsCount = studentsCountRes.count ?? 0;
@@ -131,6 +222,23 @@ export default async function DashboardPage() {
   const employeesCount = employeesCountRes.count ?? 0;
   const rteStudentsCount = rteStudentsCountRes.count ?? 0;
   const newAdmissionsCount = newAdmissionsCountRes.count ?? 0;
+
+  const dataCompleteness = computeOverallCompleteness(
+    (activeStudentsFullResult.data ?? []) as Record<string, unknown>[],
+  );
+
+  const standardsCompleteness = aggregateCompleteness(
+    (standardsMasterResult.data ?? []) as Record<string, unknown>[],
+    computeStandardCompleteness,
+  );
+  const subjectsCompleteness = aggregateCompleteness(
+    (subjectsMasterResult.data ?? []) as Record<string, unknown>[],
+    computeSubjectCompleteness,
+  );
+  const staffCompleteness = aggregateCompleteness(
+    (employeesMasterResult.data ?? []) as Record<string, unknown>[],
+    computeEmployeeCompleteness,
+  );
 
   const feeCollected = (feeCollectedResult.data ?? []).reduce(
     (sum, r) => sum + Number(r.amount ?? 0), 0
@@ -196,8 +304,6 @@ export default async function DashboardPage() {
     }
   }
 
-  const limitedOpsRole = isAccounts(user) || isPayrollRole(user);
-  const showAcademicSection = !limitedOpsRole;
   const showFinanceSection = canViewFinance(user);
   const showOutstandingSection = canAccessFees(user);
   const showAccountsFeeCard = canAccessFees(user) && !canViewFinance(user);
@@ -274,6 +380,79 @@ export default async function DashboardPage() {
                 </div>
                 <p className="mt-2 text-[10px] text-muted-foreground sm:mt-3 sm:text-xs">Staff & teachers</p>
               </div>
+            )}
+
+            {/* Data Completeness */}
+            {dataCompleteness.total > 0 && (
+              <div className="rounded-card border border-border bg-card p-3 shadow-card transition-shadow hover:shadow-card-hover sm:p-5">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-medium text-muted-foreground sm:text-xs">Student records</p>
+                    <p className={`text-2xl font-bold tracking-tight sm:text-3xl ${
+                      dataCompleteness.averagePercent >= 80
+                        ? "text-green-600"
+                        : dataCompleteness.averagePercent >= 50
+                          ? "text-amber-600"
+                          : "text-destructive"
+                    }`}>
+                      {dataCompleteness.averagePercent}%
+                    </p>
+                  </div>
+                  <div className={`rounded-xl p-2 sm:p-2.5 ${
+                    dataCompleteness.averagePercent >= 80
+                      ? "bg-green-500/10"
+                      : dataCompleteness.averagePercent >= 50
+                        ? "bg-amber-500/10"
+                        : "bg-destructive/10"
+                  }`}>
+                    <ClipboardCheck className={`h-4 w-4 sm:h-5 sm:w-5 ${
+                      dataCompleteness.averagePercent >= 80
+                        ? "text-green-600"
+                        : dataCompleteness.averagePercent >= 50
+                          ? "text-amber-600"
+                          : "text-destructive"
+                    }`} />
+                  </div>
+                </div>
+                <div className="mt-2 space-y-1.5 sm:mt-3">
+                  <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden sm:h-2">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        dataCompleteness.averagePercent >= 80
+                          ? "bg-green-500"
+                          : dataCompleteness.averagePercent >= 50
+                            ? "bg-amber-500"
+                            : "bg-destructive"
+                      }`}
+                      style={{ width: `${Math.min(dataCompleteness.averagePercent, 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground sm:text-xs">
+                    {fmtNum(dataCompleteness.fullyComplete)} of {fmtNum(dataCompleteness.total)} students fully complete
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <MasterDataCompletenessCard
+              title="Standards setup"
+              Icon={LayoutGrid}
+              summary={standardsCompleteness}
+              footer={`${fmtNum(standardsCompleteness.fullyComplete)} of ${fmtNum(standardsCompleteness.total)} standards fully complete`}
+            />
+            <MasterDataCompletenessCard
+              title="Subjects setup"
+              Icon={BookMarked}
+              summary={subjectsCompleteness}
+              footer={`${fmtNum(subjectsCompleteness.fullyComplete)} of ${fmtNum(subjectsCompleteness.total)} subjects fully complete`}
+            />
+            {canAccessPayroll(user) && (
+              <MasterDataCompletenessCard
+                title="Staff records"
+                Icon={BadgeCheck}
+                summary={staffCompleteness}
+                footer={`${fmtNum(staffCompleteness.fullyComplete)} of ${fmtNum(staffCompleteness.total)} staff fully complete`}
+              />
             )}
           </div>
         </section>
@@ -473,6 +652,12 @@ export default async function DashboardPage() {
               </div>
               <p className="mt-2 text-[10px] text-muted-foreground sm:mt-3 sm:text-xs">Staff & teachers</p>
             </div>
+            <MasterDataCompletenessCard
+              title="Staff records"
+              Icon={BadgeCheck}
+              summary={staffCompleteness}
+              footer={`${fmtNum(staffCompleteness.fullyComplete)} of ${fmtNum(staffCompleteness.total)} staff fully complete`}
+            />
           </div>
         </section>
       )}

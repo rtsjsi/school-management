@@ -37,6 +37,7 @@ import StudentEntryForm from "@/components/StudentEntryForm";
 import { StudentEditDialog } from "@/components/StudentEditDialog";
 import { StudentViewDialog } from "@/components/StudentViewDialog";
 import { DatePicker } from "@/components/ui/date-picker";
+import { computeCompleteness } from "@/lib/student-completeness";
 
 type StudentRow = {
   id: string;
@@ -659,6 +660,7 @@ export function ManageStudentsList({
                   <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("status")}>
                     <span className="inline-flex items-center gap-1">Status <SortIcon col="status" /></span>
                   </TableHead>
+                  <TableHead className="hidden sm:table-cell text-center">Data&nbsp;%</TableHead>
                   <TableHead className="w-20 text-center hidden sm:table-cell">View</TableHead>
                   {canEdit && <TableHead className="w-32 text-center hidden sm:table-cell">Enrolments</TableHead>}
                   {canEdit && <TableHead className="w-28 text-right hidden sm:table-cell">Exit</TableHead>}
@@ -736,6 +738,22 @@ export function ManageStudentsList({
                         {s.status || "active"}
                       </Badge>
                     </TableCell>
+                    <TableCell className="hidden sm:table-cell text-center">
+                      {(() => {
+                        const { percent } = computeCompleteness(s as unknown as Record<string, unknown>);
+                        const color =
+                          percent >= 80
+                            ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400"
+                            : percent >= 50
+                              ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400"
+                              : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400";
+                        return (
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${color}`}>
+                            {percent}%
+                          </span>
+                        );
+                      })()}
+                    </TableCell>
                     <TableCell className="text-center hidden sm:table-cell">
                       <StudentViewDialog student={s} />
                     </TableCell>
@@ -768,6 +786,23 @@ export function ManageStudentsList({
                         <div><span className="text-muted-foreground">Roll #:</span> {s.roll_number ?? "—"}</div>
                         <div><span className="text-muted-foreground">GR No:</span> {s.gr_number ?? "—"}</div>
                         <div><span className="text-muted-foreground">Status:</span> {s.status ?? "active"}</div>
+                        <div>
+                          <span className="text-muted-foreground">Data:</span>{" "}
+                          {(() => {
+                            const { percent } = computeCompleteness(s as unknown as Record<string, unknown>);
+                            const color =
+                              percent >= 80
+                                ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400"
+                                : percent >= 50
+                                  ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400"
+                                  : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400";
+                            return (
+                              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${color}`}>
+                                {percent}%
+                              </span>
+                            );
+                          })()}
+                        </div>
                         <div className="pt-1 flex flex-wrap gap-2">
                           <StudentViewDialog student={s} />
                           {canEdit && (
