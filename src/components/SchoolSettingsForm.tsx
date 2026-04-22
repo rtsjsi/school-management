@@ -128,8 +128,7 @@ export function SchoolSettingsForm({
         email: form.email.trim(),
         logo_path: logoPath ?? initialSettings?.logo_path ?? null,
         principal_signature_path: signaturePath ?? initialSettings?.principal_signature_path ?? null,
-      },
-      isPrincipal
+      }
     );
     if (result.ok) {
       setSuccess(true);

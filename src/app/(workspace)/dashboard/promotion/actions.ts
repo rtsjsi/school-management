@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { requireUser, isAdminOrAbove } from "@/lib/auth";
 
 function formatServerActionError(e: unknown): string {
   if (e instanceof Error) {
@@ -40,6 +41,8 @@ export type EnrollmentOutcome = {
 };
 
 export async function getEnrollmentsForYear(academicYearId: string): Promise<EnrollmentOutcome[]> {
+  const user = await requireUser();
+  if (!isAdminOrAbove(user)) throw new Error("Unauthorized");
   const supabase = await createClient();
   const { data: enrollments } = await supabase
     .from("student_enrollments")
@@ -71,6 +74,8 @@ export async function getEnrollmentsForYear(academicYearId: string): Promise<Enr
 }
 
 export async function getPromotionCandidates(academicYearId: string): Promise<EnrollmentOutcome[]> {
+  const user = await requireUser();
+  if (!isAdminOrAbove(user)) throw new Error("Unauthorized");
   const supabase = await createClient();
   const { data: enrollments } = await supabase
     .from("student_enrollments")
@@ -228,6 +233,8 @@ export async function runPromotion(
   outcomes: EnrollmentOutcome[]
 ): Promise<RunPromotionResult> {
   try {
+    const user = await requireUser();
+    if (!isAdminOrAbove(user)) return { ok: false, error: "Unauthorized" };
     return await runPromotionImpl(academicYearId, outcomes);
   } catch (e) {
     return { ok: false, error: formatServerActionError(e) };

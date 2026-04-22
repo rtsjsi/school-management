@@ -1,10 +1,13 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { requireUser, canEditFees } from "@/lib/auth";
 
 export type FeeStructureActionResult = { ok: true } | { ok: false; error: string };
 
 export async function deleteFeeStructure(id: string): Promise<FeeStructureActionResult> {
+  const user = await requireUser();
+  if (!canEditFees(user)) return { ok: false, error: "Unauthorized" };
   const supabase = await createClient();
   const { error } = await supabase.from("fee_structures").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
@@ -20,6 +23,8 @@ export async function updateFeeStructure(
     items: { fee_type: string; quarter: number; amount: number }[];
   }
 ): Promise<FeeStructureActionResult> {
+  const user = await requireUser();
+  if (!canEditFees(user)) return { ok: false, error: "Unauthorized" };
   const supabase = await createClient();
   const trimmed = {
     standardId: data.standardId.trim(),
@@ -96,13 +101,10 @@ export async function updateFeeCollection(
     return { ok: false, error: "Transaction ID is required for online payment mode." };
   }
 
+  const user = await requireUser();
+  if (!canEditFees(user)) return { ok: false, error: "Unauthorized" };
+
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { ok: false, error: "You must be signed in to update a fee collection." };
-  }
 
   const { error } = await supabase
     .from("fee_collections")

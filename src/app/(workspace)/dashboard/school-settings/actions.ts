@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { requireUser, isPrincipal } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
 const SCHOOL_SETTINGS_ID = "00000000-0000-0000-0000-000000000001";
@@ -17,10 +18,10 @@ export type SchoolSettingsUpdate = {
 export type SchoolSettingsActionResult = { ok: true } | { ok: false; error: string };
 
 export async function updateSchoolSettings(
-  data: SchoolSettingsUpdate,
-  isPrincipal: boolean
+  data: SchoolSettingsUpdate
 ): Promise<SchoolSettingsActionResult> {
-  if (!isPrincipal) return { ok: false, error: "Only Principal can update school settings." };
+  const user = await requireUser();
+  if (!isPrincipal(user)) return { ok: false, error: "Only Principal can update school settings." };
 
   const supabase = await createClient();
   const payload = {
