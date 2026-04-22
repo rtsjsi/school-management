@@ -226,8 +226,8 @@ export default function ExpenseReports() {
     });
   }, [summaryRows, summarySortDir, summarySortKey]);
   const listRowsForExport = useMemo(
-    () => listRows.map((r) => ({ ...r, amount: Number(r.amount ?? 0) })),
-    [listRows],
+    () => sortedListRows.map((r) => ({ ...r, amount: Number(r.amount ?? 0) })),
+    [sortedListRows],
   );
 
   const totalAmount = Array.isArray(data)
@@ -257,7 +257,7 @@ export default function ExpenseReports() {
   const handleExportPdf = () => {
     if (!data?.length) return;
     const fileBase = `expense-report-${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}`;
-    exportExpensePdf(listRowsForExport, summaryRows, fileBase, {
+    exportExpensePdf(listRowsForExport, sortedSummaryRows, fileBase, {
       schoolName: school.name || "Expense Report",
       subtitle: buildExportSubtitle(),
       reportType,

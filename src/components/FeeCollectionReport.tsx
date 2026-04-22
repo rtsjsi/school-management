@@ -350,7 +350,7 @@ export default function FeeCollectionReport() {
 
   const handleExportPdf = () => {
     if (!data?.length || !summary) return;
-    exportFeeCollectionPdf(data, exportFileBase(), {
+    exportFeeCollectionPdf(sortedData ?? data, exportFileBase(), {
       schoolName: school.name || "Fee Collection Report",
       subtitle: buildExportSubtitle(),
       summary,

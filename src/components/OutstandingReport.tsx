@@ -250,7 +250,7 @@ export default function OutstandingReport() {
   const handleExportPdf = () => {
     if (!data?.length || !summary) return;
     const fileBase = `outstanding-report-${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}`;
-    exportOutstandingPdf(data, fileBase, {
+    exportOutstandingPdf(sortedData ?? data, fileBase, {
       schoolName: school.name || "Outstanding Fees Report",
       subtitle: buildExportSubtitle(),
       summary,
