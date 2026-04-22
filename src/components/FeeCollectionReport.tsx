@@ -176,7 +176,7 @@ export default function FeeCollectionReport() {
   const [dateTo, setDateTo] = useState(today);
 
   const [students, setStudents] = useState<{ id: string; full_name: string; standard?: string }[]>([]);
-  const [standards, setStandards] = useState<{ id: string; name: string }[]>([]);
+  const [standards, setStandards] = useState<import("@/lib/lov").StandardOption[]>([]);
   const [years, setYears] = useState<{ id: string; name: string }[]>([]);
 
   const [data, setData] = useState<ReportRow[] | null>(null);
@@ -184,7 +184,7 @@ export default function FeeCollectionReport() {
   const [loading, setLoading] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
 
-  type SortKey = "receipt_number" | "student_name" | "student_standard" | "amount" | "fee_type" | "quarter" | "payment_mode" | "collection_date" | "collected_by";
+  type SortKey = "receipt_number" | "student_name" | "student_standard" | "student_division" | "amount" | "fee_type" | "quarter" | "payment_mode" | "collection_date" | "collected_by";
   type SortDir = "asc" | "desc";
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -200,13 +200,20 @@ export default function FeeCollectionReport() {
 
   const sortedData = useMemo(() => {
     if (!data || !sortKey) return data;
+
+    const stdOrderMap = new Map(standards.map((s) => [s.name, s.sort_order ?? 999]));
+
     return [...data].sort((a, b) => {
       let av: string | number = "";
       let bv: string | number = "";
       switch (sortKey) {
         case "receipt_number": av = a.receipt_number ?? ""; bv = b.receipt_number ?? ""; break;
         case "student_name": av = (a.student_name ?? "").toLowerCase(); bv = (b.student_name ?? "").toLowerCase(); break;
-        case "student_standard": av = a.student_standard ?? ""; bv = b.student_standard ?? ""; break;
+        case "student_standard":
+          av = stdOrderMap.get(a.student_standard ?? "") ?? 999;
+          bv = stdOrderMap.get(b.student_standard ?? "") ?? 999;
+          break;
+        case "student_division": av = a.student_division ?? ""; bv = b.student_division ?? ""; break;
         case "amount": av = Number(a.amount); bv = Number(b.amount); break;
         case "fee_type": av = a.fee_type ?? ""; bv = b.fee_type ?? ""; break;
         case "quarter": av = a.quarter; bv = b.quarter; break;
@@ -214,11 +221,21 @@ export default function FeeCollectionReport() {
         case "collection_date": av = a.collection_date ?? ""; bv = b.collection_date ?? ""; break;
         case "collected_by": av = (a.collected_by ?? "").toLowerCase(); bv = (b.collected_by ?? "").toLowerCase(); break;
       }
+
       if (av < bv) return sortDir === "asc" ? -1 : 1;
       if (av > bv) return sortDir === "asc" ? 1 : -1;
+
+      // Secondary sort for Standard: sort by Division
+      if (sortKey === "student_standard") {
+        const ad = (a.student_division ?? "").toLowerCase();
+        const bd = (b.student_division ?? "").toLowerCase();
+        if (ad < bd) return sortDir === "asc" ? -1 : 1;
+        if (ad > bd) return sortDir === "asc" ? 1 : -1;
+      }
+
       return 0;
     });
-  }, [data, sortKey, sortDir]);
+  }, [data, sortKey, sortDir, standards]);
 
   const SortIcon = ({ col }: { col: SortKey }) => {
     if (sortKey !== col) return <ArrowUpDown className="h-3 w-3 opacity-40" />;
@@ -713,7 +730,10 @@ export default function FeeCollectionReport() {
                           <span className="inline-flex items-center gap-1">Student <SortIcon col="student_name" /></span>
                         </TableHead>
                         <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("student_standard")}>
-                          <span className="inline-flex items-center gap-1">Standard <SortIcon col="student_standard" /></span>
+                          <span className="inline-flex items-center gap-1">Std <SortIcon col="student_standard" /></span>
+                        </TableHead>
+                        <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("student_division")}>
+                          <span className="inline-flex items-center gap-1">Div <SortIcon col="student_division" /></span>
                         </TableHead>
                         <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("amount")}>
                           <span className="inline-flex items-center gap-1">Amount <SortIcon col="amount" /></span>
@@ -759,7 +779,10 @@ export default function FeeCollectionReport() {
                             </Button>
                           </TableCell>
                           <TableCell className="hidden sm:table-cell">
-                            {[row.student_standard, row.student_division].filter(Boolean).join(" ") || "—"}
+                            {row.student_standard || "—"}
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell">
+                            {row.student_division || "—"}
                           </TableCell>
                           <TableCell>{Number(row.amount).toLocaleString("en-IN")}</TableCell>
                           <TableCell className="hidden sm:table-cell">{getFeeTypeLabel(row.fee_type)}</TableCell>

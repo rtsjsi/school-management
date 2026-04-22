@@ -1,15 +1,15 @@
 import { createClient } from "@/lib/supabase/client";
 
-export type StandardOption = { id: string; name: string };
-export type DivisionOption = { id: string; name: string };
-export type AcademicYearOption = { id: string; name: string; status?: string | null };
-export type GradeOption = { id: string; name: string };
+export type StandardOption = { id: string; name: string; sort_order?: number };
+export type DivisionOption = { id: string; name: string; sort_order?: number };
+export type AcademicYearOption = { id: string; name: string; status?: string | null; sort_order?: number };
+export type GradeOption = { id: string; name: string; sort_order?: number };
 
 export async function fetchStandards(): Promise<StandardOption[]> {
   const supabase = createClient();
   const { data } = await supabase
     .from("standards")
-    .select("id, name")
+    .select("id, name, sort_order")
     .order("sort_order");
   return (data ?? []) as StandardOption[];
 }

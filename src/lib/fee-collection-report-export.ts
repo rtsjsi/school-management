@@ -93,7 +93,8 @@ export function exportFeeCollectionPdf(
     String(idx + 1),
     row.receipt_number,
     String(row.student_name ?? "—").slice(0, 30),
-    [row.student_standard, row.student_division].filter(Boolean).join(" ") || "—",
+    row.student_standard || "—",
+    row.student_division || "—",
     fmtINR(Number(row.amount)),
     getFeeTypeLabel(row.fee_type),
     `Q${row.quarter}`,
@@ -107,16 +108,16 @@ export function exportFeeCollectionPdf(
   autoTable(doc, {
     startY: curY,
     margin: { left: marginL, right: marginR },
-    head: [["#", "Receipt", "Student", "Std / Div", "Amount", "Type", "Qtr", "Mode", "Date", "Collected By"]],
+    head: [["#", "Receipt", "Student", "Std", "Div", "Amount", "Type", "Qtr", "Mode", "Date", "Collected By"]],
     body,
     foot: [[
-      { content: "", colSpan: 4 },
+      { content: "", colSpan: 5 },
       { content: `Total: ${fmtINR(sum)}`, colSpan: 6, styles: { halign: "right" as const, fontStyle: "bold" as const, fontSize: 8.5 } },
     ]],
     theme: "grid",
     styles: {
-      fontSize: 7.5,
-      cellPadding: { top: 2, bottom: 2, left: 2, right: 2 },
+      fontSize: 7,
+      cellPadding: { top: 2, bottom: 2, left: 1.5, right: 1.5 },
       font: "helvetica",
       textColor: C.foreground,
       lineColor: C.border,
@@ -126,14 +127,14 @@ export function exportFeeCollectionPdf(
       fillColor: C.primary,
       textColor: C.white,
       fontStyle: "bold",
-      fontSize: 7.5,
+      fontSize: 7,
       cellPadding: { top: 2.5, bottom: 2.5, left: 2, right: 2 },
     },
     footStyles: {
       fillColor: C.accent,
       textColor: C.primary,
       fontStyle: "bold",
-      fontSize: 8,
+      fontSize: 7.5,
       cellPadding: { top: 2.5, bottom: 2.5, left: 2, right: 2 },
       lineColor: C.border,
       lineWidth: 0.3,
@@ -141,7 +142,9 @@ export function exportFeeCollectionPdf(
     alternateRowStyles: { fillColor: C.background },
     columnStyles: {
       0: { cellWidth: 8, halign: "center" },
-      4: { halign: "right", fontStyle: "bold" },
+      3: { cellWidth: 12 },
+      4: { cellWidth: 10 },
+      5: { halign: "right", fontStyle: "bold" },
     },
     didDrawPage: (data) => {
       const currentPage = (doc as unknown as { internal: { getCurrentPageInfo: () => { pageNumber: number } } }).internal.getCurrentPageInfo().pageNumber;
