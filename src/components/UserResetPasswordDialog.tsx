@@ -32,8 +32,8 @@ export function UserResetPasswordDialog({ userId, userEmail }: UserResetPassword
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!password || password.length < 6) {
-      setError("Password must be at least 6 characters.");
+    if (!password || password.length < 8) {
+      setError("Password must be at least 8 characters.");
       return;
     }
 
@@ -80,8 +80,8 @@ export function UserResetPasswordDialog({ userId, userEmail }: UserResetPassword
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Min 6 characters"
-              minLength={6}
+              placeholder="Min 8 characters"
+              minLength={8}
               required
             />
           </div>

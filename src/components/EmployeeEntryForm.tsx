@@ -15,9 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-
-const ROLES = ["teacher", "staff", "admin", "other"] as const;
-const EMPLOYEE_TYPES = ["full_time", "part_time", "contract", "temporary"] as const;
+import { EMPLOYEE_TYPES, EMPLOYEE_ROLES } from "@/lib/lov";
 
 type ShiftOption = { id: string; name: string };
 
@@ -227,7 +225,7 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
               <Select value={form.role} onValueChange={(v) => setForm((p) => ({ ...p, role: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {ROLES.map((r) => <SelectItem key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</SelectItem>)}
+                  {EMPLOYEE_ROLES.map((r) => <SelectItem key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

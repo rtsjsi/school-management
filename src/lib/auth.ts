@@ -4,6 +4,21 @@ import type { UserRole } from "@/types/auth";
 
 const VALID_ROLES: UserRole[] = ["principal", "admin", "teacher", "auditor", "accounts", "payroll"];
 
+const DEBUG_AUTH = process.env.DEBUG_AUTH === "true";
+function debugLog(level: "info" | "warn" | "error", message: string, data?: any) {
+  if (!DEBUG_AUTH && level !== "error") return; // always log errors, but we can strip PII if needed. The instruction says gate console.info/warn.
+  if (level === "info" && DEBUG_AUTH) console.info(message, data);
+  if (level === "warn" && DEBUG_AUTH) console.warn(message, data);
+  if (level === "error") {
+    // For errors, log the message but only log PII if DEBUG_AUTH is true
+    if (DEBUG_AUTH) {
+      console.error(message, data);
+    } else {
+      console.error(message);
+    }
+  }
+}
+
 function normalizeRole(value: unknown): UserRole {
   const s = typeof value === "string" ? value.trim().toLowerCase() : "";
   if (VALID_ROLES.includes(s as UserRole)) return s as UserRole;
@@ -25,7 +40,7 @@ export const getUser = cache(async (): Promise<AuthUser | null> => {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    console.warn("[auth:getUser] No auth user found");
+    debugLog("warn", "[auth:getUser] No auth user found");
     return null;
   }
 
@@ -33,12 +48,12 @@ export const getUser = cache(async (): Promise<AuthUser | null> => {
   // In case of data drift (e.g. cloned DB where id/email mismatch), fall back to email lookup.
   const admin = createAdminClient();
   if (!admin) {
-    console.warn("[auth:getUser] Admin client NOT available – using anon/authenticated client", {
+    debugLog("warn", "[auth:getUser] Admin client NOT available – using anon/authenticated client", {
       hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
       hasServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
     });
   } else {
-    console.info("[auth:getUser] Admin client available – using service role for profiles lookup");
+    debugLog("info", "[auth:getUser] Admin client available – using service role for profiles lookup");
   }
   const client = admin ?? supabase;
 
@@ -65,7 +80,7 @@ export const getUser = cache(async (): Promise<AuthUser | null> => {
 
     if (profileByEmail) {
       profile = profileByEmail;
-      console.info("[auth:getUser] Using profile by email", {
+      debugLog("info", "[auth:getUser] Using profile by email", {
         authId: user.id,
         authEmail: user.email,
         profileEmail: user.email,
@@ -73,7 +88,7 @@ export const getUser = cache(async (): Promise<AuthUser | null> => {
       });
     }
     if (errorByEmail) {
-      console.error("[auth:getUser] profiles fetch by email error:", errorByEmail.message, {
+      debugLog("error", "[auth:getUser] profiles fetch by email error: " + errorByEmail.message, {
         authId: user.id,
         authEmail: user.email,
       });
@@ -81,14 +96,14 @@ export const getUser = cache(async (): Promise<AuthUser | null> => {
   }
 
   if (errorById) {
-    console.error("[auth:getUser] profiles fetch by id error:", errorById.message, {
+    debugLog("error", "[auth:getUser] profiles fetch by id error: " + errorById.message, {
       authId: user.id,
       authEmail: user.email,
     });
   }
 
   if (profileById) {
-    console.info("[auth:getUser] Using profile by id", {
+    debugLog("info", "[auth:getUser] Using profile by id", {
       authId: user.id,
       authEmail: user.email,
       rawRole: profileById.role,
@@ -96,7 +111,7 @@ export const getUser = cache(async (): Promise<AuthUser | null> => {
   }
 
   if (!profile) {
-    console.warn("[auth:getUser] No profile found by id or email", {
+    debugLog("warn", "[auth:getUser] No profile found by id or email", {
       authId: user.id,
       authEmail: user.email,
     });
@@ -105,7 +120,7 @@ export const getUser = cache(async (): Promise<AuthUser | null> => {
   const role = normalizeRole(profile?.role);
   const fullName = profile?.full_name ?? null;
 
-  console.info("[auth:getUser] Final user role", {
+  debugLog("info", "[auth:getUser] Final user role", {
     authId: user.id,
     authEmail: user.email,
     rawRole: profile?.role ?? null,
