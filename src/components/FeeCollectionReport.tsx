@@ -289,6 +289,7 @@ export default function FeeCollectionReport() {
         break;
       case "class-wise":
         if (standardFilter) params.set("standard", standardFilter);
+        if (quarter) params.set("quarter", quarter);
         break;
       case "student-wise":
         if (standardFilter) params.set("standard", standardFilter);
@@ -537,7 +538,7 @@ export default function FeeCollectionReport() {
               )}
 
               {/* Quarter picker — for quarterly and custom */}
-              {(preset === "quarterly" || preset === "custom") && (
+              {(preset === "quarterly" || preset === "class-wise" || preset === "custom") && (
                 <div className="space-y-1.5">
                   <Label className="text-xs">Quarter</Label>
                   <Select value={quarter || "all"} onValueChange={(v) => setQuarter(v === "all" ? "" : v)}>
@@ -545,7 +546,7 @@ export default function FeeCollectionReport() {
                       <SelectValue placeholder="All Quarters" />
                     </SelectTrigger>
                     <SelectContent>
-                      {preset === "custom" && <SelectItem value="all">All Quarters</SelectItem>}
+                      {(preset === "custom" || preset === "class-wise") && <SelectItem value="all">All Quarters</SelectItem>}
                       {QUARTERS.map((q) => (
                         <SelectItem key={q} value={String(q)}>{QUARTER_LABELS[q]}</SelectItem>
                       ))}

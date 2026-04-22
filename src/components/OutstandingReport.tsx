@@ -205,6 +205,7 @@ export default function OutstandingReport() {
         break;
       case "class-wise":
         if (standardFilter) params.set("standard", standardFilter);
+        if (quarter) params.set("quarter", quarter);
         break;
       case "student-wise":
         if (standardFilter) params.set("standard", standardFilter);
@@ -348,14 +349,17 @@ export default function OutstandingReport() {
               </div>
 
               {/* Quarter picker — for quarterly preset */}
-              {preset === "quarterly" && (
+              {(preset === "quarterly" || preset === "class-wise") && (
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Outstanding Till Quarter</Label>
-                  <Select value={quarter || "1"} onValueChange={setQuarter}>
+                  <Label className="text-xs">
+                    {preset === "quarterly" ? "Outstanding Till Quarter" : "Quarter (Optional)"}
+                  </Label>
+                  <Select value={quarter || "all"} onValueChange={(v) => setQuarter(v === "all" ? "" : v)}>
                     <SelectTrigger className="h-9">
-                      <SelectValue placeholder="Select quarter" />
+                      <SelectValue placeholder="All Quarters" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="all">All Quarters</SelectItem>
                       {QUARTERS.map((q) => (
                         <SelectItem key={q} value={String(q)}>{QUARTER_LABELS[q]}</SelectItem>
                       ))}
