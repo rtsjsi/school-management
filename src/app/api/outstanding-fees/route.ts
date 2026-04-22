@@ -2,9 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveAcademicYearName } from "@/lib/enrollment";
 import { linesWithNetAfterConcession } from "@/lib/fee-concession";
+import { getUser } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
   try {
+    const user = await getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const { searchParams } = new URL(request.url);
     const academicYear = searchParams.get("academicYear");
     const quarter = searchParams.get("quarter");

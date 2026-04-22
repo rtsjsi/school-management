@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { requireUser, isAdminOrAbove } from "@/lib/auth";
 
 export type SubjectActionResult = { ok: true } | { ok: false; error: string };
 
@@ -10,6 +11,8 @@ export async function createSubject(
   evaluationType: "grade" | "mark",
   subjectTeacherId: string | null = null
 ): Promise<SubjectActionResult> {
+  const user = await requireUser();
+  if (!isAdminOrAbove(user)) return { ok: false, error: "Unauthorized" };
   const supabase = await createClient();
   const trimmed = name.trim();
   if (!trimmed) return { ok: false, error: "Subject name is required." };
@@ -32,6 +35,8 @@ export async function updateSubject(
   evaluationType: "grade" | "mark",
   subjectTeacherId: string | null = null
 ): Promise<SubjectActionResult> {
+  const user = await requireUser();
+  if (!isAdminOrAbove(user)) return { ok: false, error: "Unauthorized" };
   const supabase = await createClient();
   const trimmed = name.trim();
   if (!trimmed) return { ok: false, error: "Subject name is required." };
@@ -52,6 +57,8 @@ export async function updateSubject(
 export type StandardActionResult = { ok: true } | { ok: false; error: string };
 
 export async function createStandard(name: string, section: string): Promise<StandardActionResult> {
+  const user = await requireUser();
+  if (!isAdminOrAbove(user)) return { ok: false, error: "Unauthorized" };
   const supabase = await createClient();
   const trimmed = name.trim();
   if (!trimmed) return { ok: false, error: "Standard name is required." };
@@ -72,6 +79,8 @@ export async function createStandard(name: string, section: string): Promise<Sta
 }
 
 export async function updateStandard(id: string, name: string, section: string): Promise<StandardActionResult> {
+  const user = await requireUser();
+  if (!isAdminOrAbove(user)) return { ok: false, error: "Unauthorized" };
   const supabase = await createClient();
   const trimmed = name.trim();
   if (!trimmed) return { ok: false, error: "Standard name is required." };
@@ -84,6 +93,8 @@ export async function updateStandard(id: string, name: string, section: string):
 }
 
 export async function deleteStandard(id: string): Promise<StandardActionResult> {
+  const user = await requireUser();
+  if (!isAdminOrAbove(user)) return { ok: false, error: "Unauthorized" };
   const supabase = await createClient();
   const { error } = await supabase.from("standards").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
@@ -91,6 +102,8 @@ export async function deleteStandard(id: string): Promise<StandardActionResult> 
 }
 
 export async function deleteSubject(id: string): Promise<SubjectActionResult> {
+  const user = await requireUser();
+  if (!isAdminOrAbove(user)) return { ok: false, error: "Unauthorized" };
   const supabase = await createClient();
   const { error } = await supabase.from("subjects").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
@@ -100,6 +113,8 @@ export async function deleteSubject(id: string): Promise<SubjectActionResult> {
 export type DivisionActionResult = { ok: true } | { ok: false; error: string };
 
 export async function createDivision(standardId: string, name: string): Promise<DivisionActionResult> {
+  const user = await requireUser();
+  if (!isAdminOrAbove(user)) return { ok: false, error: "Unauthorized" };
   const supabase = await createClient();
   const trimmed = name.trim();
   if (!trimmed) return { ok: false, error: "Division name is required." };
@@ -124,6 +139,8 @@ export async function createDivision(standardId: string, name: string): Promise<
 }
 
 export async function deleteDivision(id: string): Promise<DivisionActionResult> {
+  const user = await requireUser();
+  if (!isAdminOrAbove(user)) return { ok: false, error: "Unauthorized" };
   const supabase = await createClient();
   const { error } = await supabase.from("standard_divisions").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };

@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { requireUser, isAdminOrAbove } from "@/lib/auth";
 
 export type ExamSubjectActionResult = { ok: true } | { ok: false; error: string };
 
@@ -9,6 +10,8 @@ export async function setExamSubjectMaxMarks(
   subjectId: string,
   maxMarks: number
 ): Promise<ExamSubjectActionResult> {
+  const user = await requireUser();
+  if (!isAdminOrAbove(user)) return { ok: false, error: "Unauthorized" };
   const supabase = await createClient();
   if (maxMarks <= 0) return { ok: false, error: "Max marks must be positive." };
 
@@ -32,6 +35,8 @@ export async function createExamWithSubjects(
     subjectMaxMarks: { subjectId: string; maxMarks: number }[];
   }
 ): Promise<CreateExamResult> {
+  const user = await requireUser();
+  if (!isAdminOrAbove(user)) return { ok: false, error: "Unauthorized" };
   const supabase = await createClient();
   if (!payload.name.trim()) return { ok: false, error: "Exam name is required." };
   if (!payload.academic_year_id?.trim()) return { ok: false, error: "Academic year is required." };
@@ -66,6 +71,8 @@ export async function updateExam(
   examId: string,
   payload: { name: string; standard: string | null; term: string | null }
 ): Promise<UpdateExamResult> {
+  const user = await requireUser();
+  if (!isAdminOrAbove(user)) return { ok: false, error: "Unauthorized" };
   const supabase = await createClient();
   if (!payload.name.trim()) return { ok: false, error: "Exam name is required." };
   if (!payload.standard?.trim()) return { ok: false, error: "Standard is required." };
