@@ -96,7 +96,7 @@ export default function OutstandingReport() {
   const [studentId, setStudentId] = useState("");
 
   const [students, setStudents] = useState<{ id: string; full_name: string; standard?: string }[]>([]);
-  const [standards, setStandards] = useState<{ id: string; name: string }[]>([]);
+  const [standards, setStandards] = useState<import("@/lib/lov").StandardOption[]>([]);
   const [years, setYears] = useState<{ id: string; name: string }[]>([]);
 
   const [data, setData] = useState<OutstandingRow[] | null>(null);
@@ -121,25 +121,41 @@ export default function OutstandingReport() {
 
   const sortedData = useMemo(() => {
     if (!data || !sortKey) return data;
+
+    const stdOrderMap = new Map(standards.map((s) => [s.name, s.sort_order ?? 999]));
+
     return [...data].sort((a, b) => {
       let av: string | number = "";
       let bv: string | number = "";
       switch (sortKey) {
         case "full_name": av = (a.full_name ?? "").toLowerCase(); bv = (b.full_name ?? "").toLowerCase(); break;
         case "gr_number": av = a.gr_number ?? ""; bv = b.gr_number ?? ""; break;
-        case "standard": av = a.standard ?? ""; bv = b.standard ?? ""; break;
-        case "division": av = a.division ?? ""; bv = b.division ?? ""; break;
+        case "standard":
+          av = stdOrderMap.get(a.standard ?? "") ?? 999;
+          bv = stdOrderMap.get(b.standard ?? "") ?? 999;
+          break;
+        case "division": av = (a.division ?? "").toLowerCase(); bv = (b.division ?? "").toLowerCase(); break;
         case "quarter": av = a.quarter; bv = b.quarter; break;
         case "fee_type": av = a.fee_type ?? ""; bv = b.fee_type ?? ""; break;
         case "total": av = Number(a.total); bv = Number(b.total); break;
         case "paid": av = Number(a.paid); bv = Number(b.paid); break;
         case "outstanding": av = Number(a.outstanding); bv = Number(b.outstanding); break;
       }
+
       if (av < bv) return sortDir === "asc" ? -1 : 1;
       if (av > bv) return sortDir === "asc" ? 1 : -1;
+
+      // Secondary sort for Standard: sort by Division
+      if (sortKey === "standard") {
+        const ad = (a.division ?? "").toLowerCase();
+        const bd = (b.division ?? "").toLowerCase();
+        if (ad < bd) return sortDir === "asc" ? -1 : 1;
+        if (ad > bd) return sortDir === "asc" ? 1 : -1;
+      }
+
       return 0;
     });
-  }, [data, sortKey, sortDir]);
+  }, [data, sortKey, sortDir, standards]);
 
   const SortIcon = ({ col }: { col: SortKey }) => {
     if (sortKey !== col) return <ArrowUpDown className="h-3 w-3 opacity-40" />;
@@ -189,6 +205,7 @@ export default function OutstandingReport() {
         break;
       case "class-wise":
         if (standardFilter) params.set("standard", standardFilter);
+        if (quarter) params.set("quarter", quarter);
         break;
       case "student-wise":
         if (standardFilter) params.set("standard", standardFilter);
@@ -250,7 +267,7 @@ export default function OutstandingReport() {
   const handleExportPdf = () => {
     if (!data?.length || !summary) return;
     const fileBase = `outstanding-report-${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}`;
-    exportOutstandingPdf(data, fileBase, {
+    exportOutstandingPdf(sortedData ?? data, fileBase, {
       schoolName: school.name || "Outstanding Fees Report",
       subtitle: buildExportSubtitle(),
       summary,
@@ -332,14 +349,17 @@ export default function OutstandingReport() {
               </div>
 
               {/* Quarter picker — for quarterly preset */}
-              {preset === "quarterly" && (
+              {(preset === "quarterly" || preset === "class-wise") && (
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Outstanding Till Quarter</Label>
-                  <Select value={quarter || "1"} onValueChange={setQuarter}>
+                  <Label className="text-xs">
+                    {preset === "quarterly" ? "Outstanding Till Quarter" : "Quarter (Optional)"}
+                  </Label>
+                  <Select value={quarter || "all"} onValueChange={(v) => setQuarter(v === "all" ? "" : v)}>
                     <SelectTrigger className="h-9">
-                      <SelectValue placeholder="Select quarter" />
+                      <SelectValue placeholder="All Quarters" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="all">All Quarters</SelectItem>
                       {QUARTERS.map((q) => (
                         <SelectItem key={q} value={String(q)}>{QUARTER_LABELS[q]}</SelectItem>
                       ))}
@@ -497,10 +517,10 @@ export default function OutstandingReport() {
                           <span className="inline-flex items-center gap-1">GR No. <SortIcon col="gr_number" /></span>
                         </TableHead>
                         <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("standard")}>
-                          <span className="inline-flex items-center gap-1">Standard <SortIcon col="standard" /></span>
+                          <span className="inline-flex items-center gap-1">Std <SortIcon col="standard" /></span>
                         </TableHead>
                         <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("division")}>
-                          <span className="inline-flex items-center gap-1">Division <SortIcon col="division" /></span>
+                          <span className="inline-flex items-center gap-1">Div <SortIcon col="division" /></span>
                         </TableHead>
                         <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("quarter")}>
                           <span className="inline-flex items-center gap-1">Quarter <SortIcon col="quarter" /></span>
