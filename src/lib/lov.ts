@@ -1,5 +1,8 @@
 import { createClient } from "@/lib/supabase/client";
 
+export const EMPLOYEE_TYPES = ["full_time", "part_time", "contract", "temporary"] as const;
+export const EMPLOYEE_ROLES = ["teacher", "staff", "admin", "other"] as const;
+
 export type StandardOption = { id: string; name: string; sort_order?: number };
 export type DivisionOption = { id: string; name: string; sort_order?: number };
 export type AcademicYearOption = { id: string; name: string; status?: string | null; sort_order?: number };

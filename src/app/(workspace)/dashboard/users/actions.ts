@@ -20,7 +20,7 @@ export async function createUser(
   const trimmedName = fullName.trim();
 
   if (!trimmedEmail) return { ok: false, error: "Email is required." };
-  if (!password || password.length < 6) return { ok: false, error: "Password must be at least 6 characters." };
+  if (!password || password.length < 8) return { ok: false, error: "Password must be at least 8 characters." };
 
   const { data: newUser, error: createError } = await admin.auth.admin.createUser({
     email: trimmedEmail,
@@ -57,8 +57,8 @@ export async function resetUserPassword(userId: string, newPassword: string): Pr
     return { ok: false, error: "Server configuration error (missing service role key)." };
   }
 
-  if (!newPassword || newPassword.length < 6) {
-    return { ok: false, error: "Password must be at least 6 characters." };
+  if (!newPassword || newPassword.length < 8) {
+    return { ok: false, error: "Password must be at least 8 characters." };
   }
 
   const { error } = await admin.auth.admin.updateUserById(userId, { password: newPassword });
