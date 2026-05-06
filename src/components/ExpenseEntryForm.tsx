@@ -86,6 +86,7 @@ export default function ExpenseEntryForm({
   onEdit,
   editingId,
   initialValues,
+  onSuccess,
 }: {
   expenseHeads: ExpenseHead[];
   employees?: { id: string; full_name: string }[];
@@ -105,6 +106,7 @@ export default function ExpenseEntryForm({
     cheque_date?: string;
     transaction_reference_id?: string;
   };
+  onSuccess?: () => void;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -139,6 +141,21 @@ export default function ExpenseEntryForm({
         cheque_bank: initialValues.cheque_bank ?? "",
         cheque_date: initialValues.cheque_date ?? "",
         transaction_reference_id: initialValues.transaction_reference_id ?? "",
+      });
+    } else {
+      setForm({
+        voucher: "",
+        expense_head_id: "",
+        party: "NIL",
+        amount: "",
+        expense_by: "",
+        account: "",
+        description: "",
+        expense_date: new Date().toISOString().slice(0, 10),
+        cheque_number: "",
+        cheque_bank: "",
+        cheque_date: "",
+        transaction_reference_id: "",
       });
     }
   }, [initialValues, editingId]);
@@ -205,6 +222,7 @@ export default function ExpenseEntryForm({
         transaction_reference_id: "",
       });
       router.refresh();
+      onSuccess?.();
     } catch {
       setError("Something went wrong.");
     } finally {
