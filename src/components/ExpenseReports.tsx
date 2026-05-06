@@ -53,7 +53,7 @@ import { exportExpensePdf } from "@/lib/expense-report-export";
 const PAYMENT_MODES = ["cash", "cheque", "online"] as const;
 
 type ReportType = "list" | "summary";
-type FilterPreset = "today" | "this-month" | "last-month" | "financial-year" | "custom";
+type FilterPreset = "monthwise" | "yearwise" | "custom";
 
 type ExpenseHead = { id: string; name: string };
 type ListRow = {
@@ -78,40 +78,36 @@ const PRESET_CONFIG: {
   description: string;
   icon: React.ElementType;
 }[] = [
-  { value: "today", label: "Today", description: "Current day", icon: Calendar },
-  { value: "this-month", label: "This Month", description: "Current month", icon: LayoutGrid },
-  { value: "last-month", label: "Last Month", description: "Previous month", icon: CalendarRange },
-  { value: "financial-year", label: "Financial Year", description: "Apr to Mar", icon: CalendarRange },
-  { value: "custom", label: "Custom", description: "Choose date range", icon: Filter },
+  { value: "monthwise", label: "Monthwise", description: "Current Month", icon: LayoutGrid },
+  { value: "yearwise", label: "Yearwise", description: "Financial Year", icon: CalendarRange },
+  { value: "custom", label: "Custom", description: "Choose range", icon: Filter },
 ];
 
 function getPresetRange(preset: FilterPreset): { from: string; to: string } {
   const now = new Date();
   const toISO = (d: Date) => d.toISOString().slice(0, 10);
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-  if (preset === "today") return { from: toISO(today), to: toISO(today) };
-  if (preset === "this-month") {
+  if (preset === "monthwise") {
     const from = new Date(now.getFullYear(), now.getMonth(), 1);
     const to = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     return { from: toISO(from), to: toISO(to) };
   }
-  if (preset === "last-month") {
-    const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const to = new Date(now.getFullYear(), now.getMonth(), 0);
+  if (preset === "yearwise") {
+    // financial year (Apr-Mar)
+    const fyStartYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+    const from = new Date(fyStartYear, 3, 1);
+    const to = new Date(fyStartYear + 1, 2, 31);
     return { from: toISO(from), to: toISO(to) };
   }
-  // financial year (Apr-Mar)
-  const fyStartYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
-  const from = new Date(fyStartYear, 3, 1);
-  const to = new Date(fyStartYear + 1, 2, 31);
-  return { from: toISO(from), to: toISO(to) };
+  
+  // custom
+  return { from: "", to: "" };
 }
 
 export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean }) {
   const school = useSchoolSettings();
   const [reportType, setReportType] = useState<ReportType>("list");
-  const [preset, setPreset] = useState<FilterPreset>("this-month");
+  const [preset, setPreset] = useState<FilterPreset>("monthwise");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [expenseHeadId, setExpenseHeadId] = useState("all");
