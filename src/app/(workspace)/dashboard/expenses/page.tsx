@@ -32,7 +32,7 @@ export default async function ExpensesPage() {
           <ExpenseBudgetsManager />
         </TabsContent>
         <TabsContent value="reports" className="space-y-6">
-          <ExpenseReports />
+          <ExpenseReports canEdit={canEdit} />
         </TabsContent>
       </Tabs>
     </div>

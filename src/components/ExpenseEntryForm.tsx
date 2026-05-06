@@ -110,11 +110,10 @@ export default function ExpenseEntryForm({
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState({
+  const [error, setError] = useState<string | null>(null);  const [form, setForm] = useState({
     voucher: initialValues?.voucher ?? "",
     expense_head_id: initialValues?.expense_head_id ?? "",
-    party: initialValues?.party ?? "NIL",
+    party: initialValues?.party ?? "",
     amount: initialValues?.amount?.toString() ?? "",
     expense_by: initialValues?.expense_by ?? "",
     account: (initialValues?.account as string) ?? "",
@@ -131,7 +130,7 @@ export default function ExpenseEntryForm({
       setForm({
         voucher: initialValues.voucher ?? "",
         expense_head_id: initialValues.expense_head_id ?? "",
-        party: initialValues.party ?? "NIL",
+        party: initialValues.party ?? "",
         amount: initialValues.amount?.toString() ?? "",
         expense_by: initialValues.expense_by ?? "",
         account: initialValues.account ?? "",
@@ -146,7 +145,7 @@ export default function ExpenseEntryForm({
       setForm({
         voucher: "",
         expense_head_id: "",
-        party: "NIL",
+        party: "",
         amount: "",
         expense_by: "",
         account: "",
@@ -164,8 +163,24 @@ export default function ExpenseEntryForm({
     e.preventDefault();
     setError(null);
     const amount = parseFloat(form.amount);
-    if (isNaN(amount) || amount < 0) {
-      setError("Enter a valid amount.");
+    if (!form.expense_date) {
+      setError("Date is required.");
+      return;
+    }
+    if (!form.voucher?.trim()) {
+      setError("Voucher number is required.");
+      return;
+    }
+    if (!form.expense_head_id) {
+      setError("Expense head is required.");
+      return;
+    }
+    if (!form.party?.trim()) {
+      setError("Party name is required.");
+      return;
+    }
+    if (isNaN(amount) || amount <= 0) {
+      setError("Enter a valid amount greater than 0.");
       return;
     }
     if (!form.account) {
@@ -210,7 +225,7 @@ export default function ExpenseEntryForm({
       setForm({
         voucher: "",
         expense_head_id: "",
-        party: "NIL",
+        party: "",
         amount: "",
         expense_by: "",
         account: "",
@@ -235,7 +250,7 @@ export default function ExpenseEntryForm({
     setForm({
       voucher: "",
       expense_head_id: "",
-      party: "NIL",
+      party: "",
       amount: "",
       expense_by: "",
       account: "",
@@ -249,100 +264,124 @@ export default function ExpenseEntryForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
+    <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
         <p className="text-xs text-destructive bg-destructive/10 px-2 py-1.5 rounded-md">{error}</p>
       )}
-      <div className="space-y-2">
-        <Label htmlFor="expense-date" className="text-xs font-medium text-muted-foreground">Date</Label>
-        <DatePicker
-          value={form.expense_date}
-          onChange={(isoDate) => setForm((p) => ({ ...p, expense_date: isoDate }))}
-          className="h-9 text-sm"
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="expense-voucher" className="text-xs font-medium text-muted-foreground">Voucher</Label>
-        <Input
-          id="expense-voucher"
-          value={form.voucher}
-          onChange={(e) => setForm((p) => ({ ...p, voucher: e.target.value }))}
-          placeholder="Voucher no"
-          className="h-9 text-sm"
-        />
-      </div>
-      <div className="space-y-2">
-        <Label className="text-xs font-medium text-muted-foreground">Expense Head</Label>
-        <Select
-          value={form.expense_head_id}
-          onValueChange={(v) => setForm((p) => ({ ...p, expense_head_id: v }))}
-        >
-          <SelectTrigger className="h-9 text-sm">
-            <SelectValue placeholder="Select head" />
-          </SelectTrigger>
-          <SelectContent>
-            {expenseHeads.map((h) => (
-              <SelectItem key={h.id} value={h.id}>{h.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {form.expense_head_id && (
-          <RemainingBudget expenseHeadId={form.expense_head_id} />
-        )}
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="expense-party" className="text-xs font-medium text-muted-foreground">Party</Label>
-        <Input
-          id="expense-party"
-          value={form.party}
-          onChange={(e) => setForm((p) => ({ ...p, party: e.target.value }))}
-          placeholder="NIL"
-          className="h-9 text-sm"
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="expense-amount" className="text-xs font-medium text-muted-foreground">Total Amount *</Label>
-        <Input
-          id="expense-amount"
-          type="number"
-          min="0"
-          step="0.01"
-          value={form.amount}
-          onChange={(e) => setForm((p) => ({ ...p, amount: e.target.value }))}
-          placeholder="0.00"
-          className="h-9 text-sm"
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="expense-by" className="text-xs font-medium text-muted-foreground">Expense By</Label>
-        <div className="flex gap-2">
-          <Input
-            id="expense-by"
-            value={form.expense_by}
-            onChange={(e) => setForm((p) => ({ ...p, expense_by: e.target.value }))}
-            placeholder="e.g. Mrs Ranjeeta"
-            className="flex-1 h-9 text-sm"
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Row 1: The "When" and "ID" */}
+        <div className="space-y-1.5">
+          <Label htmlFor="expense-date" className="text-xs font-medium text-muted-foreground">Date *</Label>
+          <DatePicker
+            value={form.expense_date}
+            onChange={(isoDate) => setForm((p) => ({ ...p, expense_date: isoDate }))}
+            className="h-9 text-sm"
           />
-          {employees && employees.length > 0 && (
-            <Select
-              value={form.expense_by && employees.some((e) => e.full_name === form.expense_by) ? form.expense_by : "none"}
-              onValueChange={(v) => v !== "none" && setForm((p) => ({ ...p, expense_by: v }))}
-            >
-              <SelectTrigger className="w-36 h-9 text-sm">
-                <SelectValue placeholder="From list" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">—</SelectItem>
-                {employees.map((emp) => (
-                  <SelectItem key={emp.id} value={emp.full_name}>{emp.full_name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="expense-voucher" className="text-xs font-medium text-muted-foreground">Voucher No *</Label>
+          <Input
+            id="expense-voucher"
+            value={form.voucher}
+            onChange={(e) => setForm((p) => ({ ...p, voucher: e.target.value }))}
+            placeholder="Voucher no"
+            className="h-9 text-sm"
+            required
+          />
+        </div>
+
+        {/* Row 2: The "What" and "Who" */}
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium text-muted-foreground">Expense Head *</Label>
+          <Select
+            value={form.expense_head_id}
+            onValueChange={(v) => setForm((p) => ({ ...p, expense_head_id: v }))}
+          >
+            <SelectTrigger className="h-9 text-sm">
+              <SelectValue placeholder="Select head" />
+            </SelectTrigger>
+            <SelectContent>
+              {expenseHeads.map((h) => (
+                <SelectItem key={h.id} value={h.id}>{h.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {form.expense_head_id && (
+            <RemainingBudget expenseHeadId={form.expense_head_id} />
           )}
         </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="expense-party" className="text-xs font-medium text-muted-foreground">Party Name *</Label>
+          <Input
+            id="expense-party"
+            value={form.party}
+            onChange={(e) => setForm((p) => ({ ...p, party: e.target.value }))}
+            placeholder="Party name"
+            className="h-9 text-sm"
+            required
+          />
+        </div>
+
+        {/* Row 3: The "How much" and "Who requester" */}
+        <div className="space-y-1.5">
+          <Label htmlFor="expense-amount" className="text-xs font-medium text-muted-foreground">Total Amount *</Label>
+          <Input
+            id="expense-amount"
+            type="number"
+            min="0.01"
+            step="0.01"
+            value={form.amount}
+            onChange={(e) => setForm((p) => ({ ...p, amount: e.target.value }))}
+            placeholder="0.00"
+            className="h-9 text-sm"
+            required
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="expense-by" className="text-xs font-medium text-muted-foreground">Expense By</Label>
+          <div className="flex gap-2">
+            <Input
+              id="expense-by"
+              value={form.expense_by}
+              onChange={(e) => setForm((p) => ({ ...p, expense_by: e.target.value }))}
+              placeholder="e.g. Mrs Ranjeeta"
+              className="flex-1 h-9 text-sm"
+            />
+            {employees && employees.length > 0 && (
+              <Select
+                value={form.expense_by && employees.some((e) => e.full_name === form.expense_by) ? form.expense_by : "none"}
+                onValueChange={(v) => v !== "none" && setForm((p) => ({ ...p, expense_by: v }))}
+              >
+                <SelectTrigger className="w-36 h-9 text-sm">
+                  <SelectValue placeholder="From list" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">—</SelectItem>
+                  {employees.map((emp) => (
+                    <SelectItem key={emp.id} value={emp.full_name}>{emp.full_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+        </div>
+
+        {/* Row 4: Additional Info */}
+        <div className="space-y-1.5 md:col-span-2">
+          <Label htmlFor="expense-desc" className="text-xs font-medium text-muted-foreground">Description</Label>
+          <Input
+            id="expense-desc"
+            value={form.description}
+            onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+            placeholder="Optional context"
+            className="h-9 text-sm"
+          />
+        </div>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 pt-1 border-t border-border/50">
-        <div className="space-y-1">
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2 border-t border-border/50">
+        <div className="space-y-1.5">
           <Label htmlFor="expense-payment-method" className="text-xs font-medium text-muted-foreground whitespace-nowrap">
             Payment Method *
           </Label>
@@ -351,7 +390,7 @@ export default function ExpenseEntryForm({
             onValueChange={(v) => setForm((p) => ({ ...p, account: v }))}
           >
             <SelectTrigger id="expense-payment-method" className="h-9 text-sm">
-              <SelectValue placeholder="Select payment method" />
+              <SelectValue placeholder="Select payment" />
             </SelectTrigger>
             <SelectContent>
               {PAYMENT_MODES.map((m) => (
@@ -365,7 +404,7 @@ export default function ExpenseEntryForm({
 
         {form.account === "cheque" && (
           <>
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <Label htmlFor="expense-cheque-bank" className="text-xs font-medium text-muted-foreground">Bank</Label>
               <Input
                 id="expense-cheque-bank"
@@ -375,7 +414,7 @@ export default function ExpenseEntryForm({
                 className="h-9 text-sm"
               />
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <Label htmlFor="expense-cheque-number" className="text-xs font-medium text-muted-foreground">Chq # *</Label>
               <Input
                 id="expense-cheque-number"
@@ -386,7 +425,7 @@ export default function ExpenseEntryForm({
                 required
               />
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <Label htmlFor="expense-cheque-date" className="text-xs font-medium text-muted-foreground">Chq date *</Label>
               <DatePicker
                 value={form.cheque_date}
@@ -398,7 +437,7 @@ export default function ExpenseEntryForm({
         )}
 
         {form.account === "online" && (
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <Label htmlFor="expense-txn-ref" className="text-xs font-medium text-muted-foreground">Txn ID *</Label>
             <Input
               id="expense-txn-ref"
@@ -412,25 +451,15 @@ export default function ExpenseEntryForm({
         )}
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="expense-desc" className="text-xs font-medium text-muted-foreground">Description</Label>
-        <Input
-          id="expense-desc"
-          value={form.description}
-          onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-          placeholder="Optional"
-          className="h-9 text-sm"
-        />
-      </div>
-      <div className="flex flex-wrap gap-2 justify-start">
-        <SubmitButton loading={loading} loadingLabel="Saving…" className="h-9 px-4 text-sm font-semibold shadow-none">
-          {editingId ? "Update" : "Add"} expense
-        </SubmitButton>
+      <div className="flex flex-wrap gap-2 justify-start pt-2">
         {editingId && (
-          <Button type="button" variant="outline" onClick={handleNew}>
-            New
+          <Button type="button" variant="outline" size="sm" onClick={handleNew}>
+            Cancel
           </Button>
         )}
+        <SubmitButton loading={loading} loadingLabel="Saving…" className="h-9 px-6 text-sm font-semibold shadow-none">
+          {editingId ? "Update" : "Add"} Expense
+        </SubmitButton>
       </div>
     </form>
   );

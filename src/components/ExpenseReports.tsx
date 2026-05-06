@@ -14,6 +14,7 @@ import {
   Filter,
   Loader2,
   X,
+  Edit2,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -37,6 +38,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import ExpenseEntryForm from "@/components/ExpenseEntryForm";
 import { createClient } from "@/lib/supabase/client";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 import { exportExpensePdf } from "@/lib/expense-report-export";
@@ -44,7 +53,7 @@ import { exportExpensePdf } from "@/lib/expense-report-export";
 const PAYMENT_MODES = ["cash", "cheque", "online"] as const;
 
 type ReportType = "list" | "summary";
-type FilterPreset = "today" | "this-month" | "last-month" | "financial-year" | "custom";
+type FilterPreset = "monthwise" | "yearwise" | "custom";
 
 type ExpenseHead = { id: string; name: string };
 type ListRow = {
@@ -69,47 +78,43 @@ const PRESET_CONFIG: {
   description: string;
   icon: React.ElementType;
 }[] = [
-  { value: "today", label: "Today", description: "Current day", icon: Calendar },
-  { value: "this-month", label: "This Month", description: "Current month", icon: LayoutGrid },
-  { value: "last-month", label: "Last Month", description: "Previous month", icon: CalendarRange },
-  { value: "financial-year", label: "Financial Year", description: "Apr to Mar", icon: CalendarRange },
-  { value: "custom", label: "Custom", description: "Choose date range", icon: Filter },
+  { value: "monthwise", label: "Monthwise", description: "Current Month", icon: LayoutGrid },
+  { value: "yearwise", label: "Yearwise", description: "Financial Year", icon: CalendarRange },
+  { value: "custom", label: "Custom", description: "Choose range", icon: Filter },
 ];
 
 function getPresetRange(preset: FilterPreset): { from: string; to: string } {
   const now = new Date();
   const toISO = (d: Date) => d.toISOString().slice(0, 10);
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-  if (preset === "today") return { from: toISO(today), to: toISO(today) };
-  if (preset === "this-month") {
+  if (preset === "monthwise") {
     const from = new Date(now.getFullYear(), now.getMonth(), 1);
     const to = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     return { from: toISO(from), to: toISO(to) };
   }
-  if (preset === "last-month") {
-    const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const to = new Date(now.getFullYear(), now.getMonth(), 0);
+  if (preset === "yearwise") {
+    // financial year (Apr-Mar)
+    const fyStartYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+    const from = new Date(fyStartYear, 3, 1);
+    const to = new Date(fyStartYear + 1, 2, 31);
     return { from: toISO(from), to: toISO(to) };
   }
-  // financial year (Apr-Mar)
-  const fyStartYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
-  const from = new Date(fyStartYear, 3, 1);
-  const to = new Date(fyStartYear + 1, 2, 31);
-  return { from: toISO(from), to: toISO(to) };
+  
+  // custom
+  return { from: "", to: "" };
 }
 
-export default function ExpenseReports() {
+export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean }) {
   const school = useSchoolSettings();
-  const [reportType, setReportType] = useState<ReportType>("list");
-  const [preset, setPreset] = useState<FilterPreset>("this-month");
+  const [reportType] = useState<ReportType>("list");
+  const [preset, setPreset] = useState<FilterPreset>("monthwise");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [expenseHeadId, setExpenseHeadId] = useState("all");
   const [paymentMode, setPaymentMode] = useState("all");
   const [search, setSearch] = useState("");
-  const [minAmount, setMinAmount] = useState("");
-  const [maxAmount, setMaxAmount] = useState("");
   const [expenseHeads, setExpenseHeads] = useState<ExpenseHead[]>([]);
   const [data, setData] = useState<(ListRow | SummaryRow)[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -119,13 +124,28 @@ export default function ExpenseReports() {
   const [listSortDir, setListSortDir] = useState<SortDir>("asc");
   const [summarySortDir, setSummarySortDir] = useState<SortDir>("asc");
 
+  // Editing state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingData, setEditingData] = useState<any>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [loadingEdit, setLoadingEdit] = useState(false);
+
   useEffect(() => {
-    const range = getPresetRange(preset);
-    if (preset !== "custom") {
-      setFromDate(range.from);
-      setToDate(range.to);
+    const toISO = (d: Date) => d.toISOString().slice(0, 10);
+    
+    if (preset === "monthwise") {
+      const from = new Date(selectedYear, selectedMonth, 1);
+      const to = new Date(selectedYear, selectedMonth + 1, 0);
+      setFromDate(toISO(from));
+      setToDate(toISO(to));
+    } else if (preset === "yearwise") {
+      // financial year (Apr-Mar)
+      const from = new Date(selectedYear, 3, 1);
+      const to = new Date(selectedYear + 1, 2, 31);
+      setFromDate(toISO(from));
+      setToDate(toISO(to));
     }
-  }, [preset]);
+  }, [preset, selectedMonth, selectedYear]);
 
   useEffect(() => {
     createClient()
@@ -144,13 +164,38 @@ export default function ExpenseReports() {
     if (expenseHeadId && expenseHeadId !== "all") params.set("expenseHeadId", expenseHeadId);
     if (paymentMode && paymentMode !== "all") params.set("paymentMode", paymentMode);
     if (search.trim()) params.set("search", search.trim());
-    if (minAmount.trim()) params.set("minAmount", minAmount.trim());
-    if (maxAmount.trim()) params.set("maxAmount", maxAmount.trim());
     fetch(`/api/expense-reports?${params}`)
       .then((r) => r.json())
       .then((d) => setData(d.data ?? []))
       .catch(() => setData([]))
       .finally(() => setLoading(false));
+  };
+
+  const handleEditClick = async (id: string) => {
+    setLoadingEdit(true);
+    setEditingId(id);
+    setIsDialogOpen(true);
+    try {
+      const supabase = createClient();
+      const { data: row } = await supabase
+        .from("expenses")
+        .select("*")
+        .eq("id", id)
+        .single();
+      setEditingData(row);
+    } catch {
+      setIsDialogOpen(false);
+    } finally {
+      setLoadingEdit(false);
+    }
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    setIsDialogOpen(open);
+    if (!open) {
+      setEditingId(null);
+      setEditingData(null);
+    }
   };
 
   const listRows = useMemo(
@@ -249,8 +294,6 @@ export default function ExpenseReports() {
     }
     if (paymentMode !== "all") parts.push(`Mode: ${paymentMode}`);
     if (search.trim()) parts.push(`Search: ${search.trim()}`);
-    if (minAmount.trim()) parts.push(`Min: ${minAmount}`);
-    if (maxAmount.trim()) parts.push(`Max: ${maxAmount}`);
     return parts.join("  ·  ");
   };
 
@@ -334,16 +377,53 @@ export default function ExpenseReports() {
               Report Parameters
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Report Type</Label>
-                <Select value={reportType} onValueChange={(v) => setReportType(v as ReportType)}>
-                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="list">Detailed List</SelectItem>
-                    <SelectItem value="summary">By Payment Mode</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {preset === "monthwise" && (
+                <>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Month</Label>
+                    <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: 12 }, (_, i) => (
+                          <SelectItem key={i} value={String(i)}>
+                            {new Date(2000, i).toLocaleString("default", { month: "long" })}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Year</Label>
+                    <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: 5 }, (_, i) => (
+                          <SelectItem key={i} value={String(new Date().getFullYear() - 2 + i)}>
+                            {new Date().getFullYear() - 2 + i}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
+
+              {preset === "yearwise" && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Financial Year Starting</Label>
+                  <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
+                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 5 }, (_, i) => (
+                        <SelectItem key={i} value={String(new Date().getFullYear() - 2 + i)}>
+                          {new Date().getFullYear() - 2 + i} - {new Date().getFullYear() - 1 + i}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               {preset === "custom" && (
                 <>
                   <div className="space-y-1.5">
@@ -356,6 +436,7 @@ export default function ExpenseReports() {
                   </div>
                 </>
               )}
+
               <div className="space-y-1.5">
                 <Label className="text-xs">Expense Head</Label>
                 <Select value={expenseHeadId} onValueChange={setExpenseHeadId}>
@@ -366,6 +447,7 @@ export default function ExpenseReports() {
                   </SelectContent>
                 </Select>
               </div>
+
               <div className="space-y-1.5">
                 <Label className="text-xs">Payment Mode</Label>
                 <Select value={paymentMode} onValueChange={setPaymentMode}>
@@ -376,22 +458,11 @@ export default function ExpenseReports() {
                   </SelectContent>
                 </Select>
               </div>
-              {reportType === "list" && (
-                <>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Search</Label>
-                    <Input placeholder="Party, voucher, description…" value={search} onChange={(e) => setSearch(e.target.value)} className="h-9" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Min Amount</Label>
-                    <Input type="number" min="0" step="0.01" placeholder="0" value={minAmount} onChange={(e) => setMinAmount(e.target.value)} className="h-9" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Max Amount</Label>
-                    <Input type="number" min="0" step="0.01" placeholder="Any" value={maxAmount} onChange={(e) => setMaxAmount(e.target.value)} className="h-9" />
-                  </div>
-                </>
-              )}
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">Search</Label>
+                <Input placeholder="Party, voucher, description…" value={search} onChange={(e) => setSearch(e.target.value)} className="h-9" />
+              </div>
             </div>
           </div>
 
@@ -489,6 +560,7 @@ export default function ExpenseReports() {
                         <span className="inline-flex items-center gap-1">Expense By <ListSortIcon col="expense_by" /></span>
                       </TableHead>
                       <TableHead className="max-w-[160px] hidden sm:table-cell">Description</TableHead>
+                      {canEdit && <TableHead className="w-[80px] text-center">Actions</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -525,10 +597,22 @@ export default function ExpenseReports() {
                         <TableCell className="text-muted-foreground text-sm truncate max-w-[160px] hidden sm:table-cell">
                           {String(row.description ?? "—")}
                         </TableCell>
+                        {canEdit && (
+                          <TableCell className="text-center">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-primary"
+                              onClick={() => handleEditClick(String(row.id))}
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        )}
                       </TableRow>,
                       expandedRows[String(row.id ?? "")] ? (
                         <TableRow key={`${String(row.id ?? "")}-details`} className="sm:hidden bg-muted/30">
-                          <TableCell colSpan={3} className="text-sm space-y-1">
+                          <TableCell colSpan={canEdit ? 4 : 3} className="text-sm space-y-1">
                             <div><span className="text-muted-foreground">Voucher:</span> {String(row.voucher ?? "—")}</div>
                             <div><span className="text-muted-foreground">Party:</span> {String(row.party ?? "—")}</div>
                             <div><span className="text-muted-foreground">Mode:</span> {String(row.account ?? "—")}</div>
@@ -541,7 +625,7 @@ export default function ExpenseReports() {
                     <TableRow className="font-medium bg-muted/50">
                       <TableCell colSpan={2}>Total</TableCell>
                       <TableCell className="text-right">{totalAmount.toLocaleString()}</TableCell>
-                      <TableCell colSpan={5} className="hidden sm:table-cell" />
+                      <TableCell colSpan={canEdit ? 6 : 5} className="hidden sm:table-cell" />
                     </TableRow>
                   </TableBody>
                 </Table>
@@ -554,6 +638,52 @@ export default function ExpenseReports() {
           )}
         </div>
       </CardContent>
+
+      <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Expense</DialogTitle>
+            <DialogDescription>
+              Modify the details of the selected expense record.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="pt-4">
+            {loadingEdit ? (
+              <div className="flex items-center justify-center h-32">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : editingData ? (
+              <ExpenseEntryForm 
+                expenseHeads={expenseHeads} 
+                editingId={editingId}
+                onEdit={(id) => {
+                  if (id === null) handleDialogClose(false);
+                }}
+                onSuccess={() => {
+                  handleDialogClose(false);
+                  fetchReport();
+                }}
+                initialValues={{
+                  voucher: editingData.voucher ?? "",
+                  expense_head_id: editingData.expense_head_id ?? "",
+                  party: editingData.party ?? "",
+                  amount: editingData.amount,
+                  expense_by: editingData.expense_by ?? "",
+                  account: editingData.account,
+                  description: editingData.description ?? "",
+                  expense_date: editingData.expense_date,
+                  cheque_number: editingData.cheque_number ?? "",
+                  cheque_bank: editingData.cheque_bank ?? "",
+                  cheque_date: editingData.cheque_date ?? "",
+                  transaction_reference_id: editingData.transaction_reference_id ?? "",
+                }}
+              />
+            ) : (
+              <p className="text-center text-muted-foreground py-8">Failed to load record details.</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
