@@ -8,6 +8,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Edit2, Loader2 } from "lucide-react";
 
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription 
+} from "@/components/ui/dialog";
+
 type ExpenseHead = { id: string; name: string };
 type Employee = { id: string; full_name: string };
 type Expense = {
@@ -33,6 +41,7 @@ export default function ExpensesManager({ canEdit = true }: { canEdit?: boolean 
   const [recentExpenses, setRecentExpenses] = useState<Expense[]>([]);
   const [loadingRecent, setLoadingRecent] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const supabase = useMemo(() => createClient(), []);
 
@@ -63,40 +72,33 @@ export default function ExpensesManager({ canEdit = true }: { canEdit?: boolean 
     recentExpenses.find(e => e.id === editingId), 
   [recentExpenses, editingId]);
 
+  const handleEditClick = (id: string) => {
+    setEditingId(id);
+    setIsDialogOpen(true);
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    setIsDialogOpen(open);
+    if (!open) setEditingId(null);
+  };
+
   if (!canEdit) return null;
 
   return (
     <div className="grid gap-6 lg:grid-cols-12">
       <div className="lg:col-span-12 space-y-6">
+        {/* ADD NEW EXPENSE FORM (Main Page) */}
         <Card>
           <CardContent className="pt-6">
             <ExpenseEntryForm 
               expenseHeads={expenseHeads} 
               employees={employees} 
-              editingId={editingId}
-              onEdit={setEditingId}
-              onSuccess={() => {
-                setEditingId(null);
-                fetchRecentExpenses();
-              }}
-              initialValues={editingExpense ? {
-                voucher: editingExpense.voucher ?? "",
-                expense_head_id: editingExpense.expense_head_id ?? "",
-                party: editingExpense.party ?? "",
-                amount: editingExpense.amount,
-                expense_by: editingExpense.expense_by ?? "",
-                account: editingExpense.account,
-                description: editingExpense.description ?? "",
-                expense_date: editingExpense.expense_date,
-                cheque_number: editingExpense.cheque_number ?? "",
-                cheque_bank: editingExpense.cheque_bank ?? "",
-                cheque_date: editingExpense.cheque_date ?? "",
-                transaction_reference_id: editingExpense.transaction_reference_id ?? "",
-              } : undefined}
+              onSuccess={fetchRecentExpenses}
             />
           </CardContent>
         </Card>
 
+        {/* RECENT EXPENSES TABLE */}
         <Card>
           <CardContent className="pt-6">
             <div className="space-y-4">
@@ -132,7 +134,7 @@ export default function ExpensesManager({ canEdit = true }: { canEdit?: boolean 
                       </TableRow>
                     ) : (
                       recentExpenses.map((expense) => (
-                        <TableRow key={expense.id} className={editingId === expense.id ? "bg-primary/5" : ""}>
+                        <TableRow key={expense.id}>
                           <TableCell className="text-xs">
                             {new Date(expense.expense_date).toLocaleDateString()}
                           </TableCell>
@@ -150,7 +152,7 @@ export default function ExpensesManager({ canEdit = true }: { canEdit?: boolean 
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 text-primary"
-                              onClick={() => setEditingId(expense.id)}
+                              onClick={() => handleEditClick(expense.id)}
                             >
                               <Edit2 className="h-4 w-4" />
                             </Button>
@@ -164,6 +166,48 @@ export default function ExpensesManager({ canEdit = true }: { canEdit?: boolean 
             </div>
           </CardContent>
         </Card>
+
+        {/* EDIT EXPENSE DIALOG */}
+        <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Expense</DialogTitle>
+              <DialogDescription>
+                Modify the details of the selected expense record.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="pt-4">
+              {editingExpense && (
+                <ExpenseEntryForm 
+                  expenseHeads={expenseHeads} 
+                  employees={employees} 
+                  editingId={editingId}
+                  onEdit={(id) => {
+                    if (id === null) handleDialogClose(false);
+                  }}
+                  onSuccess={() => {
+                    handleDialogClose(false);
+                    fetchRecentExpenses();
+                  }}
+                  initialValues={{
+                    voucher: editingExpense.voucher ?? "",
+                    expense_head_id: editingExpense.expense_head_id ?? "",
+                    party: editingExpense.party ?? "",
+                    amount: editingExpense.amount,
+                    expense_by: editingExpense.expense_by ?? "",
+                    account: editingExpense.account,
+                    description: editingExpense.description ?? "",
+                    expense_date: editingExpense.expense_date,
+                    cheque_number: editingExpense.cheque_number ?? "",
+                    cheque_bank: editingExpense.cheque_bank ?? "",
+                    cheque_date: editingExpense.cheque_date ?? "",
+                    transaction_reference_id: editingExpense.transaction_reference_id ?? "",
+                  }}
+                />
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
