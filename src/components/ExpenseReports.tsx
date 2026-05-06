@@ -294,8 +294,6 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
     }
     if (paymentMode !== "all") parts.push(`Mode: ${paymentMode}`);
     if (search.trim()) parts.push(`Search: ${search.trim()}`);
-    if (minAmount.trim()) parts.push(`Min: ${minAmount}`);
-    if (maxAmount.trim()) parts.push(`Max: ${maxAmount}`);
     return parts.join("  ·  ");
   };
 
