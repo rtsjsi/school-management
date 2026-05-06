@@ -106,7 +106,7 @@ function getPresetRange(preset: FilterPreset): { from: string; to: string } {
 
 export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean }) {
   const school = useSchoolSettings();
-  const [reportType, setReportType] = useState<ReportType>("list");
+  const [reportType] = useState<ReportType>("list");
   const [preset, setPreset] = useState<FilterPreset>("monthwise");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -115,8 +115,6 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
   const [expenseHeadId, setExpenseHeadId] = useState("all");
   const [paymentMode, setPaymentMode] = useState("all");
   const [search, setSearch] = useState("");
-  const [minAmount, setMinAmount] = useState("");
-  const [maxAmount, setMaxAmount] = useState("");
   const [expenseHeads, setExpenseHeads] = useState<ExpenseHead[]>([]);
   const [data, setData] = useState<(ListRow | SummaryRow)[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -166,8 +164,6 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
     if (expenseHeadId && expenseHeadId !== "all") params.set("expenseHeadId", expenseHeadId);
     if (paymentMode && paymentMode !== "all") params.set("paymentMode", paymentMode);
     if (search.trim()) params.set("search", search.trim());
-    if (minAmount.trim()) params.set("minAmount", minAmount.trim());
-    if (maxAmount.trim()) params.set("maxAmount", maxAmount.trim());
     fetch(`/api/expense-reports?${params}`)
       .then((r) => r.json())
       .then((d) => setData(d.data ?? []))
@@ -383,17 +379,6 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
               Report Parameters
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Report Type</Label>
-                <Select value={reportType} onValueChange={(v) => setReportType(v as ReportType)}>
-                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="list">Detailed List</SelectItem>
-                    <SelectItem value="summary">By Payment Mode</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
               {preset === "monthwise" && (
                 <>
                   <div className="space-y-1.5">
@@ -464,6 +449,7 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
                   </SelectContent>
                 </Select>
               </div>
+
               <div className="space-y-1.5">
                 <Label className="text-xs">Payment Mode</Label>
                 <Select value={paymentMode} onValueChange={setPaymentMode}>
@@ -474,22 +460,11 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
                   </SelectContent>
                 </Select>
               </div>
-              {reportType === "list" && (
-                <>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Search</Label>
-                    <Input placeholder="Party, voucher, description…" value={search} onChange={(e) => setSearch(e.target.value)} className="h-9" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Min Amount</Label>
-                    <Input type="number" min="0" step="0.01" placeholder="0" value={minAmount} onChange={(e) => setMinAmount(e.target.value)} className="h-9" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Max Amount</Label>
-                    <Input type="number" min="0" step="0.01" placeholder="Any" value={maxAmount} onChange={(e) => setMaxAmount(e.target.value)} className="h-9" />
-                  </div>
-                </>
-              )}
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">Search</Label>
+                <Input placeholder="Party, voucher, description…" value={search} onChange={(e) => setSearch(e.target.value)} className="h-9" />
+              </div>
             </div>
           </div>
 
