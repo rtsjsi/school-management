@@ -159,13 +159,28 @@ export default function ExpenseEntryForm({
       });
     }
   }, [initialValues, editingId]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     const amount = parseFloat(form.amount);
-    if (isNaN(amount) || amount < 0) {
-      setError("Enter a valid amount.");
+    if (!form.expense_date) {
+      setError("Date is required.");
+      return;
+    }
+    if (!form.voucher?.trim()) {
+      setError("Voucher number is required.");
+      return;
+    }
+    if (!form.expense_head_id) {
+      setError("Expense head is required.");
+      return;
+    }
+    if (!form.party?.trim() || form.party === "NIL") {
+      setError("Party name is required.");
+      return;
+    }
+    if (isNaN(amount) || amount <= 0) {
+      setError("Enter a valid amount greater than 0.");
       return;
     }
     if (!form.account) {
@@ -248,15 +263,16 @@ export default function ExpenseEntryForm({
     });
   };
 
-  return (    <form onSubmit={handleSubmit} className="space-y-4">
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
         <p className="text-xs text-destructive bg-destructive/10 px-2 py-1.5 rounded-md">{error}</p>
       )}
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Row 1 */}
+        {/* Row 1: The "When" and "ID" */}
         <div className="space-y-1.5">
-          <Label htmlFor="expense-date" className="text-xs font-medium text-muted-foreground">Date</Label>
+          <Label htmlFor="expense-date" className="text-xs font-medium text-muted-foreground">Date *</Label>
           <DatePicker
             value={form.expense_date}
             onChange={(isoDate) => setForm((p) => ({ ...p, expense_date: isoDate }))}
@@ -264,19 +280,20 @@ export default function ExpenseEntryForm({
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="expense-voucher" className="text-xs font-medium text-muted-foreground">Voucher</Label>
+          <Label htmlFor="expense-voucher" className="text-xs font-medium text-muted-foreground">Voucher No *</Label>
           <Input
             id="expense-voucher"
             value={form.voucher}
             onChange={(e) => setForm((p) => ({ ...p, voucher: e.target.value }))}
             placeholder="Voucher no"
             className="h-9 text-sm"
+            required
           />
         </div>
 
-        {/* Row 2 */}
+        {/* Row 2: The "What" and "Who" */}
         <div className="space-y-1.5">
-          <Label className="text-xs font-medium text-muted-foreground">Expense Head</Label>
+          <Label className="text-xs font-medium text-muted-foreground">Expense Head *</Label>
           <Select
             value={form.expense_head_id}
             onValueChange={(v) => setForm((p) => ({ ...p, expense_head_id: v }))}
@@ -295,28 +312,30 @@ export default function ExpenseEntryForm({
           )}
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="expense-party" className="text-xs font-medium text-muted-foreground">Party</Label>
+          <Label htmlFor="expense-party" className="text-xs font-medium text-muted-foreground">Party Name *</Label>
           <Input
             id="expense-party"
             value={form.party}
             onChange={(e) => setForm((p) => ({ ...p, party: e.target.value }))}
-            placeholder="NIL"
+            placeholder="Party name"
             className="h-9 text-sm"
+            required
           />
         </div>
 
-        {/* Row 3 */}
+        {/* Row 3: The "How much" and "Who requester" */}
         <div className="space-y-1.5">
           <Label htmlFor="expense-amount" className="text-xs font-medium text-muted-foreground">Total Amount *</Label>
           <Input
             id="expense-amount"
             type="number"
-            min="0"
+            min="0.01"
             step="0.01"
             value={form.amount}
             onChange={(e) => setForm((p) => ({ ...p, amount: e.target.value }))}
             placeholder="0.00"
             className="h-9 text-sm"
+            required
           />
         </div>
         <div className="space-y-1.5">
@@ -348,14 +367,14 @@ export default function ExpenseEntryForm({
           </div>
         </div>
 
-        {/* Row 4 - Full width */}
+        {/* Row 4: Additional Info */}
         <div className="space-y-1.5 md:col-span-2">
           <Label htmlFor="expense-desc" className="text-xs font-medium text-muted-foreground">Description</Label>
           <Input
             id="expense-desc"
             value={form.description}
             onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-            placeholder="Optional"
+            placeholder="Optional context"
             className="h-9 text-sm"
           />
         </div>
