@@ -110,6 +110,8 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
   const [preset, setPreset] = useState<FilterPreset>("monthwise");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [expenseHeadId, setExpenseHeadId] = useState("all");
   const [paymentMode, setPaymentMode] = useState("all");
   const [search, setSearch] = useState("");
@@ -131,12 +133,21 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
   const [loadingEdit, setLoadingEdit] = useState(false);
 
   useEffect(() => {
-    const range = getPresetRange(preset);
-    if (preset !== "custom") {
-      setFromDate(range.from);
-      setToDate(range.to);
+    const toISO = (d: Date) => d.toISOString().slice(0, 10);
+    
+    if (preset === "monthwise") {
+      const from = new Date(selectedYear, selectedMonth, 1);
+      const to = new Date(selectedYear, selectedMonth + 1, 0);
+      setFromDate(toISO(from));
+      setToDate(toISO(to));
+    } else if (preset === "yearwise") {
+      // financial year (Apr-Mar)
+      const from = new Date(selectedYear, 3, 1);
+      const to = new Date(selectedYear + 1, 2, 31);
+      setFromDate(toISO(from));
+      setToDate(toISO(to));
     }
-  }, [preset]);
+  }, [preset, selectedMonth, selectedYear]);
 
   useEffect(() => {
     createClient()
@@ -382,6 +393,54 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
                   </SelectContent>
                 </Select>
               </div>
+
+              {preset === "monthwise" && (
+                <>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Month</Label>
+                    <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: 12 }, (_, i) => (
+                          <SelectItem key={i} value={String(i)}>
+                            {new Date(2000, i).toLocaleString("default", { month: "long" })}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Year</Label>
+                    <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: 5 }, (_, i) => (
+                          <SelectItem key={i} value={String(new Date().getFullYear() - 2 + i)}>
+                            {new Date().getFullYear() - 2 + i}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
+
+              {preset === "yearwise" && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Financial Year Starting</Label>
+                  <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
+                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 5 }, (_, i) => (
+                        <SelectItem key={i} value={String(new Date().getFullYear() - 2 + i)}>
+                          {new Date().getFullYear() - 2 + i} - {new Date().getFullYear() - 1 + i}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               {preset === "custom" && (
                 <>
                   <div className="space-y-1.5">
@@ -394,6 +453,7 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
                   </div>
                 </>
               )}
+
               <div className="space-y-1.5">
                 <Label className="text-xs">Expense Head</Label>
                 <Select value={expenseHeadId} onValueChange={setExpenseHeadId}>
