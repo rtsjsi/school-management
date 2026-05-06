@@ -14,6 +14,7 @@ import {
   Filter,
   Loader2,
   X,
+  Edit2,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -37,6 +38,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import ExpenseEntryForm from "@/components/ExpenseEntryForm";
 import { createClient } from "@/lib/supabase/client";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 import { exportExpensePdf } from "@/lib/expense-report-export";
@@ -99,7 +108,7 @@ function getPresetRange(preset: FilterPreset): { from: string; to: string } {
   return { from: toISO(from), to: toISO(to) };
 }
 
-export default function ExpenseReports() {
+export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean }) {
   const school = useSchoolSettings();
   const [reportType, setReportType] = useState<ReportType>("list");
   const [preset, setPreset] = useState<FilterPreset>("this-month");
@@ -118,6 +127,12 @@ export default function ExpenseReports() {
   const [summarySortKey, setSummarySortKey] = useState<SummarySortKey | null>(null);
   const [listSortDir, setListSortDir] = useState<SortDir>("asc");
   const [summarySortDir, setSummarySortDir] = useState<SortDir>("asc");
+
+  // Editing state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingData, setEditingData] = useState<any>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [loadingEdit, setLoadingEdit] = useState(false);
 
   useEffect(() => {
     const range = getPresetRange(preset);
@@ -151,6 +166,33 @@ export default function ExpenseReports() {
       .then((d) => setData(d.data ?? []))
       .catch(() => setData([]))
       .finally(() => setLoading(false));
+  };
+
+  const handleEditClick = async (id: string) => {
+    setLoadingEdit(true);
+    setEditingId(id);
+    setIsDialogOpen(true);
+    try {
+      const supabase = createClient();
+      const { data: row } = await supabase
+        .from("expenses")
+        .select("*")
+        .eq("id", id)
+        .single();
+      setEditingData(row);
+    } catch {
+      setIsDialogOpen(false);
+    } finally {
+      setLoadingEdit(false);
+    }
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    setIsDialogOpen(open);
+    if (!open) {
+      setEditingId(null);
+      setEditingData(null);
+    }
   };
 
   const listRows = useMemo(
@@ -489,6 +531,7 @@ export default function ExpenseReports() {
                         <span className="inline-flex items-center gap-1">Expense By <ListSortIcon col="expense_by" /></span>
                       </TableHead>
                       <TableHead className="max-w-[160px] hidden sm:table-cell">Description</TableHead>
+                      {canEdit && <TableHead className="w-[80px] text-center">Actions</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -525,10 +568,22 @@ export default function ExpenseReports() {
                         <TableCell className="text-muted-foreground text-sm truncate max-w-[160px] hidden sm:table-cell">
                           {String(row.description ?? "—")}
                         </TableCell>
+                        {canEdit && (
+                          <TableCell className="text-center">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-primary"
+                              onClick={() => handleEditClick(String(row.id))}
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        )}
                       </TableRow>,
                       expandedRows[String(row.id ?? "")] ? (
                         <TableRow key={`${String(row.id ?? "")}-details`} className="sm:hidden bg-muted/30">
-                          <TableCell colSpan={3} className="text-sm space-y-1">
+                          <TableCell colSpan={canEdit ? 4 : 3} className="text-sm space-y-1">
                             <div><span className="text-muted-foreground">Voucher:</span> {String(row.voucher ?? "—")}</div>
                             <div><span className="text-muted-foreground">Party:</span> {String(row.party ?? "—")}</div>
                             <div><span className="text-muted-foreground">Mode:</span> {String(row.account ?? "—")}</div>
@@ -541,7 +596,7 @@ export default function ExpenseReports() {
                     <TableRow className="font-medium bg-muted/50">
                       <TableCell colSpan={2}>Total</TableCell>
                       <TableCell className="text-right">{totalAmount.toLocaleString()}</TableCell>
-                      <TableCell colSpan={5} className="hidden sm:table-cell" />
+                      <TableCell colSpan={canEdit ? 6 : 5} className="hidden sm:table-cell" />
                     </TableRow>
                   </TableBody>
                 </Table>
@@ -554,6 +609,52 @@ export default function ExpenseReports() {
           )}
         </div>
       </CardContent>
+
+      <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Expense</DialogTitle>
+            <DialogDescription>
+              Modify the details of the selected expense record.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="pt-4">
+            {loadingEdit ? (
+              <div className="flex items-center justify-center h-32">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : editingData ? (
+              <ExpenseEntryForm 
+                expenseHeads={expenseHeads} 
+                editingId={editingId}
+                onEdit={(id) => {
+                  if (id === null) handleDialogClose(false);
+                }}
+                onSuccess={() => {
+                  handleDialogClose(false);
+                  fetchReport();
+                }}
+                initialValues={{
+                  voucher: editingData.voucher ?? "",
+                  expense_head_id: editingData.expense_head_id ?? "",
+                  party: editingData.party ?? "",
+                  amount: editingData.amount,
+                  expense_by: editingData.expense_by ?? "",
+                  account: editingData.account,
+                  description: editingData.description ?? "",
+                  expense_date: editingData.expense_date,
+                  cheque_number: editingData.cheque_number ?? "",
+                  cheque_bank: editingData.cheque_bank ?? "",
+                  cheque_date: editingData.cheque_date ?? "",
+                  transaction_reference_id: editingData.transaction_reference_id ?? "",
+                }}
+              />
+            ) : (
+              <p className="text-center text-muted-foreground py-8">Failed to load record details.</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
