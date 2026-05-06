@@ -108,27 +108,30 @@ export default function ExpensesManager({ canEdit = true }: { canEdit?: boolean 
                 </h3>
               </div>
               
-              <div className="border rounded-md overflow-hidden">
+              <div className="border rounded-md overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50">
                       <TableHead className="w-[100px]">Date</TableHead>
+                      <TableHead className="w-[100px]">Voucher</TableHead>
                       <TableHead>Head</TableHead>
                       <TableHead>Party</TableHead>
                       <TableHead className="text-right">Amount</TableHead>
+                      <TableHead>Mode</TableHead>
+                      <TableHead className="max-w-[200px]">Description</TableHead>
                       <TableHead className="w-[80px] text-center">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {loadingRecent ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="h-24 text-center">
+                        <TableCell colSpan={8} className="h-24 text-center">
                           <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
                         </TableCell>
                       </TableRow>
                     ) : recentExpenses.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                        <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
                           No recent expenses found.
                         </TableCell>
                       </TableRow>
@@ -138,6 +141,9 @@ export default function ExpensesManager({ canEdit = true }: { canEdit?: boolean 
                           <TableCell className="text-xs">
                             {new Date(expense.expense_date).toLocaleDateString()}
                           </TableCell>
+                          <TableCell className="font-mono text-[11px]">
+                            {expense.voucher ?? "—"}
+                          </TableCell>
                           <TableCell className="font-medium">
                             {expense.expense_heads?.name ?? "—"}
                           </TableCell>
@@ -146,6 +152,12 @@ export default function ExpensesManager({ canEdit = true }: { canEdit?: boolean 
                           </TableCell>
                           <TableCell className="text-right font-semibold">
                             {expense.amount.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-xs capitalize">
+                            {expense.account}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground truncate max-w-[200px]" title={expense.description ?? ""}>
+                            {expense.description ?? "—"}
                           </TableCell>
                           <TableCell className="text-center">
                             <Button
