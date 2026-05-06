@@ -110,11 +110,10 @@ export default function ExpenseEntryForm({
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState({
+  const [error, setError] = useState<string | null>(null);  const [form, setForm] = useState({
     voucher: initialValues?.voucher ?? "",
     expense_head_id: initialValues?.expense_head_id ?? "",
-    party: initialValues?.party ?? "NIL",
+    party: initialValues?.party ?? "",
     amount: initialValues?.amount?.toString() ?? "",
     expense_by: initialValues?.expense_by ?? "",
     account: (initialValues?.account as string) ?? "",
@@ -131,7 +130,7 @@ export default function ExpenseEntryForm({
       setForm({
         voucher: initialValues.voucher ?? "",
         expense_head_id: initialValues.expense_head_id ?? "",
-        party: initialValues.party ?? "NIL",
+        party: initialValues.party ?? "",
         amount: initialValues.amount?.toString() ?? "",
         expense_by: initialValues.expense_by ?? "",
         account: initialValues.account ?? "",
@@ -146,7 +145,7 @@ export default function ExpenseEntryForm({
       setForm({
         voucher: "",
         expense_head_id: "",
-        party: "NIL",
+        party: "",
         amount: "",
         expense_by: "",
         account: "",
@@ -159,6 +158,7 @@ export default function ExpenseEntryForm({
       });
     }
   }, [initialValues, editingId]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -175,7 +175,7 @@ export default function ExpenseEntryForm({
       setError("Expense head is required.");
       return;
     }
-    if (!form.party?.trim() || form.party === "NIL") {
+    if (!form.party?.trim()) {
       setError("Party name is required.");
       return;
     }
@@ -225,7 +225,7 @@ export default function ExpenseEntryForm({
       setForm({
         voucher: "",
         expense_head_id: "",
-        party: "NIL",
+        party: "",
         amount: "",
         expense_by: "",
         account: "",
@@ -250,7 +250,7 @@ export default function ExpenseEntryForm({
     setForm({
       voucher: "",
       expense_head_id: "",
-      party: "NIL",
+      party: "",
       amount: "",
       expense_by: "",
       account: "",
@@ -451,7 +451,7 @@ export default function ExpenseEntryForm({
         )}
       </div>
 
-      <div className="flex flex-wrap gap-2 justify-end pt-2">
+      <div className="flex flex-wrap gap-2 justify-start pt-2">
         {editingId && (
           <Button type="button" variant="outline" size="sm" onClick={handleNew}>
             Cancel
