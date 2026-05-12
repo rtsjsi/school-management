@@ -3,7 +3,7 @@ import { getUser } from "@/lib/auth";
 import { getSchoolSettings } from "@/lib/school-settings";
 import { AppWelcomePage } from "@/components/AppWelcomePage";
 
-/** Fresh render so rotating thank-you / weather stay per-visit, not cached. */
+/** Fresh render so rotating thank-you messages stay per-visit, not cached. */
 export const dynamic = "force-dynamic";
 
 /**

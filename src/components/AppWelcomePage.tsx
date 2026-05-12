@@ -1,10 +1,10 @@
-import { GraduationCap, Lightbulb, CalendarDays, ScrollText, CloudSun } from "lucide-react";
+import { GraduationCap, Lightbulb, CalendarDays, ScrollText } from "lucide-react";
 import type { AuthUser } from "@/lib/auth";
 import { ROLES } from "@/types/auth";
 import { Badge } from "@/components/ui/badge";
 import { formatWelcomeDate, getThoughtOfTheDay } from "@/lib/thought-of-the-day";
 import { getOnThisDayLine } from "@/lib/on-this-day";
-import { getWelcomeWeather } from "@/lib/welcome-weather";
+
 import { getRandomWelcomeThankYou } from "@/lib/welcome-thank-you";
 
 type Props = {
@@ -21,7 +21,7 @@ export async function AppWelcomePage({ user, schoolName }: Props) {
   const thought = getThoughtOfTheDay();
   const todayLabel = formatWelcomeDate();
   const onThisDay = getOnThisDayLine();
-  const weather = await getWelcomeWeather();
+
   const thankYou = getRandomWelcomeThankYou();
 
   return (
@@ -53,7 +53,7 @@ export async function AppWelcomePage({ user, schoolName }: Props) {
       </div>
 
       <div className="grid w-full auto-rows-min grid-cols-1 items-start gap-3 sm:grid-cols-2 sm:gap-3 lg:gap-4">
-        {/* Column 1: Today — date, weather, on this day */}
+        {/* Column 1: Today — date, on this day */}
         <div className="flex w-full flex-col gap-3 sm:gap-3">
           <div className="w-full rounded-xl border border-border/70 bg-card p-3 shadow-sm sm:p-4">
             <div className="mb-1.5 flex items-center gap-1.5 text-primary">
@@ -62,19 +62,7 @@ export async function AppWelcomePage({ user, schoolName }: Props) {
             </div>
             <p className="text-sm font-medium leading-tight text-foreground sm:text-base">{todayLabel}</p>
 
-            {weather ? (
-              <div className="mt-2 flex items-start gap-2 rounded-lg border border-border/50 bg-muted/30 px-2.5 py-2">
-                <CloudSun className="mt-0.5 h-4 w-4 shrink-0 text-sky-600 dark:text-sky-400" aria-hidden />
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold tabular-nums text-foreground sm:text-sm">
-                    {weather.tempC}°C
-                    <span className="font-normal text-muted-foreground"> · {weather.summary}</span>
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <p className="mt-2 text-[11px] text-muted-foreground">Weather could not be loaded.</p>
-            )}
+
 
             <div className="mt-2 border-t border-border/60 pt-2">
               <div className="mb-1 space-y-0.5">
