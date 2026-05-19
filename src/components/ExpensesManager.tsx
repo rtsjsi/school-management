@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Edit2, Loader2 } from "lucide-react";
+import { formatExpenseDisplayDate } from "@/lib/utils";
 
 import { 
   Dialog, 
@@ -139,7 +140,7 @@ export default function ExpensesManager({ canEdit = true }: { canEdit?: boolean 
                       recentExpenses.map((expense) => (
                         <TableRow key={expense.id}>
                           <TableCell className="text-xs">
-                            {new Date(expense.expense_date).toLocaleDateString()}
+                            {formatExpenseDisplayDate(expense.expense_date)}
                           </TableCell>
                           <TableCell className="font-mono text-[11px]">
                             {expense.voucher ?? "—"}

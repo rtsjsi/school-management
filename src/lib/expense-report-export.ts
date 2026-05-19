@@ -1,6 +1,7 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { C, drawFilterStrip, drawPageFooter, drawPdfHeader, drawSummaryCard, fmtINR } from "@/lib/pdf-theme";
+import { formatExpenseDisplayDate } from "@/lib/utils";
 
 export type ExpenseListRow = {
   expense_date?: string;
@@ -113,7 +114,7 @@ export function exportExpensePdf(
   } else {
     const body = listRows.map((r, i) => [
       String(i + 1),
-      r.expense_date ? new Date(`${r.expense_date}T12:00:00`).toLocaleDateString("en-IN") : "—",
+      formatExpenseDisplayDate(r.expense_date),
       r.voucher ?? "—",
       r.expense_head ?? "—",
       r.party ?? "—",

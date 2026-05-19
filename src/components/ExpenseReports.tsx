@@ -49,6 +49,7 @@ import ExpenseEntryForm from "@/components/ExpenseEntryForm";
 import { createClient } from "@/lib/supabase/client";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 import { exportExpensePdf } from "@/lib/expense-report-export";
+import { formatExpenseDisplayDate } from "@/lib/utils";
 
 const PAYMENT_MODES = ["cash", "cheque", "online"] as const;
 
@@ -286,7 +287,7 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
 
   const buildExportSubtitle = () => {
     const parts: string[] = [];
-    parts.push(`Period: ${fromDate || "—"} to ${toDate || "—"}`);
+    parts.push(`Period: ${formatExpenseDisplayDate(fromDate)} to ${formatExpenseDisplayDate(toDate)}`);
     parts.push(`Report: ${reportType === "list" ? "Detailed List" : "By Payment Mode"}`);
     if (expenseHeadId !== "all") {
       const h = expenseHeads.find((x) => x.id === expenseHeadId);
@@ -483,7 +484,7 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
               <span className="text-xs text-muted-foreground">Filters:</span>
               <Badge variant="secondary" className="text-xs">{PRESET_CONFIG.find((p) => p.value === preset)?.label}</Badge>
               <Badge variant="outline" className="text-xs">{reportType === "list" ? "Detailed List" : "By Payment Mode"}</Badge>
-              <Badge variant="outline" className="text-xs">{fromDate} to {toDate}</Badge>
+              <Badge variant="outline" className="text-xs">{formatExpenseDisplayDate(fromDate)} to {formatExpenseDisplayDate(toDate)}</Badge>
               {expenseHeadId !== "all" && <Badge variant="outline" className="text-xs">{expenseHeads.find((h) => h.id === expenseHeadId)?.name ?? "Head"}</Badge>}
               {paymentMode !== "all" && <Badge variant="outline" className="text-xs capitalize">{paymentMode}</Badge>}
             </div>
@@ -567,9 +568,7 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
                     {sortedListRows.flatMap((row: ListRow) => [
                       <TableRow key={String(row.id ?? "")}>
                         <TableCell className="text-sm">
-                          {row.expense_date
-                            ? new Date(row.expense_date as string).toLocaleDateString()
-                            : "—"}
+                          {formatExpenseDisplayDate(row.expense_date)}
                           <Button
                             type="button"
                             variant="ghost"
