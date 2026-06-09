@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -60,18 +60,35 @@ export function AdministrationTabs({
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("active");
+  const [isPending, startTransition] = useTransition();
+
+  const [localProfiles, setLocalProfiles] = useState(profiles);
+
+  useEffect(() => {
+    setLocalProfiles(profiles);
+  }, [profiles]);
 
   const handleToggleActive = async (userId: string, currentStatus: boolean) => {
-    await toggleUserStatus(userId, !currentStatus);
-    router.refresh();
+    const newStatus = !currentStatus;
+    // Optimistic update
+    setLocalProfiles((prev) => 
+      prev.map((p) => (p.id === userId ? { ...p, is_active: newStatus } : p))
+    );
+    
+    startTransition(async () => {
+      await toggleUserStatus(userId, newStatus);
+      router.refresh();
+    });
   };
 
-  const filteredProfiles = profiles.filter((p) => {
+  const filteredProfiles = localProfiles.filter((p) => {
     const matchesSearch =
       (p.full_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
       (p.email || "").toLowerCase().includes(searchQuery.toLowerCase());
     const matchesRole = roleFilter === "all" || p.role === roleFilter;
-    return matchesSearch && matchesRole;
+    const matchesStatus = statusFilter === "all" ? true : statusFilter === "active" ? p.is_active : !p.is_active;
+    return matchesSearch && matchesRole && matchesStatus;
   });
 
   return (
@@ -104,6 +121,15 @@ export function AdministrationTabs({
                     </option>
                   ))}
                 </select>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <option value="active">Active Users</option>
+                  <option value="inactive">Inactive Users</option>
+                  <option value="all">All Users</option>
+                </select>
               </div>
               <Dialog>
                 <DialogTrigger asChild>
@@ -122,7 +148,7 @@ export function AdministrationTabs({
             </div>
             
             {filteredProfiles.length > 0 ? (
-              <div className="overflow-x-auto rounded-md border">
+              <div className="rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow>
