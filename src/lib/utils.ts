@@ -34,7 +34,7 @@ export function formatFeeCollectionDisplayDate(
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd);
   if (!match) return String(value).trim();
   const [, y, m, d] = match;
-  return `${d}/${m}/${y}`;
+  return `${d}-${m}-${y}`;
 }
 
 /**

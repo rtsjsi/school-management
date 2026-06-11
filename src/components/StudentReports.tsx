@@ -378,8 +378,21 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
   const normalizeExportValue = (value: unknown): string | number | boolean => {
     if (value === null || value === undefined) return "";
     if (typeof value === "boolean" || typeof value === "number") return value;
-    if (value instanceof Date) return value.toISOString();
-    if (typeof value === "string") return value;
+    if (value instanceof Date) {
+      const d = String(value.getDate()).padStart(2, "0");
+      const m = String(value.getMonth() + 1).padStart(2, "0");
+      const y = value.getFullYear();
+      return `${d}-${m}-${y}`;
+    }
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      const match = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}):(\d{2}))?/.exec(trimmed);
+      if (match) {
+        const [, y, m, d] = match;
+        return `${d}-${m}-${y}`;
+      }
+      return trimmed;
+    }
     try {
       return JSON.stringify(value);
     } catch {

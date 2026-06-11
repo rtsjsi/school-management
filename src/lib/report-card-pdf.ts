@@ -89,7 +89,7 @@ export function generateReportCardPDF(data: ReportCardData): Blob {
   doc.setFont("helvetica", "bold");
   doc.text("Exam:", colLeft, y);
   doc.setFont("helvetica", "normal");
-  const examInfo = [data.examName, data.examType, data.heldAt ? new Date(data.heldAt).toLocaleDateString("en-IN") : ""].filter(Boolean).join(" – ");
+  const examInfo = [data.examName, data.examType, data.heldAt ? new Date(data.heldAt).toLocaleDateString("en-IN").replace(/\//g, "-") : ""].filter(Boolean).join(" – ");
   const examLines = doc.splitTextToSize(examInfo, PDF_LAYOUT.contentWidth - labelW);
   examLines.forEach((line: string, i: number) => {
     doc.text(line, colLeft + labelW, y + i * lh);
