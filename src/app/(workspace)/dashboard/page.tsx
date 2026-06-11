@@ -36,7 +36,8 @@ export default async function DashboardPage() {
   const activeYearName = activeYear?.name ?? null;
 
   const {
-    studentsCount,
+    activeMaleStudentsCount,
+    activeFemaleStudentsCount,
     activeStudentsCount,
     employeesCount,
     rteStudentsCount,
@@ -78,7 +79,8 @@ export default async function DashboardPage() {
         showAcademicSection={showAcademicSection}
         activeYearName={activeYearName}
         activeStudentsCount={activeStudentsCount}
-        studentsCount={studentsCount}
+        activeMaleStudentsCount={activeMaleStudentsCount}
+        activeFemaleStudentsCount={activeFemaleStudentsCount}
         rteStudentsCount={rteStudentsCount}
         newAdmissionsCount={newAdmissionsCount}
         showFinanceSection={showFinanceSection}

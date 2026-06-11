@@ -154,6 +154,15 @@ export function exportStudentsPdf(
       lineWidth: 0.3,
     },
     alternateRowStyles: { fillColor: C.background },
+    didParseCell: (data) => {
+      if (data.section === "body" && data.column.index === 10) {
+        if (data.cell.raw === "Yes") {
+          data.cell.styles.textColor = "#b45309";
+          data.cell.styles.fontStyle = "bold";
+          data.cell.styles.fillColor = "#fef3c7";
+        }
+      }
+    },
     columnStyles: {
       0: { cellWidth: 8, halign: "center" },
       1: { cellWidth: 16 },

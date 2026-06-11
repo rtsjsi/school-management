@@ -12,7 +12,8 @@ interface AcademicSectionProps {
   showAcademicSection: boolean;
   activeYearName: string | null;
   activeStudentsCount: number;
-  studentsCount: number;
+  activeMaleStudentsCount: number;
+  activeFemaleStudentsCount: number;
   rteStudentsCount: number;
   newAdmissionsCount: number;
   showFinanceSection: boolean;
@@ -29,7 +30,8 @@ export function AcademicSection({
   showAcademicSection,
   activeYearName,
   activeStudentsCount,
-  studentsCount,
+  activeMaleStudentsCount,
+  activeFemaleStudentsCount,
   rteStudentsCount,
   newAdmissionsCount,
   showFinanceSection,
@@ -64,14 +66,12 @@ export function AcademicSection({
               <GraduationCap className="h-4 w-4 text-primary sm:h-5 sm:w-5" />
             </div>
           </div>
-          <div className="mt-2 flex items-center gap-2 text-[10px] text-muted-foreground sm:mt-3 sm:gap-3 sm:text-xs">
-            <span>{fmtNum(studentsCount)} total enrolled</span>
-            {rteStudentsCount > 0 && (
-              <>
-                <span className="text-border">|</span>
-                <span>{fmtNum(rteStudentsCount)} RTE quota</span>
-              </>
-            )}
+          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-muted-foreground sm:mt-3 sm:text-xs">
+            <span>{fmtNum(activeMaleStudentsCount)} Male</span>
+            <span className="text-border">|</span>
+            <span>{fmtNum(activeFemaleStudentsCount)} Female</span>
+            <span className="text-border">|</span>
+            <span>{fmtNum(rteStudentsCount)} RTE</span>
           </div>
         </div>
 
