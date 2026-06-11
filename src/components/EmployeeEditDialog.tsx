@@ -25,7 +25,6 @@ interface EmployeeEditDialogProps {
     aadhaar?: string | null;
     pan?: string | null;
     role?: string | null;
-    department?: string | null;
     employee_type?: string | null;
     joining_date?: string | null;
     shift_id?: string | null;
@@ -56,7 +55,6 @@ export function EmployeeEditDialog({ employee, shifts }: EmployeeEditDialogProps
     aadhaar: employee.aadhaar || "",
     pan: employee.pan || "",
     role: employee.role || "staff",
-    department: employee.department || "",
     employee_type: employee.employee_type || "full_time",
     joining_date: employee.joining_date || "",
     shift_id: employee.shift_id || "",
@@ -96,7 +94,6 @@ export function EmployeeEditDialog({ employee, shifts }: EmployeeEditDialogProps
           aadhaar: form.aadhaar.trim() || null,
           pan: form.pan.trim() || null,
           role: form.role,
-          department: form.department.trim() || null,
           employee_type: form.employee_type,
           joining_date: form.joining_date || null,
           shift_id: form.shift_id || null,
@@ -193,12 +190,6 @@ export function EmployeeEditDialog({ employee, shifts }: EmployeeEditDialogProps
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>Department *</Label>
-              <Input value={form.department} onChange={(e) => setForm((p) => ({ ...p, department: e.target.value }))} required />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Employee Type *</Label>
               <Select value={form.employee_type} onValueChange={(v) => setForm((p) => ({ ...p, employee_type: v }))}>

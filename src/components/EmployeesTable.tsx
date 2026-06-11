@@ -25,7 +25,6 @@ export type StaffTableEmployee = {
   aadhaar?: string | null;
   pan?: string | null;
   role?: string | null;
-  department?: string | null;
   employee_type?: string | null;
   joining_date?: string | null;
   status?: string | null;
@@ -48,7 +47,7 @@ function shiftNameFromRow(e: StaffTableEmployee): string {
   return Array.isArray(shiftData) ? shiftData[0]?.name ?? "—" : shiftData?.name ?? "—";
 }
 
-type SortKey = "employee_id" | "full_name" | "email" | "department" | "shift" | "status" | "data_pct";
+type SortKey = "employee_id" | "full_name" | "email" | "shift" | "status" | "data_pct";
 type SortDir = "asc" | "desc";
 
 export function EmployeesTable({
@@ -90,10 +89,7 @@ export function EmployeesTable({
           av = (a.email ?? "").toLowerCase();
           bv = (b.email ?? "").toLowerCase();
           break;
-        case "department":
-          av = (a.department ?? "").toLowerCase();
-          bv = (b.department ?? "").toLowerCase();
-          break;
+
         case "shift":
           av = shiftNameFromRow(a).toLowerCase();
           bv = shiftNameFromRow(b).toLowerCase();
@@ -119,7 +115,6 @@ export function EmployeesTable({
         employee_id: e.employee_id ?? "—",
         full_name: e.full_name ?? "—",
         email: e.email ?? "—",
-        department: e.department ?? "—",
         shift: shiftNameFromRow(e),
         status: String(e.status ?? "active"),
       })),
@@ -164,14 +159,7 @@ export function EmployeesTable({
                   Email <SortIcon col="email" />
                 </span>
               </TableHead>
-              <TableHead
-                className="cursor-pointer select-none hover:text-foreground"
-                onClick={() => handleSort("department")}
-              >
-                <span className="inline-flex items-center gap-1">
-                  Department <SortIcon col="department" />
-                </span>
-              </TableHead>
+
               <TableHead
                 className="cursor-pointer select-none hover:text-foreground"
                 onClick={() => handleSort("shift")}
@@ -207,7 +195,7 @@ export function EmployeesTable({
                   <TableCell className="font-mono text-xs">{e.employee_id ?? "—"}</TableCell>
                   <TableCell className="font-medium">{e.full_name}</TableCell>
                   <TableCell className="text-muted-foreground text-sm">{e.email ?? "—"}</TableCell>
-                  <TableCell>{e.department ?? "—"}</TableCell>
+
                   <TableCell>{shiftName}</TableCell>
                   <TableCell>
                     <Badge variant={(e.status as string) === "active" ? "default" : "secondary"}>

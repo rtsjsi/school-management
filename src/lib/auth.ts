@@ -62,7 +62,7 @@ export const getUser = cache(async (): Promise<AuthUser | null> => {
     error: errorById,
   } = await client
     .from("profiles")
-    .select("role, full_name")
+    .select("role, full_name, is_active")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -74,7 +74,7 @@ export const getUser = cache(async (): Promise<AuthUser | null> => {
       error: errorByEmail,
     } = await client
       .from("profiles")
-      .select("role, full_name")
+      .select("role, full_name, is_active")
       .eq("email", user.email)
       .maybeSingle();
 
@@ -115,6 +115,14 @@ export const getUser = cache(async (): Promise<AuthUser | null> => {
       authId: user.id,
       authEmail: user.email,
     });
+  }
+
+  if (profile && profile.is_active === false) {
+    debugLog("warn", "[auth:getUser] Profile is inactive", {
+      authId: user.id,
+      authEmail: user.email,
+    });
+    return null;
   }
 
   const role = normalizeRole(profile?.role);

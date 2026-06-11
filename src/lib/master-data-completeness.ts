@@ -7,7 +7,6 @@ export const EMPLOYEE_COMPLETENESS_FIELDS = [
   "aadhaar",
   "pan",
   "role",
-  "department",
   "employee_type",
   "joining_date",
   "monthly_salary",

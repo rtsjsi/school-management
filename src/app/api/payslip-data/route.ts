@@ -8,7 +8,6 @@ export interface PayslipRow {
   employee_id: string;
   employee_code: string;
   full_name: string;
-  department: string | null;
   joining_date: string | null;
   month_year: string;
   working_days: number;
@@ -61,7 +60,7 @@ export async function GET(request: NextRequest) {
 
     let employeesQuery = supabase
       .from("employees")
-      .select("id, full_name, employee_id, department, joining_date, monthly_salary, bank_name, account_number, ifsc_code, account_holder_name")
+      .select("id, full_name, employee_id, joining_date, monthly_salary, bank_name, account_number, ifsc_code, account_holder_name")
       .eq("status", "active");
 
     if (employeeId) {
@@ -213,7 +212,6 @@ export async function GET(request: NextRequest) {
         employee_id: emp.id,
         employee_code: emp.employee_id ?? "—",
         full_name: emp.full_name,
-        department: emp.department ?? null,
         joining_date: emp.joining_date ?? null,
         month_year: monthYear,
         working_days: workingDays,

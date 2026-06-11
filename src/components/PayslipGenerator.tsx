@@ -23,7 +23,6 @@ function downloadPayslip(row: PayslipRow, schoolName: string, schoolAddress: str
   const pdfBlob = generatePayslipPDF({
     employee_code: row.employee_code,
     full_name: row.full_name,
-    department: row.department,
     joining_date: row.joining_date,
     month_year: row.month_year,
     working_days: row.working_days,
@@ -50,7 +49,6 @@ function printPayslip(row: PayslipRow, schoolName: string, schoolAddress: string
   const pdfBlob = generatePayslipPDF({
     employee_code: row.employee_code,
     full_name: row.full_name,
-    department: row.department,
     joining_date: row.joining_date,
     month_year: row.month_year,
     working_days: row.working_days,

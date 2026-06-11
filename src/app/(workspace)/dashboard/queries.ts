@@ -66,7 +66,7 @@ export async function fetchDashboardData(user: AuthUser, activeYearName: string 
     ? supabase
         .from("employees")
         .select(
-          "id, full_name, email, phone_number, address, aadhaar, pan, role, department, employee_type, joining_date, monthly_salary, degree, institution, year_passed, bank_name, account_number, ifsc_code, account_holder_name",
+          "id, full_name, email, phone_number, address, aadhaar, pan, role, employee_type, joining_date, monthly_salary, degree, institution, year_passed, bank_name, account_number, ifsc_code, account_holder_name",
         )
     : Promise.resolve({ data: [] as Record<string, unknown>[] });
 

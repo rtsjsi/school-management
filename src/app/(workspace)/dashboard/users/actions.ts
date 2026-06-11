@@ -69,3 +69,23 @@ export async function resetUserPassword(userId: string, newPassword: string): Pr
 
   return { ok: true };
 }
+
+export type ToggleUserStatusResult = { ok: true } | { ok: false; error: string };
+
+export async function toggleUserStatus(userId: string, isActive: boolean): Promise<ToggleUserStatusResult> {
+  const admin = createAdminClient();
+  if (!admin) {
+    return { ok: false, error: "Server configuration error." };
+  }
+
+  const { error } = await admin
+    .from("profiles")
+    .update({ is_active: isActive })
+    .eq("id", userId);
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  return { ok: true };
+}
