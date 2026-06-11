@@ -45,6 +45,8 @@ interface StudentEditDialogProps {
     present_country?: string;
   };
   onSaved?: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 type StudentEditFormProps = {
@@ -523,18 +525,23 @@ function StudentEditFormInline({ student, onSaved, onCancel }: StudentEditFormPr
   );
 }
 
-export function StudentEditDialog({ student, onSaved }: StudentEditDialogProps) {
+export function StudentEditDialog({ student, onSaved, open: controlledOpen, onOpenChange: controlledOnOpenChange }: StudentEditDialogProps) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [localOpen, setLocalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : localOpen;
+  const setOpen = isControlled ? controlledOnOpenChange : setLocalOpen;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" variant="outline" className="gap-1">
-          <Pencil className="h-3 w-3" />
-          Edit
-        </Button>
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          <Button size="sm" variant="outline" className="gap-1">
+            <Pencil className="h-3 w-3" />
+            Edit
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-[95vw] sm:max-w-5xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="text-base">Edit student</DialogTitle>
@@ -544,9 +551,9 @@ export function StudentEditDialog({ student, onSaved }: StudentEditDialogProps) 
         </DialogHeader>
         <StudentEditFormInline
           student={student as Record<string, unknown> & { id: string; full_name: string }}
-          onCancel={() => setOpen(false)}
+          onCancel={() => setOpen?.(false)}
           onSaved={() => {
-            setOpen(false);
+            setOpen?.(false);
             if (onSaved) onSaved();
             router.refresh();
           }}

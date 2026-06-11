@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowDown, ArrowUp, ArrowUpDown, BookOpen, UserPlus, LogOut, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, BookOpen, UserPlus, LogOut, ChevronDown, ChevronUp, MoreVertical, Eye, Pencil } from "lucide-react";
 import { fetchStandards, fetchAllDivisions } from "@/lib/lov";
 import {
   Dialog,
@@ -33,6 +33,12 @@ import {
   DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import StudentEntryForm from "@/components/StudentEntryForm";
 import { StudentEditDialog } from "@/components/StudentEditDialog";
 import { StudentViewDialog } from "@/components/StudentViewDialog";
@@ -83,12 +89,20 @@ function StudentEnrolmentsDialog({
   studentId,
   studentName,
   grNumber,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
 }: {
   studentId: string;
   studentName: string;
   grNumber?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [localOpen, setLocalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : localOpen;
+  const setOpen = isControlled ? controlledOnOpenChange : setLocalOpen;
+
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<EnrolmentRow[]>([]);
   type SortKey = "academicYear" | "standard" | "division" | "status" | "createdAt";
@@ -144,8 +158,14 @@ function StudentEnrolmentsDialog({
     }
   };
 
+  useEffect(() => {
+    if (open && rows.length === 0 && !loading) {
+      loadEnrolments();
+    }
+  }, [open]);
+
   const handleOpenChange = async (next: boolean) => {
-    setOpen(next);
+    setOpen?.(next);
     if (next && rows.length === 0 && !loading) {
       await loadEnrolments();
     }
@@ -197,12 +217,14 @@ function StudentEnrolmentsDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button size="sm" variant="ghost" className="gap-1">
-          <BookOpen className="h-3 w-3" />
-          Enrolments
-        </Button>
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          <Button size="sm" variant="ghost" className="gap-1">
+            <BookOpen className="h-3 w-3" />
+            Enrolments
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle className="text-base">
@@ -267,13 +289,21 @@ function StudentExitDialog({
   studentName,
   currentStatus,
   onExited,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
 }: {
   studentId: string;
   studentName: string;
   currentStatus?: string | null;
   onExited?: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [localOpen, setLocalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : localOpen;
+  const setOpen = isControlled ? controlledOnOpenChange : setLocalOpen;
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const today = new Date().toISOString().slice(0, 10);
@@ -311,7 +341,7 @@ function StudentExitDialog({
         .eq("student_id", studentId)
         .eq("status", "active");
 
-      setOpen(false);
+      setOpen?.(false);
       if (onExited) onExited();
     } catch {
       setError("Failed to exit student. Please try again.");
@@ -323,18 +353,20 @@ function StudentExitDialog({
   const disabled = !!currentStatus && currentStatus !== "active";
 
   return (
-    <Dialog open={open} onOpenChange={(next) => !submitting && setOpen(next)}>
-      <DialogTrigger asChild>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="gap-1 text-destructive hover:text-destructive"
-          disabled={disabled}
-        >
-          <LogOut className="h-3 w-3" />
-          Exit
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={(next) => !submitting && setOpen?.(next)}>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="gap-1 text-destructive hover:text-destructive"
+            disabled={disabled}
+          >
+            <LogOut className="h-3 w-3" />
+            Exit
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-base">Exit student</DialogTitle>
@@ -384,7 +416,7 @@ function StudentExitDialog({
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => setOpen(false)}
+              onClick={() => setOpen?.(false)}
               disabled={submitting}
             >
               Cancel
@@ -417,6 +449,7 @@ export function ManageStudentsList({
   const [students, setStudents] = useState<StudentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [standardFilter, setStandardFilter] = useState("all");
   const [divisionFilter, setDivisionFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("active");
@@ -430,6 +463,33 @@ export function ManageStudentsList({
   type SortDir = "asc" | "desc";
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+  // Controlled dialog states
+  const [selectedStudent, setSelectedStudent] = useState<StudentRow | null>(null);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [enrolmentOpen, setEnrolmentOpen] = useState(false);
+  const [exitOpen, setExitOpen] = useState(false);
+
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+
+  // Stats state
+  const [stats, setStats] = useState({ total: 0, active: 0, rte: 0, inactive: 0 });
+
+  // Debounced search trigger
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [search]);
+
+  // Reset page when filters or search terms change
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, standardFilter, divisionFilter, statusFilter, rteFilter]);
 
   const supabase = useMemo(() => createClient(), []);
   const restrictByClass = allowedClassNames !== undefined;
@@ -454,7 +514,35 @@ export function ManageStudentsList({
     }
   }, [restrictByClass, allowedStandardsKey, allowedDivisionsKey, supabase]);
 
+  // Fetch dynamic stats for dashboard cards
   useEffect(() => {
+    let q = supabase
+      .from("students")
+      .select("status, is_rte_quota, standard, division");
+
+    if (standardFilter && standardFilter !== "all") q = q.eq("standard", standardFilter);
+    if (divisionFilter && divisionFilter !== "all") q = q.eq("division", divisionFilter);
+
+    (async () => {
+      const { data } = await q;
+      let rows = data ?? [];
+      if (restrictByClass && allowedClassPairsKey) {
+        const allowedPairs = new Set(allowedClassPairsKey.split("|"));
+        rows = rows.filter((s) => allowedPairs.has(`${s.standard ?? ""}\0${s.division ?? ""}`));
+      }
+      
+      const total = rows.length;
+      const active = rows.filter((r) => r.status === "active").length;
+      const rte = rows.filter((r) => r.is_rte_quota).length;
+      const inactive = rows.filter((r) => r.status !== "active").length;
+      
+      setStats({ total, active, rte, inactive });
+    })();
+  }, [standardFilter, divisionFilter, restrictByClass, allowedClassPairsKey, reloadKey, supabase]);
+
+  // Fetch student rows
+  useEffect(() => {
+    setLoading(true);
     let q = supabase
       .from("students")
       .select("*")
@@ -465,8 +553,8 @@ export function ManageStudentsList({
     if (statusFilter && statusFilter !== "all") q = q.eq("status", statusFilter);
     if (rteFilter === "rte") q = q.eq("is_rte_quota", true);
     if (rteFilter === "non-rte") q = q.eq("is_rte_quota", false);
-    if (search.trim()) {
-      q = q.or(`full_name.ilike.%${search.trim()}%,gr_number.ilike.%${search.trim()}%`);
+    if (debouncedSearch.trim()) {
+      q = q.or(`full_name.ilike.%${debouncedSearch.trim()}%,gr_number.ilike.%${debouncedSearch.trim()}%`);
     }
 
     (async () => {
@@ -479,7 +567,7 @@ export function ManageStudentsList({
       setStudents(rows);
       setLoading(false);
     })();
-  }, [search, standardFilter, divisionFilter, statusFilter, rteFilter, reloadKey, restrictByClass, allowedClassPairsKey, supabase]);
+  }, [debouncedSearch, standardFilter, divisionFilter, statusFilter, rteFilter, reloadKey, restrictByClass, allowedClassPairsKey, supabase]);
 
   const getStatusBadge = (status: string) => {
     const map: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -539,299 +627,511 @@ export function ManageStudentsList({
       return 0;
     });
   }, [students, sortDir, sortKey]);
+
+  const paginatedStudents = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return sortedStudents.slice(start, start + pageSize);
+  }, [sortedStudents, page, pageSize]);
+
   const SortIcon = ({ col }: { col: SortKey }) => {
     if (sortKey !== col) return <ArrowUpDown className="h-3 w-3 opacity-40" />;
     return sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />;
   };
 
   return (
-    <Card>
-      <CardContent className="space-y-4 pt-6">
-        <div className="w-full">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-6 lg:items-end">
-            <div className="space-y-1 w-full min-w-0 lg:col-span-2">
-              <Label className="text-xs">Search</Label>
-              <Input
-                placeholder="Name or GR No."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="h-9"
-              />
+    <Card className="border-none shadow-none bg-transparent space-y-6">
+      {/* Quick Stats Dashboard Cards */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Card className="bg-gradient-to-br from-blue-50/50 to-indigo-50/10 dark:from-blue-950/20 dark:to-indigo-950/5 border border-blue-100/40 dark:border-blue-900/40 shadow-sm transition-all duration-300 hover:shadow-md">
+          <CardContent className="p-4 flex flex-col justify-center">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Students</span>
+            <span className="text-2xl font-bold tracking-tight mt-1 text-blue-700 dark:text-blue-400">{stats.total}</span>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-emerald-50/50 to-teal-50/10 dark:from-emerald-950/20 dark:to-teal-950/5 border border-emerald-100/40 dark:border-emerald-900/40 shadow-sm transition-all duration-300 hover:shadow-md">
+          <CardContent className="p-4 flex flex-col justify-center">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Active</span>
+            <span className="text-2xl font-bold tracking-tight mt-1 text-emerald-700 dark:text-emerald-400">{stats.active}</span>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-purple-50/50 to-fuchsia-50/10 dark:from-purple-950/20 dark:to-fuchsia-950/5 border border-purple-100/40 dark:border-purple-900/40 shadow-sm transition-all duration-300 hover:shadow-md">
+          <CardContent className="p-4 flex flex-col justify-center">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">RTE Quota</span>
+            <span className="text-2xl font-bold tracking-tight mt-1 text-purple-700 dark:text-purple-400">{stats.rte}</span>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-amber-50/50 to-orange-50/10 dark:from-amber-950/20 dark:to-orange-950/5 border border-amber-100/40 dark:border-amber-900/40 shadow-sm transition-all duration-300 hover:shadow-md">
+          <CardContent className="p-4 flex flex-col justify-center">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Inactive / Other</span>
+            <span className="text-2xl font-bold tracking-tight mt-1 text-amber-700 dark:text-amber-400">{stats.inactive}</span>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="border">
+        <CardContent className="space-y-4 pt-6">
+          <div className="w-full">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-6 lg:items-end">
+              <div className="space-y-1 w-full min-w-0 lg:col-span-2">
+                <Label className="text-xs">Search</Label>
+                <div className="relative">
+                  <Input
+                    placeholder="Name or GR No."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="h-9 pr-8"
+                  />
+                  {search !== debouncedSearch && (
+                    <div className="absolute right-2.5 top-2.5 h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
+                  )}
+                </div>
+              </div>
+              <div className="space-y-1 w-full min-w-0">
+                <Label className="text-xs">Standard</Label>
+                <Select value={standardFilter} onValueChange={setStandardFilter}>
+                  <SelectTrigger className="h-9"><SelectValue placeholder="All" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    {standards.map((g) => (
+                      <SelectItem key={g.id} value={g.name}>{g.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1 w-full min-w-0">
+                <Label className="text-xs">Division</Label>
+                <Select value={divisionFilter} onValueChange={setDivisionFilter}>
+                  <SelectTrigger className="h-9"><SelectValue placeholder="All" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    {divisions.map((d) => (
+                      <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1 w-full min-w-0">
+                <Label className="text-xs">Status</Label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="h-9"><SelectValue placeholder="All" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="transferred">Transferred</SelectItem>
+                    <SelectItem value="graduated">Graduated</SelectItem>
+                    <SelectItem value="suspended">Suspended</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1 w-full min-w-0">
+                <Label className="text-xs">RTE</Label>
+                <Select value={rteFilter} onValueChange={setRteFilter}>
+                  <SelectTrigger className="h-9"><SelectValue placeholder="All" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="rte">RTE only</SelectItem>
+                    <SelectItem value="non-rte">Non-RTE</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {canEdit && (
+                <Dialog open={addOpen} onOpenChange={setAddOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="gap-1 h-9 px-3 w-full sm:w-auto lg:justify-self-end">
+                      <UserPlus className="h-4 w-4" />
+                      Add student
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-[95vw] sm:max-w-5xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+                    <DialogHeader>
+                      <DialogTitle className="text-base">Add new student</DialogTitle>
+                      <DialogDescription>
+                        Fill in the admission form to create a new student record.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <StudentEntryForm />
+                  </DialogContent>
+                </Dialog>
+              )}
             </div>
-            <div className="space-y-1 w-full min-w-0">
-              <Label className="text-xs">Standard</Label>
-              <Select value={standardFilter} onValueChange={setStandardFilter}>
-                <SelectTrigger className="h-9"><SelectValue placeholder="All" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  {standards.map((g) => (
-                    <SelectItem key={g.id} value={g.name}>{g.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          </div>
+
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-16 space-y-3">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+              <p className="text-sm text-muted-foreground animate-pulse">Loading student records...</p>
             </div>
-            <div className="space-y-1 w-full min-w-0">
-              <Label className="text-xs">Division</Label>
-              <Select value={divisionFilter} onValueChange={setDivisionFilter}>
-                <SelectTrigger className="h-9"><SelectValue placeholder="All" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  {divisions.map((d) => (
-                    <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1 w-full min-w-0">
-              <Label className="text-xs">Status</Label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="h-9"><SelectValue placeholder="All" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="transferred">Transferred</SelectItem>
-                  <SelectItem value="graduated">Graduated</SelectItem>
-                  <SelectItem value="suspended">Suspended</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1 w-full min-w-0">
-              <Label className="text-xs">RTE</Label>
-              <Select value={rteFilter} onValueChange={setRteFilter}>
-                <SelectTrigger className="h-9"><SelectValue placeholder="All" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="rte">RTE only</SelectItem>
-                  <SelectItem value="non-rte">Non-RTE</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {canEdit && (
-              <Dialog open={addOpen} onOpenChange={setAddOpen}>
-                <DialogTrigger asChild>
-                  <Button className="gap-1 h-9 px-3 w-full sm:w-auto lg:justify-self-end">
-                    <UserPlus className="h-4 w-4" />
+          ) : students.length === 0 ? (
+            <div className="flex flex-col items-center justify-center text-center py-16 px-4 border-2 border-dashed rounded-lg bg-muted/10">
+              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
+                <BookOpen className="h-6 w-6 text-muted-foreground/60" />
+              </div>
+              <h3 className="text-lg font-semibold tracking-tight">No students found</h3>
+              <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+                We couldn't find any students matching your current search criteria or filters. Try adjusting your search term or standard selection.
+              </p>
+              <div className="mt-6 flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSearch("");
+                    setStandardFilter("all");
+                    setDivisionFilter("all");
+                    setStatusFilter("active");
+                    setRteFilter("all");
+                  }}
+                >
+                  Clear all filters
+                </Button>
+                {canEdit && (
+                  <Button size="sm" onClick={() => setAddOpen(true)}>
                     Add student
                   </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-[95vw] sm:max-w-5xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
-                  <DialogHeader>
-                    <DialogTitle className="text-base">Add new student</DialogTitle>
-                    <DialogDescription>
-                      Fill in the admission form to create a new student record.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <StudentEntryForm />
-                </DialogContent>
-              </Dialog>
-            )}
-          </div>
-        </div>
-
-        {loading ? (
-          <p className="text-sm text-muted-foreground py-8">Loading…</p>
-        ) : students.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-8 text-center">No students found.</p>
-        ) : (
-          <div className="overflow-x-auto rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {canEdit && <TableHead className="w-32 whitespace-nowrap">Actions</TableHead>}
-                  <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("full_name")}>
-                    <span className="inline-flex items-center gap-1">Student Name <SortIcon col="full_name" /></span>
-                  </TableHead>
-                  <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("standard")}>
-                    <span className="inline-flex items-center gap-1">Standard <SortIcon col="standard" /></span>
-                  </TableHead>
-                  <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("division")}>
-                    <span className="inline-flex items-center gap-1">Division <SortIcon col="division" /></span>
-                  </TableHead>
-                  <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("roll_number")}>
-                    <span className="inline-flex items-center gap-1">Roll # <SortIcon col="roll_number" /></span>
-                  </TableHead>
-                  <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("gr_number")}>
-                    <span className="inline-flex items-center gap-1">GR No <SortIcon col="gr_number" /></span>
-                  </TableHead>
-                  <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("is_rte_quota")}>
-                    <span className="inline-flex items-center gap-1">RTE <SortIcon col="is_rte_quota" /></span>
-                  </TableHead>
-                  <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("status")}>
-                    <span className="inline-flex items-center gap-1">Status <SortIcon col="status" /></span>
-                  </TableHead>
-                  <TableHead className="hidden sm:table-cell text-center">Data&nbsp;%</TableHead>
-                  <TableHead className="w-20 text-center hidden sm:table-cell">View</TableHead>
-                  {canEdit && <TableHead className="w-32 text-center hidden sm:table-cell">Enrolments</TableHead>}
-                  {canEdit && <TableHead className="w-28 text-right hidden sm:table-cell">Exit</TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sortedStudents.flatMap((s) => [
-                  <TableRow key={s.id}>
-                    {canEdit && (
-                      <TableCell className="space-x-1 align-top">
-                        <StudentEditDialog
-                          student={s}
-                          onSaved={() => {
-                            setReloadKey((k) => k + 1);
-                          }}
-                        />
-                      </TableCell>
-                    )}
-                    <TableCell className="font-medium">
-                      <div className="relative inline-block group">
-                        {s.full_name}
-                        <div className="pointer-events-none absolute left-0 top-full z-20 mt-1 hidden min-w-[240px] rounded-md border bg-background p-3 text-xs shadow-md group-hover:block">
-                          <div className="mb-1 font-semibold">Enrollment details</div>
-                          <div className="flex justify-between gap-2">
-                            <span className="text-muted-foreground">Standard</span>
-                            <span>{s.standard ?? "—"}</span>
+                )}
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="overflow-x-auto rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("full_name")}>
+                        <span className="inline-flex items-center gap-1">Student Name <SortIcon col="full_name" /></span>
+                      </TableHead>
+                      <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("standard")}>
+                        <span className="inline-flex items-center gap-1">Standard <SortIcon col="standard" /></span>
+                      </TableHead>
+                      <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("division")}>
+                        <span className="inline-flex items-center gap-1">Division <SortIcon col="division" /></span>
+                      </TableHead>
+                      <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("roll_number")}>
+                        <span className="inline-flex items-center gap-1">Roll # <SortIcon col="roll_number" /></span>
+                      </TableHead>
+                      <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("gr_number")}>
+                        <span className="inline-flex items-center gap-1">GR No <SortIcon col="gr_number" /></span>
+                      </TableHead>
+                      <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("is_rte_quota")}>
+                        <span className="inline-flex items-center gap-1">RTE <SortIcon col="is_rte_quota" /></span>
+                      </TableHead>
+                      <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("status")}>
+                        <span className="inline-flex items-center gap-1">Status <SortIcon col="status" /></span>
+                      </TableHead>
+                      <TableHead className="hidden sm:table-cell text-center">Data&nbsp;%</TableHead>
+                      <TableHead className="w-16 text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedStudents.flatMap((s) => [
+                      <TableRow key={s.id}>
+                        <TableCell className="font-medium">
+                          <div className="relative inline-block group">
+                            {s.full_name}
+                            <div className="pointer-events-none absolute left-0 top-full z-20 mt-1 hidden min-w-[240px] rounded-md border bg-background p-3 text-xs shadow-md group-hover:block">
+                              <div className="mb-1 font-semibold">Enrollment details</div>
+                              <div className="flex justify-between gap-2">
+                                <span className="text-muted-foreground">Standard</span>
+                                <span>{s.standard ?? "—"}</span>
+                              </div>
+                              <div className="flex justify-between gap-2">
+                                <span className="text-muted-foreground">Division</span>
+                                <span>{s.division ?? "—"}</span>
+                              </div>
+                              <div className="flex justify-between gap-2">
+                                <span className="text-muted-foreground">Roll #</span>
+                                <span>{s.roll_number ?? "—"}</span>
+                              </div>
+                              <div className="flex justify-between gap-2">
+                                <span className="text-muted-foreground">Status</span>
+                                <span>{s.status ?? "active"}</span>
+                              </div>
+                              <div className="flex justify-between gap-2">
+                                <span className="text-muted-foreground">Admission</span>
+                                <span>
+                                  {s.admission_date
+                                    ? new Date(s.admission_date).toLocaleDateString()
+                                    : "—"}
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex justify-between gap-2">
-                            <span className="text-muted-foreground">Division</span>
-                            <span>{s.division ?? "—"}</span>
-                          </div>
-                          <div className="flex justify-between gap-2">
-                            <span className="text-muted-foreground">Roll #</span>
-                            <span>{s.roll_number ?? "—"}</span>
-                          </div>
-                          <div className="flex justify-between gap-2">
-                            <span className="text-muted-foreground">Status</span>
-                            <span>{s.status ?? "active"}</span>
-                          </div>
-                          <div className="flex justify-between gap-2">
-                            <span className="text-muted-foreground">Admission</span>
-                            <span>
-                              {s.admission_date
-                                ? new Date(s.admission_date).toLocaleDateString()
-                                : "—"}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="mt-1 h-9 px-2 sm:hidden"
-                        onClick={() =>
-                          setExpandedStudentRows((prev) => ({
-                            ...prev,
-                            [s.id]: !prev[s.id],
-                          }))
-                        }
-                      >
-                        {expandedStudentRows[s.id] ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                        Details
-                      </Button>
-                    </TableCell>
-                    <TableCell>{s.standard ?? "—"}</TableCell>
-                    <TableCell className="hidden sm:table-cell">{s.division ?? "—"}</TableCell>
-                    <TableCell className="text-center hidden sm:table-cell">{s.roll_number ?? "—"}</TableCell>
-                    <TableCell className="font-mono text-xs hidden sm:table-cell">{s.gr_number ?? "—"}</TableCell>
-                    <TableCell>
-                      {s.is_rte_quota ? <Badge variant="secondary">RTE</Badge> : "—"}
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      <Badge variant={getStatusBadge(s.status || "active")}>
-                        {s.status || "active"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell text-center">
-                      {(() => {
-                        const { percent } = computeCompleteness(s as unknown as Record<string, unknown>);
-                        const color =
-                          percent >= 80
-                            ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400"
-                            : percent >= 50
-                              ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400"
-                              : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400";
-                        return (
-                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${color}`}>
-                            {percent}%
-                          </span>
-                        );
-                      })()}
-                    </TableCell>
-                    <TableCell className="text-center hidden sm:table-cell">
-                      <StudentViewDialog student={s} />
-                    </TableCell>
-                    {canEdit && (
-                      <TableCell className="text-center hidden sm:table-cell">
-                        <StudentEnrolmentsDialog
-                          studentId={s.id}
-                          studentName={s.full_name}
-                          grNumber={s.gr_number}
-                        />
-                      </TableCell>
-                    )}
-                    {canEdit && (
-                      <TableCell className="text-right hidden sm:table-cell">
-                        <StudentExitDialog
-                          studentId={s.id}
-                          studentName={s.full_name}
-                          currentStatus={s.status}
-                          onExited={() => {
-                            setReloadKey((k) => k + 1);
-                          }}
-                        />
-                      </TableCell>
-                    )}
-                  </TableRow>,
-                  expandedStudentRows[s.id] ? (
-                    <TableRow key={`${s.id}-mobile-details`} className="sm:hidden bg-muted/30">
-                      <TableCell colSpan={canEdit ? 4 : 3} className="text-sm space-y-1">
-                        <div><span className="text-muted-foreground">Division:</span> {s.division ?? "—"}</div>
-                        <div><span className="text-muted-foreground">Roll #:</span> {s.roll_number ?? "—"}</div>
-                        <div><span className="text-muted-foreground">GR No:</span> {s.gr_number ?? "—"}</div>
-                        <div><span className="text-muted-foreground">Status:</span> {s.status ?? "active"}</div>
-                        <div>
-                          <span className="text-muted-foreground">Data:</span>{" "}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="mt-1 h-9 px-2 sm:hidden flex items-center gap-1"
+                            onClick={() =>
+                              setExpandedStudentRows((prev) => ({
+                                ...prev,
+                                [s.id]: !prev[s.id],
+                              }))
+                            }
+                          >
+                            {expandedStudentRows[s.id] ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                            Details
+                          </Button>
+                        </TableCell>
+                        <TableCell>{s.standard ?? "—"}</TableCell>
+                        <TableCell className="hidden sm:table-cell">{s.division ?? "—"}</TableCell>
+                        <TableCell className="text-center hidden sm:table-cell">{s.roll_number ?? "—"}</TableCell>
+                        <TableCell className="font-mono text-xs hidden sm:table-cell">{s.gr_number ?? "—"}</TableCell>
+                        <TableCell>
+                          {s.is_rte_quota ? <Badge variant="secondary">RTE</Badge> : "—"}
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                          <Badge variant={getStatusBadge(s.status || "active")}>
+                            {s.status || "active"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">
                           {(() => {
                             const { percent } = computeCompleteness(s as unknown as Record<string, unknown>);
                             const color =
                               percent >= 80
-                                ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400"
+                                ? "bg-green-500"
                                 : percent >= 50
-                                  ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400"
-                                  : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400";
+                                  ? "bg-amber-500"
+                                  : "bg-red-500";
                             return (
-                              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${color}`}>
-                                {percent}%
-                              </span>
+                              <div className="flex items-center space-x-2 justify-center">
+                                <div className="w-12 bg-muted rounded-full h-1.5 overflow-hidden">
+                                  <div className={`h-full ${color} rounded-full`} style={{ width: `${percent}%` }} />
+                                </div>
+                                <span className="text-xs font-semibold text-muted-foreground w-8">
+                                  {percent}%
+                                </span>
+                              </div>
                             );
                           })()}
-                        </div>
-                        <div className="pt-1 flex flex-wrap gap-2">
-                          <StudentViewDialog student={s} />
-                          {canEdit && (
-                            <>
-                              <StudentEnrolmentsDialog
-                                studentId={s.id}
-                                studentName={s.full_name}
-                                grNumber={s.gr_number}
-                              />
-                              <StudentExitDialog
-                                studentId={s.id}
-                                studentName={s.full_name}
-                                currentStatus={s.status}
-                                onExited={() => {
-                                  setReloadKey((k) => k + 1);
-                                }}
-                              />
-                            </>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : null,
-                ])}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </CardContent>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-muted">
+                                <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-44">
+                              <DropdownMenuItem className="gap-2" onClick={() => {
+                                setSelectedStudent(s);
+                                setViewOpen(true);
+                              }}>
+                                <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                                <span>View Profile</span>
+                              </DropdownMenuItem>
+                              {canEdit && (
+                                <>
+                                  <DropdownMenuItem className="gap-2" onClick={() => {
+                                    setSelectedStudent(s);
+                                    setEditOpen(true);
+                                  }}>
+                                    <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                                    <span>Edit Details</span>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem className="gap-2" onClick={() => {
+                                    setSelectedStudent(s);
+                                    setEnrolmentOpen(true);
+                                  }}>
+                                    <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
+                                    <span>Enrolments</span>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    className="gap-2 text-destructive focus:text-destructive focus:bg-destructive/5"
+                                    disabled={s.status !== "active"}
+                                    onClick={() => {
+                                      setSelectedStudent(s);
+                                      setExitOpen(true);
+                                    }}
+                                  >
+                                    <LogOut className="h-3.5 w-3.5 text-destructive" />
+                                    <span>Exit Student</span>
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>,
+                      expandedStudentRows[s.id] ? (
+                        <TableRow key={`${s.id}-mobile-details`} className="sm:hidden bg-muted/30">
+                          <TableCell colSpan={3} className="text-sm space-y-2 py-3 px-4">
+                            <div><span className="text-muted-foreground font-medium">Division:</span> {s.division ?? "—"}</div>
+                            <div><span className="text-muted-foreground font-medium">Roll #:</span> {s.roll_number ?? "—"}</div>
+                            <div><span className="text-muted-foreground font-medium">GR No:</span> {s.gr_number ?? "—"}</div>
+                            <div><span className="text-muted-foreground font-medium">Status:</span> {s.status ?? "active"}</div>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-muted-foreground font-medium">Data completeness:</span>{" "}
+                              {(() => {
+                                const { percent } = computeCompleteness(s as unknown as Record<string, unknown>);
+                                const color =
+                                  percent >= 80
+                                    ? "bg-green-500"
+                                    : percent >= 50
+                                      ? "bg-amber-500"
+                                      : "bg-red-500";
+                                return (
+                                  <div className="flex items-center space-x-2">
+                                    <div className="w-12 bg-muted rounded-full h-1.5 overflow-hidden">
+                                      <div className={`h-full ${color} rounded-full`} style={{ width: `${percent}%` }} />
+                                    </div>
+                                    <span className="text-xs font-semibold text-muted-foreground">
+                                      {percent}%
+                                    </span>
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                            <div className="pt-2 flex flex-wrap gap-2">
+                              <Button size="sm" variant="outline" className="gap-1 h-8" onClick={() => {
+                                setSelectedStudent(s);
+                                setViewOpen(true);
+                              }}>
+                                <Eye className="h-3 w-3" />
+                                View
+                              </Button>
+                              {canEdit && (
+                                <>
+                                  <Button size="sm" variant="outline" className="gap-1 h-8" onClick={() => {
+                                    setSelectedStudent(s);
+                                    setEditOpen(true);
+                                  }}>
+                                    <Pencil className="h-3 w-3" />
+                                    Edit
+                                  </Button>
+                                  <Button size="sm" variant="outline" className="gap-1 h-8" onClick={() => {
+                                    setSelectedStudent(s);
+                                    setEnrolmentOpen(true);
+                                  }}>
+                                    <BookOpen className="h-3 w-3" />
+                                    Enrolments
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="gap-1 h-8 text-destructive hover:text-destructive"
+                                    disabled={s.status !== "active"}
+                                    onClick={() => {
+                                      setSelectedStudent(s);
+                                      setExitOpen(true);
+                                    }}
+                                  >
+                                    <LogOut className="h-3 w-3" />
+                                    Exit
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : null,
+                    ])}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Pagination Footer */}
+              <div className="flex flex-col sm:flex-row items-center justify-between border-t pt-4 gap-4">
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs text-muted-foreground">Rows per page:</span>
+                    <Select
+                      value={String(pageSize)}
+                      onValueChange={(v) => {
+                        setPageSize(Number(v));
+                        setPage(1);
+                      }}
+                    >
+                      <SelectTrigger className="h-8 w-16">
+                        <SelectValue placeholder={String(pageSize)} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[10, 25, 50, 100].map((size) => (
+                          <SelectItem key={size} value={String(size)}>
+                            {size}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Showing <span className="font-semibold">{Math.min((page - 1) * pageSize + 1, sortedStudents.length)}</span>-
+                    <span className="font-semibold">{Math.min(page * pageSize, sortedStudents.length)}</span> of{" "}
+                    <span className="font-semibold">{sortedStudents.length}</span>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8"
+                    onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                    disabled={page === 1}
+                  >
+                    Previous
+                  </Button>
+                  <div className="text-xs font-semibold px-2">
+                    Page {page} of {Math.max(1, Math.ceil(sortedStudents.length / pageSize))}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8"
+                    onClick={() => setPage((p) => Math.min(p + 1, Math.ceil(sortedStudents.length / pageSize)))}
+                    disabled={page >= Math.ceil(sortedStudents.length / pageSize)}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Dialog Portals (State Controlled) */}
+      {selectedStudent && (
+        <StudentViewDialog
+          student={selectedStudent}
+          open={viewOpen}
+          onOpenChange={setViewOpen}
+        />
+      )}
+
+      {selectedStudent && (
+        <StudentEditDialog
+          student={selectedStudent}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          onSaved={() => {
+            setReloadKey((k) => k + 1);
+          }}
+        />
+      )}
+
+      {selectedStudent && (
+        <StudentEnrolmentsDialog
+          studentId={selectedStudent.id}
+          studentName={selectedStudent.full_name}
+          grNumber={selectedStudent.gr_number}
+          open={enrolmentOpen}
+          onOpenChange={setEnrolmentOpen}
+        />
+      )}
+
+      {selectedStudent && (
+        <StudentExitDialog
+          studentId={selectedStudent.id}
+          studentName={selectedStudent.full_name}
+          currentStatus={selectedStudent.status}
+          open={exitOpen}
+          onOpenChange={setExitOpen}
+          onExited={() => {
+            setReloadKey((k) => k + 1);
+          }}
+        />
+      )}
     </Card>
   );
 }
