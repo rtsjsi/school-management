@@ -109,7 +109,7 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
   const [generated, setGenerated] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const toggleRow = (id: string) => setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
-  type SortKey = "full_name" | "standard" | "division" | "roll_number" | "gr_number" | "is_rte_quota" | "status";
+  type SortKey = "full_name" | "standard" | "division" | "roll_number" | "gr_number" | "gender" | "is_rte_quota" | "status";
   type SortDir = "asc" | "desc";
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -228,6 +228,10 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
         case "gr_number":
           av = (a.gr_number ?? "").toLowerCase();
           bv = (b.gr_number ?? "").toLowerCase();
+          break;
+        case "gender":
+          av = (a.gender ?? "").toLowerCase();
+          bv = (b.gender ?? "").toLowerCase();
           break;
         case "is_rte_quota":
           av = a.is_rte_quota ? 1 : 0;
@@ -661,6 +665,9 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
                   <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("roll_number")}>
                     <span className="inline-flex items-center gap-1">Roll # <SortIcon col="roll_number" /></span>
                   </TableHead>
+                  <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("gender")}>
+                    <span className="inline-flex items-center gap-1">Gender <SortIcon col="gender" /></span>
+                  </TableHead>
                   <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("gr_number")}>
                     <span className="inline-flex items-center gap-1">GR No <SortIcon col="gr_number" /></span>
                   </TableHead>
@@ -690,16 +697,26 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
                     <TableCell>{row.standard ?? "—"}</TableCell>
                     <TableCell className="hidden sm:table-cell">{row.division ?? "—"}</TableCell>
                     <TableCell className="hidden sm:table-cell">{row.roll_number ?? "—"}</TableCell>
+                    <TableCell className="capitalize hidden sm:table-cell">{row.gender ?? "—"}</TableCell>
                     <TableCell className="font-mono text-xs hidden sm:table-cell">{row.gr_number ?? "—"}</TableCell>
-                    <TableCell className="hidden sm:table-cell">{row.is_rte_quota ? "Yes" : "No"}</TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                      {row.is_rte_quota ? (
+                        <Badge className="bg-amber-500 hover:bg-amber-600 text-white dark:bg-amber-600 dark:hover:bg-amber-700 font-bold border-transparent px-2.5 py-0.5 shadow-sm">
+                          RTE
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground/40">No</span>
+                      )}
+                    </TableCell>
                     <TableCell className="capitalize">{row.status ?? "—"}</TableCell>
                   </TableRow>,
                   expandedRows[row.id] ? (
                     <TableRow key={`${row.id}-details`} className="sm:hidden bg-muted/30">
                       <TableCell colSpan={3} className="text-xs space-y-1">
                         <div><span className="text-muted-foreground">Div:</span> {row.division ?? "—"} &middot; <span className="text-muted-foreground">Roll:</span> {row.roll_number ?? "—"}</div>
+                        <div><span className="text-muted-foreground">Gender:</span> <span className="capitalize">{row.gender ?? "—"}</span></div>
                         <div><span className="text-muted-foreground">GR No:</span> {row.gr_number ?? "—"}</div>
-                        <div><span className="text-muted-foreground">RTE:</span> {row.is_rte_quota ? "Yes" : "No"}</div>
+                        <div><span className="text-muted-foreground">RTE:</span> {row.is_rte_quota ? <span className="text-amber-600 dark:text-amber-400 font-semibold">RTE (Yes)</span> : "No"}</div>
                         {row.parent_contact && <div><span className="text-muted-foreground">Contact:</span> {row.parent_contact}</div>}
                       </TableCell>
                     </TableRow>

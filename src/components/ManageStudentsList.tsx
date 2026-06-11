@@ -54,6 +54,7 @@ type StudentRow = {
   standard?: string;
   division?: string;
   roll_number?: number;
+  gender?: string;
   status?: string;
   admission_date?: string;
   date_of_birth?: string;
@@ -459,7 +460,7 @@ export function ManageStudentsList({
   const [addOpen, setAddOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [expandedStudentRows, setExpandedStudentRows] = useState<Record<string, boolean>>({});
-  type SortKey = "full_name" | "standard" | "division" | "roll_number" | "gr_number" | "is_rte_quota" | "status";
+  type SortKey = "full_name" | "standard" | "division" | "roll_number" | "gr_number" | "gender" | "is_rte_quota" | "status";
   type SortDir = "asc" | "desc";
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -585,6 +586,10 @@ export function ManageStudentsList({
         case "gr_number":
           av = (a.gr_number ?? "").toLowerCase();
           bv = (b.gr_number ?? "").toLowerCase();
+          break;
+        case "gender":
+          av = (a.gender ?? "").toLowerCase();
+          bv = (b.gender ?? "").toLowerCase();
           break;
         case "is_rte_quota":
           av = a.is_rte_quota ? 1 : 0;
@@ -755,6 +760,9 @@ export function ManageStudentsList({
                       <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("roll_number")}>
                         <span className="inline-flex items-center gap-1">Roll # <SortIcon col="roll_number" /></span>
                       </TableHead>
+                      <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("gender")}>
+                        <span className="inline-flex items-center gap-1">Gender <SortIcon col="gender" /></span>
+                      </TableHead>
                       <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("gr_number")}>
                         <span className="inline-flex items-center gap-1">GR No <SortIcon col="gr_number" /></span>
                       </TableHead>
@@ -821,9 +829,16 @@ export function ManageStudentsList({
                         <TableCell>{s.standard ?? "—"}</TableCell>
                         <TableCell className="hidden sm:table-cell">{s.division ?? "—"}</TableCell>
                         <TableCell className="text-center hidden sm:table-cell">{s.roll_number ?? "—"}</TableCell>
+                        <TableCell className="capitalize hidden sm:table-cell">{s.gender ?? "—"}</TableCell>
                         <TableCell className="font-mono text-xs hidden sm:table-cell">{s.gr_number ?? "—"}</TableCell>
                         <TableCell>
-                          {s.is_rte_quota ? <Badge variant="secondary">RTE</Badge> : "—"}
+                          {s.is_rte_quota ? (
+                            <Badge className="bg-amber-500 hover:bg-amber-600 text-white dark:bg-amber-600 dark:hover:bg-amber-700 font-bold border-transparent px-2.5 py-0.5 shadow-sm">
+                              RTE
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground/40">—</span>
+                          )}
                         </TableCell>
                         <TableCell className="hidden sm:table-cell">
                           <Badge variant={getStatusBadge(s.status || "active")}>
@@ -904,7 +919,9 @@ export function ManageStudentsList({
                           <TableCell colSpan={3} className="text-sm space-y-2 py-3 px-4">
                             <div><span className="text-muted-foreground font-medium">Division:</span> {s.division ?? "—"}</div>
                             <div><span className="text-muted-foreground font-medium">Roll #:</span> {s.roll_number ?? "—"}</div>
+                            <div><span className="text-muted-foreground font-medium">Gender:</span> <span className="capitalize">{s.gender ?? "—"}</span></div>
                             <div><span className="text-muted-foreground font-medium">GR No:</span> {s.gr_number ?? "—"}</div>
+                            <div><span className="text-muted-foreground font-medium">RTE:</span> {s.is_rte_quota ? <span className="text-amber-600 dark:text-amber-400 font-semibold">RTE (Yes)</span> : <span className="text-muted-foreground/60">No</span>}</div>
                             <div><span className="text-muted-foreground font-medium">Status:</span> {s.status ?? "active"}</div>
                             <div className="flex items-center space-x-2">
                               <span className="text-muted-foreground font-medium">Data completeness:</span>{" "}
