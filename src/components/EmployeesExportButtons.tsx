@@ -9,7 +9,6 @@ type EmployeeExportRow = {
   employee_id: string;
   full_name: string;
   email: string;
-  department: string;
   shift: string;
   status: string;
 };
@@ -22,7 +21,6 @@ export function EmployeesExportButtons({ rows }: { rows: EmployeeExportRow[] }) 
       "Emp ID": r.employee_id,
       Name: r.full_name,
       Email: r.email,
-      Department: r.department,
       Shift: r.shift,
       Status: r.status,
     }));
@@ -31,7 +29,6 @@ export function EmployeesExportButtons({ rows }: { rows: EmployeeExportRow[] }) 
       { wch: 16 },
       { wch: 28 },
       { wch: 30 },
-      { wch: 20 },
       { wch: 18 },
       { wch: 14 },
     ];
@@ -56,8 +53,8 @@ export function EmployeesExportButtons({ rows }: { rows: EmployeeExportRow[] }) 
     doc.text("Employees Report", 14, 14);
     autoTable(doc, {
       startY: 20,
-      head: [["Emp ID", "Name", "Email", "Department", "Shift", "Status"]],
-      body: rows.map((r) => [r.employee_id, r.full_name, r.email, r.department, r.shift, r.status]),
+      head: [["Emp ID", "Name", "Email", "Shift", "Status"]],
+      body: rows.map((r) => [r.employee_id, r.full_name, r.email, r.shift, r.status]),
       styles: { fontSize: 8 },
       headStyles: { fillColor: [220, 38, 38] },
     });

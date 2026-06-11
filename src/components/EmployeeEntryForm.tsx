@@ -32,7 +32,6 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
     aadhaar: "",
     pan: "",
     role: "staff",
-    department: "",
     employee_type: "full_time",
     joining_date: "",
     shift_id: "",
@@ -54,7 +53,6 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
     { key: "aadhaar", label: "Aadhaar" },
     { key: "pan", label: "PAN" },
     { key: "role", label: "Role" },
-    { key: "department", label: "Department" },
     { key: "employee_type", label: "Employee type" },
     { key: "joining_date", label: "Joining date" },
     { key: "monthly_salary", label: "Monthly salary" },
@@ -100,7 +98,6 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
           aadhaar: form.aadhaar.trim() || null,
           pan: form.pan.trim() || null,
           role: form.role,
-          department: form.department.trim() || null,
           employee_type: form.employee_type,
           joining_date: form.joining_date || null,
           shift_id: form.shift_id || null,
@@ -130,7 +127,7 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
 
       setForm({
         full_name: "", email: "", phone_number: "", address: "", aadhaar: "", pan: "",
-        role: "staff", department: "", employee_type: "full_time",
+        role: "staff", employee_type: "full_time",
         joining_date: "", shift_id: "", degree: "", institution: "", year_passed: "",
         bank_name: "", account_number: "", ifsc_code: "", account_holder_name: "",
         monthly_salary: "",
@@ -229,17 +226,6 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>Department *</Label>
-              <Input
-                value={form.department}
-                onChange={(e) => setForm((p) => ({ ...p, department: e.target.value }))}
-                placeholder="e.g. Mathematics"
-                required
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Employee Type *</Label>
               <Select value={form.employee_type} onValueChange={(v) => setForm((p) => ({ ...p, employee_type: v }))}>
