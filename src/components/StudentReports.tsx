@@ -134,6 +134,41 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
           fetched = fetched.filter((s) => allowedPairs.has(`${s.standard ?? ""}\0${s.division ?? ""}`));
         }
       }
+
+      // Sort: Standard -> Division -> Gender (Male first, Female second) -> Roll Number -> Full Name fallback
+      fetched.sort((a, b) => {
+        // 1. Standard (Grade)
+        const stdA = a.standard || "";
+        const stdB = b.standard || "";
+        if (stdA !== stdB) return stdA.localeCompare(stdB);
+
+        // 2. Division (Section)
+        const divA = a.division || "";
+        const divB = b.division || "";
+        if (divA !== divB) return divA.localeCompare(divB);
+
+        // 3. Gender (Male -> Female -> Other -> Empty)
+        const genA = (a.gender || "").toLowerCase();
+        const genB = (b.gender || "").toLowerCase();
+        const getGenderPriority = (gender: string) => {
+          if (gender === "male") return 1;
+          if (gender === "female") return 2;
+          if (gender === "other") return 3;
+          return 4;
+        };
+        if (genA !== genB) {
+          return getGenderPriority(genA) - getGenderPriority(genB);
+        }
+
+        // 4. Roll Number
+        const rollA = a.roll_number ?? 999999;
+        const rollB = b.roll_number ?? 999999;
+        if (rollA !== rollB) return rollA - rollB;
+
+        // 5. Full Name fallback
+        return (a.full_name || "").localeCompare(b.full_name || "");
+      });
+
       setRows(fetched);
       setLoading(false);
     })();
