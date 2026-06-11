@@ -253,6 +253,61 @@ export default function StudentEntryForm() {
         }
       }
 
+      // Check unique fields: gr_number, aadhar_no, udise_id, pen_no, apaar_id
+      const uniqueFieldsToCheck: { field: string; label: string; value: string }[] = [];
+      if (payload.gr_number) uniqueFieldsToCheck.push({ field: "gr_number", label: "GR Number", value: payload.gr_number as string });
+      if (payload.aadhar_no) uniqueFieldsToCheck.push({ field: "aadhar_no", label: "Aadhar Number", value: payload.aadhar_no as string });
+      if (payload.udise_id) uniqueFieldsToCheck.push({ field: "udise_id", label: "UDISE ID", value: payload.udise_id as string });
+      if (payload.pen_no) uniqueFieldsToCheck.push({ field: "pen_no", label: "PEN Number", value: payload.pen_no as string });
+      if (payload.apaar_id) uniqueFieldsToCheck.push({ field: "apaar_id", label: "APAAR ID", value: payload.apaar_id as string });
+
+      if (uniqueFieldsToCheck.length > 0) {
+        const orFilter = uniqueFieldsToCheck.map(item => `${item.field}.eq."${item.value.replace(/"/g, '\\"')}"`).join(",");
+        const { data: dupStudents, error: dupError } = await supabase
+          .from("students")
+          .select("id, full_name, gr_number, aadhar_no, udise_id, pen_no, apaar_id")
+          .or(orFilter);
+
+        if (dupError) {
+          console.error("Duplicate unique fields check error:", dupError);
+        } else if (dupStudents && dupStudents.length > 0) {
+          for (const student of dupStudents) {
+            for (const item of uniqueFieldsToCheck) {
+              if (student[item.field as keyof typeof student] === item.value) {
+                const msg = `${item.label} "${item.value}" is already assigned to student "${student.full_name}".`;
+                setError(msg);
+                toast({ variant: "destructive", title: `Duplicate ${item.label}`, description: msg });
+                return;
+              }
+            }
+          }
+        }
+      }
+
+      // Check roll number in the same standard and division
+      const rollNumber = payload.roll_number as number | null;
+      const standard = payload.standard as string | null;
+      const division = payload.division as string | null;
+      if (standard && division && rollNumber !== null) {
+        const { data: rollDup, error: rollDupError } = await supabase
+          .from("students")
+          .select("id, full_name")
+          .eq("standard", standard)
+          .eq("division", division)
+          .eq("roll_number", rollNumber)
+          .limit(1)
+          .maybeSingle();
+
+        if (rollDupError) {
+          console.error("Roll number duplicate check error:", rollDupError);
+        } else if (rollDup) {
+          const msg = `Roll number ${rollNumber} is already assigned to student "${rollDup.full_name}" in class "${standard} - ${division}".`;
+          setError(msg);
+          toast({ variant: "destructive", title: "Duplicate Roll Number", description: msg });
+          return;
+        }
+      }
+
       const { data: inserted, error: err } = await supabase
         .from("students")
         .insert(payload)
