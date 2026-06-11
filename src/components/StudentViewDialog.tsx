@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
+import Image from "next/image";
 import {
   Dialog,
   DialogContent,
@@ -32,6 +33,9 @@ import {
 } from "lucide-react";
 import { PdfIcon } from "@/components/ui/export-icons";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
+import { createClient } from "@/lib/supabase/client";
+
+const PHOTO_BUCKET = "student-uploads";
 
 interface StudentData {
   id: string;
@@ -207,8 +211,25 @@ function Section({
   );
 }
 
+/* ── Helper: load image as base64 for jsPDF ── */
+async function loadImageAsBase64(url: string): Promise<string | null> {
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) return null;
+    const blob = await resp.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
 /* ── PDF Export function ── */
-async function exportStudentBioPdf(student: StudentData, schoolName: string) {
+async function exportStudentBioPdf(student: StudentData, schoolName: string, photoUrl: string | null) {
   const { jsPDF } = await import("jspdf");
   const { default: autoTable } = await import("jspdf-autotable");
   const { C, drawRoundedRect, drawPageFooter } = await import("@/lib/pdf-theme");
@@ -219,6 +240,12 @@ async function exportStudentBioPdf(student: StudentData, schoolName: string) {
   const marginR = 14;
   const contentW = pageW - marginL - marginR;
   let y = 12;
+
+  // Pre-load photo image if available
+  let photoBase64: string | null = null;
+  if (photoUrl) {
+    photoBase64 = await loadImageAsBase64(photoUrl);
+  }
 
   /* ── Header Banner ── */
   drawRoundedRect(doc, marginL, y, contentW, 22, 2.5, C.primary);
@@ -234,24 +261,42 @@ async function exportStudentBioPdf(student: StudentData, schoolName: string) {
   doc.text(`Generated: ${dateStr}`, pageW - marginR - 6, y + 8, { align: "right" });
   y += 26;
 
-  /* ── Student name banner ── */
-  drawRoundedRect(doc, marginL, y, contentW, 18, 2, C.accent, C.border);
+  /* ── Student name banner (taller when photo exists) ── */
+  const bannerH = photoBase64 ? 28 : 18;
+  drawRoundedRect(doc, marginL, y, contentW, bannerH, 2, C.accent, C.border);
 
-  // Avatar circle
+  // Photo or avatar circle
   const avatarX = marginL + 10;
-  const avatarY = y + 9;
-  doc.setFillColor(...C.primary);
-  doc.circle(avatarX, avatarY, 5, "F");
-  doc.setTextColor(...C.white);
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "bold");
-  doc.text(student.full_name.charAt(0).toUpperCase(), avatarX, avatarY + 1, { align: "center", baseline: "middle" });
+  const avatarY = y + bannerH / 2;
+  if (photoBase64) {
+    // Draw photo with clipping
+    try {
+      const imgSize = 18;
+      doc.addImage(photoBase64, "JPEG", avatarX - imgSize / 2, y + (bannerH - imgSize) / 2, imgSize, imgSize);
+    } catch {
+      // Fallback to circle
+      doc.setFillColor(...C.primary);
+      doc.circle(avatarX, avatarY, 5, "F");
+      doc.setTextColor(...C.white);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.text(student.full_name.charAt(0).toUpperCase(), avatarX, avatarY + 1, { align: "center", baseline: "middle" });
+    }
+  } else {
+    doc.setFillColor(...C.primary);
+    doc.circle(avatarX, avatarY, 5, "F");
+    doc.setTextColor(...C.white);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text(student.full_name.charAt(0).toUpperCase(), avatarX, avatarY + 1, { align: "center", baseline: "middle" });
+  }
 
   // Name & GR
+  const textStartX = photoBase64 ? marginL + 24 : marginL + 18;
   doc.setTextColor(...C.foreground);
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
-  doc.text(student.full_name, marginL + 18, y + 7);
+  doc.text(student.full_name, textStartX, y + (photoBase64 ? 9 : 7));
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...C.mutedFg);
@@ -260,7 +305,7 @@ async function exportStudentBioPdf(student: StudentData, schoolName: string) {
   if (student.standard) tagParts.push(`Std: ${student.standard}`);
   if (student.division) tagParts.push(`Div: ${student.division}`);
   if (student.roll_number != null) tagParts.push(`Roll: ${student.roll_number}`);
-  doc.text(tagParts.join("  •  "), marginL + 18, y + 12.5);
+  doc.text(tagParts.join("  •  "), textStartX, y + (photoBase64 ? 15 : 12.5));
 
   // Status + RTE tags on right
   const statusText = cap(student.status);
@@ -271,12 +316,12 @@ async function exportStudentBioPdf(student: StudentData, schoolName: string) {
     doc.setTextColor(...C.mutedFg);
   }
   doc.setFont("helvetica", "bold");
-  doc.text(statusText, pageW - marginR - 6, y + 7, { align: "right" });
+  doc.text(statusText, pageW - marginR - 6, y + (photoBase64 ? 9 : 7), { align: "right" });
   if (student.is_rte_quota) {
     doc.setTextColor(180, 83, 9);
-    doc.text("RTE Quota", pageW - marginR - 6, y + 12, { align: "right" });
+    doc.text("RTE Quota", pageW - marginR - 6, y + (photoBase64 ? 15 : 12), { align: "right" });
   }
-  y += 22;
+  y += bannerH + 4;
 
   /* ── Utility: draw section ── */
   const sectionHeader = (title: string) => {
@@ -474,7 +519,34 @@ export function StudentViewDialog({ student, open: controlledOpen, onOpenChange:
   const open = isControlled ? controlledOpen : localOpen;
   const setOpen = isControlled ? controlledOnOpenChange : setLocalOpen;
   const [exporting, setExporting] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const school = useSchoolSettings();
+  const supabase = useMemo(() => createClient(), []);
+
+  // Fetch student photo when dialog opens
+  useEffect(() => {
+    if (!open || !student.id) {
+      setPhotoUrl(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data: photoRec } = await supabase
+        .from("student_photos")
+        .select("file_path")
+        .eq("student_id", student.id)
+        .eq("role", "student")
+        .maybeSingle();
+      if (cancelled || !photoRec?.file_path) { setPhotoUrl(null); return; }
+      const { data: urlData } = await supabase.storage
+        .from(PHOTO_BUCKET)
+        .createSignedUrl(photoRec.file_path, 3600);
+      if (!cancelled && urlData?.signedUrl) {
+        setPhotoUrl(urlData.signedUrl);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [open, student.id, supabase]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -490,7 +562,7 @@ export function StudentViewDialog({ student, open: controlledOpen, onOpenChange:
   const handleExportPdf = async () => {
     setExporting(true);
     try {
-      await exportStudentBioPdf(student, school.name);
+      await exportStudentBioPdf(student, school.name, photoUrl);
     } catch (err) {
       console.error("PDF export failed:", err);
     } finally {
@@ -535,12 +607,23 @@ export function StudentViewDialog({ student, open: controlledOpen, onOpenChange:
           </DialogHeader>
 
           <div className="relative z-10 flex items-start gap-4">
-            {/* Avatar */}
+            {/* Avatar / Photo */}
             <div className="shrink-0">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/30 flex items-center justify-center shadow-lg">
-                <span className="text-2xl sm:text-3xl font-bold text-white">
-                  {student.full_name.charAt(0).toUpperCase()}
-                </span>
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/30 flex items-center justify-center shadow-lg overflow-hidden">
+                {photoUrl ? (
+                  <Image
+                    src={photoUrl}
+                    alt={student.full_name}
+                    width={64}
+                    height={64}
+                    className="w-full h-full object-cover"
+                    unoptimized
+                  />
+                ) : (
+                  <span className="text-2xl sm:text-3xl font-bold text-white">
+                    {student.full_name.charAt(0).toUpperCase()}
+                  </span>
+                )}
               </div>
             </div>
 
