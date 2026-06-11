@@ -45,6 +45,8 @@ interface StudentEditDialogProps {
     present_country?: string;
   };
   onSaved?: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 type StudentEditFormProps = {
@@ -69,6 +71,76 @@ function StudentEditFormInline({ student, onSaved, onCancel }: StudentEditFormPr
     try {
       const supabase = createClient();
       const payload = formToPayload(form);
+
+      // Check duplicate student name (excluding current student)
+      const studentName = (payload.full_name as string) ?? "";
+      if (studentName) {
+        const { data: duplicate } = await supabase
+          .from("students")
+          .select("id, full_name")
+          .ilike("full_name", studentName)
+          .neq("id", student.id)
+          .limit(1)
+          .maybeSingle();
+        if (duplicate) {
+          setError(`A student with the name "${duplicate.full_name}" already exists. Duplicate names are not allowed.`);
+          return;
+        }
+      }
+
+      // Check unique fields: gr_number, aadhar_no, udise_id, pen_no, apaar_id (excluding current student)
+      const uniqueFieldsToCheck: { field: string; label: string; value: string }[] = [];
+      if (payload.gr_number) uniqueFieldsToCheck.push({ field: "gr_number", label: "GR Number", value: payload.gr_number as string });
+      if (payload.aadhar_no) uniqueFieldsToCheck.push({ field: "aadhar_no", label: "Aadhar Number", value: payload.aadhar_no as string });
+      if (payload.udise_id) uniqueFieldsToCheck.push({ field: "udise_id", label: "UDISE ID", value: payload.udise_id as string });
+      if (payload.pen_no) uniqueFieldsToCheck.push({ field: "pen_no", label: "PEN Number", value: payload.pen_no as string });
+      if (payload.apaar_id) uniqueFieldsToCheck.push({ field: "apaar_id", label: "APAAR ID", value: payload.apaar_id as string });
+
+      if (uniqueFieldsToCheck.length > 0) {
+        const orFilter = uniqueFieldsToCheck.map(item => `${item.field}.eq."${item.value.replace(/"/g, '\\"')}"`).join(",");
+        const { data: dupStudents, error: dupError } = await supabase
+          .from("students")
+          .select("id, full_name, gr_number, aadhar_no, udise_id, pen_no, apaar_id")
+          .neq("id", student.id)
+          .or(orFilter);
+
+        if (dupError) {
+          console.error("Duplicate unique fields check error:", dupError);
+        } else if (dupStudents && dupStudents.length > 0) {
+          for (const s of dupStudents) {
+            for (const item of uniqueFieldsToCheck) {
+              if (s[item.field as keyof typeof s] === item.value) {
+                setError(`${item.label} "${item.value}" is already assigned to student "${s.full_name}".`);
+                return;
+              }
+            }
+          }
+        }
+      }
+
+      // Check roll number in the same standard and division (excluding current student)
+      const rollNumber = payload.roll_number as number | null;
+      const standard = payload.standard as string | null;
+      const division = payload.division as string | null;
+      if (standard && division && rollNumber !== null) {
+        const { data: rollDup, error: rollDupError } = await supabase
+          .from("students")
+          .select("id, full_name")
+          .eq("standard", standard)
+          .eq("division", division)
+          .eq("roll_number", rollNumber)
+          .neq("id", student.id)
+          .limit(1)
+          .maybeSingle();
+
+        if (rollDupError) {
+          console.error("Roll number duplicate check error:", rollDupError);
+        } else if (rollDup) {
+          setError(`Roll number ${rollNumber} is already assigned to student "${rollDup.full_name}" in class "${standard} - ${division}".`);
+          return;
+        }
+      }
+
       const { error: err } = await supabase.from("students").update(payload).eq("id", student.id);
       if (err) {
         setError(err.message);
@@ -523,18 +595,23 @@ function StudentEditFormInline({ student, onSaved, onCancel }: StudentEditFormPr
   );
 }
 
-export function StudentEditDialog({ student, onSaved }: StudentEditDialogProps) {
+export function StudentEditDialog({ student, onSaved, open: controlledOpen, onOpenChange: controlledOnOpenChange }: StudentEditDialogProps) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [localOpen, setLocalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : localOpen;
+  const setOpen = isControlled ? controlledOnOpenChange : setLocalOpen;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" variant="outline" className="gap-1">
-          <Pencil className="h-3 w-3" />
-          Edit
-        </Button>
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          <Button size="sm" variant="outline" className="gap-1">
+            <Pencil className="h-3 w-3" />
+            Edit
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-[95vw] sm:max-w-5xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="text-base">Edit student</DialogTitle>
@@ -544,9 +621,9 @@ export function StudentEditDialog({ student, onSaved }: StudentEditDialogProps) 
         </DialogHeader>
         <StudentEditFormInline
           student={student as Record<string, unknown> & { id: string; full_name: string }}
-          onCancel={() => setOpen(false)}
+          onCancel={() => setOpen?.(false)}
           onSaved={() => {
-            setOpen(false);
+            setOpen?.(false);
             if (onSaved) onSaved();
             router.refresh();
           }}

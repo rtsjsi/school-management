@@ -45,10 +45,15 @@ interface StudentViewDialogProps {
     religion?: string;
     aadhar_no?: string;
   };
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function StudentViewDialog({ student }: StudentViewDialogProps) {
-  const [open, setOpen] = useState(false);
+export function StudentViewDialog({ student, open: controlledOpen, onOpenChange: controlledOnOpenChange }: StudentViewDialogProps) {
+  const [localOpen, setLocalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : localOpen;
+  const setOpen = isControlled ? controlledOnOpenChange : setLocalOpen;
 
   const getStatusBadge = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     const map: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -63,12 +68,14 @@ export function StudentViewDialog({ student }: StudentViewDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" variant="outline" className="gap-1">
-          <Eye className="h-3 w-3" />
-          View
-        </Button>
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          <Button size="sm" variant="outline" className="gap-1">
+            <Eye className="h-3 w-3" />
+            View
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-h-[90vh] overflow-y-auto max-w-[95vw] sm:max-w-2xl p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>Student Information</DialogTitle>
@@ -253,7 +260,7 @@ export function StudentViewDialog({ student }: StudentViewDialogProps) {
         </div>
 
         <div className="flex justify-end pt-6">
-          <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+          <Button type="button" variant="outline" onClick={() => setOpen?.(false)}>
             Close
           </Button>
         </div>
