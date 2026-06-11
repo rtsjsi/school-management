@@ -475,8 +475,6 @@ export function ManageStudentsList({
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
-  // Stats state
-  const [stats, setStats] = useState({ total: 0, active: 0, rte: 0, inactive: 0 });
 
   // Debounced search trigger
   useEffect(() => {
@@ -514,31 +512,6 @@ export function ManageStudentsList({
     }
   }, [restrictByClass, allowedStandardsKey, allowedDivisionsKey, supabase]);
 
-  // Fetch dynamic stats for dashboard cards
-  useEffect(() => {
-    let q = supabase
-      .from("students")
-      .select("status, is_rte_quota, standard, division");
-
-    if (standardFilter && standardFilter !== "all") q = q.eq("standard", standardFilter);
-    if (divisionFilter && divisionFilter !== "all") q = q.eq("division", divisionFilter);
-
-    (async () => {
-      const { data } = await q;
-      let rows = data ?? [];
-      if (restrictByClass && allowedClassPairsKey) {
-        const allowedPairs = new Set(allowedClassPairsKey.split("|"));
-        rows = rows.filter((s) => allowedPairs.has(`${s.standard ?? ""}\0${s.division ?? ""}`));
-      }
-      
-      const total = rows.length;
-      const active = rows.filter((r) => r.status === "active").length;
-      const rte = rows.filter((r) => r.is_rte_quota).length;
-      const inactive = rows.filter((r) => r.status !== "active").length;
-      
-      setStats({ total, active, rte, inactive });
-    })();
-  }, [standardFilter, divisionFilter, restrictByClass, allowedClassPairsKey, reloadKey, supabase]);
 
   // Fetch student rows
   useEffect(() => {
@@ -639,35 +612,7 @@ export function ManageStudentsList({
   };
 
   return (
-    <Card className="border-none shadow-none bg-transparent space-y-6">
-      {/* Quick Stats Dashboard Cards */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Card className="bg-gradient-to-br from-blue-50/50 to-indigo-50/10 dark:from-blue-950/20 dark:to-indigo-950/5 border border-blue-100/40 dark:border-blue-900/40 shadow-sm transition-all duration-300 hover:shadow-md">
-          <CardContent className="p-4 flex flex-col justify-center">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Students</span>
-            <span className="text-2xl font-bold tracking-tight mt-1 text-blue-700 dark:text-blue-400">{stats.total}</span>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-emerald-50/50 to-teal-50/10 dark:from-emerald-950/20 dark:to-teal-950/5 border border-emerald-100/40 dark:border-emerald-900/40 shadow-sm transition-all duration-300 hover:shadow-md">
-          <CardContent className="p-4 flex flex-col justify-center">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Active</span>
-            <span className="text-2xl font-bold tracking-tight mt-1 text-emerald-700 dark:text-emerald-400">{stats.active}</span>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-purple-50/50 to-fuchsia-50/10 dark:from-purple-950/20 dark:to-fuchsia-950/5 border border-purple-100/40 dark:border-purple-900/40 shadow-sm transition-all duration-300 hover:shadow-md">
-          <CardContent className="p-4 flex flex-col justify-center">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">RTE Quota</span>
-            <span className="text-2xl font-bold tracking-tight mt-1 text-purple-700 dark:text-purple-400">{stats.rte}</span>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-amber-50/50 to-orange-50/10 dark:from-amber-950/20 dark:to-orange-950/5 border border-amber-100/40 dark:border-amber-900/40 shadow-sm transition-all duration-300 hover:shadow-md">
-          <CardContent className="p-4 flex flex-col justify-center">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Inactive / Other</span>
-            <span className="text-2xl font-bold tracking-tight mt-1 text-amber-700 dark:text-amber-400">{stats.inactive}</span>
-          </CardContent>
-        </Card>
-      </div>
-
+    <>
       <Card className="border">
         <CardContent className="space-y-4 pt-6">
           <div className="w-full">
@@ -1132,6 +1077,6 @@ export function ManageStudentsList({
           }}
         />
       )}
-    </Card>
+    </>
   );
 }
