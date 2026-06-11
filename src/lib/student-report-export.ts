@@ -98,11 +98,13 @@ export function exportStudentsPdf(
     row.roll_number != null ? String(row.roll_number) : "—",
     row.gender ?? "—",
     row.date_of_birth
-      ? new Date(row.date_of_birth + "T12:00:00").toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        })
+      ? new Date(row.date_of_birth + "T12:00:00")
+          .toLocaleDateString("en-IN", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          })
+          .replace(/\//g, "-")
       : "—",
     row.parent_name ?? "—",
     row.parent_contact ?? "—",
