@@ -32,7 +32,7 @@ export async function fetchDashboardData(user: AuthUser, activeYearName: string 
 
   const hasYearRange = !!activeYear?.start_date && !!activeYear?.end_date;
   const newAdmissionsCountQuery = () => {
-    let q = supabase.from("students").select("*", { count: "exact", head: true });
+    let q = supabase.from("students").select("*", { count: "exact", head: true }).eq("status", "active");
     if (studentIdFilter && studentIdFilter.length > 0) q = q.in("id", studentIdFilter);
     return q;
   };
@@ -71,7 +71,8 @@ export async function fetchDashboardData(user: AuthUser, activeYearName: string 
     : Promise.resolve({ data: [] as Record<string, unknown>[] });
 
   const [
-    studentsCountRes,
+    activeMaleStudentsCountRes,
+    activeFemaleStudentsCountRes,
     activeStudentsCountRes,
     employeesCountRes,
     rteStudentsCountRes,
@@ -86,7 +87,8 @@ export async function fetchDashboardData(user: AuthUser, activeYearName: string 
     subjectsMasterResult,
     employeesMasterResult,
   ] = await Promise.all([
-    studentCountQuery({ count: "exact", head: true }),
+    studentCountQuery({ count: "exact", head: true }, { status: "active", gender: "male" }),
+    studentCountQuery({ count: "exact", head: true }, { status: "active", gender: "female" }),
     studentCountQuery({ count: "exact", head: true }, { status: "active" }),
     supabase.from("employees").select("*", { count: "exact", head: true }),
     studentCountQuery({ count: "exact", head: true }, { status: "active", is_rte_quota: true }),
@@ -133,7 +135,8 @@ export async function fetchDashboardData(user: AuthUser, activeYearName: string 
     employeesMasterQuery,
   ]);
 
-  const studentsCount = studentsCountRes.count ?? 0;
+  const activeMaleStudentsCount = activeMaleStudentsCountRes.count ?? 0;
+  const activeFemaleStudentsCount = activeFemaleStudentsCountRes.count ?? 0;
   const activeStudentsCount = activeStudentsCountRes.count ?? 0;
   const employeesCount = employeesCountRes.count ?? 0;
   const rteStudentsCount = rteStudentsCountRes.count ?? 0;
@@ -204,7 +207,8 @@ export async function fetchDashboardData(user: AuthUser, activeYearName: string 
   }
 
   return {
-    studentsCount,
+    activeMaleStudentsCount,
+    activeFemaleStudentsCount,
     activeStudentsCount,
     employeesCount,
     rteStudentsCount,
