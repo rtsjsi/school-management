@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClassManagement } from "@/components/ClassManagement";
 import { SubjectMaster } from "@/components/SubjectMaster";
 import { PromotionRunner } from "@/components/PromotionRunner";
+import { TimeTableManager } from "@/components/TimeTableManager";
 import { TableSkeleton } from "@/components/skeletons/TableSkeleton";
 
 export default async function AcademicSetupPage({
@@ -19,8 +20,8 @@ export default async function AcademicSetupPage({
 
   const params = await searchParams;
   const canPromote = isAdminOrAbove(user);
+  const validTabs = ["standards", "subjects", "timetable", ...(canPromote ? ["promotion"] : [])];
   const tabParam = params.tab ?? "standards";
-  const validTabs = ["standards", "subjects", ...(canPromote ? ["promotion"] : [])];
   const tab = validTabs.includes(tabParam) ? tabParam : "standards";
 
   return (
@@ -29,6 +30,7 @@ export default async function AcademicSetupPage({
         <TabsList className="flex flex-nowrap gap-1 w-full">
           <TabsTrigger value="standards">Standards</TabsTrigger>
           <TabsTrigger value="subjects">Subjects</TabsTrigger>
+          <TabsTrigger value="timetable">Time Table</TabsTrigger>
           {canPromote && (
             <TabsTrigger value="promotion">Promotion</TabsTrigger>
           )}
@@ -39,6 +41,11 @@ export default async function AcademicSetupPage({
         <TabsContent value="subjects" className="space-y-6">
           <Suspense fallback={<TableSkeleton rows={5} columns={4} />}>
             <SubjectMaster />
+          </Suspense>
+        </TabsContent>
+        <TabsContent value="timetable" className="space-y-6">
+          <Suspense fallback={<TableSkeleton rows={5} columns={8} />}>
+            <TimeTableManager />
           </Suspense>
         </TabsContent>
         {canPromote && (
