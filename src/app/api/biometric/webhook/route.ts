@@ -1,21 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase/server";
 
 export async function POST(req: NextRequest) {
   try {
-    // 1. Log the URL and headers to see what the machine is sending
+    const supabase = createAdminClient();
+    
     console.log("=== BIOMETRIC WEBHOOK POST RECEIVED ===");
     console.log("URL:", req.url);
     
     const headers = Object.fromEntries(req.headers.entries());
-    console.log("Headers:", JSON.stringify(headers, null, 2));
-
-    // 2. Try to read the raw body
     const rawBody = await req.text();
+    
+    console.log("Headers:", JSON.stringify(headers, null, 2));
     console.log("Raw Body:", rawBody);
     console.log("=======================================");
 
-    // 3. Acknowledge receipt to the machine
-    // Some machines just need a 200 OK. Some ADMS protocols require a specific string like "OK"
+    if (supabase) {
+      await supabase.from("biometric_raw_logs").insert({
+        method: "POST",
+        url: req.url,
+        headers: headers,
+        body: rawBody
+      });
+    }
+
     return new NextResponse("OK", { status: 200 });
   } catch (error) {
     console.error("Error processing biometric webhook:", error);
@@ -25,14 +33,21 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    // Some devices use GET requests for initial handshakes or specific data requests
+    const supabase = createAdminClient();
+
     console.log("=== BIOMETRIC WEBHOOK GET RECEIVED ===");
     console.log("URL:", req.url);
     
     const headers = Object.fromEntries(req.headers.entries());
-    console.log("Headers:", JSON.stringify(headers, null, 2));
     
-    console.log("======================================");
+    if (supabase) {
+      await supabase.from("biometric_raw_logs").insert({
+        method: "GET",
+        url: req.url,
+        headers: headers,
+        body: null
+      });
+    }
 
     return new NextResponse("OK", { status: 200 });
   } catch (error) {
