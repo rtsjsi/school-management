@@ -53,7 +53,10 @@ export async function GET(request: NextRequest) {
       const n = Math.min(parseInt(limit, 10) || 20, 100);
       q = q.limit(n);
     }
-    const { data: rows } = await q;
+    const { data: rows, error } = await q;
+    if (error) {
+      console.error("Fee reports query error:", error);
+    }
 
     // Filter by standard in memory (student.standard comes from join)
     let filtered = rows ?? [];

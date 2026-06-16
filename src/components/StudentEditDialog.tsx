@@ -72,21 +72,7 @@ function StudentEditFormInline({ student, onSaved, onCancel }: StudentEditFormPr
       const supabase = createClient();
       const payload = formToPayload(form);
 
-      // Check duplicate student name (excluding current student)
-      const studentName = (payload.full_name as string) ?? "";
-      if (studentName) {
-        const { data: duplicate } = await supabase
-          .from("students")
-          .select("id, full_name")
-          .ilike("full_name", studentName)
-          .neq("id", student.id)
-          .limit(1)
-          .maybeSingle();
-        if (duplicate) {
-          setError(`A student with the name "${duplicate.full_name}" already exists. Duplicate names are not allowed.`);
-          return;
-        }
-      }
+
 
       // Check unique fields: gr_number, aadhar_no, udise_id, pen_no, apaar_id (excluding current student)
       const uniqueFieldsToCheck: { field: string; label: string; value: string }[] = [];
