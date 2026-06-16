@@ -45,11 +45,13 @@ import {
   Smartphone,
   Filter,
   X,
+  Undo2,
 } from "lucide-react";
 import { PdfIcon } from "@/components/ui/export-icons";
 import { exportFeeCollectionPdf } from "@/lib/fee-collection-report-export";
 import { fetchStandards, fetchAcademicYears } from "@/lib/lov";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
+import { FeeRefundDialog } from "@/components/FeeRefundDialog";
 
 const PAYMENT_MODES = ["cash", "cheque", "online"] as const;
 const QUARTERS = [1, 2, 3, 4] as const;
@@ -86,6 +88,8 @@ type ReportRow = {
   student_roll_number?: number;
   student_gr_no?: string;
   amount: number;
+  refunded_amount?: number;
+  net_amount?: number;
   fee_type: string;
   quarter: number;
   academic_year: string;
@@ -183,6 +187,7 @@ export default function FeeCollectionReport() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
+  const [refundRow, setRefundRow] = useState<ReportRow | null>(null);
 
   type SortKey = "receipt_number" | "student_name" | "student_standard" | "student_division" | "amount" | "fee_type" | "quarter" | "payment_mode" | "collection_date" | "collected_by";
   type SortDir = "asc" | "desc";
@@ -785,7 +790,14 @@ export default function FeeCollectionReport() {
                           <TableCell className="hidden sm:table-cell">
                             {row.student_division || "—"}
                           </TableCell>
-                          <TableCell>{Number(row.amount).toLocaleString("en-IN")}</TableCell>
+                          <TableCell>
+                            <div>{Number(row.amount).toLocaleString("en-IN")}</div>
+                            {row.refunded_amount ? (
+                              <Badge variant="outline" className="text-[10px] text-destructive bg-destructive/5 py-0 mt-0.5 font-normal">
+                                Refunded: ₹{row.refunded_amount.toLocaleString("en-IN")}
+                              </Badge>
+                            ) : null}
+                          </TableCell>
                           <TableCell className="hidden sm:table-cell">{getFeeTypeLabel(row.fee_type)}</TableCell>
                           <TableCell className="hidden sm:table-cell">Q{row.quarter}</TableCell>
                           <TableCell className="capitalize hidden sm:table-cell">{row.payment_mode}</TableCell>
@@ -801,6 +813,11 @@ export default function FeeCollectionReport() {
                               <Button size="sm" variant="ghost" className="h-7 w-7 p-0 sm:h-8 sm:w-8" onClick={() => printReceipt(row)} aria-label="Print receipt">
                                 <Printer className="h-3.5 w-3.5" />
                               </Button>
+                              {(!row.refunded_amount || row.refunded_amount < row.amount) && (
+                                <Button size="sm" variant="ghost" className="h-7 w-7 p-0 sm:h-8 sm:w-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setRefundRow(row)} aria-label="Issue Refund">
+                                  <Undo2 className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>,
@@ -826,6 +843,18 @@ export default function FeeCollectionReport() {
             </div>
           )}
         </div>
+        {refundRow && (
+          <FeeRefundDialog
+            open={!!refundRow}
+            onOpenChange={(open) => {
+              if (!open) setRefundRow(null);
+            }}
+            feeCollectionId={refundRow.id}
+            receiptNumber={refundRow.receipt_number}
+            maxRefundAmount={Number(refundRow.amount) - (refundRow.refunded_amount ?? 0)}
+            onSuccess={() => fetchReport()}
+          />
+        )}
       </CardContent>
     </Card>
   );

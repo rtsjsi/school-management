@@ -124,3 +124,63 @@ export async function updateFeeCollection(
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }
+
+export type FeeRefundActionResult = { ok: true } | { ok: false; error: string };
+
+type ProcessFeeRefundInput = {
+  feeCollectionId: string;
+  amount: number;
+  refundMode: string;
+  refundReason: string;
+  refundDate: string;
+};
+
+export async function processFeeRefund(
+  data: ProcessFeeRefundInput
+): Promise<FeeRefundActionResult> {
+  const user = await requireUser();
+  if (!canEditFees(user)) return { ok: false, error: "Unauthorized" };
+
+  if (data.amount <= 0) return { ok: false, error: "Refund amount must be greater than zero." };
+  if (!data.refundReason?.trim()) return { ok: false, error: "Refund reason is required." };
+
+  const validModes = ["cash", "cheque", "online"];
+  if (!validModes.includes(data.refundMode)) return { ok: false, error: "Invalid refund mode." };
+
+  const supabase = await createClient();
+
+  const { data: collection, error: collErr } = await supabase
+    .from("fee_collections")
+    .select("amount")
+    .eq("id", data.feeCollectionId)
+    .single();
+
+  if (collErr || !collection) return { ok: false, error: "Fee collection not found." };
+
+  const { data: refunds } = await supabase
+    .from("fee_refunds")
+    .select("amount")
+    .eq("fee_collection_id", data.feeCollectionId);
+
+  const existingRefundsTotal = (refunds ?? []).reduce(
+    (sum, r) => sum + Number(r.amount),
+    0
+  );
+
+  if (existingRefundsTotal + data.amount > Number(collection.amount)) {
+    return { ok: false, error: "Refund amount exceeds the remaining collected amount." };
+  }
+
+  const { error } = await supabase.from("fee_refunds").insert({
+    fee_collection_id: data.feeCollectionId,
+    amount: data.amount,
+    refund_mode: data.refundMode,
+    refund_reason: data.refundReason.trim(),
+    refund_date: data.refundDate,
+    processed_by: user.id,
+  });
+
+  if (error) return { ok: false, error: error.message };
+
+  return { ok: true };
+}
