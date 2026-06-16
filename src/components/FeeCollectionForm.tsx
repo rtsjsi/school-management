@@ -205,7 +205,7 @@ export default function FeeCollectionForm({
 
       const { data: paidRows } = await supabase
         .from("fee_collections")
-        .select("quarter, amount")
+        .select("quarter, amount, fee_refunds(amount)")
         .eq("student_id", form.student_id)
         .eq("academic_year", form.academic_year)
         .eq("fee_type", COLLECTION_FEE_TYPE);
@@ -214,7 +214,8 @@ export default function FeeCollectionForm({
       for (const row of paidRows ?? []) {
         const q = Number(row.quarter);
         if (q >= 1 && q <= 4) {
-          paidByQuarter[q as 1 | 2 | 3 | 4] += Number(row.amount ?? 0);
+          const refunded = ((row as any).fee_refunds ?? []).reduce((sum: number, r: any) => sum + Number(r.amount), 0);
+          paidByQuarter[q as 1 | 2 | 3 | 4] += Math.max(0, Number(row.amount ?? 0) - refunded);
         }
       }
 
@@ -404,7 +405,7 @@ export default function FeeCollectionForm({
         totalFees = totalDues;
         const { data: paidRows } = await supabase
           .from("fee_collections")
-          .select("amount, receipt_number")
+          .select("amount, receipt_number, fee_refunds(amount)")
           .eq("student_id", form.student_id)
           .eq("academic_year", form.academic_year)
           .order("receipt_number", { ascending: true });
@@ -412,7 +413,8 @@ export default function FeeCollectionForm({
         let totalPaidAsOf = 0;
         for (const r of paidRows ?? []) {
           if ((r.receipt_number ?? "") <= currentReceipt) {
-            totalPaidAsOf += Number(r.amount);
+            const refunded = ((r as any).fee_refunds ?? []).reduce((sum: number, ref: any) => sum + Number(ref.amount), 0);
+            totalPaidAsOf += Math.max(0, Number(r.amount) - refunded);
           }
         }
         outstandingAfterPayment = Math.max(0, totalDues - totalPaidAsOf);

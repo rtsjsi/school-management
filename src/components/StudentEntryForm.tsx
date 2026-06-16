@@ -237,21 +237,7 @@ export default function StudentEntryForm() {
       payload.permanent_pincode = permanent.pincode.trim() || null;
       payload.permanent_country = (permanent.country || "India").trim() || "India";
 
-      const studentName = (payload.full_name as string) ?? "";
-      if (studentName) {
-        const { data: duplicate } = await supabase
-          .from("students")
-          .select("id, full_name")
-          .ilike("full_name", studentName)
-          .limit(1)
-          .maybeSingle();
-        if (duplicate) {
-          const msg = `A student with the name "${duplicate.full_name}" already exists. Duplicate names are not allowed.`;
-          setError(msg);
-          toast({ variant: "destructive", title: "Duplicate student name", description: msg });
-          return;
-        }
-      }
+
 
       // Check unique fields: gr_number, aadhar_no, udise_id, pen_no, apaar_id
       const uniqueFieldsToCheck: { field: string; label: string; value: string }[] = [];

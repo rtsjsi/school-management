@@ -33,13 +33,15 @@ export async function GET(request: NextRequest) {
 
     const { data: collections } = await supabase
       .from("fee_collections")
-      .select("student_id, quarter, fee_type, amount")
+      .select("student_id, quarter, fee_type, amount, fee_refunds(amount)")
       .eq("academic_year", ay);
 
     const paidMap = new Map<string, number>();
     (collections ?? []).forEach((c) => {
+      const refunded = ((c as any).fee_refunds ?? []).reduce((sum: number, r: any) => sum + Number(r.amount), 0);
+      const netPaid = Number(c.amount) - refunded;
       const key = `${c.student_id}-${c.quarter}-${c.fee_type}`;
-      paidMap.set(key, (paidMap.get(key) ?? 0) + Number(c.amount));
+      paidMap.set(key, (paidMap.get(key) ?? 0) + netPaid);
     });
 
     type Defaulter = {

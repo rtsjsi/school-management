@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from("fee_collections")
       .select(
-        "id, receipt_number, amount, fee_type, quarter, academic_year, payment_mode, collection_date, collected_by, modified_by, cheque_number, cheque_bank, cheque_date, online_transaction_id, online_transaction_ref, students(full_name, standard, division, roll_number, gr_number), collector:profiles!collected_by(full_name)"
+        "id, receipt_number, amount, fee_type, quarter, academic_year, payment_mode, collection_date, collected_by, modified_by, cheque_number, cheque_bank, cheque_date, online_transaction_id, online_transaction_ref, students(full_name, standard, division, roll_number, gr_number), collector:profiles!collected_by(full_name), fee_refunds(amount)"
       );
 
     // Date range
@@ -53,7 +53,10 @@ export async function GET(request: NextRequest) {
       const n = Math.min(parseInt(limit, 10) || 20, 100);
       q = q.limit(n);
     }
-    const { data: rows } = await q;
+    const { data: rows, error } = await q;
+    if (error) {
+      console.error("Fee reports query error:", error);
+    }
 
     // Filter by standard in memory (student.standard comes from join)
     let filtered = rows ?? [];
@@ -71,6 +74,7 @@ export async function GET(request: NextRequest) {
       const col = (row as { collector?: { full_name?: string } | { full_name?: string }[] }).collector;
       const collectorProfile = Array.isArray(col) ? col[0] : col;
       const collectedByName = collectorProfile?.full_name?.trim() || null;
+      const refundedAmount = ((row as any).fee_refunds ?? []).reduce((sum: number, r: any) => sum + Number(r.amount), 0);
       return {
         id: row.id,
         receipt_number: row.receipt_number,
@@ -80,6 +84,8 @@ export async function GET(request: NextRequest) {
         student_roll_number: student?.roll_number,
         student_gr_no: student?.gr_number,
         amount: row.amount,
+        refunded_amount: refundedAmount,
+        net_amount: Number(row.amount) - refundedAmount,
         fee_type: row.fee_type,
         quarter: row.quarter,
         academic_year: row.academic_year,
@@ -101,8 +107,8 @@ export async function GET(request: NextRequest) {
       const mode = (row as { payment_mode?: string }).payment_mode ?? "unknown";
       if (!byMode[mode]) byMode[mode] = { count: 0, total: 0 };
       byMode[mode].count += 1;
-      byMode[mode].total += Number((row as { amount?: number }).amount ?? 0);
-      totalAmount += Number((row as { amount?: number }).amount ?? 0);
+      byMode[mode].total += Number((row as { net_amount?: number }).net_amount ?? 0);
+      totalAmount += Number((row as { net_amount?: number }).net_amount ?? 0);
     }
 
     return NextResponse.json({
