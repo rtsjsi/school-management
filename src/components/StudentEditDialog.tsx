@@ -74,10 +74,9 @@ function StudentEditFormInline({ student, onSaved, onCancel }: StudentEditFormPr
 
 
 
-      // Check unique fields: gr_number, aadhar_no, udise_id, pen_no, apaar_id (excluding current student)
+      // Check unique fields: gr_number, udise_id, pen_no, apaar_id (excluding current student)
       const uniqueFieldsToCheck: { field: string; label: string; value: string }[] = [];
       if (payload.gr_number) uniqueFieldsToCheck.push({ field: "gr_number", label: "GR Number", value: payload.gr_number as string });
-      if (payload.aadhar_no) uniqueFieldsToCheck.push({ field: "aadhar_no", label: "Aadhar Number", value: payload.aadhar_no as string });
       if (payload.udise_id) uniqueFieldsToCheck.push({ field: "udise_id", label: "UDISE ID", value: payload.udise_id as string });
       if (payload.pen_no) uniqueFieldsToCheck.push({ field: "pen_no", label: "PEN Number", value: payload.pen_no as string });
       if (payload.apaar_id) uniqueFieldsToCheck.push({ field: "apaar_id", label: "APAAR ID", value: payload.apaar_id as string });
@@ -86,7 +85,7 @@ function StudentEditFormInline({ student, onSaved, onCancel }: StudentEditFormPr
         const orFilter = uniqueFieldsToCheck.map(item => `${item.field}.eq."${item.value.replace(/"/g, '\\"')}"`).join(",");
         const { data: dupStudents, error: dupError } = await supabase
           .from("students")
-          .select("id, full_name, gr_number, aadhar_no, udise_id, pen_no, apaar_id")
+          .select("id, full_name, gr_number, udise_id, pen_no, apaar_id")
           .neq("id", student.id)
           .or(orFilter);
 
