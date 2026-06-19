@@ -520,6 +520,7 @@ export function StudentViewDialog({ student, open: controlledOpen, onOpenChange:
   const setOpen = isControlled ? controlledOnOpenChange : setLocalOpen;
   const [exporting, setExporting] = useState(false);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [exitInfo, setExitInfo] = useState<{ exit_date?: string | null; exit_reason?: string | null; exit_notes?: string | null } | null>(null);
   const school = useSchoolSettings();
   const supabase = useMemo(() => createClient(), []);
 
@@ -545,8 +546,37 @@ export function StudentViewDialog({ student, open: controlledOpen, onOpenChange:
         setPhotoUrl(urlData.signedUrl);
       }
     })();
+
+    // Fetch exit info if inactive
+    if (student.status !== "active") {
+      (async () => {
+        const { data: enrollRec } = await supabase
+          .from("student_enrollments")
+          .select("exit_date, exit_reason, exit_notes")
+          .eq("student_id", student.id)
+          .not("status", "eq", "active")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        if (!cancelled) {
+          if (enrollRec && enrollRec.exit_date) {
+            setExitInfo(enrollRec);
+          } else {
+            setExitInfo({
+              exit_date: student.exit_date,
+              exit_reason: student.exit_reason,
+              exit_notes: student.exit_notes,
+            });
+          }
+        }
+      })();
+    } else {
+      setExitInfo(null);
+    }
+
     return () => { cancelled = true; };
-  }, [open, student.id, supabase]);
+  }, [open, student.id, student.status, student.exit_date, student.exit_reason, student.exit_notes, supabase]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -844,7 +874,7 @@ export function StudentViewDialog({ student, open: controlledOpen, onOpenChange:
           )}
 
           {/* ── Exit Info (if inactive) ── */}
-          {student.status === "inactive" && student.exit_date && (
+          {student.status !== "active" && exitInfo && exitInfo.exit_date && (
             <>
               <hr className="border-border/40" />
               <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30 p-4 space-y-2">
@@ -853,9 +883,9 @@ export function StudentViewDialog({ student, open: controlledOpen, onOpenChange:
                   <h3 className="text-sm font-semibold text-red-700 dark:text-red-400">Exit Information</h3>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
-                  <InfoRow label="Exit Date" value={fmtDate(student.exit_date)} />
-                  <InfoRow label="Reason" value={cap(student.exit_reason)} />
-                  {student.exit_notes && <InfoRow label="Notes" value={student.exit_notes} />}
+                  <InfoRow label="Exit Date" value={fmtDate(exitInfo.exit_date)} />
+                  <InfoRow label="Reason" value={cap(exitInfo.exit_reason)} />
+                  {exitInfo.exit_notes && <InfoRow label="Notes" value={exitInfo.exit_notes} />}
                 </div>
               </div>
             </>

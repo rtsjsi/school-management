@@ -44,6 +44,7 @@ import { StudentEditDialog } from "@/components/StudentEditDialog";
 import { StudentViewDialog } from "@/components/StudentViewDialog";
 import { DatePicker } from "@/components/ui/date-picker";
 import { computeCompleteness } from "@/lib/student-completeness";
+import { reenrollStudent } from "@/app/(workspace)/dashboard/students/actions";
 
 type StudentRow = {
   id: string;
@@ -140,6 +141,14 @@ type ExitFormState = {
   exit_date: string;
   reason: string;
   notes: string;
+};
+
+type ReenrollFormState = {
+  reenroll_date: string;
+  reason: string;
+  standard: string;
+  division: string;
+  roll_number: string;
 };
 
 function StudentEnrolmentsDialog({
@@ -375,9 +384,6 @@ function StudentExitDialog({
         .from("students")
         .update({
           status: "inactive",
-          exit_date: form.exit_date || today,
-          exit_reason: form.reason || null,
-          exit_notes: form.notes || null,
         })
         .eq("id", studentId);
       if (updErr) {
@@ -394,7 +400,12 @@ function StudentExitDialog({
 
       await supabase
         .from("student_enrollments")
-        .update({ status: enrollmentStatus })
+        .update({ 
+          status: enrollmentStatus,
+          exit_date: form.exit_date || today,
+          exit_reason: form.reason || null,
+          exit_notes: form.notes || null,
+        })
         .eq("student_id", studentId)
         .eq("status", "active");
 
@@ -494,6 +505,163 @@ function StudentExitDialog({
   );
 }
 
+function StudentReenrollDialog({
+  studentId,
+  studentName,
+  standards,
+  divisions,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  onReenrolled,
+}: {
+  studentId: string;
+  studentName: string;
+  standards: { id: string; name: string }[];
+  divisions: { id: string; name: string }[];
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onReenrolled?: () => void;
+}) {
+  const [localOpen, setLocalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : localOpen;
+  const setOpen = isControlled ? controlledOnOpenChange : setLocalOpen;
+
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const today = new Date().toISOString().slice(0, 10);
+  const [form, setForm] = useState<ReenrollFormState>({
+    reenroll_date: today,
+    reason: "",
+    standard: "",
+    division: "",
+    roll_number: "",
+  });
+
+  const handleSubmit = async () => {
+    if (!form.standard || !form.division || !form.reason) {
+      setError("Please select a standard, division, and provide a reason.");
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+    try {
+      const rollNo = form.roll_number ? parseInt(form.roll_number, 10) : null;
+      const res = await reenrollStudent(
+        studentId,
+        form.standard,
+        form.division,
+        isNaN(rollNo as number) ? null : rollNo,
+        form.reenroll_date || today,
+        form.reason
+      );
+      if (!res.ok) {
+        setError(res.error || "Failed to re-enroll student");
+        return;
+      }
+      setOpen?.(false);
+      if (onReenrolled) onReenrolled();
+    } catch (e) {
+      setError("An unexpected error occurred.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(next) => !submitting && setOpen?.(next)}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="text-base">Re-enroll student</DialogTitle>
+          <DialogDescription>
+            Reactivate <span className="font-semibold text-foreground">{studentName}</span> by assigning them to a class for the current academic year.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="reenroll_date">Re-enrollment date</Label>
+              <DatePicker value={form.reenroll_date} onChange={(isoDate) => setForm((p) => ({ ...p, reenroll_date: isoDate }))} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="reenroll_reason">Reason</Label>
+              <Input
+                id="reenroll_reason"
+                placeholder="e.g. Returned to school"
+                value={form.reason}
+                onChange={(e) => setForm((p) => ({ ...p, reason: e.target.value }))}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="reenroll_standard">Standard</Label>
+              <Select value={form.standard} onValueChange={(v) => setForm((p) => ({ ...p, standard: v }))}>
+                <SelectTrigger id="reenroll_standard">
+                  <SelectValue placeholder="Select standard" />
+                </SelectTrigger>
+                <SelectContent>
+                  {standards.map((s) => (
+                    <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="reenroll_division">Division</Label>
+              <Select value={form.division} onValueChange={(v) => setForm((p) => ({ ...p, division: v }))}>
+                <SelectTrigger id="reenroll_division">
+                  <SelectValue placeholder="Select division" />
+                </SelectTrigger>
+                <SelectContent>
+                  {divisions.map((d) => (
+                    <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="reenroll_roll">Roll Number (Optional)</Label>
+            <Input
+              id="reenroll_roll"
+              type="number"
+              placeholder="Enter roll number"
+              value={form.roll_number}
+              onChange={(e) => setForm((p) => ({ ...p, roll_number: e.target.value }))}
+            />
+          </div>
+          {error && (
+            <p className="text-xs text-destructive bg-destructive/10 rounded-md px-2 py-1.5">
+              {error}
+            </p>
+          )}
+          <div className="flex justify-end gap-2 pt-1">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setOpen?.(false)}
+              disabled={submitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              className="bg-green-600 hover:bg-green-700 text-white"
+              onClick={handleSubmit}
+              disabled={submitting}
+            >
+              {submitting ? "Saving…" : "Confirm re-enrollment"}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 type AllowedClassNames = { standardName: string; divisionName: string }[];
 
 export function ManageStudentsList({
@@ -527,6 +695,7 @@ export function ManageStudentsList({
   const [editOpen, setEditOpen] = useState(false);
   const [enrolmentOpen, setEnrolmentOpen] = useState(false);
   const [exitOpen, setExitOpen] = useState(false);
+  const [reenrollOpen, setReenrollOpen] = useState(false);
 
   // Pagination states
   const [page, setPage] = useState(1);
@@ -964,6 +1133,18 @@ export function ManageStudentsList({
                                     <LogOut className="h-3.5 w-3.5 text-destructive" />
                                     <span>Exit Student</span>
                                   </DropdownMenuItem>
+                                  {s.status !== "active" && (
+                                    <DropdownMenuItem
+                                      className="gap-2 text-green-600 focus:text-green-700 focus:bg-green-50"
+                                      onClick={() => {
+                                        setSelectedStudent(s);
+                                        setReenrollOpen(true);
+                                      }}
+                                    >
+                                      <UserPlus className="h-3.5 w-3.5" />
+                                      <span>Re-enroll Student</span>
+                                    </DropdownMenuItem>
+                                  )}
                                 </>
                               )}
                             </DropdownMenuContent>
@@ -1038,6 +1219,20 @@ export function ManageStudentsList({
                                     <LogOut className="h-3 w-3" />
                                     Exit
                                   </Button>
+                                  {s.status !== "active" && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="gap-1 h-8 text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200"
+                                      onClick={() => {
+                                        setSelectedStudent(s);
+                                        setReenrollOpen(true);
+                                      }}
+                                    >
+                                      <UserPlus className="h-3 w-3" />
+                                      Re-enroll
+                                    </Button>
+                                  )}
                                 </>
                               )}
                             </div>
@@ -1146,6 +1341,20 @@ export function ManageStudentsList({
           open={exitOpen}
           onOpenChange={setExitOpen}
           onExited={() => {
+            setReloadKey((k) => k + 1);
+          }}
+        />
+      )}
+
+      {selectedStudent && (
+        <StudentReenrollDialog
+          studentId={selectedStudent.id}
+          studentName={selectedStudent.full_name}
+          standards={standards}
+          divisions={divisions}
+          open={reenrollOpen}
+          onOpenChange={setReenrollOpen}
+          onReenrolled={() => {
             setReloadKey((k) => k + 1);
           }}
         />
