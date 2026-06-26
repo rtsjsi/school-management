@@ -223,7 +223,7 @@ export default function FeeRefundReport() {
             {preset === "day-wise" && (
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold uppercase text-muted-foreground">Date</label>
-                <DatePicker date={singleDate} onSelect={(d) => setSingleDate(d ?? today)} />
+                <DatePicker value={singleDate} onChange={setSingleDate} />
               </div>
             )}
 
@@ -243,11 +243,11 @@ export default function FeeRefundReport() {
               <>
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold uppercase text-muted-foreground">From Date</label>
-                  <DatePicker date={dateFrom} onSelect={(d) => setDateFrom(d ?? today)} />
+                  <DatePicker value={dateFrom} onChange={setDateFrom} />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold uppercase text-muted-foreground">To Date</label>
-                  <DatePicker date={dateTo} onSelect={(d) => setDateTo(d ?? today)} />
+                  <DatePicker value={dateTo} onChange={setDateTo} />
                 </div>
               </>
             )}
