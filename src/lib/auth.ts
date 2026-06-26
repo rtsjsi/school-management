@@ -249,8 +249,8 @@ export function canAccessAtCurrentTime(user: AuthUser | null): boolean {
     return false;
   }
   
-  // Block outside 8 AM - 5 PM
-  if (hour < 8 || hour >= 17) {
+  // Block outside 8 AM - 4 PM
+  if (hour < 8 || hour >= 16) {
     return false;
   }
   
