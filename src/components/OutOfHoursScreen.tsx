@@ -35,7 +35,7 @@ export function OutOfHoursScreen() {
           <h1 className="text-2xl font-bold tracking-tight">School is Closed</h1>
           <p className="text-muted-foreground">
             You cannot access the application outside of working hours. 
-            The system is available from <strong>Monday to Friday, 8:00 AM to 5:00 PM</strong>.
+            The system is available from <strong>Monday to Friday, 8:00 AM to 4:00 PM</strong>.
           </p>
         </div>
 
