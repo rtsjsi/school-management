@@ -269,9 +269,10 @@ async function main() {
   const truncateSql = `TRUNCATE TABLE ${PUBLIC_TABLES.map((t) => `public.${t}`).join(", ")} RESTART IDENTITY CASCADE;`;
   runSupabase(["db", "query", "--linked", truncateSql]);
   
-  console.log("Unlinking to maintain stateless environment boundary...");
-  runSupabase(["unlink"]);
-  console.log("  Dev flushed and unlinked.");
+  console.log("Disabling triggers for clean import...");
+  const disableSql = PUBLIC_TABLES.map((t) => `ALTER TABLE public.${t} DISABLE TRIGGER ALL;`).join(" ");
+  runSupabase(["db", "query", "--linked", disableSql]);
+  console.log("  Dev flushed and triggers disabled.");
 
   // ── STEP 3: Import into dev ───────────────────────────────────────────
   console.log("");
@@ -279,7 +280,8 @@ async function main() {
   console.log("STEP 3: Import data into dev");
   console.log("=".repeat(60));
 
-  const summary = {};
+  let summary = {};
+  try {
 
   for (const qualifiedTable of INSERT_ORDER) {
     const rows = readJson(path.join(exportDir, `${qualifiedTable}.json`));
@@ -372,8 +374,16 @@ async function main() {
   console.log(`CLONE COMPLETE. rows=${totalRows}, inserted=${totalOk}, failed=${totalFail}`);
   console.log("=".repeat(60));
 
-  writeJson(path.join(exportDir, "_clone-result.json"), summary);
-  console.log(`Backup saved to: ${exportDir}`);
+    writeJson(path.join(exportDir, "_clone-result.json"), summary);
+    console.log(`Backup saved to: ${exportDir}`);
+  } finally {
+    console.log("\nRe-enabling triggers...");
+    const enableSql = PUBLIC_TABLES.map((t) => `ALTER TABLE public.${t} ENABLE TRIGGER ALL;`).join(" ");
+    try { runSupabase(["db", "query", "--linked", enableSql]); } catch(e) { console.error("Failed to enable triggers", e.message); }
+
+    console.log("Unlinking to maintain stateless environment boundary...");
+    try { runSupabase(["unlink"]); } catch(e) { console.error("Failed to unlink", e.message); }
+  }
 }
 
 main().catch((err) => {
