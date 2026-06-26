@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
-import { canAccessDashboard, getUser } from "@/lib/auth";
+import { canAccessDashboard, getUser, canAccessAtCurrentTime } from "@/lib/auth";
 import { AppSidebar } from "@/components/AppSidebar";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { InactivitySignOut } from "@/components/InactivitySignOut";
+import { OutOfHoursScreen } from "@/components/OutOfHoursScreen";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,10 @@ export default async function DashboardLayout({
 
   if (!canAccessDashboard(user)) {
     redirect("/login");
+  }
+
+  if (!canAccessAtCurrentTime(user)) {
+    return <OutOfHoursScreen />;
   }
 
   return (

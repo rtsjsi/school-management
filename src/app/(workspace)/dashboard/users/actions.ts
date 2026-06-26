@@ -89,3 +89,21 @@ export async function toggleUserStatus(userId: string, isActive: boolean): Promi
 
   return { ok: true };
 }
+
+export async function toggleUserOutOfHoursException(userId: string, outOfHoursException: boolean): Promise<ToggleUserStatusResult> {
+  const admin = createAdminClient();
+  if (!admin) {
+    return { ok: false, error: "Server configuration error." };
+  }
+
+  const { error } = await admin
+    .from("profiles")
+    .update({ out_of_hours_exception: outOfHoursException })
+    .eq("id", userId);
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  return { ok: true };
+}
