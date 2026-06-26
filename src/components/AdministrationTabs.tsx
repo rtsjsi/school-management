@@ -60,7 +60,7 @@ export function AdministrationTabs({
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("active");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [isPending, startTransition] = useTransition();
 
   const [localProfiles, setLocalProfiles] = useState(profiles);
