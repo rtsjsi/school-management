@@ -30,7 +30,7 @@ import { UserResetPasswordDialog } from "@/components/UserResetPasswordDialog";
 import { UserClassAccessDialog } from "@/components/UserClassAccessDialog";
 import { SchoolSettingsForm } from "@/components/SchoolSettingsForm";
 import { AcademicYearsManager } from "@/components/AcademicYearsManager";
-import { toggleUserStatus } from "@/app/(workspace)/dashboard/users/actions";
+import { toggleUserStatus, toggleUserOutOfHoursException } from "@/app/(workspace)/dashboard/users/actions";
 import { Plus } from "lucide-react";
 
 type SchoolSettingsForForm = {
@@ -44,7 +44,7 @@ type SchoolSettingsForForm = {
   principalSignatureUrl: string | null;
 } | null;
 
-type ProfileRow = { id: string; email: string | null; full_name: string | null; role: string | null; created_at: string; is_active: boolean };
+type ProfileRow = { id: string; email: string | null; full_name: string | null; role: string | null; created_at: string; is_active: boolean; out_of_hours_exception?: boolean; };
 
 export function AdministrationTabs({
   defaultTab,
@@ -60,7 +60,7 @@ export function AdministrationTabs({
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("active");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [isPending, startTransition] = useTransition();
 
   const [localProfiles, setLocalProfiles] = useState(profiles);
@@ -78,6 +78,19 @@ export function AdministrationTabs({
     
     startTransition(async () => {
       await toggleUserStatus(userId, newStatus);
+      router.refresh();
+    });
+  };
+
+  const handleToggleOutOfHours = async (userId: string, currentStatus: boolean) => {
+    const newStatus = !currentStatus;
+    // Optimistic update
+    setLocalProfiles((prev) => 
+      prev.map((p) => (p.id === userId ? { ...p, out_of_hours_exception: newStatus } : p))
+    );
+    
+    startTransition(async () => {
+      await toggleUserOutOfHoursException(userId, newStatus);
       router.refresh();
     });
   };
@@ -184,6 +197,15 @@ export function AdministrationTabs({
                                  onCheckedChange={() => handleToggleActive(p.id, p.is_active)}
                                />
                             </div>
+                            {isPrincipal && (
+                              <div className="flex items-center gap-2 mr-2">
+                                 <span className="text-xs text-muted-foreground">Out of hours:</span>
+                                 <Switch 
+                                   checked={p.out_of_hours_exception || false} 
+                                   onCheckedChange={() => handleToggleOutOfHours(p.id, p.out_of_hours_exception || false)}
+                                 />
+                              </div>
+                            )}
                             <UserClassAccessDialog
                               profileId={p.id}
                               displayName={p.full_name || p.email || "User"}

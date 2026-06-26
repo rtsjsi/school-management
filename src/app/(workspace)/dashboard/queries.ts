@@ -95,7 +95,7 @@ export async function fetchDashboardData(user: AuthUser, activeYearName: string 
     newAdmissionsPromise,
     supabase
       .from("fee_collections")
-      .select("amount, fee_refunds(amount)")
+      .select("amount, fee_refunds(amount, status)")
       .gte("collection_date", monthStart)
       .lte("collection_date", monthEnd),
     supabase
@@ -123,7 +123,7 @@ export async function fetchDashboardData(user: AuthUser, activeYearName: string 
       ? (() => {
           let q = supabase
             .from("fee_collections")
-            .select("student_id, quarter, fee_type, amount, fee_refunds(amount)")
+            .select("student_id, quarter, fee_type, amount, fee_refunds(amount, status)")
             .eq("academic_year", activeYearName);
           if (studentIdFilter && studentIdFilter.length > 0) q = q.in("student_id", studentIdFilter);
           return q;
@@ -144,7 +144,7 @@ export async function fetchDashboardData(user: AuthUser, activeYearName: string 
 
   const feeCollected = (feeCollectedResult.data ?? []).reduce(
     (sum, r) => {
-      const refunded = ((r as any).fee_refunds ?? []).reduce((s: number, ref: any) => s + Number(ref.amount), 0);
+      const refunded = ((r as any).fee_refunds ?? []).reduce((s: number, ref: any) => ref.status === 'approved' ? s + Number(ref.amount) : s, 0);
       return sum + Math.max(0, Number(r.amount ?? 0) - refunded);
     }, 0
   );
@@ -163,10 +163,10 @@ export async function fetchDashboardData(user: AuthUser, activeYearName: string 
       quarter: number;
       fee_type: string;
       amount: number;
-      fee_refunds?: { amount: number }[];
+      fee_refunds?: { amount: number; status: string }[];
     }[];
     outstandingCollections.forEach((c) => {
-      const refunded = (c.fee_refunds ?? []).reduce((sum, r) => sum + Number(r.amount), 0);
+      const refunded = (c.fee_refunds ?? []).reduce((sum, r) => r.status === 'approved' ? sum + Number(r.amount) : sum, 0);
       const netAmount = Math.max(0, Number(c.amount ?? 0) - refunded);
       const key = `${c.student_id}-${c.quarter}-${c.fee_type}`;
       paidMap.set(key, (paidMap.get(key) ?? 0) + netAmount);

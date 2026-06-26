@@ -21,7 +21,7 @@ export default async function AdministrationPage({
 
   const admin = createAdminClient();
   const profiles = admin
-    ? (await admin.from("profiles").select("id, email, full_name, role, created_at, is_active").order("created_at", { ascending: false })).data ?? []
+    ? (await admin.from("profiles").select("id, email, full_name, role, created_at, is_active, out_of_hours_exception").order("created_at", { ascending: false })).data ?? []
     : [];
   const initialSettings = await getSchoolSettingsWithUrls();
 
@@ -29,7 +29,7 @@ export default async function AdministrationPage({
     <div className="space-y-8">
       <AdministrationTabs
         defaultTab={validTab}
-        profiles={profiles as { id: string; email: string | null; full_name: string | null; role: string | null; created_at: string; is_active: boolean }[]}
+        profiles={profiles as { id: string; email: string | null; full_name: string | null; role: string | null; created_at: string; is_active: boolean; out_of_hours_exception?: boolean }[]}
         initialSettings={initialSettings}
         isPrincipal={isPrincipal(user)}
       />

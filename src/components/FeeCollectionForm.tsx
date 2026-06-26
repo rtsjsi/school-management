@@ -203,21 +203,19 @@ export default function FeeCollectionForm({
         }
       }
 
-      const { data: paidRows } = await supabase
+      const { data: collections } = await supabase
         .from("fee_collections")
-        .select("quarter, amount, fee_refunds(amount)")
+        .select("quarter, amount, fee_refunds(amount, status)")
         .eq("student_id", form.student_id)
         .eq("academic_year", form.academic_year)
         .eq("fee_type", COLLECTION_FEE_TYPE);
 
       const paidByQuarter: Record<1 | 2 | 3 | 4, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
-      for (const row of paidRows ?? []) {
-        const q = Number(row.quarter);
-        if (q >= 1 && q <= 4) {
-          const refunded = ((row as any).fee_refunds ?? []).reduce((sum: number, r: any) => sum + Number(r.amount), 0);
-          paidByQuarter[q as 1 | 2 | 3 | 4] += Math.max(0, Number(row.amount ?? 0) - refunded);
-        }
-      }
+      (collections ?? []).forEach((row) => {
+        const q = row.quarter;
+        const refunded = ((row as any).fee_refunds ?? []).reduce((sum: number, r: any) => r.status === 'approved' ? sum + Number(r.amount) : sum, 0);
+        paidByQuarter[q as 1 | 2 | 3 | 4] += Math.max(0, Number(row.amount ?? 0) - refunded);
+      });
 
       setQuarterSummary({
         1: { net: netByQuarter[1], paid: paidByQuarter[1] },
@@ -403,20 +401,20 @@ export default function FeeCollectionForm({
         const items = (structure.fee_structure_items as { fee_type: string; quarter: number; amount: number }[]) ?? [];
         const totalDues = annualNetFeeLiability(items, selectedStudent?.fee_concession_amount ?? null);
         totalFees = totalDues;
-        const { data: paidRows } = await supabase
+        const { data: previousCols } = await supabase
           .from("fee_collections")
-          .select("amount, receipt_number, fee_refunds(amount)")
+          .select("amount, receipt_number, fee_refunds(amount, status)")
           .eq("student_id", form.student_id)
           .eq("academic_year", form.academic_year)
           .order("receipt_number", { ascending: true });
         const currentReceipt = receiptNumber ?? "";
         let totalPaidAsOf = 0;
-        for (const r of paidRows ?? []) {
+        (previousCols ?? []).forEach((r) => {
           if ((r.receipt_number ?? "") <= currentReceipt) {
-            const refunded = ((r as any).fee_refunds ?? []).reduce((sum: number, ref: any) => sum + Number(ref.amount), 0);
+            const refunded = ((r as any).fee_refunds ?? []).reduce((sum: number, ref: any) => ref.status === 'approved' ? sum + Number(ref.amount) : sum, 0);
             totalPaidAsOf += Math.max(0, Number(r.amount) - refunded);
           }
-        }
+        });
         outstandingAfterPayment = Math.max(0, totalDues - totalPaidAsOf);
       }
 

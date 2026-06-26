@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getUser, canAccessFees, canEditFees } from "@/lib/auth";
+import { getUser, canAccessFees, canEditFees, isPrincipal } from "@/lib/auth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import FeeStructureForm from "@/components/FeeStructureForm";
 import { FeeStructureListWithFilters } from "@/components/FeeStructureListWithFilters";
@@ -7,6 +7,8 @@ import FeeCollectionForm from "@/components/FeeCollectionForm";
 import FeeCollectionList from "@/components/FeeCollectionList";
 import OutstandingReport from "@/components/OutstandingReport";
 import FeeCollectionReport from "@/components/FeeCollectionReport";
+import FeeRefundReport from "@/components/FeeRefundReport";
+import { RefundApprovals } from "@/components/RefundApprovals";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function FeesPage() {
@@ -31,6 +33,9 @@ export default async function FeesPage() {
           <TabsTrigger value="collection">Collection</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
           <TabsTrigger value="structure">Structure</TabsTrigger>
+          {isPrincipal(user) && (
+            <TabsTrigger value="approvals">Approvals</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="collection" className="space-y-4 sm:space-y-6">
@@ -49,12 +54,15 @@ export default async function FeesPage() {
 
         <TabsContent value="reports" className="space-y-4 sm:space-y-6">
           <Tabs defaultValue="collection-report" className="space-y-3 sm:space-y-4">
-            <TabsList className="flex flex-nowrap gap-1 w-full">
+            <TabsList className="flex flex-nowrap gap-1 w-full overflow-x-auto">
               <TabsTrigger value="collection-report">
                 Collection Report
               </TabsTrigger>
               <TabsTrigger value="outstanding-report">
                 Outstanding Report
+              </TabsTrigger>
+              <TabsTrigger value="refund-report">
+                Refund Report
               </TabsTrigger>
             </TabsList>
             <p className="text-[11px] text-muted-foreground sm:text-xs">
@@ -66,6 +74,9 @@ export default async function FeesPage() {
             <TabsContent value="outstanding-report" className="space-y-4 sm:space-y-6">
               <OutstandingReport />
             </TabsContent>
+            <TabsContent value="refund-report" className="space-y-4 sm:space-y-6">
+              <FeeRefundReport />
+            </TabsContent>
           </Tabs>
         </TabsContent>
 
@@ -73,6 +84,12 @@ export default async function FeesPage() {
           {canEdit && <FeeStructureForm />}
           <FeeStructureListWithFilters canEdit={canEdit} />
         </TabsContent>
+
+        {isPrincipal(user) && (
+          <TabsContent value="approvals" className="space-y-4 sm:space-y-6">
+            <RefundApprovals />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

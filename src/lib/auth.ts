@@ -30,6 +30,7 @@ export type AuthUser = {
   email: string | null;
   role: UserRole;
   fullName: string | null;
+  outOfHoursException: boolean;
 };
 
 // Cache getUser per request so multiple calls don't query Supabase multiple times
@@ -62,7 +63,7 @@ export const getUser = cache(async (): Promise<AuthUser | null> => {
     error: errorById,
   } = await client
     .from("profiles")
-    .select("role, full_name, is_active")
+    .select("role, full_name, is_active, out_of_hours_exception")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -74,7 +75,7 @@ export const getUser = cache(async (): Promise<AuthUser | null> => {
       error: errorByEmail,
     } = await client
       .from("profiles")
-      .select("role, full_name, is_active")
+      .select("role, full_name, is_active, out_of_hours_exception")
       .eq("email", user.email)
       .maybeSingle();
 
@@ -140,6 +141,7 @@ export const getUser = cache(async (): Promise<AuthUser | null> => {
     email: user.email ?? null,
     role,
     fullName,
+    outOfHoursException: profile?.out_of_hours_exception ?? false,
   };
 });
 
@@ -212,4 +214,45 @@ export function isAuditor(user: AuthUser | null): boolean {
 
 export function canViewFinance(user: AuthUser | null): boolean {
   return isAdminOrAbove(user) || isAuditor(user);
+}
+
+/** Check if user is allowed to access the application at the current time */
+export function canAccessAtCurrentTime(user: AuthUser | null): boolean {
+  if (!user) return false;
+  
+  // Principal and users with the exception can always access
+  if (user.role === "principal" || user.outOfHoursException) {
+    return true;
+  }
+
+  // Get current time in IST (Indian Standard Time)
+  const now = new Date();
+  
+  // Format to get weekday and hour
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Kolkata',
+    weekday: 'short',
+    hour: 'numeric',
+    hourCycle: 'h23' // 0-23
+  });
+  
+  const parts = formatter.formatToParts(now);
+  const weekday = parts.find(p => p.type === 'weekday')?.value;
+  const hourStr = parts.find(p => p.type === 'hour')?.value;
+  
+  if (!weekday || !hourStr) return true; // Fallback if formatting fails
+  
+  const hour = parseInt(hourStr, 10);
+  
+  // Block weekends
+  if (weekday === 'Sat' || weekday === 'Sun') {
+    return false;
+  }
+  
+  // Block outside 8 AM - 4 PM
+  if (hour < 8 || hour >= 16) {
+    return false;
+  }
+  
+  return true;
 }

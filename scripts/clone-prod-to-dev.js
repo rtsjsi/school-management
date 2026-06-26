@@ -108,7 +108,8 @@ function readJson(filePath) {
 
 function runSupabase(args) {
   const cmd = `npx supabase ${args.map((a) => (/\s/.test(a) ? `"${a}"` : a)).join(" ")}`;
-  const result = spawnSync(cmd, { cwd: repoRoot, stdio: "inherit", shell: true, encoding: "utf8" });
+  const env = { ...process.env, SUPABASE_ACCESS_TOKEN: process.env.SUPABASE_ACCESS_TOKEN || parseEnvFile(path.join(repoRoot, ".env.development")).SUPABASE_ACCESS_TOKEN };
+  const result = spawnSync(cmd, { cwd: repoRoot, env, stdio: "inherit", shell: true, encoding: "utf8" });
   if (result.status !== 0) throw new Error(`Supabase CLI failed: ${cmd}`);
 }
 
@@ -187,12 +188,12 @@ async function main() {
   const prodKey = envMain.SUPABASE_SERVICE_ROLE_KEY;
   const devUrl = envDev.NEXT_PUBLIC_SUPABASE_URL;
   const devKey = envDev.SUPABASE_SERVICE_ROLE_KEY;
-  const devRef = envDev.SUPABASE_PROJECT_REF;
+  const devRef = envDev.SUPABASE_PROJECT_ID;
   const devDbPassword = process.env.SUPABASE_DB_PASSWORD_DEVELOPMENT || envDev.SUPABASE_DB_PASSWORD;
 
   if (!prodUrl || !prodKey) throw new Error("Missing prod API URL / service role key in .env.main");
   if (!devUrl || !devKey) throw new Error("Missing dev API URL / service role key in .env.development");
-  if (!devRef) throw new Error("Missing SUPABASE_PROJECT_REF in .env.development");
+  if (!devRef) throw new Error("Missing SUPABASE_PROJECT_ID in .env.development");
   if (!devDbPassword) throw new Error("Missing SUPABASE_DB_PASSWORD_DEVELOPMENT env var or SUPABASE_DB_PASSWORD in .env.development");
 
   const prod = createClient(prodUrl, prodKey, { auth: { persistSession: false } });
@@ -267,7 +268,11 @@ async function main() {
   console.log("Flushing public tables...");
   const truncateSql = `TRUNCATE TABLE ${PUBLIC_TABLES.map((t) => `public.${t}`).join(", ")} RESTART IDENTITY CASCADE;`;
   runSupabase(["db", "query", "--linked", truncateSql]);
-  console.log("  Dev flushed.");
+  
+  console.log("Disabling triggers for clean import...");
+  const disableSql = PUBLIC_TABLES.map((t) => `ALTER TABLE public.${t} DISABLE TRIGGER USER;`).join(" ");
+  runSupabase(["db", "query", "--linked", disableSql]);
+  console.log("  Dev flushed and triggers disabled.");
 
   // ── STEP 3: Import into dev ───────────────────────────────────────────
   console.log("");
@@ -275,7 +280,8 @@ async function main() {
   console.log("STEP 3: Import data into dev");
   console.log("=".repeat(60));
 
-  const summary = {};
+  let summary = {};
+  try {
 
   for (const qualifiedTable of INSERT_ORDER) {
     const rows = readJson(path.join(exportDir, `${qualifiedTable}.json`));
@@ -368,8 +374,16 @@ async function main() {
   console.log(`CLONE COMPLETE. rows=${totalRows}, inserted=${totalOk}, failed=${totalFail}`);
   console.log("=".repeat(60));
 
-  writeJson(path.join(exportDir, "_clone-result.json"), summary);
-  console.log(`Backup saved to: ${exportDir}`);
+    writeJson(path.join(exportDir, "_clone-result.json"), summary);
+    console.log(`Backup saved to: ${exportDir}`);
+  } finally {
+    console.log("\nRe-enabling triggers...");
+    const enableSql = PUBLIC_TABLES.map((t) => `ALTER TABLE public.${t} ENABLE TRIGGER USER;`).join(" ");
+    try { runSupabase(["db", "query", "--linked", enableSql]); } catch(e) { console.error("Failed to enable triggers", e.message); }
+
+    console.log("Unlinking to maintain stateless environment boundary...");
+    try { runSupabase(["unlink"]); } catch(e) { console.error("Failed to unlink", e.message); }
+  }
 }
 
 main().catch((err) => {
