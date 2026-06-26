@@ -108,7 +108,8 @@ function readJson(filePath) {
 
 function runSupabase(args) {
   const cmd = `npx supabase ${args.map((a) => (/\s/.test(a) ? `"${a}"` : a)).join(" ")}`;
-  const result = spawnSync(cmd, { cwd: repoRoot, stdio: "inherit", shell: true, encoding: "utf8" });
+  const env = { ...process.env, SUPABASE_ACCESS_TOKEN: process.env.SUPABASE_ACCESS_TOKEN || parseEnvFile(path.join(repoRoot, ".env.development")).SUPABASE_ACCESS_TOKEN };
+  const result = spawnSync(cmd, { cwd: repoRoot, env, stdio: "inherit", shell: true, encoding: "utf8" });
   if (result.status !== 0) throw new Error(`Supabase CLI failed: ${cmd}`);
 }
 
