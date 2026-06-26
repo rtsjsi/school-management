@@ -90,7 +90,8 @@ type ReportRow = {
   student_gr_no?: string;
   amount: number;
   refunded_amount?: number;
-  net_amount?: number;
+  pending_refund_amount?: number;
+  net_amount: number;
   fee_type: string;
   quarter: number;
   academic_year: string;
@@ -814,8 +815,13 @@ export default function FeeCollectionReport() {
                           <TableCell>
                             <div>{Number(row.amount).toLocaleString("en-IN")}</div>
                             {row.refunded_amount ? (
-                              <Badge variant="outline" className="text-[10px] text-destructive bg-destructive/5 py-0 mt-0.5 font-normal">
+                              <Badge variant="outline" className="text-[10px] text-destructive bg-destructive/5 py-0 mt-0.5 font-normal block w-fit">
                                 Refunded: ₹{row.refunded_amount.toLocaleString("en-IN")}
+                              </Badge>
+                            ) : null}
+                            {row.pending_refund_amount ? (
+                              <Badge variant="outline" className="text-[10px] text-orange-600 bg-orange-50 border-orange-200 py-0 mt-0.5 font-normal block w-fit">
+                                Pending Refund: ₹{row.pending_refund_amount.toLocaleString("en-IN")}
                               </Badge>
                             ) : null}
                           </TableCell>
@@ -834,7 +840,7 @@ export default function FeeCollectionReport() {
                               <Button size="sm" variant="ghost" className="h-7 w-7 p-0 sm:h-8 sm:w-8" onClick={() => printReceipt(row)} aria-label="Print receipt">
                                 <Printer className="h-3.5 w-3.5" />
                               </Button>
-                              {(!row.refunded_amount || row.refunded_amount < row.amount) && (
+                              {(!row.refunded_amount || (row.refunded_amount + (row.pending_refund_amount ?? 0)) < row.amount) && (
                                 <Button size="sm" variant="ghost" className="h-7 w-7 p-0 sm:h-8 sm:w-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setRefundRow(row)} aria-label="Issue Refund">
                                   <Undo2 className="h-3.5 w-3.5" />
                                 </Button>
@@ -872,7 +878,7 @@ export default function FeeCollectionReport() {
             }}
             feeCollectionId={refundRow.id}
             receiptNumber={refundRow.receipt_number}
-            maxRefundAmount={Number(refundRow.amount) - (refundRow.refunded_amount ?? 0)}
+            maxRefundAmount={Number(refundRow.amount) - (refundRow.refunded_amount ?? 0) - (refundRow.pending_refund_amount ?? 0)}
             onSuccess={() => fetchReport()}
           />
         )}

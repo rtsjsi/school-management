@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getUser, canAccessFees, canEditFees } from "@/lib/auth";
+import { getUser, canAccessFees, canEditFees, isPrincipal } from "@/lib/auth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import FeeStructureForm from "@/components/FeeStructureForm";
 import { FeeStructureListWithFilters } from "@/components/FeeStructureListWithFilters";
@@ -7,6 +7,7 @@ import FeeCollectionForm from "@/components/FeeCollectionForm";
 import FeeCollectionList from "@/components/FeeCollectionList";
 import OutstandingReport from "@/components/OutstandingReport";
 import FeeCollectionReport from "@/components/FeeCollectionReport";
+import { RefundApprovals } from "@/components/RefundApprovals";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function FeesPage() {
@@ -31,6 +32,9 @@ export default async function FeesPage() {
           <TabsTrigger value="collection">Collection</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
           <TabsTrigger value="structure">Structure</TabsTrigger>
+          {isPrincipal(user) && (
+            <TabsTrigger value="approvals">Approvals</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="collection" className="space-y-4 sm:space-y-6">
@@ -73,6 +77,12 @@ export default async function FeesPage() {
           {canEdit && <FeeStructureForm />}
           <FeeStructureListWithFilters canEdit={canEdit} />
         </TabsContent>
+
+        {isPrincipal(user) && (
+          <TabsContent value="approvals" className="space-y-4 sm:space-y-6">
+            <RefundApprovals />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

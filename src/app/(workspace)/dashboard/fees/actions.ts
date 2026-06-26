@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { requireUser, canEditFees } from "@/lib/auth";
+import { requireUser, canEditFees, isPrincipal } from "@/lib/auth";
 
 export type FeeStructureActionResult = { ok: true } | { ok: false; error: string };
 
@@ -171,6 +171,9 @@ export async function processFeeRefund(
     return { ok: false, error: "Refund amount exceeds the remaining collected amount." };
   }
 
+  const isUserPrincipal = isPrincipal(user);
+  const status = isUserPrincipal ? 'approved' : 'pending';
+
   const { error } = await supabase.from("fee_refunds").insert({
     fee_collection_id: data.feeCollectionId,
     amount: data.amount,
@@ -178,9 +181,55 @@ export async function processFeeRefund(
     refund_reason: data.refundReason.trim(),
     refund_date: data.refundDate,
     processed_by: user.id,
+    status,
+    ...(isUserPrincipal ? {
+      approved_by: user.id,
+      approved_at: new Date().toISOString()
+    } : {})
   });
 
   if (error) return { ok: false, error: error.message };
 
+  return { ok: true };
+}
+
+export async function approveFeeRefund(refundId: string): Promise<FeeRefundActionResult> {
+  const user = await requireUser();
+  if (!isPrincipal(user)) return { ok: false, error: "Unauthorized. Only Principal can approve refunds." };
+
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("fee_refunds")
+    .update({
+      status: 'approved',
+      approved_by: user.id,
+      approved_at: new Date().toISOString(),
+    })
+    .eq("id", refundId)
+    .eq("status", "pending");
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function rejectFeeRefund(refundId: string, reason: string): Promise<FeeRefundActionResult> {
+  const user = await requireUser();
+  if (!isPrincipal(user)) return { ok: false, error: "Unauthorized. Only Principal can reject refunds." };
+
+  if (!reason?.trim()) return { ok: false, error: "Rejection reason is required." };
+
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("fee_refunds")
+    .update({
+      status: 'rejected',
+      rejection_reason: reason.trim(),
+    })
+    .eq("id", refundId)
+    .eq("status", "pending");
+
+  if (error) return { ok: false, error: error.message };
   return { ok: true };
 }

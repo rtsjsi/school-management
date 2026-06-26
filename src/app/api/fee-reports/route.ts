@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from("fee_collections")
       .select(
-        "id, receipt_number, amount, fee_type, quarter, academic_year, payment_mode, collection_date, collected_by, modified_by, cheque_number, cheque_bank, cheque_date, online_transaction_id, online_transaction_ref, students(full_name, standard, division, roll_number, gr_number), collector:profiles!collected_by(full_name), fee_refunds(amount)"
+        "id, receipt_number, amount, fee_type, quarter, academic_year, payment_mode, collection_date, collected_by, modified_by, cheque_number, cheque_bank, cheque_date, online_transaction_id, online_transaction_ref, students(full_name, standard, division, roll_number, gr_number), collector:profiles!collected_by(full_name), fee_refunds(amount, status)"
       );
 
     // Date range
@@ -74,7 +74,8 @@ export async function GET(request: NextRequest) {
       const col = (row as { collector?: { full_name?: string } | { full_name?: string }[] }).collector;
       const collectorProfile = Array.isArray(col) ? col[0] : col;
       const collectedByName = collectorProfile?.full_name?.trim() || null;
-      const refundedAmount = ((row as any).fee_refunds ?? []).reduce((sum: number, r: any) => sum + Number(r.amount), 0);
+      const refundedAmount = ((row as any).fee_refunds ?? []).reduce((sum: number, r: any) => r.status === 'approved' ? sum + Number(r.amount) : sum, 0);
+      const pendingRefundAmount = ((row as any).fee_refunds ?? []).reduce((sum: number, r: any) => r.status === 'pending' ? sum + Number(r.amount) : sum, 0);
       return {
         id: row.id,
         receipt_number: row.receipt_number,
@@ -85,6 +86,7 @@ export async function GET(request: NextRequest) {
         student_gr_no: student?.gr_number,
         amount: row.amount,
         refunded_amount: refundedAmount,
+        pending_refund_amount: pendingRefundAmount,
         net_amount: Number(row.amount) - refundedAmount,
         fee_type: row.fee_type,
         quarter: row.quarter,
