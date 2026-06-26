@@ -270,7 +270,7 @@ async function main() {
   runSupabase(["db", "query", "--linked", truncateSql]);
   
   console.log("Disabling triggers for clean import...");
-  const disableSql = PUBLIC_TABLES.map((t) => `ALTER TABLE public.${t} DISABLE TRIGGER ALL;`).join(" ");
+  const disableSql = PUBLIC_TABLES.map((t) => `ALTER TABLE public.${t} DISABLE TRIGGER USER;`).join(" ");
   runSupabase(["db", "query", "--linked", disableSql]);
   console.log("  Dev flushed and triggers disabled.");
 
@@ -378,7 +378,7 @@ async function main() {
     console.log(`Backup saved to: ${exportDir}`);
   } finally {
     console.log("\nRe-enabling triggers...");
-    const enableSql = PUBLIC_TABLES.map((t) => `ALTER TABLE public.${t} ENABLE TRIGGER ALL;`).join(" ");
+    const enableSql = PUBLIC_TABLES.map((t) => `ALTER TABLE public.${t} ENABLE TRIGGER USER;`).join(" ");
     try { runSupabase(["db", "query", "--linked", enableSql]); } catch(e) { console.error("Failed to enable triggers", e.message); }
 
     console.log("Unlinking to maintain stateless environment boundary...");
