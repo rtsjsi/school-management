@@ -187,12 +187,12 @@ async function main() {
   const prodKey = envMain.SUPABASE_SERVICE_ROLE_KEY;
   const devUrl = envDev.NEXT_PUBLIC_SUPABASE_URL;
   const devKey = envDev.SUPABASE_SERVICE_ROLE_KEY;
-  const devRef = envDev.SUPABASE_PROJECT_REF;
+  const devRef = envDev.SUPABASE_PROJECT_ID;
   const devDbPassword = process.env.SUPABASE_DB_PASSWORD_DEVELOPMENT || envDev.SUPABASE_DB_PASSWORD;
 
   if (!prodUrl || !prodKey) throw new Error("Missing prod API URL / service role key in .env.main");
   if (!devUrl || !devKey) throw new Error("Missing dev API URL / service role key in .env.development");
-  if (!devRef) throw new Error("Missing SUPABASE_PROJECT_REF in .env.development");
+  if (!devRef) throw new Error("Missing SUPABASE_PROJECT_ID in .env.development");
   if (!devDbPassword) throw new Error("Missing SUPABASE_DB_PASSWORD_DEVELOPMENT env var or SUPABASE_DB_PASSWORD in .env.development");
 
   const prod = createClient(prodUrl, prodKey, { auth: { persistSession: false } });
@@ -267,7 +267,10 @@ async function main() {
   console.log("Flushing public tables...");
   const truncateSql = `TRUNCATE TABLE ${PUBLIC_TABLES.map((t) => `public.${t}`).join(", ")} RESTART IDENTITY CASCADE;`;
   runSupabase(["db", "query", "--linked", truncateSql]);
-  console.log("  Dev flushed.");
+  
+  console.log("Unlinking to maintain stateless environment boundary...");
+  runSupabase(["unlink"]);
+  console.log("  Dev flushed and unlinked.");
 
   // ── STEP 3: Import into dev ───────────────────────────────────────────
   console.log("");
