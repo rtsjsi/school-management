@@ -56,7 +56,7 @@ import { FeeRefundDialog } from "@/components/FeeRefundDialog";
 const PAYMENT_MODES = ["cash", "cheque", "online"] as const;
 const QUARTERS = [1, 2, 3, 4] as const;
 
-type ReportPreset = "full-year" | "monthly" | "quarterly" | "class-wise" | "student-wise" | "custom";
+type ReportPreset = "day-wise" | "full-year" | "monthly" | "quarterly" | "class-wise" | "student-wise" | "custom";
 
 const PRESET_CONFIG: {
   value: ReportPreset;
@@ -64,6 +64,7 @@ const PRESET_CONFIG: {
   description: string;
   icon: React.ElementType;
 }[] = [
+  { value: "day-wise", label: "Day Wise", description: "Single specific date", icon: Calendar },
   { value: "full-year", label: "Full Year", description: "Entire academic year", icon: CalendarRange },
   { value: "monthly", label: "Monthly", description: "Single month view", icon: Calendar },
   { value: "quarterly", label: "Quarterly", description: "By quarter (Q1–Q4)", icon: LayoutGrid },
@@ -176,6 +177,7 @@ export default function FeeCollectionReport() {
   const [standardFilter, setStandardFilter] = useState("");
   const [studentId, setStudentId] = useState("");
   const [paymentMode, setPaymentMode] = useState("");
+  const [singleDate, setSingleDate] = useState(today);
   const [dateFrom, setDateFrom] = useState(today);
   const [dateTo, setDateTo] = useState(today);
 
@@ -284,6 +286,10 @@ export default function FeeCollectionReport() {
     if (paymentMode) params.set("paymentMode", paymentMode);
 
     switch (preset) {
+      case "day-wise":
+        params.set("dateFrom", singleDate);
+        params.set("dateTo", singleDate);
+        break;
       case "full-year":
         break;
       case "monthly":
@@ -320,10 +326,11 @@ export default function FeeCollectionReport() {
         setSummary(null);
       })
       .finally(() => setLoading(false));
-  }, [preset, academicYear, month, quarter, standardFilter, studentId, paymentMode, dateFrom, dateTo]);
+  }, [preset, academicYear, month, quarter, standardFilter, studentId, paymentMode, singleDate, dateFrom, dateTo]);
 
   const canGenerate = useMemo(() => {
     switch (preset) {
+      case "day-wise":
       case "full-year":
       case "monthly":
       case "quarterly":
@@ -345,6 +352,9 @@ export default function FeeCollectionReport() {
     const parts: string[] = [];
     if (academicYear) parts.push(`Academic year: ${academicYear}`);
     switch (preset) {
+      case "day-wise":
+        parts.push(`Date: ${formatFeeCollectionDisplayDate(singleDate)}`);
+        break;
       case "full-year":
         parts.push("Full Year");
         break;
@@ -364,7 +374,7 @@ export default function FeeCollectionReport() {
         break;
       }
       case "custom":
-        parts.push(`Period: ${dateFrom} to ${dateTo}`);
+        parts.push(`Period: ${formatFeeCollectionDisplayDate(dateFrom)} to ${formatFeeCollectionDisplayDate(dateTo)}`);
         break;
     }
     if (paymentMode) parts.push(`Payment: ${paymentMode}`);
@@ -617,6 +627,14 @@ export default function FeeCollectionReport() {
                   </div>
                 </>
               )}
+
+              {/* Day-wise date picker */}
+              {preset === "day-wise" && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Date</Label>
+                  <DatePicker value={singleDate} onChange={setSingleDate} className="h-9" />
+                </div>
+              )}
             </div>
 
             {/* Payment mode chips — always visible */}
@@ -674,6 +692,9 @@ export default function FeeCollectionReport() {
               )}
               {preset === "monthly" && (
                 <Badge variant="outline" className="text-xs">{month}</Badge>
+              )}
+              {preset === "day-wise" && (
+                <Badge variant="outline" className="text-xs">{formatFeeCollectionDisplayDate(singleDate)}</Badge>
               )}
               {(preset === "quarterly" || preset === "custom") && quarter && (
                 <Badge variant="outline" className="text-xs">{QUARTER_LABELS[Number(quarter)] ?? `Q${quarter}`}</Badge>

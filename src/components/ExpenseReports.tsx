@@ -54,7 +54,7 @@ import { formatExpenseDisplayDate } from "@/lib/utils";
 const PAYMENT_MODES = ["cash", "cheque", "online"] as const;
 
 type ReportType = "list" | "summary";
-type FilterPreset = "monthwise" | "yearwise" | "custom";
+type FilterPreset = "daywise" | "monthwise" | "yearwise" | "custom";
 
 type ExpenseHead = { id: string; name: string };
 type ListRow = {
@@ -79,6 +79,7 @@ const PRESET_CONFIG: {
   description: string;
   icon: React.ElementType;
 }[] = [
+  { value: "daywise", label: "Daywise", description: "Single specific date", icon: Calendar },
   { value: "monthwise", label: "Monthwise", description: "Current Month", icon: LayoutGrid },
   { value: "yearwise", label: "Yearwise", description: "Financial Year", icon: CalendarRange },
   { value: "custom", label: "Custom", description: "Choose range", icon: Filter },
@@ -111,6 +112,7 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
   const [preset, setPreset] = useState<FilterPreset>("monthwise");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [singleDate, setSingleDate] = useState(new Date().toISOString().slice(0, 10));
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [expenseHeadId, setExpenseHeadId] = useState("all");
@@ -134,7 +136,10 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
   useEffect(() => {
     const toISO = (d: Date) => d.toISOString().slice(0, 10);
     
-    if (preset === "monthwise") {
+    if (preset === "daywise") {
+      setFromDate(singleDate);
+      setToDate(singleDate);
+    } else if (preset === "monthwise") {
       const from = new Date(selectedYear, selectedMonth, 1);
       const to = new Date(selectedYear, selectedMonth + 1, 0);
       setFromDate(toISO(from));
@@ -146,7 +151,7 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
       setFromDate(toISO(from));
       setToDate(toISO(to));
     }
-  }, [preset, selectedMonth, selectedYear]);
+  }, [preset, selectedMonth, selectedYear, singleDate]);
 
   useEffect(() => {
     createClient()
@@ -436,6 +441,13 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
                     <DatePicker value={toDate} onChange={setToDate} className="h-9 w-full" />
                   </div>
                 </>
+              )}
+
+              {preset === "daywise" && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Date</Label>
+                  <DatePicker value={singleDate} onChange={setSingleDate} className="h-9 w-full" />
+                </div>
               )}
 
               <div className="space-y-1.5">
