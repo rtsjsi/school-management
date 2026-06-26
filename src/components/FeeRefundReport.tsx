@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
+import { fetchAcademicYears } from "@/lib/lov";
 import { formatFeeCollectionDisplayDate } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -82,9 +83,20 @@ export default function FeeRefundReport() {
   const [preset, setPreset] = useState<ReportPreset>("monthly");
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [academicYear, setAcademicYear] = useState<string>("all");
   const [singleDate, setSingleDate] = useState(today);
   const [dateFrom, setDateFrom] = useState(today);
   const [dateTo, setDateTo] = useState(today);
+
+  const [years, setYears] = useState<{ id: string; name: string; is_active?: boolean }[]>([]);
+
+  useEffect(() => {
+    fetchAcademicYears().then((y) => {
+      setYears(y);
+      const active = y.find((year) => year.is_active);
+      if (active) setAcademicYear(active.name);
+    });
+  }, []);
 
   const [data, setData] = useState<ReportRow[] | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -149,6 +161,10 @@ export default function FeeRefundReport() {
       if (statusFilter && statusFilter !== "all") {
         params.append("status", statusFilter);
       }
+      
+      if (academicYear && academicYear !== "all") {
+        params.append("academicYear", academicYear);
+      }
 
       params.append("limit", "1000"); // Limit to 1000 for safety
 
@@ -180,7 +196,7 @@ export default function FeeRefundReport() {
     } finally {
       setLoading(false);
     }
-  }, [preset, singleDate, month, dateFrom, dateTo, statusFilter]);
+  }, [preset, singleDate, month, dateFrom, dateTo, statusFilter, academicYear]);
 
   const StatusBadge = ({ status }: { status: string }) => {
     switch (status) {
@@ -252,6 +268,21 @@ export default function FeeRefundReport() {
                 </div>
               </>
             )}
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold uppercase text-muted-foreground">Academic Year</label>
+              <Select value={academicYear} onValueChange={setAcademicYear}>
+                <SelectTrigger className="h-9 bg-background">
+                  <SelectValue placeholder="Year" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Years</SelectItem>
+                  {years.map((y) => (
+                    <SelectItem key={y.id} value={y.name}>{y.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             <div className="space-y-1.5">
               <label className="text-xs font-semibold uppercase text-muted-foreground">Status</label>

@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
     const dateTo = searchParams.get("dateTo");
     const month = searchParams.get("month");
     const status = searchParams.get("status");
+    const academicYear = searchParams.get("academicYear");
     const limit = searchParams.get("limit");
 
     const supabase = await createClient();
@@ -41,6 +42,10 @@ export async function GET(request: NextRequest) {
 
     if (status) {
       query = query.eq("status", status);
+    }
+
+    if (academicYear) {
+      query = query.eq("fee_collections.academic_year", academicYear);
     }
 
     let q = query.order("refund_date", { ascending: false });
