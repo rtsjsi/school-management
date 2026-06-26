@@ -37,14 +37,14 @@ import {
   Undo2,
 } from "lucide-react";
 
-type ReportPreset = "day-wise" | "monthly" | "custom";
+type ReportPreset = "academic-year" | "monthly" | "custom";
 
 const PRESET_CONFIG: {
   value: ReportPreset;
   label: string;
   icon: React.ElementType;
 }[] = [
-  { value: "day-wise", label: "Day Wise", icon: Calendar },
+  { value: "academic-year", label: "Academic Year", icon: CalendarRange },
   { value: "monthly", label: "Monthly", icon: Calendar },
   { value: "custom", label: "Custom Range", icon: Filter },
 ];
@@ -148,9 +148,10 @@ export default function FeeRefundReport() {
     try {
       const params = new URLSearchParams();
 
-      if (preset === "day-wise") {
-        params.append("dateFrom", singleDate);
-        params.append("dateTo", singleDate);
+      if (preset === "academic-year") {
+        if (academicYear && academicYear !== "all") {
+          params.append("academicYear", academicYear);
+        }
       } else if (preset === "monthly") {
         params.append("month", month);
       } else if (preset === "custom") {
@@ -160,10 +161,6 @@ export default function FeeRefundReport() {
 
       if (statusFilter && statusFilter !== "all") {
         params.append("status", statusFilter);
-      }
-      
-      if (academicYear && academicYear !== "all") {
-        params.append("academicYear", academicYear);
       }
 
       params.append("limit", "1000"); // Limit to 1000 for safety
@@ -237,10 +234,20 @@ export default function FeeRefundReport() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 p-4 rounded-xl border bg-muted/20">
-            {preset === "day-wise" && (
+            {preset === "academic-year" && (
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold uppercase text-muted-foreground">Date</label>
-                <DatePicker value={singleDate} onChange={setSingleDate} />
+                <label className="text-xs font-semibold uppercase text-muted-foreground">Academic Year</label>
+                <Select value={academicYear} onValueChange={setAcademicYear}>
+                  <SelectTrigger className="h-9 bg-background">
+                    <SelectValue placeholder="Year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Years</SelectItem>
+                    {years.map((y) => (
+                      <SelectItem key={y.id} value={y.name}>{y.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             )}
 
@@ -268,21 +275,6 @@ export default function FeeRefundReport() {
                 </div>
               </>
             )}
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold uppercase text-muted-foreground">Academic Year</label>
-              <Select value={academicYear} onValueChange={setAcademicYear}>
-                <SelectTrigger className="h-9 bg-background">
-                  <SelectValue placeholder="Year" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Years</SelectItem>
-                  {years.map((y) => (
-                    <SelectItem key={y.id} value={y.name}>{y.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
 
             <div className="space-y-1.5">
               <label className="text-xs font-semibold uppercase text-muted-foreground">Status</label>
