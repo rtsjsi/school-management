@@ -18,3 +18,6 @@ For `main` branch:
 
 For `development` (and other) branches:
 `$env:SUPABASE_DB_PASSWORD=(Get-Content .env.development | ConvertFrom-StringData).SUPABASE_DB_PASSWORD.Trim('"'); $env:SUPABASE_PROJECT_ID=(Get-Content .env.development | ConvertFrom-StringData).SUPABASE_PROJECT_ID.Trim('"'); npx supabase db push`
+
+## Strict Environment Boundaries
+**CRITICAL RULE:** When operating on a branch other than `main` (such as `development`), you **MUST NOT** connect to, query, or modify the PROD database unless the user explicitly and unambiguously commands you to do so. Always default to querying and interacting with the database that corresponds to the active branch (e.g., DEV database for `development` branch).
