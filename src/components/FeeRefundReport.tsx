@@ -88,12 +88,12 @@ export default function FeeRefundReport() {
   const [dateFrom, setDateFrom] = useState(today);
   const [dateTo, setDateTo] = useState(today);
 
-  const [years, setYears] = useState<{ id: string; name: string; is_active?: boolean }[]>([]);
+  const [years, setYears] = useState<{ id: string; name: string; status?: string | null }[]>([]);
 
   useEffect(() => {
     fetchAcademicYears().then((y) => {
       setYears(y);
-      const active = y.find((year) => year.is_active);
+      const active = y.find((year) => year.status === 'active');
       if (active) setAcademicYear(active.name);
     });
   }, []);
