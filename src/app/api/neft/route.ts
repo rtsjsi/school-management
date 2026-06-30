@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
+import { deriveDailyStatus, dayWeight, DEFAULT_THRESHOLDS, type ShiftLite } from "@/lib/attendance";
 
 export const dynamic = "force-dynamic";
 
@@ -35,8 +36,26 @@ export async function GET(request: NextRequest) {
 
     const { data: employees } = await supabase
       .from("employees")
-      .select("id, full_name, monthly_salary, bank_name, account_number, ifsc_code, account_holder_name")
+      .select("id, full_name, monthly_salary, bank_name, account_number, ifsc_code, account_holder_name, shift_id")
       .eq("status", "active");
+
+    const { data: shifts } = await supabase
+      .from("shifts")
+      .select("id, start_time, end_time, grace_period_minutes, late_threshold_minutes, early_departure_threshold_minutes");
+    const shiftMap = new Map<string, ShiftLite>();
+    (shifts ?? []).forEach((s) => shiftMap.set(s.id, s));
+
+    const { data: settings } = await supabase
+      .from("payroll_settings")
+      .select(
+        "full_day_hours, half_day_hours, debit_account_number, transaction_type, currency, remarks_prefix, custom_header_1, custom_header_2, custom_header_3, custom_header_4, custom_header_5"
+      )
+      .eq("id", 1)
+      .maybeSingle();
+    const thresholds = {
+      fullDayHours: Number(settings?.full_day_hours ?? DEFAULT_THRESHOLDS.fullDayHours),
+      halfDayHours: Number(settings?.half_day_hours ?? DEFAULT_THRESHOLDS.halfDayHours),
+    };
 
     const { data: holidays } = await supabase
       .from("holidays")
@@ -53,7 +72,7 @@ export async function GET(request: NextRequest) {
 
     const { data: punches } = await supabase
       .from("employee_attendance_punches")
-      .select("employee_id, punch_date, punch_type")
+      .select("employee_id, punch_date, punch_type, punch_time")
       .gte("punch_date", start)
       .lte("punch_date", end);
 
@@ -111,6 +130,7 @@ export async function GET(request: NextRequest) {
 
     for (const emp of employees ?? []) {
       let presentDays = 0;
+      const empShift = emp.shift_id ? shiftMap.get(emp.shift_id) ?? null : null;
       for (let d = 1; d <= lastDay; d++) {
         const dStr = `${y}-${m}-${String(d).padStart(2, "0")}`;
         const day = new Date(dStr).getDay();
@@ -118,20 +138,24 @@ export async function GET(request: NextRequest) {
         const isHoliday = holidayDates.has(dStr);
         if (isHoliday || isWeekend) continue;
 
-        const approvedKey = `${emp.id}-${dStr}`;
-        const approvedStatus = approvedMap.get(approvedKey);
-        if (approvedStatus && (approvedStatus === "present" || approvedStatus === "half_day")) {
-          presentDays++;
+        // Priority: approved daily status > any saved manual entry > derived from punches.
+        const approvedStatus = approvedMap.get(`${emp.id}-${dStr}`);
+        if (approvedStatus) {
+          presentDays += dayWeight(approvedStatus);
           continue;
         }
-        const manEntry = (manual ?? []).find((m) => m.employee_id === emp.id && m.attendance_date === dStr);
-        if (manEntry && (manEntry.status === "present" || manEntry.status === "half_day")) {
-          presentDays++;
+        const manEntry = (manual ?? []).find((mm) => mm.employee_id === emp.id && mm.attendance_date === dStr);
+        if (manEntry) {
+          presentDays += dayWeight(manEntry.status);
           continue;
         }
-        const punchIn = (punches ?? []).find((p) => p.employee_id === emp.id && p.punch_date === dStr && p.punch_type === "IN");
-        if (punchIn) presentDays++;
+        const dayPunches = (punches ?? []).filter((p) => p.employee_id === emp.id && p.punch_date === dStr);
+        if (dayPunches.length > 0) {
+          const derived = deriveDailyStatus(dayPunches, empShift, thresholds);
+          presentDays += dayWeight(derived.status);
+        }
       }
+      presentDays = Math.round(presentDays * 2) / 2;
 
       const baseSalary = Number(emp.monthly_salary ?? 0);
       const proratedBasic = workingDays > 0 ? (baseSalary / workingDays) * presentDays : 0;
@@ -154,6 +178,112 @@ export async function GET(request: NextRequest) {
     }
 
     const payableRows = rows.filter((r) => r.net_amount > 0 && r.bank);
+
+    if (format === "blkpay") {
+      // Inputs (from the generate form), falling back to saved defaults.
+      const debitAccount = (searchParams.get("debitAccount") ?? settings?.debit_account_number ?? "").trim();
+      const transactionType = (searchParams.get("transactionType") ?? settings?.transaction_type ?? "NEFT").trim().toUpperCase();
+      const currency = (searchParams.get("currency") ?? settings?.currency ?? "INR").trim().toUpperCase();
+      const remarksPrefix = (searchParams.get("remarksPrefix") ?? settings?.remarks_prefix ?? "Salary").trim();
+      const valueDateParam = searchParams.get("valueDate");
+      const valueDate = valueDateParam && /^\d{4}-\d{2}-\d{2}$/.test(valueDateParam) ? new Date(`${valueDateParam}T00:00:00`) : new Date();
+
+      const dd = String(valueDate.getDate()).padStart(2, "0");
+      const mmNum = String(valueDate.getMonth() + 1).padStart(2, "0");
+      const yyyy = valueDate.getFullYear();
+      const txnDate = `${dd}/${mmNum}/${yyyy}`;
+      const fileStamp = `${yyyy}${mmNum}${dd}`;
+      const monthLabel = new Date(`${monthYear}-01T00:00:00`).toLocaleString("en-US", { month: "short", year: "numeric" });
+
+      // Persist the entered values as the new defaults.
+      await supabase.from("payroll_settings").upsert(
+        {
+          id: 1,
+          debit_account_number: debitAccount || null,
+          transaction_type: transactionType || "NEFT",
+          currency: currency || "INR",
+          remarks_prefix: remarksPrefix || "Salary",
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "id" }
+      );
+
+      // Persist salary snapshot, same as the legacy NEFT download.
+      const now = new Date().toISOString();
+      for (const r of rows) {
+        await supabase.from("employee_salaries").upsert(
+          {
+            employee_id: r.employee_id,
+            month_year: monthYear,
+            gross_amount: r.gross_amount,
+            deductions: r.deductions,
+            net_amount: r.net_amount,
+            status: r.net_amount > 0 && r.bank ? "approved" : "pending",
+            neft_generated_at: r.net_amount > 0 && r.bank ? now : null,
+            updated_at: now,
+          },
+          { onConflict: "employee_id,month_year" }
+        );
+      }
+
+      const header = [
+        "Beneficiary Name",
+        "Beneficiary Account Number",
+        "IFSC",
+        "Transaction Type",
+        "Debit Account Number",
+        "Transaction Date",
+        "Amount",
+        "Currency",
+        "Beneficiary Email ID",
+        "Remarks",
+        "Custom Header \u2013 1",
+        "Custom Header \u2013 2",
+        "Custom Header \u2013 3",
+        "Custom Header \u2013 4",
+        "Custom Header \u2013 5",
+      ];
+
+      const aoa: (string | number)[][] = [header];
+      for (const r of payableRows) {
+        const b = r.bank!;
+        aoa.push([
+          b.account_holder_name || r.full_name,
+          b.account_number,
+          b.ifsc_code,
+          transactionType,
+          debitAccount,
+          txnDate,
+          Number(r.net_amount.toFixed(2)),
+          currency,
+          "",
+          `${remarksPrefix} ${monthLabel}`,
+          settings?.custom_header_1 ?? "",
+          settings?.custom_header_2 ?? "",
+          settings?.custom_header_3 ?? "",
+          settings?.custom_header_4 ?? "",
+          settings?.custom_header_5 ?? "",
+        ]);
+      }
+
+      const XLSX = await import("xlsx");
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws["!cols"] = [
+        { wch: 28 }, { wch: 22 }, { wch: 14 }, { wch: 16 }, { wch: 20 },
+        { wch: 16 }, { wch: 14 }, { wch: 10 }, { wch: 24 }, { wch: 28 },
+        { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 16 },
+      ];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+      const out = XLSX.write(wb, { bookType: "xlsx", type: "buffer" }) as Buffer;
+
+      return new NextResponse(new Uint8Array(out), {
+        headers: {
+          "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "Content-Disposition": `attachment; filename="BLKPAY_${fileStamp}.xlsx"`,
+        },
+      });
+    }
 
     if (format === "neft") {
       // Persist to employee_salaries when generating NEFT
@@ -197,6 +327,12 @@ export async function GET(request: NextRequest) {
       workingDays,
       rows: payableRows,
       skipped: rows.filter((r) => r.net_amount <= 0 || !r.bank),
+      settings: {
+        debitAccount: settings?.debit_account_number ?? "",
+        transactionType: settings?.transaction_type ?? "NEFT",
+        currency: settings?.currency ?? "INR",
+        remarksPrefix: settings?.remarks_prefix ?? "Salary",
+      },
     });
   } catch (e) {
     console.error(e);

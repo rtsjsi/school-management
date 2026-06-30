@@ -14,6 +14,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { FileDown, AlertCircle } from "lucide-react";
 
 export default function NEFTGeneration() {
@@ -23,9 +30,15 @@ export default function NEFTGeneration() {
     workingDays: number;
     rows: { full_name: string; present_days: number; salary: number; net_amount: number; bank?: { account_number: string; ifsc_code: string; account_holder_name: string } }[];
     skipped: { full_name: string; net_amount: number }[];
+    settings?: { debitAccount: string; transactionType: string; currency: string; remarksPrefix: string };
   } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [debitAccount, setDebitAccount] = useState("");
+  const [transactionType, setTransactionType] = useState("NEFT");
+  const [remarksPrefix, setRemarksPrefix] = useState("Salary");
+  const [valueDate, setValueDate] = useState(new Date().toISOString().slice(0, 10));
 
   const fetchPreview = () => {
     setLoading(true);
@@ -35,7 +48,14 @@ export default function NEFTGeneration() {
         if (!r.ok) return r.json().then((d) => { throw new Error(d.error || "Failed"); });
         return r.json();
       })
-      .then(setData)
+      .then((d) => {
+        setData(d);
+        if (d.settings) {
+          if (d.settings.debitAccount) setDebitAccount(d.settings.debitAccount);
+          if (d.settings.transactionType) setTransactionType(d.settings.transactionType);
+          if (d.settings.remarksPrefix) setRemarksPrefix(d.settings.remarksPrefix);
+        }
+      })
       .catch((e) => {
         setError(e.message);
         setData(null);
@@ -49,7 +69,19 @@ export default function NEFTGeneration() {
   }, [monthYear]);
 
   const downloadNEFT = () => {
-    window.open(`/api/neft?monthYear=${monthYear}&format=neft`, "_blank");
+    if (!debitAccount.trim()) {
+      setError("Enter the Debit Account Number (your IDFC FIRST account) before generating the file.");
+      return;
+    }
+    const params = new URLSearchParams({
+      monthYear,
+      format: "blkpay",
+      debitAccount: debitAccount.trim(),
+      transactionType,
+      remarksPrefix: remarksPrefix.trim() || "Salary",
+      valueDate,
+    });
+    window.open(`/api/neft?${params.toString()}`, "_blank");
   };
 
   return (
@@ -66,9 +98,46 @@ export default function NEFTGeneration() {
           {data && data.rows.length > 0 && (
             <Button size="sm" className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm" onClick={downloadNEFT}>
               <FileDown className="h-4 w-4" />
-              Download NEFT File
+              Download Bank File (BLKPAY)
             </Button>
           )}
+        </div>
+
+        <div className="rounded-md border bg-muted/30 p-4 mb-4">
+          <p className="text-sm font-medium mb-3">Bank file settings (IDFC FIRST BLKPAY)</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="space-y-2">
+              <Label>Debit Account Number *</Label>
+              <Input
+                value={debitAccount}
+                onChange={(e) => setDebitAccount(e.target.value)}
+                placeholder="Your IDFC FIRST account"
+                className="font-mono"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Transaction Type</Label>
+              <Select value={transactionType} onValueChange={setTransactionType}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="NEFT">NEFT (other bank)</SelectItem>
+                  <SelectItem value="IFT">IFT (within IDFC)</SelectItem>
+                  <SelectItem value="RTGS">RTGS</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Transaction Date</Label>
+              <Input type="date" value={valueDate} onChange={(e) => setValueDate(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Remarks Prefix</Label>
+              <Input value={remarksPrefix} onChange={(e) => setRemarksPrefix(e.target.value)} placeholder="Salary" />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            Currency is INR. Remarks become &quot;{remarksPrefix || "Salary"} {new Date(`${monthYear}-01T00:00:00`).toLocaleString("en-US", { month: "short", year: "numeric" })}&quot;. These values are saved as defaults for next time.
+          </p>
         </div>
 
         {error && (

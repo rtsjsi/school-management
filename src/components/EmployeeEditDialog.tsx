@@ -28,6 +28,7 @@ interface EmployeeEditDialogProps {
     employee_type?: string | null;
     joining_date?: string | null;
     shift_id?: string | null;
+    biometric_enroll_no?: string | null;
     status?: string | null;
     monthly_salary?: number | null;
     degree?: string | null;
@@ -58,6 +59,7 @@ export function EmployeeEditDialog({ employee, shifts }: EmployeeEditDialogProps
     employee_type: employee.employee_type || "full_time",
     joining_date: employee.joining_date || "",
     shift_id: employee.shift_id || "",
+    biometric_enroll_no: employee.biometric_enroll_no || "",
     status: employee.status || "active",
     monthly_salary: employee.monthly_salary?.toString() || "",
     degree: employee.degree || "",
@@ -97,6 +99,7 @@ export function EmployeeEditDialog({ employee, shifts }: EmployeeEditDialogProps
           employee_type: form.employee_type,
           joining_date: form.joining_date || null,
           shift_id: form.shift_id || null,
+          biometric_enroll_no: form.biometric_enroll_no.trim() || null,
           status: form.status,
           monthly_salary: form.monthly_salary ? parseFloat(form.monthly_salary) : null,
           degree: form.degree.trim() || null,
@@ -223,17 +226,27 @@ export function EmployeeEditDialog({ employee, shifts }: EmployeeEditDialogProps
               </Select>
             </div>
           </div>
-          <div className="space-y-2">
-            <Label>Status</Label>
-            <Select value={form.status} onValueChange={(v) => setForm((p) => ({ ...p, status: v }))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-                <SelectItem value="resigned">Resigned</SelectItem>
-                <SelectItem value="terminated">Terminated</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select value={form.status} onValueChange={(v) => setForm((p) => ({ ...p, status: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="resigned">Resigned</SelectItem>
+                  <SelectItem value="terminated">Terminated</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Biometric Enrollment No</Label>
+              <Input
+                value={form.biometric_enroll_no}
+                onChange={(e) => setForm((p) => ({ ...p, biometric_enroll_no: e.target.value }))}
+                placeholder="EnNo on the device (e.g. 5)"
+              />
+            </div>
           </div>
           <div className="space-y-4 pt-4 border-t">
             <h4 className="text-sm font-semibold">Qualification</h4>

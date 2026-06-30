@@ -35,6 +35,7 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
     employee_type: "full_time",
     joining_date: "",
     shift_id: "",
+    biometric_enroll_no: "",
     degree: "",
     institution: "",
     year_passed: "",
@@ -101,6 +102,7 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
           employee_type: form.employee_type,
           joining_date: form.joining_date || null,
           shift_id: form.shift_id || null,
+          biometric_enroll_no: form.biometric_enroll_no.trim() || null,
           employee_id: empId,
           monthly_salary: form.monthly_salary ? parseFloat(form.monthly_salary) : null,
           degree: form.degree.trim() || null,
@@ -128,7 +130,7 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
       setForm({
         full_name: "", email: "", phone_number: "", address: "", aadhaar: "", pan: "",
         role: "staff", employee_type: "full_time",
-        joining_date: "", shift_id: "", degree: "", institution: "", year_passed: "",
+        joining_date: "", shift_id: "", biometric_enroll_no: "", degree: "", institution: "", year_passed: "",
         bank_name: "", account_number: "", ifsc_code: "", account_holder_name: "",
         monthly_salary: "",
       });
@@ -265,6 +267,14 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
                   {shifts.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Biometric Enrollment No</Label>
+              <Input
+                value={form.biometric_enroll_no}
+                onChange={(e) => setForm((p) => ({ ...p, biometric_enroll_no: e.target.value }))}
+                placeholder="EnNo on the device (e.g. 5)"
+              />
             </div>
           </div>
           <div className="space-y-4 pt-4 border-t">
