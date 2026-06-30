@@ -14,6 +14,8 @@ type ImportResult = {
   fileName: string;
   totalParsed: number;
   skippedRows: number;
+  punchesInFile: number;
+  punchesOutsideMonth: number;
   punchesInMonth: number;
   punchesUpserted: number;
   mappedEmployees: number;
@@ -67,10 +69,10 @@ export default function AttendanceImport() {
         <div>
           <h3 className="text-sm font-semibold">Import biometric attendance</h3>
           <p className="text-sm text-muted-foreground mt-1">
-            Upload the attendance log exported from the biometric machine (tab-delimited .txt with
-            EnNo, In/Out and DateTime). Punches are matched to employees by their{" "}
-            <span className="font-medium">Biometric Enrollment No</span> and only records inside the
-            selected month are imported. Re-uploading the same file is safe.
+            Upload the full attendance log from the biometric machine — it can contain records from all
+            months since the device was installed. Only punches within the selected payroll month are
+            imported. Punches are matched to employees by their{" "}
+            <span className="font-medium">Biometric Enrollment No</span>. Re-uploading the same file is safe.
           </p>
         </div>
 
@@ -113,9 +115,11 @@ export default function AttendanceImport() {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-              <Stat label="Rows parsed" value={result.totalParsed} />
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-sm">
+              <Stat label="Rows in file" value={result.punchesInFile} />
               <Stat label="In selected month" value={result.punchesInMonth} />
+              <Stat label="Other months (ignored)" value={result.punchesOutsideMonth} />
+              <Stat label="Imported punches" value={result.punchesUpserted} />
               <Stat label="Mapped employees" value={result.mappedEmployees} />
               <Stat label="Skipped rows" value={result.skippedRows} />
             </div>

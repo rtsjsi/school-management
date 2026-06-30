@@ -229,3 +229,9 @@ export function parseBiometricLog(content: string): ParseResult {
 
   return { punches, totalLines, skipped, headerOk };
 }
+
+/** Keep only punches whose date falls in the given payroll month (YYYY-MM). */
+export function filterPunchesByMonth(punches: ParsedPunch[], monthYear: string): ParsedPunch[] {
+  if (!/^\d{4}-\d{2}$/.test(monthYear)) return [];
+  return punches.filter((p) => p.date.startsWith(`${monthYear}-`));
+}

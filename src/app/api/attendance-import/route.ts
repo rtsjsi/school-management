@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getUser, isAdminOrAbove, isPayrollRole } from "@/lib/auth";
-import { decodeBiometricFile, parseBiometricLog, type ParsedPunch } from "@/lib/biometric-parse";
+import { decodeBiometricFile, filterPunchesByMonth, parseBiometricLog, type ParsedPunch } from "@/lib/biometric-parse";
 import { deriveDailyStatus, DEFAULT_THRESHOLDS, type ShiftLite } from "@/lib/attendance";
 
 export const dynamic = "force-dynamic";
@@ -48,8 +48,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Only keep punches that fall inside the selected month.
-    const inMonth = parsed.punches.filter((p) => p.date.slice(0, 7) === monthYear);
+    // Only keep punches that fall inside the selected month (file may span many months).
+    const inMonth = filterPunchesByMonth(parsed.punches, monthYear);
+    const punchesOutsideMonth = parsed.punches.length - inMonth.length;
 
     const supabase = await createClient();
 
@@ -226,6 +227,8 @@ export async function POST(request: NextRequest) {
       fileName,
       totalParsed: parsed.totalLines,
       skippedRows: parsed.skipped,
+      punchesInFile: parsed.punches.length,
+      punchesOutsideMonth,
       punchesInMonth: inMonth.length,
       punchesUpserted,
       mappedEmployees: mappedEmpIds.size,
