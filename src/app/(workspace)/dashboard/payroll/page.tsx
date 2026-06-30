@@ -7,6 +7,7 @@ import HolidayForm from "@/components/HolidayForm";
 import { ShiftList } from "@/components/ShiftList";
 import { HolidayList } from "@/components/HolidayList";
 import { AttendanceDailyRegister } from "@/components/AttendanceDailyRegister";
+import AttendanceImport from "@/components/AttendanceImport";
 import AttendanceReports from "@/components/AttendanceReports";
 import AttendanceReviewAndApprove from "@/components/AttendanceReviewAndApprove";
 import NEFTGeneration from "@/components/NEFTGeneration";
@@ -29,6 +30,7 @@ export default async function PayrollPage() {
             <TabsTrigger value="shifts">Shifts</TabsTrigger>
             <TabsTrigger value="holidays">Holidays</TabsTrigger>
             <TabsTrigger value="attendance">Attendance</TabsTrigger>
+            <TabsTrigger value="import">Import</TabsTrigger>
             <TabsTrigger value="review">Review</TabsTrigger>
             <TabsTrigger value="neft">NEFT</TabsTrigger>
             <TabsTrigger value="payslips">Payslips</TabsTrigger>
@@ -60,6 +62,10 @@ export default async function PayrollPage() {
           <Suspense fallback={<TableSkeleton rows={5} columns={6} />}>
             <AttendanceDailyRegister />
           </Suspense>
+        </TabsContent>
+
+        <TabsContent value="import" className="space-y-6">
+          <AttendanceImport />
         </TabsContent>
 
         <TabsContent value="review" className="space-y-6">

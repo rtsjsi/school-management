@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
+import { deriveDailyStatus, DEFAULT_THRESHOLDS, type ShiftLite } from "@/lib/attendance";
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,9 +22,25 @@ export async function GET(request: NextRequest) {
 
     const { data: employees } = await supabase
       .from("employees")
-      .select("id, full_name")
+      .select("id, full_name, shift_id")
       .eq("status", "active")
       .order("full_name");
+
+    const { data: shifts } = await supabase
+      .from("shifts")
+      .select("id, start_time, end_time, grace_period_minutes, late_threshold_minutes, early_departure_threshold_minutes");
+    const shiftMap = new Map<string, ShiftLite>();
+    (shifts ?? []).forEach((s) => shiftMap.set(s.id, s));
+
+    const { data: settings } = await supabase
+      .from("payroll_settings")
+      .select("full_day_hours, half_day_hours")
+      .eq("id", 1)
+      .maybeSingle();
+    const thresholds = {
+      fullDayHours: Number(settings?.full_day_hours ?? DEFAULT_THRESHOLDS.fullDayHours),
+      halfDayHours: Number(settings?.half_day_hours ?? DEFAULT_THRESHOLDS.halfDayHours),
+    };
 
     const { data: holidays } = await supabase
       .from("holidays")
@@ -111,12 +128,13 @@ export async function GET(request: NextRequest) {
               out_time = manEntry.out_time ?? undefined;
               source = "manual";
             } else {
-              const punchIn = (punches ?? []).find((p) => p.employee_id === emp.id && p.punch_date === dStr && p.punch_type === "IN");
-              const punchOut = (punches ?? []).find((p) => p.employee_id === emp.id && p.punch_date === dStr && p.punch_type === "OUT");
-              if (punchIn) {
-                status = "present";
-                in_time = punchIn.punch_time ? new Date(punchIn.punch_time).toTimeString().slice(0, 8) : undefined;
-                out_time = punchOut?.punch_time ? new Date(punchOut.punch_time).toTimeString().slice(0, 8) : undefined;
+              const dayPunches = (punches ?? []).filter((p) => p.employee_id === emp.id && p.punch_date === dStr);
+              if (dayPunches.length > 0) {
+                const empShift = emp.shift_id ? shiftMap.get(emp.shift_id) ?? null : null;
+                const derived = deriveDailyStatus(dayPunches, empShift, thresholds);
+                status = derived.status;
+                in_time = derived.in_time;
+                out_time = derived.out_time;
                 source = "biometric";
               }
             }

@@ -37,6 +37,7 @@ export type StaffTableEmployee = {
   ifsc_code?: string | null;
   account_holder_name?: string | null;
   shift_id?: string | null;
+  biometric_enroll_no?: string | null;
   shifts?: { name?: string } | { name?: string }[] | null;
 };
 
