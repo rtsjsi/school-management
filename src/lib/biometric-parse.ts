@@ -7,6 +7,8 @@
 // EnNo  = device enrollment number (maps to employees.biometric_enroll_no)
 // In/Out = 0 -> IN punch, 1 -> OUT punch
 // DateTime = local wall-clock (IST) "YYYY-MM-DD HH:MM:SS"
+//
+// Device exports on Windows are often UTF-16 LE — decode with decodeBiometricFile() before parsing.
 
 export type ParsedPunch = {
   enNo: string; // raw, e.g. "00000005"
@@ -23,6 +25,27 @@ export type ParseResult = {
   skipped: number; // non-empty rows that could not be parsed
   headerOk: boolean;
 };
+
+/** Decode raw file bytes (UTF-16 LE/BE, UTF-8 BOM, or UTF-8). */
+export function decodeBiometricFile(bytes: Uint8Array): string {
+  if (bytes.length === 0) return "";
+
+  if (bytes.length >= 2 && bytes[0] === 0xff && bytes[1] === 0xfe) {
+    return new TextDecoder("utf-16le").decode(bytes.subarray(2));
+  }
+  if (bytes.length >= 2 && bytes[0] === 0xfe && bytes[1] === 0xff) {
+    return new TextDecoder("utf-16be").decode(bytes.subarray(2));
+  }
+  if (bytes.length >= 3 && bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) {
+    return new TextDecoder("utf-8").decode(bytes.subarray(3));
+  }
+  // UTF-16 LE without BOM (common on Windows biometric exports).
+  if (bytes.length >= 4 && bytes[1] === 0 && bytes[3] === 0 && bytes[0] < 0x80 && bytes[2] < 0x80) {
+    return new TextDecoder("utf-16le").decode(bytes);
+  }
+
+  return new TextDecoder("utf-8").decode(bytes);
+}
 
 function normalizeEnroll(value: string): string {
   const trimmed = value.trim();
@@ -66,7 +89,19 @@ const DELIMITER_STRATEGIES: { name: string; split: SplitLine }[] = [
   { name: "comma", split: (line) => line.split(",") },
   { name: "semicolon", split: (line) => line.split(";") },
   { name: "spaces", split: (line) => line.split(/\s{2,}/) },
+  { name: "whitespace", split: (line) => line.trim().split(/\s+/) },
 ];
+
+function isAlogHeaderLine(line: string): boolean {
+  return /\bEnNo\b/i.test(line) && /\bIn\s*\/?\s*Out\b/i.test(line) && /\bDateTime\b/i.test(line);
+}
+
+function splitAlogLine(line: string): string[] {
+  if (line.includes("\t")) return line.split("\t");
+  const cols = line.trim().split(/\s{2,}/);
+  if (cols.length >= 8) return cols;
+  return line.trim().split(/\s+/);
+}
 
 function detectHeader(
   lines: string[]
@@ -87,7 +122,33 @@ function detectHeader(
       }
     }
   }
+
+  // Standard ALOG layout: No, TMNo, EnNo, Name, GMNo, Mode, In/Out, Antipass, ProxyWork, DateTime
+  for (const { line, index } of nonEmpty) {
+    if (!isAlogHeaderLine(line)) continue;
+    const split: SplitLine = (l) => splitAlogLine(l);
+    const cols = split(line);
+    const enIdx = toColumnIndex(cols, ENROLL_COL_NAMES);
+    const inOutIdx = toColumnIndex(cols, IN_OUT_COL_NAMES);
+    const dtIdx = toColumnIndex(cols, DATETIME_COL_NAMES);
+    if (enIdx !== -1 && inOutIdx !== -1 && dtIdx !== -1) {
+      return { enIdx, inOutIdx, dtIdx, split, headerLine: index };
+    }
+    if (line.includes("\t") || cols.length >= 10) {
+      return { enIdx: 2, inOutIdx: 6, dtIdx: 9, split, headerLine: index };
+    }
+  }
+
   return null;
+}
+
+function readDateTime(cols: string[], dtIdx: number): string {
+  const dt = (cols[dtIdx] ?? "").trim();
+  const next = (cols[dtIdx + 1] ?? "").trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dt) && /^\d{2}:\d{2}/.test(next)) {
+    return `${dt} ${next}`;
+  }
+  return dt;
 }
 
 function buildPunchTimeISO(dateTime: string): { date: string; iso: string } | null {
@@ -144,7 +205,7 @@ export function parseBiometricLog(content: string): ParseResult {
 
     const enNoRaw = (cols[enIdx] ?? "").trim();
     const inOutRaw = (cols[inOutIdx] ?? "").trim();
-    const dtRaw = (cols[dtIdx] ?? "").trim();
+    const dtRaw = readDateTime(cols, dtIdx);
 
     if (!enNoRaw || !dtRaw) {
       skipped++;
