@@ -186,25 +186,7 @@ export async function GET(request: NextRequest) {
 
 
 
-      const header = [
-        "Beneficiary Name",
-        "Beneficiary Account Number",
-        "IFSC",
-        "Transaction Type",
-        "Debit Account Number",
-        "Transaction Date",
-        "Amount",
-        "Currency",
-        "Beneficiary Email ID",
-        "Remarks",
-        "Custom Header \u2013 1",
-        "Custom Header \u2013 2",
-        "Custom Header \u2013 3",
-        "Custom Header \u2013 4",
-        "Custom Header \u2013 5",
-      ];
-
-      const aoa: (string | number)[][] = [header];
+      const aoa: (string | number)[][] = [];
       for (const r of payableRows) {
         const b = r.bank!;
         aoa.push([
@@ -226,18 +208,26 @@ export async function GET(request: NextRequest) {
         ]);
       }
 
-      const XLSX = await import("xlsx");
-      const ws = XLSX.utils.aoa_to_sheet(aoa);
-      ws["!cols"] = [
-        { wch: 28 }, { wch: 22 }, { wch: 14 }, { wch: 16 }, { wch: 20 },
-        { wch: 16 }, { wch: 14 }, { wch: 10 }, { wch: 24 }, { wch: 28 },
-        { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 16 },
-      ];
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
-      const out = XLSX.write(wb, { bookType: "xlsx", type: "buffer" }) as Buffer;
+      const ExcelJS = await import("exceljs");
+      const workbook = new ExcelJS.Workbook();
+      const path = await import("path");
+      
+      const templatePath = path.join(process.cwd(), "public", "templates", "BLKPAY_TEMPLATE.xlsx");
+      await workbook.xlsx.readFile(templatePath);
+      
+      const worksheet = workbook.getWorksheet(1);
+      if (!worksheet) {
+        throw new Error("Template worksheet not found");
+      }
+      
+      // aoa contains the rows to append
+      for (const row of aoa) {
+        worksheet.addRow(row);
+      }
 
-      return new NextResponse(new Uint8Array(out), {
+      const outBuffer = await workbook.xlsx.writeBuffer();
+
+      return new NextResponse(new Uint8Array(outBuffer as ArrayBuffer), {
         headers: {
           "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
           "Content-Disposition": `attachment; filename="BLKPAY_${fileStamp}.xlsx"`,
