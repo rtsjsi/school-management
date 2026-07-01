@@ -192,9 +192,9 @@ export default function AttendanceReviewAndApprove() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="sticky left-0 bg-background z-10 min-w-[140px]">Employee</TableHead>
+                    <TableHead className="sticky top-0 left-0 bg-background z-30 min-w-[140px] shadow-[0_1px_0_hsl(var(--border))]">Employee</TableHead>
                     {data.dailyData.slice(0, 31).map((d) => (
-                      <TableHead key={d.date} className="text-center min-w-[70px] text-xs">
+                      <TableHead key={d.date} className="sticky top-0 bg-background z-20 text-center min-w-[70px] text-xs shadow-[0_1px_0_hsl(var(--border))]">
                         {new Date(d.date).getDate()}
                       </TableHead>
                     ))}
