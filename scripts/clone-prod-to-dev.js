@@ -18,7 +18,7 @@ const PUBLIC_TABLES = [
   "employee_attendance_approvals",
   "employee_attendance_daily",
   "employee_attendance_punches",
-  "employee_salaries",
+
   "employees",
   "exam_result_subjects",
   "exam_subjects",
@@ -32,8 +32,7 @@ const PUBLIC_TABLES = [
   "holidays",
   "profile_allowed_classes",
   "profiles",
-  "salary_allowance_items",
-  "salary_deduction_items",
+
   "school_settings",
   "standard_divisions",
   "standards",
@@ -71,9 +70,8 @@ const INSERT_ORDER = [
   "public.employee_attendance_daily",
   "public.employee_attendance_punches",
   "public.employee_attendance_approvals",
-  "public.employee_salaries",
-  "public.salary_deduction_items",
-  "public.salary_allowance_items",
+
+
 ];
 
 const MIME_MAP = {

@@ -15,12 +15,12 @@ Each run creates a new timestamped folder under `Clone/`, so you always have his
 
 **Auth:** `auth.users`
 
-**Public (28 tables):**
+**Public (25 tables):**
 `academic_years`, `employees`, `employee_attendance_approvals`, `employee_attendance_daily`,
-`employee_attendance_punches`, `employee_salaries`, `exam_result_subjects`, `exam_subjects`,
+`employee_attendance_punches`, `exam_result_subjects`, `exam_subjects`,
 `exams`, `expense_budgets`, `expense_heads`, `expenses`, `fee_collections`, `fee_structure_items`,
-`fee_structures`, `holidays`, `profile_allowed_classes`, `profiles`, `salary_allowance_items`,
-`salary_deduction_items`, `school_settings`, `standard_divisions`, `standards`,
+`fee_structures`, `holidays`, `profile_allowed_classes`, `profiles`,
+`school_settings`, `standard_divisions`, `standards`,
 `student_documents`, `student_enrollments`, `student_photos`, `students`, `subjects`
 
 **Storage:** All buckets and files.

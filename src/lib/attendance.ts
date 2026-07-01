@@ -29,7 +29,7 @@ export type AttendanceThresholds = { fullDayHours: number; halfDayHours: number 
 export const DEFAULT_THRESHOLDS: AttendanceThresholds = { fullDayHours: 6, halfDayHours: 3 };
 
 export type DerivedDay = {
-  status: "present" | "half_day" | "absent";
+  status: "present" | "half_day" | "absent" | "holiday" | "week_off";
   in_time?: string; // HH:MM:SS in IST
   out_time?: string; // HH:MM:SS in IST
   worked_hours: number;
@@ -86,14 +86,19 @@ function hhmmToMinutes(t?: string | null): number | null {
 export function deriveDailyStatus(
   punches: PunchLite[],
   shift: ShiftLite,
-  thresholds: AttendanceThresholds = DEFAULT_THRESHOLDS
+  thresholds: AttendanceThresholds = DEFAULT_THRESHOLDS,
+  isHoliday: boolean = false,
+  isWeekOff: boolean = false
 ): DerivedDay {
   const valid = (punches ?? [])
     .map((p) => ({ type: (p.punch_type ?? "").toUpperCase(), date: new Date(p.punch_time) }))
     .filter((p) => !Number.isNaN(p.date.getTime()));
 
   if (valid.length === 0) {
-    return { status: "absent", worked_hours: 0, is_late: false, is_early_departure: false, single_punch: false };
+    let defaultStatus: DerivedDay["status"] = "absent";
+    if (isHoliday) defaultStatus = "holiday";
+    else if (isWeekOff) defaultStatus = "week_off";
+    return { status: defaultStatus, worked_hours: 0, is_late: false, is_early_departure: false, single_punch: false };
   }
 
   const ins = valid.filter((p) => p.type === "IN").map((p) => p.date).sort((a, b) => a.getTime() - b.getTime());
@@ -144,9 +149,9 @@ export function deriveDailyStatus(
   };
 }
 
-/** Payable weight of a day: present = 1, half day = 0.5, otherwise 0. */
+/** Payable weight of a day: present/holiday/week_off = 1, half day = 0.5, otherwise 0. */
 export function dayWeight(status: string | null | undefined): number {
-  if (status === "present") return 1;
+  if (status === "present" || status === "holiday" || status === "week_off") return 1;
   if (status === "half_day") return 0.5;
   return 0;
 }

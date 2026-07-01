@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,6 +24,18 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 const STATUSES = ["present", "absent", "half_day", "leave", "holiday", "week_off"] as const;
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "present": return "bg-emerald-100/50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400";
+    case "absent": return "bg-rose-100/50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400";
+    case "half_day": return "bg-amber-100/50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400";
+    case "leave": return "bg-blue-100/50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400";
+    case "holiday": return "bg-purple-100/50 text-purple-700 dark:bg-purple-950/30 dark:text-purple-400";
+    case "week_off": return "bg-slate-100/50 text-slate-700 dark:bg-slate-800/30 dark:text-slate-400";
+    default: return "";
+  }
+};
 
 type DayRow = { empId: string; empName: string; date: string; status: string; in_time?: string; out_time?: string; source: string };
 
@@ -179,9 +192,9 @@ export default function AttendanceReviewAndApprove() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="sticky left-0 bg-background z-10 min-w-[140px]">Employee</TableHead>
+                    <TableHead className="sticky top-0 left-0 bg-background z-30 min-w-[140px] shadow-[0_1px_0_hsl(var(--border))]">Employee</TableHead>
                     {data.dailyData.slice(0, 31).map((d) => (
-                      <TableHead key={d.date} className="text-center min-w-[70px] text-xs">
+                      <TableHead key={d.date} className="sticky top-0 bg-background z-20 text-center min-w-[70px] text-xs shadow-[0_1px_0_hsl(var(--border))]">
                         {new Date(d.date).getDate()}
                       </TableHead>
                     ))}
@@ -200,13 +213,13 @@ export default function AttendanceReviewAndApprove() {
                         const status = getStatus(row);
                         const isEditable = row.source !== "holiday" && row.source !== "weekend";
                         return (
-                          <TableCell key={dayData.date} className="text-center p-1">
+                          <TableCell key={dayData.date} className={cn("text-center p-1", getStatusColor(status))}>
                             {isEditable ? (
                               <Select
                                 value={status}
                                 onValueChange={(v) => handleStatusChange(row.empId, row.date, v)}
                               >
-                                <SelectTrigger className="h-8 text-xs border-0 p-1">
+                                <SelectTrigger className="h-8 text-xs border-0 p-1 bg-transparent shadow-none font-medium">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -216,7 +229,9 @@ export default function AttendanceReviewAndApprove() {
                                 </SelectContent>
                               </Select>
                             ) : (
-                              <span className="text-xs text-muted-foreground">{status}</span>
+                              <div className="flex h-8 items-center justify-center font-medium">
+                                <span className="text-xs">{status.replace("_", " ")}</span>
+                              </div>
                             )}
                           </TableCell>
                         );

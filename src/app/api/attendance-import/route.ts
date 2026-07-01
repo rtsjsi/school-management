@@ -84,6 +84,13 @@ export async function POST(request: NextRequest) {
       halfDayHours: Number(settings?.half_day_hours ?? DEFAULT_THRESHOLDS.halfDayHours),
     };
 
+    const { data: holidaysData } = await supabase
+      .from("holidays")
+      .select("date")
+      .gte("date", `${monthYear}-01`)
+      .lte("date", `${monthYear}-31`);
+    const holidayDates = new Set((holidaysData ?? []).map((h) => h.date));
+
     const unmapped = new Map<string, number>();
     const mappedEmpIds = new Set<string>();
     type DbPunch = {
@@ -113,10 +120,16 @@ export async function POST(request: NextRequest) {
 
     for (const g of groups.values()) {
       const shift = employeeShiftLite(g.emp);
+      const isHoliday = holidayDates.has(g.date);
+      const dayOfWeek = new Date(g.date).getDay();
+      const isWeekOff = dayOfWeek === 0 || dayOfWeek === 6;
+
       const derived = deriveDailyStatus(
         g.items.map((i) => ({ punch_type: i.punchType, punch_time: i.punchTimeISO })),
         shift,
-        thresholds
+        thresholds,
+        isHoliday,
+        isWeekOff
       );
       const ins = g.items.filter((i) => i.punchType === "IN").sort((a, b) => a.punchTimeISO.localeCompare(b.punchTimeISO));
       const outs = g.items.filter((i) => i.punchType === "OUT").sort((a, b) => a.punchTimeISO.localeCompare(b.punchTimeISO));
@@ -178,10 +191,16 @@ export async function POST(request: NextRequest) {
       const key = `${g.emp.id}::${g.date}`;
       if (protectedKeys.has(key)) continue;
       const shift = employeeShiftLite(g.emp);
+      const isHoliday = holidayDates.has(g.date);
+      const dayOfWeek = new Date(g.date).getDay();
+      const isWeekOff = dayOfWeek === 0 || dayOfWeek === 6;
+
       const derived = deriveDailyStatus(
         g.items.map((i) => ({ punch_type: i.punchType, punch_time: i.punchTimeISO })),
         shift,
-        thresholds
+        thresholds,
+        isHoliday,
+        isWeekOff
       );
       dailyRows.push({
         employee_id: g.emp.id,
