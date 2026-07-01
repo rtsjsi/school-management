@@ -33,7 +33,7 @@ export const COMPLETENESS_CATEGORIES = {
   Parents: [
     "father_name",
     "father_contact",
-    "father_email",
+    "parent_email",
     "mother_name",
     "mother_contact",
     "whatsapp_no",

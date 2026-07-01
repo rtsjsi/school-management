@@ -59,7 +59,7 @@ interface StudentData {
   udise_id?: string;
   father_name?: string;
   father_contact?: string;
-  father_email?: string;
+  parent_email?: string;
   mother_name?: string;
   mother_contact?: string;
   whatsapp_no?: string;
@@ -388,9 +388,9 @@ async function exportStudentBioPdf(student: StudentData, schoolName: string, pho
   drawTable([
     ["Father's Name", student.father_name ?? "—"],
     ["Father's Contact", student.father_contact ?? "—"],
-    ["Father's Email", student.father_email ?? "—"],
     ["Mother's Name", student.mother_name ?? "—"],
     ["Mother's Contact", student.mother_contact ?? "—"],
+    ["Parent's Email", student.parent_email ?? "—"],
     ["WhatsApp No.", student.whatsapp_no ?? "—"],
   ]);
 
@@ -714,9 +714,9 @@ export function StudentViewDialog({ student, open: controlledOpen, onOpenChange:
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
               <InfoRow label="Father's Name" value={student.father_name ?? "—"} />
               <InfoRow label="Father's Contact" value={student.father_contact ?? "—"} />
-              <InfoRow label="Father's Email" value={student.father_email ?? "—"} />
               <InfoRow label="Mother's Name" value={student.mother_name ?? "—"} />
               <InfoRow label="Mother's Contact" value={student.mother_contact ?? "—"} />
+              <InfoRow label="Parent's Email" value={student.parent_email ?? "—"} />
               <InfoRow label="WhatsApp No." value={student.whatsapp_no ?? "—"} />
             </div>
           </Section>

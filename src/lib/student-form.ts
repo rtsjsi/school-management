@@ -96,7 +96,7 @@ export type StudentFormState = {
   apaar_id: string;
   father_name: string;
   father_contact: string;
-  father_email: string;
+  parent_email: string;
   mother_name: string;
   mother_contact: string;
   fee_concession_amount: string;
@@ -146,7 +146,7 @@ export function studentFormFromRecord(r: Record<string, unknown>): StudentFormSt
     apaar_id: (r.apaar_id as string) || "",
     father_name: (r.father_name as string) || "",
     father_contact: (r.father_contact as string) || "",
-    father_email: (r.father_email as string) || "",
+    parent_email: (r.parent_email as string) || "",
     mother_name: (r.mother_name as string) || "",
     mother_contact: (r.mother_contact as string) || "",
     fee_concession_amount: r.fee_concession_amount != null ? String(r.fee_concession_amount) : "",
@@ -208,7 +208,7 @@ export function formToPayload(form: StudentFormState): Record<string, unknown> {
     apaar_id: form.apaar_id.trim() || null,
     father_name: form.father_name.trim() || null,
     father_contact: form.father_contact.trim() || null,
-    father_email: form.father_email.trim() || null,
+    parent_email: form.parent_email.trim() || null,
     mother_name: form.mother_name.trim() || null,
     mother_contact: form.mother_contact.trim() || null,
     fee_concession_amount: form.fee_concession_amount ? parseFloat(form.fee_concession_amount) : null,
