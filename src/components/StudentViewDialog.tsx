@@ -16,8 +16,6 @@ import {
   Eye,
   GraduationCap,
   User,
-  Phone,
-  Mail,
   MapPin,
   Shield,
   BookOpen,
@@ -27,7 +25,6 @@ import {
   Calendar,
   Hash,
   Droplets,
-  Globe,
   AlertTriangle,
   Landmark,
 } from "lucide-react";
@@ -56,28 +53,13 @@ interface StudentData {
   mother_tongue?: string;
   second_language?: string;
   birth_place?: string;
-  birth_certificate_number?: string;
   aadhar_no?: string;
   pen_no?: string;
   apaar_id?: string;
   udise_id?: string;
   father_name?: string;
-  father_education?: string;
-  father_occupation?: string;
   mother_name?: string;
   mother_contact?: string;
-  mother_education?: string;
-  mother_occupation?: string;
-  parent_name?: string;
-  parent_contact?: string;
-  parent_email?: string;
-  guardian_name?: string;
-  guardian_contact?: string;
-  guardian_email?: string;
-  guardian_education?: string;
-  guardian_occupation?: string;
-  emergency_contact_name?: string;
-  emergency_contact_number?: string;
   whatsapp_no?: string;
   present_address_line1?: string;
   present_address_line2?: string;
@@ -87,23 +69,12 @@ interface StudentData {
   present_state?: string;
   present_pincode?: string;
   present_country?: string;
-  permanent_address_line1?: string;
-  permanent_address_line2?: string;
-  permanent_city?: string;
-  permanent_taluka?: string;
-  permanent_district?: string;
-  permanent_state?: string;
-  permanent_pincode?: string;
-  permanent_country?: string;
   last_school?: string;
-  previous_school_address?: string;
   previous_school_state_unique_id?: string;
   fee_concession_amount?: number;
   fee_concession_reason?: string;
   height?: string;
   weight?: string;
-  hobby?: string;
-  sign_of_identity?: string;
   account_holder_name?: string;
   bank_name?: string;
   bank_branch?: string;
@@ -385,8 +356,6 @@ async function exportStudentBioPdf(student: StudentData, schoolName: string, pho
     ["Caste", cap(student.caste)],
     ["Height", student.height ?? "—"],
     ["Weight", student.weight ?? "—"],
-    ["Hobby", cap(student.hobby)],
-    ["Sign of Identity", student.sign_of_identity ?? "—"],
   ]);
 
   /* ── 2. Academic Information ── */
@@ -410,30 +379,15 @@ async function exportStudentBioPdf(student: StudentData, schoolName: string, pho
     ["PEN Number", student.pen_no ?? "—"],
     ["APAAR ID", student.apaar_id ?? "—"],
     ["UDISE ID", student.udise_id ?? "—"],
-    ["Birth Certificate No.", student.birth_certificate_number ?? "—"],
   ]);
 
   /* ── 4. Family Information ── */
   sectionHeader("FAMILY INFORMATION");
   drawTable([
     ["Father's Name", student.father_name ?? "—"],
-    ["Father's Education", student.father_education ?? "—"],
-    ["Father's Occupation", student.father_occupation ?? "—"],
     ["Mother's Name", student.mother_name ?? "—"],
     ["Mother's Contact", student.mother_contact ?? "—"],
-    ["Mother's Education", student.mother_education ?? "—"],
-    ["Mother's Occupation", student.mother_occupation ?? "—"],
-    ["Parent/Guardian", student.parent_name ?? "—"],
-    ["Parent Contact", student.parent_contact ?? "—"],
-    ["Parent Email", student.parent_email ?? "—"],
     ["WhatsApp No.", student.whatsapp_no ?? "—"],
-    ["Guardian Name", student.guardian_name ?? "—"],
-    ["Guardian Contact", student.guardian_contact ?? "—"],
-    ["Guardian Email", student.guardian_email ?? "—"],
-    ["Guardian Education", student.guardian_education ?? "—"],
-    ["Guardian Occupation", student.guardian_occupation ?? "—"],
-    ["Emergency Contact", student.emergency_contact_name ?? "—"],
-    ["Emergency Phone", student.emergency_contact_number ?? "—"],
   ]);
 
   /* ── 5. Address ── */
@@ -455,28 +409,12 @@ async function exportStudentBioPdf(student: StudentData, schoolName: string, pho
     ["Country", student.present_country ?? "India"],
   ]);
 
-  const hasPermanent = student.permanent_address_line1 || student.permanent_city || student.permanent_state;
-  if (hasPermanent) {
-    sectionHeader("PERMANENT ADDRESS");
-    drawTable([
-      ["Address Line 1", student.permanent_address_line1 ?? "—"],
-      ["Address Line 2", student.permanent_address_line2 ?? "—"],
-      ["City", student.permanent_city ?? "—"],
-      ["Taluka", student.permanent_taluka ?? "—"],
-      ["District", student.permanent_district ?? "—"],
-      ["State", student.permanent_state ?? "—"],
-      ["Pincode", student.permanent_pincode ?? "—"],
-      ["Country", student.permanent_country ?? "India"],
-    ]);
-  }
-
   /* ── 6. Previous School ── */
-  const hasPrevSchool = student.last_school || student.previous_school_address;
+  const hasPrevSchool = student.last_school || student.previous_school_state_unique_id;
   if (hasPrevSchool) {
     sectionHeader("PREVIOUS SCHOOL");
     drawTable([
       ["Last School", student.last_school ?? "—"],
-      ["School Address", student.previous_school_address ?? "—"],
       ["State Unique ID", student.previous_school_state_unique_id ?? "—"],
     ]);
   }
@@ -607,12 +545,6 @@ export function StudentViewDialog({ student, open: controlledOpen, onOpenChange:
     student.present_district, student.present_state,
     student.present_pincode, student.present_country
   );
-  const permanentAddress = buildFullAddress(
-    student.permanent_address_line1, student.permanent_address_line2,
-    student.permanent_city, student.permanent_taluka,
-    student.permanent_district, student.permanent_state,
-    student.permanent_pincode, student.permanent_country
-  );
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -735,8 +667,6 @@ export function StudentViewDialog({ student, open: controlledOpen, onOpenChange:
               <InfoRow label="Caste" value={cap(student.caste)} />
               <InfoRow label="Height" value={student.height ?? "—"} />
               <InfoRow label="Weight" value={student.weight ?? "—"} />
-              <InfoRow label="Hobby" value={cap(student.hobby)} />
-              <InfoRow label="Sign of Identity" value={student.sign_of_identity ?? "—"} />
             </div>
           </Section>
 
@@ -770,7 +700,6 @@ export function StudentViewDialog({ student, open: controlledOpen, onOpenChange:
               <InfoRow label="PEN Number" value={student.pen_no ?? "—"} mono />
               <InfoRow label="APAAR ID" value={student.apaar_id ?? "—"} mono />
               <InfoRow label="UDISE ID" value={student.udise_id ?? "—"} mono />
-              <InfoRow label="Birth Cert. No." value={student.birth_certificate_number ?? "—"} mono />
             </div>
           </Section>
 
@@ -780,42 +709,10 @@ export function StudentViewDialog({ student, open: controlledOpen, onOpenChange:
           <Section icon={Heart} title="Family Information" accent="bg-rose-500">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
               <InfoRow label="Father's Name" value={student.father_name ?? "—"} />
-              <InfoRow label="Father's Education" value={student.father_education ?? "—"} />
-              <InfoRow label="Father's Occupation" value={student.father_occupation ?? "—"} />
               <InfoRow label="Mother's Name" value={student.mother_name ?? "—"} />
               <InfoRow label="Mother's Contact" value={student.mother_contact ?? "—"} />
-              <InfoRow label="Mother's Education" value={student.mother_education ?? "—"} />
-              <InfoRow label="Mother's Occupation" value={student.mother_occupation ?? "—"} />
-            </div>
-          </Section>
-
-          <hr className="border-border/40" />
-
-          {/* ── Contact Information ── */}
-          <Section icon={Phone} title="Contact Information" accent="bg-blue-500">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
-              <InfoRow label="Parent/Guardian" value={student.parent_name ?? "—"} />
-              <InfoRow label="Parent Contact" value={student.parent_contact ?? "—"} />
-              <InfoRow label="Parent Email" value={student.parent_email ?? "—"} />
               <InfoRow label="WhatsApp No." value={student.whatsapp_no ?? "—"} />
-              <InfoRow label="Guardian Name" value={student.guardian_name ?? "—"} />
-              <InfoRow label="Guardian Contact" value={student.guardian_contact ?? "—"} />
-              <InfoRow label="Guardian Email" value={student.guardian_email ?? "—"} />
-              <InfoRow label="Guardian Education" value={student.guardian_education ?? "—"} />
-              <InfoRow label="Guardian Occupation" value={student.guardian_occupation ?? "—"} />
             </div>
-            {(student.emergency_contact_name || student.emergency_contact_number) && (
-              <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30 p-3">
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
-                  <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">Emergency Contact</span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
-                  <InfoRow label="Name" value={student.emergency_contact_name ?? "—"} />
-                  <InfoRow label="Phone" value={student.emergency_contact_number ?? "—"} />
-                </div>
-              </div>
-            )}
           </Section>
 
           <hr className="border-border/40" />
@@ -831,26 +728,13 @@ export function StudentViewDialog({ student, open: controlledOpen, onOpenChange:
             )}
           </Section>
 
-          {/* ── Permanent Address ── */}
-          {permanentAddress !== "—" && permanentAddress !== presentAddress && (
-            <>
-              <hr className="border-border/40" />
-              <Section icon={Globe} title="Permanent Address" accent="bg-teal-500">
-                <div className="rounded-lg border bg-muted/30 p-3">
-                  <p className="text-sm leading-relaxed">{permanentAddress}</p>
-                </div>
-              </Section>
-            </>
-          )}
-
           {/* ── Previous School ── */}
-          {(student.last_school || student.previous_school_address) && (
+          {(student.last_school || student.previous_school_state_unique_id) && (
             <>
               <hr className="border-border/40" />
               <Section icon={Building2} title="Previous School">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
                   <InfoRow label="Last School" value={student.last_school ?? "—"} />
-                  <InfoRow label="School Address" value={student.previous_school_address ?? "—"} />
                   <InfoRow label="State Unique ID" value={student.previous_school_state_unique_id ?? "—"} mono />
                 </div>
               </Section>

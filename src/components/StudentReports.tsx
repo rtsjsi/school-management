@@ -47,15 +47,10 @@ type StudentReportRow = {
   pen_no?: string | null;
   apaar_id?: string | null;
   udise_id?: string | null;
-  parent_name?: string | null;
-  parent_contact?: string | null;
-  parent_email?: string | null;
+  father_name?: string | null;
   mother_name?: string | null;
   mother_contact?: string | null;
-  father_name?: string | null;
-  guardian_name?: string | null;
-  guardian_contact?: string | null;
-  guardian_email?: string | null;
+  whatsapp_no?: string | null;
   present_address_line1?: string | null;
   present_address_line2?: string | null;
   present_city?: string | null;
@@ -309,14 +304,6 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
     "present_state",
     "present_pincode",
     "present_country",
-    "permanent_address_line1",
-    "permanent_address_line2",
-    "permanent_city",
-    "permanent_taluka",
-    "permanent_district",
-    "permanent_state",
-    "permanent_pincode",
-    "permanent_country",
     "mother_tongue",
     "admission_date",
     "status",
@@ -325,41 +312,23 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
     "caste",
     "birth_place",
     "last_school",
-    "previous_school_address",
     "previous_school_state_unique_id",
-    "birth_certificate_number",
     "aadhar_no",
     "pen_no",
     "apaar_id",
     "father_name",
     "mother_name",
-    "parent_name",
-    "parent_contact",
     "mother_contact",
-    "parent_email",
-    "guardian_name",
-    "guardian_contact",
-    "guardian_email",
-    "emergency_contact_name",
-    "emergency_contact_number",
     "fee_concession_amount",
     "fee_concession_reason",
     "height",
     "weight",
-    "hobby",
-    "sign_of_identity",
-    "father_education",
-    "father_occupation",
-    "mother_education",
-    "mother_occupation",
     "whatsapp_no",
     "account_holder_name",
     "bank_name",
     "bank_branch",
     "bank_ifsc",
     "account_no",
-    "guardian_education",
-    "guardian_occupation",
     "udise_id",
     "second_language",
     "is_rte_quota",
@@ -717,7 +686,7 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
                         <div><span className="text-muted-foreground">Gender:</span> <span className="capitalize">{row.gender ?? "—"}</span></div>
                         <div><span className="text-muted-foreground">GR No:</span> {row.gr_number ?? "—"}</div>
                         <div><span className="text-muted-foreground">RTE:</span> {row.is_rte_quota ? <span className="text-amber-600 dark:text-amber-400 font-semibold">RTE (Yes)</span> : "No"}</div>
-                        {row.parent_contact && <div><span className="text-muted-foreground">Contact:</span> {row.parent_contact}</div>}
+                        {row.whatsapp_no && <div><span className="text-muted-foreground">WhatsApp:</span> {row.whatsapp_no}</div>}
                       </TableCell>
                     </TableRow>
                   ) : null,
