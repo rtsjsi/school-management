@@ -16,8 +16,8 @@ export type StudentExportRow = {
   roll_number?: number | null;
   gender?: string | null;
   date_of_birth?: string | null;
-  parent_name?: string | null;
-  parent_contact?: string | null;
+  father_name?: string | null;
+  whatsapp_no?: string | null;
   status?: string | null;
   is_rte_quota?: boolean | null;
   [key: string]: unknown;
@@ -106,8 +106,8 @@ export function exportStudentsPdf(
           })
           .replace(/\//g, "-")
       : "—",
-    row.parent_name ?? "—",
-    row.parent_contact ?? "—",
+    row.father_name ?? "—",
+    row.whatsapp_no ?? "—",
     row.is_rte_quota ? "Yes" : "No",
     (row.status ?? "active").charAt(0).toUpperCase() + (row.status ?? "active").slice(1),
   ]);
@@ -116,7 +116,7 @@ export function exportStudentsPdf(
     startY: curY,
     margin: { left: marginL, right: marginR },
     head: [
-      ["#", "GR No.", "Student Name", "Std", "Div", "Roll", "Gender", "DOB", "Parent / Guardian", "Contact", "RTE", "Status"],
+      ["#", "GR No.", "Student Name", "Std", "Div", "Roll", "Gender", "DOB", "Father", "WhatsApp", "RTE", "Status"],
     ],
     body,
     foot: [
