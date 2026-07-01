@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
-import { deriveDailyStatus, dayWeight, DEFAULT_THRESHOLDS, type ShiftLite } from "@/lib/attendance";
+import { deriveDailyStatus, dayWeight, DEFAULT_THRESHOLDS, employeeShiftLite } from "@/lib/attendance";
 
 export const dynamic = "force-dynamic";
 
@@ -36,14 +36,8 @@ export async function GET(request: NextRequest) {
 
     const { data: employees } = await supabase
       .from("employees")
-      .select("id, full_name, monthly_salary, bank_name, account_number, ifsc_code, account_holder_name, shift_id")
+      .select("id, full_name, monthly_salary, bank_name, account_number, ifsc_code, account_holder_name, shift_start_time, shift_end_time")
       .eq("status", "active");
-
-    const { data: shifts } = await supabase
-      .from("shifts")
-      .select("id, start_time, end_time, grace_period_minutes, late_threshold_minutes, early_departure_threshold_minutes");
-    const shiftMap = new Map<string, ShiftLite>();
-    (shifts ?? []).forEach((s) => shiftMap.set(s.id, s));
 
     const { data: settings } = await supabase
       .from("payroll_settings")
@@ -130,7 +124,7 @@ export async function GET(request: NextRequest) {
 
     for (const emp of employees ?? []) {
       let presentDays = 0;
-      const empShift = emp.shift_id ? shiftMap.get(emp.shift_id) ?? null : null;
+      const empShift = employeeShiftLite(emp);
       for (let d = 1; d <= lastDay; d++) {
         const dStr = `${y}-${m}-${String(d).padStart(2, "0")}`;
         const day = new Date(dStr).getDay();

@@ -2,13 +2,10 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getUser, canAccessPayroll } from "@/lib/auth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import ShiftForm from "@/components/ShiftForm";
 import HolidayForm from "@/components/HolidayForm";
-import { ShiftList } from "@/components/ShiftList";
 import { HolidayList } from "@/components/HolidayList";
 import { AttendanceDailyRegister } from "@/components/AttendanceDailyRegister";
 import AttendanceImport from "@/components/AttendanceImport";
-import EmployeeImport from "@/components/EmployeeImport";
 import AttendanceReports from "@/components/AttendanceReports";
 import AttendanceReviewAndApprove from "@/components/AttendanceReviewAndApprove";
 import NEFTGeneration from "@/components/NEFTGeneration";
@@ -28,7 +25,6 @@ export default async function PayrollPage() {
         <div className="w-full overflow-x-auto -mx-3 px-3 sm:-mx-4 sm:px-4 md:mx-0 md:px-0">
           <TabsList className="inline-flex flex-nowrap w-max min-w-full justify-start gap-0.5 sm:gap-1">
             <TabsTrigger value="employees">Staff</TabsTrigger>
-            <TabsTrigger value="shifts">Shifts</TabsTrigger>
             <TabsTrigger value="holidays">Holidays</TabsTrigger>
             <TabsTrigger value="attendance">Attendance</TabsTrigger>
             <TabsTrigger value="import">Import</TabsTrigger>
@@ -42,13 +38,6 @@ export default async function PayrollPage() {
         <TabsContent value="employees" className="space-y-6">
           <Suspense fallback={<TableSkeleton rows={5} columns={6} />}>
             <EmployeesList />
-          </Suspense>
-        </TabsContent>
-
-        <TabsContent value="shifts" className="space-y-6">
-          <ShiftForm />
-          <Suspense fallback={<TableSkeleton rows={3} columns={4} />}>
-            <ShiftList />
           </Suspense>
         </TabsContent>
 
@@ -66,7 +55,6 @@ export default async function PayrollPage() {
         </TabsContent>
 
         <TabsContent value="import" className="space-y-6">
-          <EmployeeImport />
           <AttendanceImport />
         </TabsContent>
 

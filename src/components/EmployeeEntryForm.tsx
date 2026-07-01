@@ -16,10 +16,10 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { EMPLOYEE_TYPES, EMPLOYEE_ROLES } from "@/lib/lov";
+import { reassignEmployeeIds } from "@/lib/employee-id";
+import { normalizeTimeForDb } from "@/lib/employee-shift";
 
-type ShiftOption = { id: string; name: string };
-
-export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] }) {
+export default function EmployeeEntryForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -34,7 +34,8 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
     role: "staff",
     employee_type: "full_time",
     joining_date: "",
-    shift_id: "",
+    shift_start_time: "09:00",
+    shift_end_time: "17:00",
     biometric_enroll_no: "",
     degree: "",
     institution: "",
@@ -87,7 +88,6 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
     setLoading(true);
     try {
       const supabase = createClient();
-      const empId = `EMP-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
 
       const { data: emp, error: empErr } = await supabase
         .from("employees")
@@ -101,9 +101,10 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
           role: form.role,
           employee_type: form.employee_type,
           joining_date: form.joining_date || null,
-          shift_id: form.shift_id || null,
+          shift_start_time: normalizeTimeForDb(form.shift_start_time),
+          shift_end_time: normalizeTimeForDb(form.shift_end_time),
           biometric_enroll_no: form.biometric_enroll_no.trim() || null,
-          employee_id: empId,
+          employee_id: "0",
           monthly_salary: form.monthly_salary ? parseFloat(form.monthly_salary) : null,
           degree: form.degree.trim() || null,
           institution: form.institution?.trim() || null,
@@ -127,10 +128,19 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
         return;
       }
 
+      const { error: reassignError } = await reassignEmployeeIds(supabase);
+      if (reassignError) {
+        toast({
+          variant: "destructive",
+          title: "Employee added but ID assignment failed",
+          description: reassignError,
+        });
+      }
+
       setForm({
         full_name: "", email: "", phone_number: "", address: "", aadhaar: "", pan: "",
         role: "staff", employee_type: "full_time",
-        joining_date: "", shift_id: "", biometric_enroll_no: "", degree: "", institution: "", year_passed: "",
+        joining_date: "", shift_start_time: "09:00", shift_end_time: "17:00", biometric_enroll_no: "", degree: "", institution: "", year_passed: "",
         bank_name: "", account_number: "", ifsc_code: "", account_holder_name: "",
         monthly_salary: "",
       });
@@ -256,17 +266,20 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
               <DatePicker value={form.joining_date} onChange={(isoDate) => setForm((p) => ({ ...p, joining_date: isoDate }))} />
             </div>
             <div className="space-y-2">
-              <Label>Shift</Label>
-              <Select
-                value={form.shift_id || "none"}
-                onValueChange={(v) => setForm((p) => ({ ...p, shift_id: v === "none" ? "" : v }))}
-              >
-                <SelectTrigger><SelectValue placeholder="Select shift" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No shift</SelectItem>
-                  {shifts.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label>Shift Start Time</Label>
+              <Input
+                type="time"
+                value={form.shift_start_time}
+                onChange={(e) => setForm((p) => ({ ...p, shift_start_time: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Shift End Time</Label>
+              <Input
+                type="time"
+                value={form.shift_end_time}
+                onChange={(e) => setForm((p) => ({ ...p, shift_end_time: e.target.value }))}
+              />
             </div>
             <div className="space-y-2">
               <Label>Biometric Enrollment No</Label>

@@ -21,7 +21,7 @@ export function EmployeesExportButtons({ rows }: { rows: EmployeeExportRow[] }) 
       "Emp ID": r.employee_id,
       Name: r.full_name,
       Email: r.email,
-      Shift: r.shift,
+      "Shift times": r.shift,
       Status: r.status,
     }));
     const ws = XLSX.utils.json_to_sheet(exportRows);
@@ -53,7 +53,7 @@ export function EmployeesExportButtons({ rows }: { rows: EmployeeExportRow[] }) 
     doc.text("Employees Report", 14, 14);
     autoTable(doc, {
       startY: 20,
-      head: [["Emp ID", "Name", "Email", "Shift", "Status"]],
+      head: [["Emp ID", "Name", "Email", "Shift times", "Status"]],
       body: rows.map((r) => [r.employee_id, r.full_name, r.email, r.shift, r.status]),
       styles: { fontSize: 8 },
       headStyles: { fillColor: [220, 38, 38] },

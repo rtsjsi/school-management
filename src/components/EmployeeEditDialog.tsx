@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { EMPLOYEE_TYPES, EMPLOYEE_ROLES } from "@/lib/lov";
+import { reassignEmployeeIds } from "@/lib/employee-id";
+import { normalizeTimeForDb, timeForInput } from "@/lib/employee-shift";
 
 interface EmployeeEditDialogProps {
   employee: {
@@ -27,7 +29,8 @@ interface EmployeeEditDialogProps {
     role?: string | null;
     employee_type?: string | null;
     joining_date?: string | null;
-    shift_id?: string | null;
+    shift_start_time?: string | null;
+    shift_end_time?: string | null;
     biometric_enroll_no?: string | null;
     status?: string | null;
     monthly_salary?: number | null;
@@ -39,13 +42,23 @@ interface EmployeeEditDialogProps {
     ifsc_code?: string | null;
     account_holder_name?: string | null;
   };
-  shifts: { id: string; name: string }[];
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onSaved?: () => void;
 }
 
-export function EmployeeEditDialog({ employee, shifts }: EmployeeEditDialogProps) {
+export function EmployeeEditDialog({
+  employee,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  onSaved,
+}: EmployeeEditDialogProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const [open, setOpen] = useState(false);
+  const [localOpen, setLocalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : localOpen;
+  const setOpen = isControlled ? controlledOnOpenChange : setLocalOpen;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -58,7 +71,8 @@ export function EmployeeEditDialog({ employee, shifts }: EmployeeEditDialogProps
     role: employee.role || "staff",
     employee_type: employee.employee_type || "full_time",
     joining_date: employee.joining_date || "",
-    shift_id: employee.shift_id || "",
+    shift_start_time: timeForInput(employee.shift_start_time) || "09:00",
+    shift_end_time: timeForInput(employee.shift_end_time) || "17:00",
     biometric_enroll_no: employee.biometric_enroll_no || "",
     status: employee.status || "active",
     monthly_salary: employee.monthly_salary?.toString() || "",
@@ -98,7 +112,8 @@ export function EmployeeEditDialog({ employee, shifts }: EmployeeEditDialogProps
           role: form.role,
           employee_type: form.employee_type,
           joining_date: form.joining_date || null,
-          shift_id: form.shift_id || null,
+          shift_start_time: normalizeTimeForDb(form.shift_start_time),
+          shift_end_time: normalizeTimeForDb(form.shift_end_time),
           biometric_enroll_no: form.biometric_enroll_no.trim() || null,
           status: form.status,
           monthly_salary: form.monthly_salary ? parseFloat(form.monthly_salary) : null,
@@ -120,11 +135,25 @@ export function EmployeeEditDialog({ employee, shifts }: EmployeeEditDialogProps
         });
         return;
       }
+
+      const joiningChanged = (form.joining_date || null) !== (employee.joining_date || null);
+      if (joiningChanged) {
+        const { error: reassignError } = await reassignEmployeeIds(supabase);
+        if (reassignError) {
+          toast({
+            variant: "destructive",
+            title: "Employee updated but ID reassignment failed",
+            description: reassignError,
+          });
+        }
+      }
+
       toast({
         title: "Employee updated",
         description: `${form.full_name.trim()} has been updated successfully.`,
       });
-      setOpen(false);
+      setOpen?.(false);
+      if (onSaved) onSaved();
       router.refresh();
     } catch {
       setError("Something went wrong.");
@@ -140,12 +169,14 @@ export function EmployeeEditDialog({ employee, shifts }: EmployeeEditDialogProps
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" variant="outline" className="gap-1">
-          <Pencil className="h-3 w-3" />
-          Edit
-        </Button>
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          <Button size="sm" variant="outline" className="gap-1">
+            <Pencil className="h-3 w-3" />
+            Edit
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-h-[90vh] overflow-y-auto max-w-[95vw] sm:max-w-2xl p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>Edit Employee</DialogTitle>
@@ -153,6 +184,10 @@ export function EmployeeEditDialog({ employee, shifts }: EmployeeEditDialogProps
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>}
+          <div className="space-y-2">
+            <Label>Employee ID</Label>
+            <Input value={employee.employee_id ?? "—"} readOnly disabled className="bg-muted font-mono" />
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Full name *</Label>
@@ -213,17 +248,20 @@ export function EmployeeEditDialog({ employee, shifts }: EmployeeEditDialogProps
               <DatePicker value={form.joining_date} onChange={(isoDate) => setForm((p) => ({ ...p, joining_date: isoDate }))} />
             </div>
             <div className="space-y-2">
-              <Label>Shift</Label>
-              <Select
-                value={form.shift_id || "none"}
-                onValueChange={(v) => setForm((p) => ({ ...p, shift_id: v === "none" ? "" : v }))}
-              >
-                <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No shift</SelectItem>
-                  {shifts.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label>Shift Start Time</Label>
+              <Input
+                type="time"
+                value={form.shift_start_time}
+                onChange={(e) => setForm((p) => ({ ...p, shift_start_time: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Shift End Time</Label>
+              <Input
+                type="time"
+                value={form.shift_end_time}
+                onChange={(e) => setForm((p) => ({ ...p, shift_end_time: e.target.value }))}
+              />
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -321,7 +359,7 @@ export function EmployeeEditDialog({ employee, shifts }: EmployeeEditDialogProps
             </div>
           </div>
           <div className="flex gap-2 justify-end pt-4">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={() => setOpen?.(false)}>Cancel</Button>
             <SubmitButton loading={loading} loadingLabel="Saving…">Save</SubmitButton>
           </div>
         </form>
