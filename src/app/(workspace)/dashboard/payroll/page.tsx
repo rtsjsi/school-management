@@ -9,8 +9,6 @@ import AttendanceImport from "@/components/AttendanceImport";
 import AttendanceReports from "@/components/AttendanceReports";
 import AttendanceReviewAndApprove from "@/components/AttendanceReviewAndApprove";
 import NEFTGeneration from "@/components/NEFTGeneration";
-import PayslipGenerator from "@/components/PayslipGenerator";
-import SalaryDeductionsManager from "@/components/SalaryDeductionsManager";
 import { EmployeesList } from "@/components/async/EmployeesList";
 import { TableSkeleton } from "@/components/skeletons/TableSkeleton";
 
@@ -30,7 +28,6 @@ export default async function PayrollPage() {
             <TabsTrigger value="import">Import</TabsTrigger>
             <TabsTrigger value="review">Review</TabsTrigger>
             <TabsTrigger value="neft">NEFT</TabsTrigger>
-            <TabsTrigger value="payslips">Payslips</TabsTrigger>
             <TabsTrigger value="reports">Reports</TabsTrigger>
           </TabsList>
         </div>
@@ -66,10 +63,7 @@ export default async function PayrollPage() {
           <NEFTGeneration />
         </TabsContent>
 
-        <TabsContent value="payslips" className="space-y-6">
-          <PayslipGenerator />
-          <SalaryDeductionsManager />
-        </TabsContent>
+
 
         <TabsContent value="reports" className="space-y-6">
           <AttendanceReports />

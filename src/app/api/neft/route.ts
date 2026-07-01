@@ -100,25 +100,7 @@ export async function GET(request: NextRequest) {
       });
     });
 
-    const { data: deductionItems } = await supabase
-      .from("salary_deduction_items")
-      .select("employee_id, amount")
-      .eq("month_year", monthYear);
 
-    const { data: allowanceItems } = await supabase
-      .from("salary_allowance_items")
-      .select("employee_id, amount")
-      .eq("month_year", monthYear);
-
-    const deductionMap = new Map<string, number>();
-    (deductionItems ?? []).forEach((d) => {
-      deductionMap.set(d.employee_id, (deductionMap.get(d.employee_id) ?? 0) + Number(d.amount));
-    });
-
-    const allowanceMap = new Map<string, number>();
-    (allowanceItems ?? []).forEach((a) => {
-      allowanceMap.set(a.employee_id, (allowanceMap.get(a.employee_id) ?? 0) + Number(a.amount));
-    });
 
     const rows: { employee_id: string; full_name: string; present_days: number; salary: number; gross_amount: number; deductions: number; net_amount: number; bank?: typeof bankMap extends Map<string, infer V> ? V : never }[] = [];
 
@@ -153,9 +135,9 @@ export async function GET(request: NextRequest) {
 
       const baseSalary = Number(emp.monthly_salary ?? 0);
       const proratedBasic = workingDays > 0 ? (baseSalary / workingDays) * presentDays : 0;
-      const allowances = allowanceMap.get(emp.id) ?? 0;
+      const allowances = 0;
       const grossAmount = Math.round((proratedBasic + allowances) * 100) / 100;
-      const deductions = deductionMap.get(emp.id) ?? 0;
+      const deductions = 0;
       const netAmount = Math.round((grossAmount - deductions) * 100) / 100;
       const bank = bankMap.get(emp.id);
 
@@ -202,23 +184,7 @@ export async function GET(request: NextRequest) {
         { onConflict: "id" }
       );
 
-      // Persist salary snapshot, same as the legacy NEFT download.
-      const now = new Date().toISOString();
-      for (const r of rows) {
-        await supabase.from("employee_salaries").upsert(
-          {
-            employee_id: r.employee_id,
-            month_year: monthYear,
-            gross_amount: r.gross_amount,
-            deductions: r.deductions,
-            net_amount: r.net_amount,
-            status: r.net_amount > 0 && r.bank ? "approved" : "pending",
-            neft_generated_at: r.net_amount > 0 && r.bank ? now : null,
-            updated_at: now,
-          },
-          { onConflict: "employee_id,month_year" }
-        );
-      }
+
 
       const header = [
         "Beneficiary Name",
@@ -280,23 +246,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (format === "neft") {
-      // Persist to employee_salaries when generating NEFT
-      const now = new Date().toISOString();
-      for (const r of rows) {
-        await supabase.from("employee_salaries").upsert(
-          {
-            employee_id: r.employee_id,
-            month_year: monthYear,
-            gross_amount: r.gross_amount,
-            deductions: r.deductions,
-            net_amount: r.net_amount,
-            status: r.net_amount > 0 && r.bank ? "approved" : "pending",
-            neft_generated_at: r.net_amount > 0 && r.bank ? now : null,
-            updated_at: now,
-          },
-          { onConflict: "employee_id,month_year" }
-        );
-      }
+
 
       const lines: string[] = [];
       lines.push("NEFT Payment File");
