@@ -19,7 +19,6 @@ export const COMPLETENESS_CATEGORIES = {
   ],
   "Identity Documents": [
     "aadhar_no",
-    "birth_certificate_number",
     "pen_no",
     "apaar_id",
     "udise_id",
@@ -31,10 +30,11 @@ export const COMPLETENESS_CATEGORIES = {
     "present_state",
     "present_pincode",
   ],
-  "Parent / Guardian": [
+  Parents: [
     "father_name",
+    "father_contact",
+    "father_email",
     "mother_name",
-    "parent_contact",
     "mother_contact",
     "whatsapp_no",
   ],

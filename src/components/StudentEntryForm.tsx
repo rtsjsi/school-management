@@ -61,15 +61,6 @@ const defaultForm = () => ({
   present_state: "",
   present_pincode: "",
   present_country: "India",
-  permanent_same_as_present: false,
-  permanent_address_line1: "",
-  permanent_address_line2: "",
-  permanent_city: "",
-  permanent_taluka: "",
-  permanent_district: "",
-  permanent_state: "",
-  permanent_pincode: "",
-  permanent_country: "India",
   mother_tongue: "",
   standard: "",
   division: "",
@@ -81,40 +72,25 @@ const defaultForm = () => ({
   caste: "",
   birth_place: "",
   last_school: "",
-  previous_school_address: "",
   previous_school_state_unique_id: "",
-  birth_certificate_number: "",
   aadhar_no: "",
   pen_no: "",
   apaar_id: "",
   father_name: "",
+  father_contact: "",
+  father_email: "",
   mother_name: "",
-  parent_contact: "",
   mother_contact: "",
-  parent_email: "",
-  guardian_name: "",
-  guardian_contact: "",
-  guardian_email: "",
-  emergency_contact_name: "",
-  emergency_contact_number: "",
   fee_concession_amount: "",
   fee_concession_reason: "",
   height: "",
   weight: "",
-  hobby: "",
-  sign_of_identity: "",
-  father_education: "",
-  father_occupation: "",
-  mother_education: "",
-  mother_occupation: "",
   whatsapp_no: "",
   account_holder_name: "",
   bank_name: "",
   bank_branch: "",
   bank_ifsc: "",
   account_no: "",
-  guardian_education: "",
-  guardian_occupation: "",
   udise_id: "",
   gr_number: "",
   second_language: "",
@@ -154,41 +130,25 @@ export default function StudentEntryForm() {
         caste: form.caste.trim() || null,
         birth_place: form.birth_place.trim() || null,
         last_school: form.last_school.trim() || null,
-        previous_school_address: form.previous_school_address.trim() || null,
         previous_school_state_unique_id: form.previous_school_state_unique_id.trim() || null,
-        birth_certificate_number: form.birth_certificate_number.trim() || null,
         aadhar_no: form.aadhar_no.trim() || null,
         pen_no: form.pen_no.trim() || null,
         apaar_id: form.apaar_id.trim() || null,
         father_name: form.father_name.trim() || null,
+        father_contact: form.father_contact.trim() || null,
+        father_email: form.father_email.trim() || null,
         mother_name: form.mother_name.trim() || null,
-        parent_name: form.father_name.trim() || form.mother_name.trim() || null,
-        parent_contact: form.parent_contact.trim() || null,
         mother_contact: form.mother_contact.trim() || null,
-        parent_email: form.parent_email.trim() || null,
-        guardian_name: form.guardian_name.trim() || null,
-        guardian_contact: form.guardian_contact.trim() || null,
-        guardian_email: form.guardian_email.trim() || null,
-        emergency_contact_name: form.emergency_contact_name.trim() || null,
-        emergency_contact_number: form.emergency_contact_number.trim() || null,
         fee_concession_amount: form.fee_concession_amount ? parseFloat(form.fee_concession_amount) : null,
         fee_concession_reason: form.fee_concession_reason.trim() || null,
         height: form.height.trim() || null,
         weight: form.weight.trim() || null,
-        hobby: form.hobby.trim() || null,
-        sign_of_identity: form.sign_of_identity.trim() || null,
-        father_education: form.father_education.trim() || null,
-        father_occupation: form.father_occupation.trim() || null,
-        mother_education: form.mother_education.trim() || null,
-        mother_occupation: form.mother_occupation.trim() || null,
         whatsapp_no: form.whatsapp_no.trim() || null,
         account_holder_name: form.account_holder_name.trim() || null,
         bank_name: form.bank_name.trim() || null,
         bank_branch: form.bank_branch.trim() || null,
         bank_ifsc: form.bank_ifsc.trim() || null,
         account_no: form.account_no.trim() || null,
-        guardian_education: form.guardian_education.trim() || null,
-        guardian_occupation: form.guardian_occupation.trim() || null,
         udise_id: form.udise_id.trim() || null,
         gr_number: form.gr_number.trim() || null,
         second_language: form.second_language || null,
@@ -206,19 +166,6 @@ export default function StudentEntryForm() {
         country: form.present_country || "India",
       };
 
-      const permanent = form.permanent_same_as_present
-        ? present
-        : {
-            line1: form.permanent_address_line1,
-            line2: form.permanent_address_line2,
-            city: form.permanent_city,
-            taluka: form.permanent_taluka,
-            district: form.permanent_district,
-            state: form.permanent_state,
-            pincode: form.permanent_pincode,
-            country: form.permanent_country || "India",
-          };
-
       payload.present_address_line1 = present.line1.trim() || null;
       payload.present_address_line2 = present.line2.trim() || null;
       payload.present_city = present.city.trim() || null;
@@ -227,17 +174,6 @@ export default function StudentEntryForm() {
       payload.present_state = present.state.trim() || null;
       payload.present_pincode = present.pincode.trim() || null;
       payload.present_country = (present.country || "India").trim() || "India";
-
-      payload.permanent_address_line1 = permanent.line1.trim() || null;
-      payload.permanent_address_line2 = permanent.line2.trim() || null;
-      payload.permanent_city = permanent.city.trim() || null;
-      payload.permanent_taluka = permanent.taluka.trim() || null;
-      payload.permanent_district = permanent.district.trim() || null;
-      payload.permanent_state = permanent.state.trim() || null;
-      payload.permanent_pincode = permanent.pincode.trim() || null;
-      payload.permanent_country = (permanent.country || "India").trim() || "India";
-
-
 
       // Check unique fields: gr_number, udise_id, pen_no, apaar_id
       const uniqueFieldsToCheck: { field: string; label: string; value: string }[] = [];
@@ -451,10 +387,6 @@ export default function StudentEntryForm() {
                 <Input value={form.birth_place} onChange={(e) => set("birth_place", e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Birth certificate number</Label>
-                <Input value={form.birth_certificate_number} onChange={(e) => set("birth_certificate_number", e.target.value)} />
-              </div>
-              <div className="space-y-2">
                 <Label>Mother tongue</Label>
                 <Input value={form.mother_tongue} onChange={(e) => set("mother_tongue", e.target.value)} placeholder="e.g. Gujarati" />
               </div>
@@ -501,10 +433,10 @@ export default function StudentEntryForm() {
           </CardContent>
         </Card>
 
-        {/* 2. Addresses */}
+        {/* 2. Address */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Addresses</CardTitle>
+            <CardTitle className="text-base">Present Address</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
@@ -563,103 +495,14 @@ export default function StudentEntryForm() {
               <Label>Present country</Label>
               <Input value={form.present_country} onChange={(e) => set("present_country", e.target.value)} placeholder="India" />
             </div>
-
-            <div className="sm:col-span-2 border-t pt-4" />
-
-            <div className="flex items-center space-x-2 sm:col-span-2">
-              <Checkbox
-                id="permanent_same_as_present"
-                checked={form.permanent_same_as_present}
-                onCheckedChange={(c) => {
-                  const checked = !!c;
-                  set("permanent_same_as_present", checked);
-                  if (checked) {
-                    set("permanent_address_line1", form.present_address_line1);
-                    set("permanent_address_line2", form.present_address_line2);
-                    set("permanent_city", form.present_city);
-                    set("permanent_taluka", form.present_taluka);
-                    set("permanent_district", form.present_district);
-                    set("permanent_state", form.present_state);
-                    set("permanent_pincode", form.present_pincode);
-                    set("permanent_country", form.present_country);
-                  }
-                }}
-              />
-              <Label htmlFor="permanent_same_as_present" className="font-normal">
-                Permanent address same as present
-              </Label>
-            </div>
-
-            <div className="space-y-2 sm:col-span-2">
-              <Label>Permanent address line 1</Label>
-              <Textarea
-                value={form.permanent_address_line1}
-                onChange={(e) => set("permanent_address_line1", e.target.value)}
-                placeholder="House/Flat, Society/Street, Area"
-                rows={2}
-                disabled={form.permanent_same_as_present}
-              />
-            </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label>Permanent address line 2</Label>
-              <Textarea
-                value={form.permanent_address_line2}
-                onChange={(e) => set("permanent_address_line2", e.target.value)}
-                placeholder="Landmark / Additional details"
-                rows={2}
-                disabled={form.permanent_same_as_present}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Permanent city</Label>
-              <Input value={form.permanent_city} onChange={(e) => set("permanent_city", e.target.value)} disabled={form.permanent_same_as_present} />
-            </div>
-            <div className="space-y-2">
-              <Label>Permanent taluka/tehsil</Label>
-              <Input value={form.permanent_taluka} onChange={(e) => set("permanent_taluka", e.target.value)} disabled={form.permanent_same_as_present} />
-            </div>
-            <div className="space-y-2">
-              <Label>Permanent district</Label>
-              <Input value={form.permanent_district} onChange={(e) => set("permanent_district", e.target.value)} disabled={form.permanent_same_as_present} />
-            </div>
-            <div className="space-y-2">
-              <Label>Permanent state</Label>
-              <Select
-                value={form.permanent_state || "none"}
-                onValueChange={(v) => set("permanent_state", v === "none" ? "" : v)}
-                disabled={form.permanent_same_as_present}
-              >
-                <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">—</SelectItem>
-                  {IN_STATES.map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Permanent pincode</Label>
-              <Input
-                inputMode="numeric"
-                value={form.permanent_pincode}
-                onChange={(e) => set("permanent_pincode", e.target.value.replace(/[^\d]/g, "").slice(0, 6))}
-                placeholder="6-digit"
-                disabled={form.permanent_same_as_present}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Permanent country</Label>
-              <Input value={form.permanent_country} onChange={(e) => set("permanent_country", e.target.value)} placeholder="India" disabled={form.permanent_same_as_present} />
-            </div>
           </div>
           </CardContent>
         </Card>
 
-        {/* 3. Parent & Guardian */}
+        {/* 3. Parents */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Parent & Guardian</CardTitle>
+            <CardTitle className="text-base">Parents</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -668,68 +511,24 @@ export default function StudentEntryForm() {
                 <Input id="father_name" value={form.father_name} onChange={(e) => set("father_name", e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="mother_name">Mother name *</Label>
-                <Input id="mother_name" value={form.mother_name} onChange={(e) => set("mother_name", e.target.value)} />
+                <Label>Father contact</Label>
+                <Input type="tel" value={form.father_contact} onChange={(e) => set("father_contact", e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="parent_contact">Father contact *</Label>
-                <Input id="parent_contact" type="tel" value={form.parent_contact} onChange={(e) => set("parent_contact", e.target.value)} />
+                <Label>Father email</Label>
+                <Input type="email" value={form.father_email} onChange={(e) => set("father_email", e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="mother_name">Mother name *</Label>
+                <Input id="mother_name" value={form.mother_name} onChange={(e) => set("mother_name", e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Mother contact</Label>
                 <Input type="tel" value={form.mother_contact} onChange={(e) => set("mother_contact", e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Parent email</Label>
-                <Input type="email" value={form.parent_email} onChange={(e) => set("parent_email", e.target.value)} />
-              </div>
-              <div className="space-y-2">
                 <Label>WhatsApp no *</Label>
                 <Input type="tel" value={form.whatsapp_no} onChange={(e) => set("whatsapp_no", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Emergency contact name</Label>
-                <Input value={form.emergency_contact_name} onChange={(e) => set("emergency_contact_name", e.target.value)} placeholder="Person to call in emergency" />
-              </div>
-              <div className="space-y-2">
-                <Label>Emergency contact mobile</Label>
-                <Input type="tel" value={form.emergency_contact_number} onChange={(e) => set("emergency_contact_number", e.target.value)} placeholder="Emergency phone number" />
-              </div>
-              <div className="space-y-2">
-                <Label>Father education</Label>
-                <Input value={form.father_education} onChange={(e) => set("father_education", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Father occupation</Label>
-                <Input value={form.father_occupation} onChange={(e) => set("father_occupation", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Mother education</Label>
-                <Input value={form.mother_education} onChange={(e) => set("mother_education", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Mother occupation</Label>
-                <Input value={form.mother_occupation} onChange={(e) => set("mother_occupation", e.target.value)} />
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label>Guardian name (if different)</Label>
-                <Input value={form.guardian_name} onChange={(e) => set("guardian_name", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Guardian contact</Label>
-                <Input type="tel" value={form.guardian_contact} onChange={(e) => set("guardian_contact", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Guardian email</Label>
-                <Input type="email" value={form.guardian_email} onChange={(e) => set("guardian_email", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Guardian education</Label>
-                <Input value={form.guardian_education} onChange={(e) => set("guardian_education", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Guardian occupation</Label>
-                <Input value={form.guardian_occupation} onChange={(e) => set("guardian_occupation", e.target.value)} />
               </div>
             </div>
           </CardContent>
@@ -775,10 +574,6 @@ export default function StudentEntryForm() {
               <div className="space-y-2">
                 <Label>Previous school Name</Label>
                 <Input value={form.last_school} onChange={(e) => set("last_school", e.target.value)} placeholder="Name of last school" />
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label>Previous school address</Label>
-                <Input value={form.previous_school_address} onChange={(e) => set("previous_school_address", e.target.value)} placeholder="Full address of previous school" />
               </div>
               <div className="space-y-2">
                 <Label>Previous school State Unique ID</Label>
@@ -842,15 +637,6 @@ export default function StudentEntryForm() {
                 <Label>Weight</Label>
                 <Input value={form.weight} onChange={(e) => set("weight", e.target.value)} placeholder="e.g. 60Kg" />
               </div>
-              <div className="space-y-2">
-                <Label>Hobby</Label>
-                <Input value={form.hobby} onChange={(e) => set("hobby", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Sign of identity</Label>
-                <Input value={form.sign_of_identity} onChange={(e) => set("sign_of_identity", e.target.value)} />
-              </div>
-              {/* Refer name and notes removed */}
             </div>
           </CardContent>
         </Card>

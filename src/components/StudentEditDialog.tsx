@@ -30,11 +30,6 @@ interface StudentEditDialogProps {
     roll_number?: number;
     admission_date?: string;
     status?: string;
-    parent_name?: string;
-    parent_contact?: string;
-    parent_email?: string;
-    guardian_name?: string;
-    guardian_contact?: string;
     is_rte_quota?: boolean;
 
     present_address_line1?: string;
@@ -205,10 +200,6 @@ function StudentEditFormInline({ student, onSaved, onCancel }: StudentEditFormPr
                 <Input value={form.birth_place} onChange={(e) => set("birth_place", e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Birth certificate number</Label>
-                <Input value={form.birth_certificate_number} onChange={(e) => set("birth_certificate_number", e.target.value)} />
-              </div>
-              <div className="space-y-2">
                 <Label>Mother tongue</Label>
                 <Input value={form.mother_tongue} onChange={(e) => set("mother_tongue", e.target.value)} placeholder="e.g. Gujarati" />
               </div>
@@ -252,7 +243,7 @@ function StudentEditFormInline({ student, onSaved, onCancel }: StudentEditFormPr
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Addresses</CardTitle>
+            <CardTitle className="text-base">Present Address</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -296,78 +287,13 @@ function StudentEditFormInline({ student, onSaved, onCancel }: StudentEditFormPr
                 <Label>Present country</Label>
                 <Input value={form.present_country} onChange={(e) => set("present_country", e.target.value)} placeholder="India" />
               </div>
-
-              <div className="sm:col-span-2 border-t pt-4" />
-
-              <div className="flex items-center space-x-2 sm:col-span-2">
-                <Checkbox
-                  id="permanent_same_as_present"
-                  checked={form.permanent_same_as_present}
-                  onCheckedChange={(c) => {
-                    const checked = !!c;
-                    set("permanent_same_as_present", checked);
-                    if (checked) {
-                      set("permanent_address_line1", form.present_address_line1);
-                      set("permanent_address_line2", form.present_address_line2);
-                      set("permanent_city", form.present_city);
-                      set("permanent_taluka", form.present_taluka);
-                      set("permanent_district", form.present_district);
-                      set("permanent_state", form.present_state);
-                      set("permanent_pincode", form.present_pincode);
-                      set("permanent_country", form.present_country);
-                    }
-                  }}
-                />
-                <Label htmlFor="permanent_same_as_present" className="font-normal">Permanent address same as present</Label>
-              </div>
-
-              <div className="space-y-2 sm:col-span-2">
-                <Label>Permanent address line 1</Label>
-                <Textarea value={form.permanent_address_line1} onChange={(e) => set("permanent_address_line1", e.target.value)} placeholder="House/Flat, Society/Street, Area" rows={2} disabled={form.permanent_same_as_present} />
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label>Permanent address line 2</Label>
-                <Textarea value={form.permanent_address_line2} onChange={(e) => set("permanent_address_line2", e.target.value)} placeholder="Landmark / Additional details" rows={2} disabled={form.permanent_same_as_present} />
-              </div>
-              <div className="space-y-2">
-                <Label>Permanent city</Label>
-                <Input value={form.permanent_city} onChange={(e) => set("permanent_city", e.target.value)} disabled={form.permanent_same_as_present} />
-              </div>
-              <div className="space-y-2">
-                <Label>Permanent taluka/tehsil</Label>
-                <Input value={form.permanent_taluka} onChange={(e) => set("permanent_taluka", e.target.value)} disabled={form.permanent_same_as_present} />
-              </div>
-              <div className="space-y-2">
-                <Label>Permanent district</Label>
-                <Input value={form.permanent_district} onChange={(e) => set("permanent_district", e.target.value)} disabled={form.permanent_same_as_present} />
-              </div>
-              <div className="space-y-2">
-                <Label>Permanent state</Label>
-                <Select value={form.permanent_state || "none"} onValueChange={(v) => set("permanent_state", v === "none" ? "" : v)} disabled={form.permanent_same_as_present}>
-                  <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">—</SelectItem>
-                    {IN_STATES.map((s) => (
-                      <SelectItem key={s} value={s}>{s}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Permanent pincode</Label>
-                <Input inputMode="numeric" value={form.permanent_pincode} onChange={(e) => set("permanent_pincode", e.target.value.replace(/[^\d]/g, "").slice(0, 6))} placeholder="6-digit" disabled={form.permanent_same_as_present} />
-              </div>
-              <div className="space-y-2">
-                <Label>Permanent country</Label>
-                <Input value={form.permanent_country} onChange={(e) => set("permanent_country", e.target.value)} placeholder="India" disabled={form.permanent_same_as_present} />
-              </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Parent & Guardian</CardTitle>
+            <CardTitle className="text-base">Parents</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -376,68 +302,24 @@ function StudentEditFormInline({ student, onSaved, onCancel }: StudentEditFormPr
                 <Input value={form.father_name} onChange={(e) => set("father_name", e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Mother name *</Label>
-                <Input value={form.mother_name} onChange={(e) => set("mother_name", e.target.value)} />
+                <Label>Father contact</Label>
+                <Input type="tel" value={form.father_contact} onChange={(e) => set("father_contact", e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="parent_contact">Father contact *</Label>
-                <Input type="tel" value={form.parent_contact} onChange={(e) => set("parent_contact", e.target.value)} />
+                <Label>Father email</Label>
+                <Input type="email" value={form.father_email} onChange={(e) => set("father_email", e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Mother name *</Label>
+                <Input value={form.mother_name} onChange={(e) => set("mother_name", e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Mother contact</Label>
                 <Input type="tel" value={form.mother_contact} onChange={(e) => set("mother_contact", e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Parent email</Label>
-                <Input type="email" value={form.parent_email} onChange={(e) => set("parent_email", e.target.value)} />
-              </div>
-              <div className="space-y-2">
                 <Label>WhatsApp no *</Label>
                 <Input type="tel" value={form.whatsapp_no} onChange={(e) => set("whatsapp_no", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Emergency contact name</Label>
-                <Input value={form.emergency_contact_name} onChange={(e) => set("emergency_contact_name", e.target.value)} placeholder="Person to call in emergency" />
-              </div>
-              <div className="space-y-2">
-                <Label>Emergency contact mobile</Label>
-                <Input type="tel" value={form.emergency_contact_number} onChange={(e) => set("emergency_contact_number", e.target.value)} placeholder="Emergency phone number" />
-              </div>
-              <div className="space-y-2">
-                <Label>Father education</Label>
-                <Input value={form.father_education} onChange={(e) => set("father_education", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Father occupation</Label>
-                <Input value={form.father_occupation} onChange={(e) => set("father_occupation", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Mother education</Label>
-                <Input value={form.mother_education} onChange={(e) => set("mother_education", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Mother occupation</Label>
-                <Input value={form.mother_occupation} onChange={(e) => set("mother_occupation", e.target.value)} />
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label>Guardian name (if different)</Label>
-                <Input value={form.guardian_name} onChange={(e) => set("guardian_name", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Guardian contact</Label>
-                <Input type="tel" value={form.guardian_contact} onChange={(e) => set("guardian_contact", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Guardian email</Label>
-                <Input type="email" value={form.guardian_email} onChange={(e) => set("guardian_email", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Guardian education</Label>
-                <Input value={form.guardian_education} onChange={(e) => set("guardian_education", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Guardian occupation</Label>
-                <Input value={form.guardian_occupation} onChange={(e) => set("guardian_occupation", e.target.value)} />
               </div>
             </div>
           </CardContent>
@@ -481,10 +363,6 @@ function StudentEditFormInline({ student, onSaved, onCancel }: StudentEditFormPr
               <div className="space-y-2">
                 <Label>Previous school Name</Label>
                 <Input value={form.last_school} onChange={(e) => set("last_school", e.target.value)} placeholder="Name of last school" />
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label>Previous school address</Label>
-                <Input value={form.previous_school_address} onChange={(e) => set("previous_school_address", e.target.value)} placeholder="Full address of previous school" />
               </div>
               <div className="space-y-2">
                 <Label>Previous school State Unique ID</Label>
@@ -545,14 +423,6 @@ function StudentEditFormInline({ student, onSaved, onCancel }: StudentEditFormPr
               <div className="space-y-2">
                 <Label>Weight</Label>
                 <Input value={form.weight} onChange={(e) => set("weight", e.target.value)} placeholder="e.g. 60Kg" />
-              </div>
-              <div className="space-y-2">
-                <Label>Hobby</Label>
-                <Input value={form.hobby} onChange={(e) => set("hobby", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Sign of identity</Label>
-                <Input value={form.sign_of_identity} onChange={(e) => set("sign_of_identity", e.target.value)} />
               </div>
             </div>
           </CardContent>
