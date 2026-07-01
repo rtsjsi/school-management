@@ -2,14 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getUser, isAdminOrAbove, isPayrollRole } from "@/lib/auth";
 import { buildEmployeeInsert, parseStaffWorkbook } from "@/lib/staff-import-parse";
+import { reassignEmployeeIds } from "@/lib/employee-id";
 
 export const dynamic = "force-dynamic";
-
-function makeEmployeeCode(index: number): string {
-  const year = new Date().getFullYear();
-  const suffix = String(Date.now() + index).slice(-6);
-  return `EMP-${year}-${suffix}`;
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -72,8 +67,7 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      const employeeCode = makeEmployeeCode(i);
-      const payload = buildEmployeeInsert(row, employeeCode);
+      const payload = buildEmployeeInsert(row, "0");
       const { data, error } = await supabase.from("employees").insert(payload).select("id, employee_id, full_name").single();
 
       if (error || !data) {
@@ -92,6 +86,10 @@ export async function POST(request: NextRequest) {
       });
       if (row.email) emailToId.set(row.email, data.id);
       if (row.aadhaar) aadhaarToId.set(row.aadhaar, data.id);
+    }
+
+    if (inserted.length > 0) {
+      await reassignEmployeeIds(supabase);
     }
 
     return NextResponse.json({

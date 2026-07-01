@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { EMPLOYEE_TYPES, EMPLOYEE_ROLES } from "@/lib/lov";
+import { reassignEmployeeIds } from "@/lib/employee-id";
 
 type ShiftOption = { id: string; name: string };
 
@@ -87,7 +88,6 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
     setLoading(true);
     try {
       const supabase = createClient();
-      const empId = `EMP-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
 
       const { data: emp, error: empErr } = await supabase
         .from("employees")
@@ -103,7 +103,7 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
           joining_date: form.joining_date || null,
           shift_id: form.shift_id || null,
           biometric_enroll_no: form.biometric_enroll_no.trim() || null,
-          employee_id: empId,
+          employee_id: "0",
           monthly_salary: form.monthly_salary ? parseFloat(form.monthly_salary) : null,
           degree: form.degree.trim() || null,
           institution: form.institution?.trim() || null,
@@ -125,6 +125,15 @@ export default function EmployeeEntryForm({ shifts }: { shifts: ShiftOption[] })
           description: message,
         });
         return;
+      }
+
+      const { error: reassignError } = await reassignEmployeeIds(supabase);
+      if (reassignError) {
+        toast({
+          variant: "destructive",
+          title: "Employee added but ID assignment failed",
+          description: reassignError,
+        });
       }
 
       setForm({
