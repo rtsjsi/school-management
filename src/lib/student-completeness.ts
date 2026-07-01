@@ -4,11 +4,7 @@ export const COMPLETENESS_CATEGORIES = {
     "date_of_birth",
     "gender",
     "blood_group",
-    "mother_tongue",
     "category",
-    "religion",
-    "caste",
-    "birth_place",
   ],
   Enrollment: [
     "standard",
@@ -32,18 +28,8 @@ export const COMPLETENESS_CATEGORIES = {
   ],
   Parents: [
     "father_name",
-    "father_contact",
-    "parent_email",
     "mother_name",
-    "mother_contact",
     "whatsapp_no",
-  ],
-  "Bank Details": [
-    "account_holder_name",
-    "bank_name",
-    "bank_branch",
-    "bank_ifsc",
-    "account_no",
   ],
 } as const;
 
