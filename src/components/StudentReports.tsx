@@ -48,6 +48,8 @@ type StudentReportRow = {
   apaar_id?: string | null;
   udise_id?: string | null;
   father_name?: string | null;
+  father_contact?: string | null;
+  father_email?: string | null;
   mother_name?: string | null;
   mother_contact?: string | null;
   whatsapp_no?: string | null;
@@ -317,6 +319,8 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
     "pen_no",
     "apaar_id",
     "father_name",
+    "father_contact",
+    "father_email",
     "mother_name",
     "mother_contact",
     "fee_concession_amount",

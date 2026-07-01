@@ -72,6 +72,8 @@ type StudentRow = {
   apaar_id?: string;
   udise_id?: string;
   father_name?: string;
+  father_contact?: string;
+  father_email?: string;
   mother_name?: string;
   mother_contact?: string;
   whatsapp_no?: string;

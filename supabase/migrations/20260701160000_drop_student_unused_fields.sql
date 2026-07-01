@@ -1,3 +1,9 @@
+-- Rename parent_contact and parent_email to father_contact and father_email
+ALTER TABLE students
+  RENAME COLUMN parent_contact TO father_contact;
+ALTER TABLE students
+  RENAME COLUMN parent_email TO father_email;
+
 -- Remove deprecated student profile fields
 ALTER TABLE students
   DROP COLUMN IF EXISTS birth_certificate_number,
@@ -11,8 +17,6 @@ ALTER TABLE students
   DROP COLUMN IF EXISTS permanent_country,
   DROP COLUMN IF EXISTS previous_school_address,
   DROP COLUMN IF EXISTS parent_name,
-  DROP COLUMN IF EXISTS parent_contact,
-  DROP COLUMN IF EXISTS parent_email,
   DROP COLUMN IF EXISTS guardian_name,
   DROP COLUMN IF EXISTS guardian_contact,
   DROP COLUMN IF EXISTS guardian_email,

@@ -77,6 +77,8 @@ const defaultForm = () => ({
   pen_no: "",
   apaar_id: "",
   father_name: "",
+  father_contact: "",
+  father_email: "",
   mother_name: "",
   mother_contact: "",
   fee_concession_amount: "",
@@ -133,6 +135,8 @@ export default function StudentEntryForm() {
         pen_no: form.pen_no.trim() || null,
         apaar_id: form.apaar_id.trim() || null,
         father_name: form.father_name.trim() || null,
+        father_contact: form.father_contact.trim() || null,
+        father_email: form.father_email.trim() || null,
         mother_name: form.mother_name.trim() || null,
         mother_contact: form.mother_contact.trim() || null,
         fee_concession_amount: form.fee_concession_amount ? parseFloat(form.fee_concession_amount) : null,
@@ -505,6 +509,14 @@ export default function StudentEntryForm() {
               <div className="space-y-2">
                 <Label htmlFor="father_name">Father name *</Label>
                 <Input id="father_name" value={form.father_name} onChange={(e) => set("father_name", e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Father contact</Label>
+                <Input type="tel" value={form.father_contact} onChange={(e) => set("father_contact", e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Father email</Label>
+                <Input type="email" value={form.father_email} onChange={(e) => set("father_email", e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="mother_name">Mother name *</Label>
