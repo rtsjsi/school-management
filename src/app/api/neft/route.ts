@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
         }
         const dayPunches = (punches ?? []).filter((p) => p.employee_id === emp.id && p.punch_date === dStr);
         if (dayPunches.length > 0) {
-          const derived = deriveDailyStatus(dayPunches, empShift, thresholds);
+          const derived = deriveDailyStatus(dayPunches, empShift, thresholds, isHoliday, isWeekend);
           presentDays += dayWeight(derived.status);
         }
       }

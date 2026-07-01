@@ -100,36 +100,35 @@ export async function GET(request: NextRequest) {
         let out_time: string | undefined;
         let source = "default";
 
-        if (isHoliday) {
-          status = "holiday";
-          source = "holiday";
-        } else if (isWeekend) {
-          status = "week_off";
-          source = "weekend";
+        const approvedKey = `${emp.id}-${dStr}`;
+        const approvedEntry = approvedMap.get(approvedKey);
+        if (approvedEntry) {
+          status = approvedEntry.status;
+          in_time = approvedEntry.in_time;
+          out_time = approvedEntry.out_time;
+          source = "approved";
         } else {
-          const approvedKey = `${emp.id}-${dStr}`;
-          const approvedEntry = approvedMap.get(approvedKey);
-          if (approvedEntry) {
-            status = approvedEntry.status;
-            in_time = approvedEntry.in_time;
-            out_time = approvedEntry.out_time;
-            source = "approved";
+          const manEntry = (manual ?? []).find((m) => m.employee_id === emp.id && m.attendance_date === dStr && !m.is_approved);
+          if (manEntry) {
+            status = manEntry.status;
+            in_time = manEntry.in_time ?? undefined;
+            out_time = manEntry.out_time ?? undefined;
+            source = "manual";
           } else {
-            const manEntry = (manual ?? []).find((m) => m.employee_id === emp.id && m.attendance_date === dStr && !m.is_approved);
-            if (manEntry) {
-              status = manEntry.status;
-              in_time = manEntry.in_time ?? undefined;
-              out_time = manEntry.out_time ?? undefined;
-              source = "manual";
+            const dayPunches = (punches ?? []).filter((p) => p.employee_id === emp.id && p.punch_date === dStr);
+            const derived = deriveDailyStatus(dayPunches, employeeShiftLite(emp), thresholds, isHoliday, isWeekend);
+            status = derived.status;
+            in_time = derived.in_time;
+            out_time = derived.out_time;
+
+            if (dayPunches.length > 0) {
+              source = "biometric";
+            } else if (isHoliday) {
+              source = "holiday";
+            } else if (isWeekend) {
+              source = "weekend";
             } else {
-              const dayPunches = (punches ?? []).filter((p) => p.employee_id === emp.id && p.punch_date === dStr);
-              if (dayPunches.length > 0) {
-                const derived = deriveDailyStatus(dayPunches, employeeShiftLite(emp), thresholds);
-                status = derived.status;
-                in_time = derived.in_time;
-                out_time = derived.out_time;
-                source = "biometric";
-              }
+              source = "default";
             }
           }
         }
