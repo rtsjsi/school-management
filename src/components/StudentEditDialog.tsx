@@ -306,16 +306,16 @@ function StudentEditFormInline({ student, onSaved, onCancel }: StudentEditFormPr
                 <Input type="tel" value={form.father_contact} onChange={(e) => set("father_contact", e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Father email</Label>
-                <Input type="email" value={form.father_email} onChange={(e) => set("father_email", e.target.value)} />
-              </div>
-              <div className="space-y-2">
                 <Label>Mother name *</Label>
                 <Input value={form.mother_name} onChange={(e) => set("mother_name", e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Mother contact</Label>
                 <Input type="tel" value={form.mother_contact} onChange={(e) => set("mother_contact", e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Parent email</Label>
+                <Input type="email" value={form.parent_email} onChange={(e) => set("parent_email", e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>WhatsApp no *</Label>

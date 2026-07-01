@@ -49,7 +49,7 @@ type StudentReportRow = {
   udise_id?: string | null;
   father_name?: string | null;
   father_contact?: string | null;
-  father_email?: string | null;
+  parent_email?: string | null;
   mother_name?: string | null;
   mother_contact?: string | null;
   whatsapp_no?: string | null;
@@ -320,7 +320,7 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
     "apaar_id",
     "father_name",
     "father_contact",
-    "father_email",
+    "parent_email",
     "mother_name",
     "mother_contact",
     "fee_concession_amount",
@@ -389,7 +389,7 @@ export function StudentReports({ allowedClassNames }: { allowedClassNames?: Allo
     const extraKeys = rowKeys
       .filter((k) => !orderedKnownKeys.includes(k))
       .sort((a, b) => a.localeCompare(b));
-    return { columns: [...orderedKnownKeys, ...extraKeys] };
+    return { columns: [...orderedKnownKeys, ...extraKeys].filter((k) => k !== "id") };
   };
 
   const buildFilterSubtitle = () => {
