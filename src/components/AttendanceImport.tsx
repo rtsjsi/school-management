@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { UploadCloud, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { UploadCloud, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type ImportResult = {
@@ -92,7 +92,7 @@ export default function AttendanceImport() {
             />
           </div>
           <Button onClick={handleUpload} disabled={uploading} className="gap-1.5">
-            <UploadCloud className="h-4 w-4" />
+            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
             {uploading ? "Importing…" : "Upload & Process"}
           </Button>
         </div>
