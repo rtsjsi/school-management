@@ -19,6 +19,7 @@ import {
 import type { StaffTableEmployee } from "@/components/EmployeesTable";
 import { computeEmployeeCompleteness, completenessBadgeClassNames } from "@/lib/master-data-completeness";
 import { EMPLOYEE_ROLES, EMPLOYEE_TYPES } from "@/lib/lov";
+import { formatTimeShort } from "@/lib/employee-shift";
 
 interface EmployeeViewDialogProps {
   employee: StaffTableEmployee;
@@ -39,11 +40,6 @@ function fmtDate(val?: string | null): string {
 function cap(str?: string | null): string {
   if (!str) return "—";
   return str.charAt(0).toUpperCase() + str.slice(1).replace(/_/g, " ");
-}
-
-function shiftName(employee: StaffTableEmployee): string {
-  const shiftData = employee.shifts;
-  return Array.isArray(shiftData) ? shiftData[0]?.name ?? "—" : shiftData?.name ?? "—";
 }
 
 function InfoRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
@@ -158,7 +154,8 @@ export function EmployeeViewDialog({ employee, open, onOpenChange }: EmployeeVie
               <InfoRow label="Role" value={roleLabel} />
               <InfoRow label="Employee Type" value={typeLabel} />
               <InfoRow label="Joining Date" value={fmtDate(employee.joining_date)} />
-              <InfoRow label="Shift" value={shiftName(employee)} />
+              <InfoRow label="Shift Start Time" value={formatTimeShort(employee.shift_start_time) || "—"} />
+              <InfoRow label="Shift End Time" value={formatTimeShort(employee.shift_end_time) || "—"} />
               <InfoRow
                 label="Monthly Salary"
                 value={employee.monthly_salary != null ? `₹${employee.monthly_salary.toLocaleString("en-IN")}` : "—"}

@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { computeEmployeeCompleteness, completenessBadgeClassNames } from "@/lib/master-data-completeness";
 import { EMPLOYEE_ROLES, EMPLOYEE_TYPES } from "@/lib/lov";
+import { hasShiftTimes, shiftTimesLabel } from "@/lib/employee-shift";
 
 export type StaffTableEmployee = {
   id: string;
@@ -54,17 +55,10 @@ export type StaffTableEmployee = {
   account_number?: string | null;
   ifsc_code?: string | null;
   account_holder_name?: string | null;
-  shift_id?: string | null;
+  shift_start_time?: string | null;
+  shift_end_time?: string | null;
   biometric_enroll_no?: string | null;
-  shifts?: { name?: string } | { name?: string }[] | null;
 };
-
-type ShiftOption = { id: string; name: string };
-
-function shiftNameFromRow(e: StaffTableEmployee): string {
-  const shiftData = e.shifts;
-  return Array.isArray(shiftData) ? shiftData[0]?.name ?? "—" : shiftData?.name ?? "—";
-}
 
 function parseEmployeeIdNum(id?: string | null): number {
   const n = parseInt(id ?? "", 10);
@@ -81,11 +75,9 @@ function capLabel(value: string): string {
 
 export function EmployeesTable({
   employees,
-  shiftList,
   canEdit,
 }: {
   employees: StaffTableEmployee[];
-  shiftList: ShiftOption[];
   canEdit: boolean;
 }) {
   const [sortKey, setSortKey] = useState<SortKey>("employee_id");
@@ -97,7 +89,7 @@ export function EmployeesTable({
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("active");
   const [roleFilter, setRoleFilter] = useState("all");
-  const [shiftFilter, setShiftFilter] = useState("all");
+  const [shiftTimesFilter, setShiftTimesFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [completenessFilter, setCompletenessFilter] = useState<CompletenessFilter>("all");
 
@@ -110,7 +102,7 @@ export function EmployeesTable({
     debouncedSearch.trim() !== "" ||
     statusFilter !== "active" ||
     roleFilter !== "all" ||
-    shiftFilter !== "all" ||
+    shiftTimesFilter !== "all" ||
     typeFilter !== "all" ||
     completenessFilter !== "all";
 
@@ -119,7 +111,7 @@ export function EmployeesTable({
     setDebouncedSearch("");
     setStatusFilter("active");
     setRoleFilter("all");
-    setShiftFilter("all");
+    setShiftTimesFilter("all");
     setTypeFilter("all");
     setCompletenessFilter("all");
   };
@@ -129,13 +121,8 @@ export function EmployeesTable({
     return employees.filter((e) => {
       if (statusFilter !== "all" && (e.status ?? "active") !== statusFilter) return false;
       if (roleFilter !== "all" && (e.role ?? "") !== roleFilter) return false;
-      if (shiftFilter !== "all") {
-        if (shiftFilter === "none") {
-          if (e.shift_id) return false;
-        } else if ((e.shift_id ?? "") !== shiftFilter) {
-          return false;
-        }
-      }
+      if (shiftTimesFilter === "configured" && !hasShiftTimes(e)) return false;
+      if (shiftTimesFilter === "missing" && hasShiftTimes(e)) return false;
       if (typeFilter !== "all" && (e.employee_type ?? "") !== typeFilter) return false;
       if (completenessFilter !== "all") {
         const pct = computeEmployeeCompleteness(e as unknown as Record<string, unknown>).percent;
@@ -149,7 +136,7 @@ export function EmployeesTable({
           e.employee_id,
           e.phone_number,
           e.aadhaar,
-          shiftNameFromRow(e),
+          shiftTimesLabel(e),
         ]
           .filter(Boolean)
           .join(" ")
@@ -158,7 +145,7 @@ export function EmployeesTable({
       }
       return true;
     });
-  }, [employees, debouncedSearch, statusFilter, roleFilter, shiftFilter, typeFilter, completenessFilter]);
+  }, [employees, debouncedSearch, statusFilter, roleFilter, shiftTimesFilter, typeFilter, completenessFilter]);
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -187,8 +174,8 @@ export function EmployeesTable({
           bv = (b.email ?? "").toLowerCase();
           break;
         case "shift":
-          av = shiftNameFromRow(a).toLowerCase();
-          bv = shiftNameFromRow(b).toLowerCase();
+          av = shiftTimesLabel(a).toLowerCase();
+          bv = shiftTimesLabel(b).toLowerCase();
           break;
         case "status":
           av = (a.status ?? "active").toLowerCase();
@@ -211,7 +198,7 @@ export function EmployeesTable({
         employee_id: e.employee_id ?? "—",
         full_name: e.full_name ?? "—",
         email: e.email ?? "—",
-        shift: shiftNameFromRow(e),
+        shift: shiftTimesLabel(e),
         status: String(e.status ?? "active"),
       })),
     [sortedEmployees],
@@ -266,15 +253,13 @@ export function EmployeesTable({
             </Select>
           </div>
           <div className="space-y-1 w-full min-w-0">
-            <Label className="text-xs">Shift</Label>
-            <Select value={shiftFilter} onValueChange={setShiftFilter}>
+            <Label className="text-xs">Shift times</Label>
+            <Select value={shiftTimesFilter} onValueChange={setShiftTimesFilter}>
               <SelectTrigger className="h-9"><SelectValue placeholder="All" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
-                <SelectItem value="none">No shift</SelectItem>
-                {shiftList.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                ))}
+                <SelectItem value="configured">Configured</SelectItem>
+                <SelectItem value="missing">Not set</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -367,7 +352,7 @@ export function EmployeesTable({
                 onClick={() => handleSort("shift")}
               >
                 <span className="inline-flex items-center gap-1">
-                  Shift <SortIcon col="shift" />
+                  Shift times <SortIcon col="shift" />
                 </span>
               </TableHead>
               <TableHead
@@ -391,13 +376,13 @@ export function EmployeesTable({
           </TableHeader>
           <TableBody>
             {sortedEmployees.map((e) => {
-              const shiftName = shiftNameFromRow(e);
+              const shiftLabel = shiftTimesLabel(e);
               return (
                 <TableRow key={e.id}>
                   <TableCell className="font-mono text-xs">{e.employee_id ?? "—"}</TableCell>
                   <TableCell className="font-medium">{e.full_name}</TableCell>
                   <TableCell className="text-muted-foreground text-sm">{e.email ?? "—"}</TableCell>
-                  <TableCell>{shiftName}</TableCell>
+                  <TableCell className="text-sm">{shiftLabel}</TableCell>
                   <TableCell>
                     <Badge variant={(e.status as string) === "active" ? "default" : "secondary"}>
                       {e.status ?? "active"}
@@ -467,7 +452,6 @@ export function EmployeesTable({
       {selectedEmployee && canEdit && (
         <EmployeeEditDialog
           employee={selectedEmployee}
-          shifts={shiftList}
           open={editOpen}
           onOpenChange={setEditOpen}
           onSaved={() => setEditOpen(false)}

@@ -8,12 +8,21 @@ export type ShiftLite =
   | {
       start_time?: string | null;
       end_time?: string | null;
-      grace_period_minutes?: number | null;
-      late_threshold_minutes?: number | null;
-      early_departure_threshold_minutes?: number | null;
     }
   | null
   | undefined;
+
+/** Build shift timing object from employee-level fields for attendance derivation. */
+export function employeeShiftLite(emp: {
+  shift_start_time?: string | null;
+  shift_end_time?: string | null;
+}): ShiftLite {
+  if (!emp.shift_start_time && !emp.shift_end_time) return null;
+  return {
+    start_time: emp.shift_start_time,
+    end_time: emp.shift_end_time,
+  };
+}
 
 export type AttendanceThresholds = { fullDayHours: number; halfDayHours: number };
 
@@ -117,13 +126,11 @@ export function deriveDailyStatus(
   let is_early_departure = false;
   if (shift && firstIn) {
     const startMin = hhmmToMinutes(shift.start_time);
-    const grace = shift.grace_period_minutes ?? 0;
-    if (startMin !== null) is_late = istTimeMinutes(firstIn) > startMin + grace;
+    if (startMin !== null) is_late = istTimeMinutes(firstIn) > startMin;
   }
   if (shift && haveSpan) {
     const endMin = hhmmToMinutes(shift.end_time);
-    const earlyThresh = shift.early_departure_threshold_minutes ?? 0;
-    if (endMin !== null) is_early_departure = istTimeMinutes(lastOut as Date) < endMin - earlyThresh;
+    if (endMin !== null) is_early_departure = istTimeMinutes(lastOut as Date) < endMin;
   }
 
   return {

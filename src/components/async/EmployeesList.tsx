@@ -23,18 +23,12 @@ export async function EmployeesList() {
   const { data: employees } = await supabase
     .from("employees")
     .select(
-      "id, employee_id, full_name, email, phone_number, address, aadhaar, pan, role, employee_type, joining_date, status, monthly_salary, degree, institution, year_passed, bank_name, account_number, ifsc_code, account_holder_name, shift_id, biometric_enroll_no, shifts(name)"
+      "id, employee_id, full_name, email, phone_number, address, aadhaar, pan, role, employee_type, joining_date, status, monthly_salary, degree, institution, year_passed, bank_name, account_number, ifsc_code, account_holder_name, shift_start_time, shift_end_time, biometric_enroll_no"
     )
     .order("created_at", { ascending: false })
     .limit(50);
 
-  const { data: shifts } = await supabase
-    .from("shifts")
-    .select("id, name")
-    .order("name");
-
   const canEdit = isAdminOrAbove(user);
-  const shiftList = shifts ?? [];
   return (
     <>
       {canEdit && (
@@ -53,7 +47,7 @@ export async function EmployeesList() {
                   Fill in the form to create a new employee record.
                 </DialogDescription>
               </DialogHeader>
-              <EmployeeEntryForm shifts={shiftList} />
+              <EmployeeEntryForm />
             </DialogContent>
           </Dialog>
         </div>
@@ -62,7 +56,7 @@ export async function EmployeesList() {
       <Card>
         <CardContent className="pt-6">
           {employees && employees.length > 0 ? (
-            <EmployeesTable employees={employees} shiftList={shiftList} canEdit={canEdit} />
+            <EmployeesTable employees={employees} canEdit={canEdit} />
           ) : (
             <p className="text-sm text-muted-foreground py-8 text-center">
               No employees yet. Add one using the form.

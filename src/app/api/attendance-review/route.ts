@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
-import { deriveDailyStatus, DEFAULT_THRESHOLDS, type ShiftLite } from "@/lib/attendance";
+import { deriveDailyStatus, DEFAULT_THRESHOLDS, employeeShiftLite } from "@/lib/attendance";
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,15 +22,9 @@ export async function GET(request: NextRequest) {
 
     const { data: employees } = await supabase
       .from("employees")
-      .select("id, full_name, shift_id")
+      .select("id, full_name, shift_start_time, shift_end_time")
       .eq("status", "active")
       .order("full_name");
-
-    const { data: shifts } = await supabase
-      .from("shifts")
-      .select("id, start_time, end_time, grace_period_minutes, late_threshold_minutes, early_departure_threshold_minutes");
-    const shiftMap = new Map<string, ShiftLite>();
-    (shifts ?? []).forEach((s) => shiftMap.set(s.id, s));
 
     const { data: settings } = await supabase
       .from("payroll_settings")
@@ -130,8 +124,7 @@ export async function GET(request: NextRequest) {
             } else {
               const dayPunches = (punches ?? []).filter((p) => p.employee_id === emp.id && p.punch_date === dStr);
               if (dayPunches.length > 0) {
-                const empShift = emp.shift_id ? shiftMap.get(emp.shift_id) ?? null : null;
-                const derived = deriveDailyStatus(dayPunches, empShift, thresholds);
+                const derived = deriveDailyStatus(dayPunches, employeeShiftLite(emp), thresholds);
                 status = derived.status;
                 in_time = derived.in_time;
                 out_time = derived.out_time;

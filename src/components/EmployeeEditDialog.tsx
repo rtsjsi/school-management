@@ -14,6 +14,7 @@ import { Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { EMPLOYEE_TYPES, EMPLOYEE_ROLES } from "@/lib/lov";
 import { reassignEmployeeIds } from "@/lib/employee-id";
+import { normalizeTimeForDb, timeForInput } from "@/lib/employee-shift";
 
 interface EmployeeEditDialogProps {
   employee: {
@@ -28,7 +29,8 @@ interface EmployeeEditDialogProps {
     role?: string | null;
     employee_type?: string | null;
     joining_date?: string | null;
-    shift_id?: string | null;
+    shift_start_time?: string | null;
+    shift_end_time?: string | null;
     biometric_enroll_no?: string | null;
     status?: string | null;
     monthly_salary?: number | null;
@@ -40,7 +42,6 @@ interface EmployeeEditDialogProps {
     ifsc_code?: string | null;
     account_holder_name?: string | null;
   };
-  shifts: { id: string; name: string }[];
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   onSaved?: () => void;
@@ -48,7 +49,6 @@ interface EmployeeEditDialogProps {
 
 export function EmployeeEditDialog({
   employee,
-  shifts,
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
   onSaved,
@@ -71,7 +71,8 @@ export function EmployeeEditDialog({
     role: employee.role || "staff",
     employee_type: employee.employee_type || "full_time",
     joining_date: employee.joining_date || "",
-    shift_id: employee.shift_id || "",
+    shift_start_time: timeForInput(employee.shift_start_time) || "09:00",
+    shift_end_time: timeForInput(employee.shift_end_time) || "17:00",
     biometric_enroll_no: employee.biometric_enroll_no || "",
     status: employee.status || "active",
     monthly_salary: employee.monthly_salary?.toString() || "",
@@ -111,7 +112,8 @@ export function EmployeeEditDialog({
           role: form.role,
           employee_type: form.employee_type,
           joining_date: form.joining_date || null,
-          shift_id: form.shift_id || null,
+          shift_start_time: normalizeTimeForDb(form.shift_start_time),
+          shift_end_time: normalizeTimeForDb(form.shift_end_time),
           biometric_enroll_no: form.biometric_enroll_no.trim() || null,
           status: form.status,
           monthly_salary: form.monthly_salary ? parseFloat(form.monthly_salary) : null,
@@ -246,17 +248,20 @@ export function EmployeeEditDialog({
               <DatePicker value={form.joining_date} onChange={(isoDate) => setForm((p) => ({ ...p, joining_date: isoDate }))} />
             </div>
             <div className="space-y-2">
-              <Label>Shift</Label>
-              <Select
-                value={form.shift_id || "none"}
-                onValueChange={(v) => setForm((p) => ({ ...p, shift_id: v === "none" ? "" : v }))}
-              >
-                <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No shift</SelectItem>
-                  {shifts.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label>Shift Start Time</Label>
+              <Input
+                type="time"
+                value={form.shift_start_time}
+                onChange={(e) => setForm((p) => ({ ...p, shift_start_time: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Shift End Time</Label>
+              <Input
+                type="time"
+                value={form.shift_end_time}
+                onChange={(e) => setForm((p) => ({ ...p, shift_end_time: e.target.value }))}
+              />
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

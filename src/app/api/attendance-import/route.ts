@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getUser, isAdminOrAbove, isPayrollRole } from "@/lib/auth";
 import { decodeBiometricFile, filterPunchesByMonth, parseBiometricLog, type ParsedPunch } from "@/lib/biometric-parse";
-import { deriveDailyStatus, DEFAULT_THRESHOLDS, type ShiftLite } from "@/lib/attendance";
+import { deriveDailyStatus, DEFAULT_THRESHOLDS, employeeShiftLite } from "@/lib/attendance";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +16,12 @@ function chunk<T>(arr: T[], size: number): T[][] {
   for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
   return out;
 }
+
+type EmpLite = {
+  id: string;
+  shift_start_time: string | null;
+  shift_end_time: string | null;
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,7 +54,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Only keep punches that fall inside the selected month (file may span many months).
     const inMonth = filterPunchesByMonth(parsed.punches, monthYear);
     const punchesOutsideMonth = parsed.punches.length - inMonth.length;
 
@@ -56,20 +61,18 @@ export async function POST(request: NextRequest) {
 
     const { data: employees } = await supabase
       .from("employees")
-      .select("id, full_name, shift_id, biometric_enroll_no");
+      .select("id, full_name, shift_start_time, shift_end_time, biometric_enroll_no");
 
-    const enrollToEmp = new Map<string, { id: string; shift_id: string | null }>();
+    const enrollToEmp = new Map<string, EmpLite>();
     (employees ?? []).forEach((e) => {
       if (e.biometric_enroll_no) {
-        enrollToEmp.set(normalizeEnroll(String(e.biometric_enroll_no)), { id: e.id, shift_id: e.shift_id ?? null });
+        enrollToEmp.set(normalizeEnroll(String(e.biometric_enroll_no)), {
+          id: e.id,
+          shift_start_time: e.shift_start_time ?? null,
+          shift_end_time: e.shift_end_time ?? null,
+        });
       }
     });
-
-    const { data: shifts } = await supabase
-      .from("shifts")
-      .select("id, start_time, end_time, grace_period_minutes, late_threshold_minutes, early_departure_threshold_minutes");
-    const shiftMap = new Map<string, ShiftLite>();
-    (shifts ?? []).forEach((s) => shiftMap.set(s.id, s));
 
     const { data: settings } = await supabase
       .from("payroll_settings")
@@ -81,7 +84,6 @@ export async function POST(request: NextRequest) {
       halfDayHours: Number(settings?.half_day_hours ?? DEFAULT_THRESHOLDS.halfDayHours),
     };
 
-    // Map punches to employees; collect unmapped enrollment numbers.
     const unmapped = new Map<string, number>();
     const mappedEmpIds = new Set<string>();
     type DbPunch = {
@@ -94,8 +96,7 @@ export async function POST(request: NextRequest) {
       source: string;
     };
     const punchRows: DbPunch[] = [];
-    // group raw punches per employee+date for daily derivation
-    const groups = new Map<string, { empId: string; shiftId: string | null; date: string; items: ParsedPunch[] }>();
+    const groups = new Map<string, { emp: EmpLite; date: string; items: ParsedPunch[] }>();
 
     for (const p of inMonth) {
       const emp = enrollToEmp.get(p.enNoNorm);
@@ -107,12 +108,11 @@ export async function POST(request: NextRequest) {
       const key = `${emp.id}::${p.date}`;
       const g = groups.get(key);
       if (g) g.items.push(p);
-      else groups.set(key, { empId: emp.id, shiftId: emp.shift_id, date: p.date, items: [p] });
+      else groups.set(key, { emp, date: p.date, items: [p] });
     }
 
-    // Build punch rows with late/early flags derived per day.
     for (const g of groups.values()) {
-      const shift = g.shiftId ? shiftMap.get(g.shiftId) ?? null : null;
+      const shift = employeeShiftLite(g.emp);
       const derived = deriveDailyStatus(
         g.items.map((i) => ({ punch_type: i.punchType, punch_time: i.punchTimeISO })),
         shift,
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
 
       for (const i of g.items) {
         punchRows.push({
-          employee_id: g.empId,
+          employee_id: g.emp.id,
           punch_date: i.date,
           punch_time: i.punchTimeISO,
           punch_type: i.punchType,
@@ -136,7 +136,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Upsert raw punches (idempotent on re-upload).
     let punchesUpserted = 0;
     for (const part of chunk(punchRows, 500)) {
       const { error } = await supabase
@@ -148,7 +147,6 @@ export async function POST(request: NextRequest) {
       punchesUpserted += part.length;
     }
 
-    // Do not clobber rows that an admin already approved or manually edited.
     const start = `${monthYear}-01`;
     const [yy, mm] = monthYear.split("-");
     const lastDay = new Date(parseInt(yy), parseInt(mm), 0).getDate();
@@ -177,16 +175,16 @@ export async function POST(request: NextRequest) {
     };
     const dailyRows: DbDaily[] = [];
     for (const g of groups.values()) {
-      const key = `${g.empId}::${g.date}`;
+      const key = `${g.emp.id}::${g.date}`;
       if (protectedKeys.has(key)) continue;
-      const shift = g.shiftId ? shiftMap.get(g.shiftId) ?? null : null;
+      const shift = employeeShiftLite(g.emp);
       const derived = deriveDailyStatus(
         g.items.map((i) => ({ punch_type: i.punchType, punch_time: i.punchTimeISO })),
         shift,
         thresholds
       );
       dailyRows.push({
-        employee_id: g.empId,
+        employee_id: g.emp.id,
         attendance_date: g.date,
         status: derived.status,
         in_time: derived.in_time ?? null,
