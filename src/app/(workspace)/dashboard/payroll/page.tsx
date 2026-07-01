@@ -8,7 +8,6 @@ import { ShiftList } from "@/components/ShiftList";
 import { HolidayList } from "@/components/HolidayList";
 import { AttendanceDailyRegister } from "@/components/AttendanceDailyRegister";
 import AttendanceImport from "@/components/AttendanceImport";
-import EmployeeImport from "@/components/EmployeeImport";
 import AttendanceReports from "@/components/AttendanceReports";
 import AttendanceReviewAndApprove from "@/components/AttendanceReviewAndApprove";
 import NEFTGeneration from "@/components/NEFTGeneration";
@@ -66,7 +65,6 @@ export default async function PayrollPage() {
         </TabsContent>
 
         <TabsContent value="import" className="space-y-6">
-          <EmployeeImport />
           <AttendanceImport />
         </TabsContent>
 

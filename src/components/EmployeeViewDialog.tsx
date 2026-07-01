@@ -49,16 +49,16 @@ function shiftName(employee: StaffTableEmployee): string {
 function InfoRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   if (!value || value === "—") {
     return (
-      <div className="flex items-start gap-2 py-1.5">
-        <span className="text-xs font-medium text-muted-foreground w-[130px] sm:w-[150px] shrink-0">{label}</span>
+      <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-x-3 gap-y-0.5 py-1.5">
+        <span className="text-xs font-medium text-muted-foreground shrink-0">{label}</span>
         <span className="text-xs text-muted-foreground/40">—</span>
       </div>
     );
   }
   return (
-    <div className="flex items-start gap-2 py-1.5">
-      <span className="text-xs font-medium text-muted-foreground w-[130px] sm:w-[150px] shrink-0">{label}</span>
-      <span className={`text-sm text-foreground ${mono ? "font-mono" : ""}`}>{value}</span>
+    <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-x-3 gap-y-0.5 py-1.5">
+      <span className="text-xs font-medium text-muted-foreground shrink-0">{label}</span>
+      <span className={`text-sm text-foreground min-w-0 break-words ${mono ? "font-mono" : ""}`}>{value}</span>
     </div>
   );
 }
@@ -98,19 +98,19 @@ export function EmployeeViewDialog({ employee, open, onOpenChange }: EmployeeVie
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0">
-        <div className="relative bg-gradient-to-br from-primary via-primary/90 to-primary/80 px-5 py-6 sm:px-7 sm:py-7 text-white">
+      <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0 gap-0 [&>button]:text-white/80 [&>button]:hover:text-white [&>button]:top-4 [&>button]:right-4">
+        <div className="relative shrink-0 bg-gradient-to-br from-primary via-primary/90 to-primary/80 px-5 py-6 sm:px-7 sm:py-7 pr-14 text-white">
           <DialogHeader className="space-y-1 text-left">
-            <DialogTitle className="text-lg sm:text-xl font-bold text-white pr-8">
-              {employee.full_name}
-            </DialogTitle>
-            <DialogDescription className="text-white/70 text-sm">
-              Employee profile
-            </DialogDescription>
+            <DialogTitle className="sr-only">Employee Profile — {employee.full_name}</DialogTitle>
+            <DialogDescription className="sr-only">Detailed profile for {employee.full_name}</DialogDescription>
           </DialogHeader>
+          <h2 className="text-lg sm:text-xl font-bold text-white leading-snug break-words">
+            {employee.full_name}
+          </h2>
+          <p className="text-white/70 text-sm mt-1">Employee profile</p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Badge variant="secondary" className="bg-white/15 text-white border-white/20 hover:bg-white/20 gap-1">
-              <Hash className="h-3 w-3" />
+              <Hash className="h-3 w-3 shrink-0" />
               ID {employee.employee_id ?? "—"}
             </Badge>
             <Badge
@@ -131,9 +131,9 @@ export function EmployeeViewDialog({ employee, open, onOpenChange }: EmployeeVie
           </div>
         </div>
 
-        <div className="px-5 py-5 sm:px-7 sm:py-6 space-y-6">
+        <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-7 sm:py-6 space-y-6">
           <Section icon={User} title="Personal Information">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
+            <div className="space-y-0">
               <InfoRow label="Employee ID" value={employee.employee_id ?? "—"} mono />
               <InfoRow label="Full Name" value={employee.full_name} />
               <InfoRow label="Email" value={employee.email ?? "—"} />
@@ -154,7 +154,7 @@ export function EmployeeViewDialog({ employee, open, onOpenChange }: EmployeeVie
           <hr className="border-border/40" />
 
           <Section icon={Briefcase} title="Employment Details" accent="bg-blue-500">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
+            <div className="space-y-0">
               <InfoRow label="Role" value={roleLabel} />
               <InfoRow label="Employee Type" value={typeLabel} />
               <InfoRow label="Joining Date" value={fmtDate(employee.joining_date)} />
@@ -170,7 +170,7 @@ export function EmployeeViewDialog({ employee, open, onOpenChange }: EmployeeVie
           <hr className="border-border/40" />
 
           <Section icon={GraduationCap} title="Qualification">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
+            <div className="space-y-0">
               <InfoRow label="Degree" value={employee.degree ?? "—"} />
               <InfoRow label="Institution" value={employee.institution ?? "—"} />
               <InfoRow
@@ -184,7 +184,7 @@ export function EmployeeViewDialog({ employee, open, onOpenChange }: EmployeeVie
             <>
               <hr className="border-border/40" />
               <Section icon={Landmark} title="Bank Account (Salary)" accent="bg-violet-500">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
+                <div className="space-y-0">
                   <InfoRow label="Account Holder" value={employee.account_holder_name ?? "—"} />
                   <InfoRow label="Bank Name" value={employee.bank_name ?? "—"} />
                   <InfoRow label="Account Number" value={employee.account_number ?? "—"} mono />
