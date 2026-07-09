@@ -345,7 +345,6 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
       }
 
       setIsDirty(false);
-      setIsEditMode(false);
       toast({
         title: "Marks saved successfully",
         description: "All changes have been securely recorded.",
