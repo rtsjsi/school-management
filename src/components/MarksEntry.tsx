@@ -423,6 +423,19 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
                 </SelectContent>
               </Select>
             </div>
+            <div className="flex-1" />
+            {selectedExamId && !isEditMode && (
+              <Button 
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setIsEditMode(true);
+                }} 
+                className="shadow-sm font-semibold text-sm h-10"
+              >
+                Edit Marks
+              </Button>
+            )}
           </div>
 
           {loading && (
@@ -519,56 +532,15 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
                   </TableBody>
                 </Table>
               </div>
-              <div className="flex justify-between items-center mt-6 p-4 border rounded-md bg-muted/30">
-                <div className="flex items-center gap-4">
-                  {isEditMode ? (
-                    <>
-                      <span className={`text-sm font-medium ${isDirty ? "text-amber-600 dark:text-amber-500" : "text-muted-foreground"}`}>
-                        {isDirty ? "● You have unsaved changes" : "✓ No unsaved changes"}
-                      </span>
-                      {isDirty && (
-                        <Button 
-                          type="button" 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => {
-                            if (confirm("Discard unsaved changes?")) {
-                              loadStudentsAndMarks();
-                            }
-                          }}
-                        >
-                          Cancel Edits
-                        </Button>
-                      )}
-                    </>
-                  ) : (
-                    <span className="text-sm font-medium text-muted-foreground">
-                      Viewing marks in read-only mode
-                    </span>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  {!isEditMode ? (
-                    <Button 
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setIsEditMode(true);
-                      }} 
-                      className="min-w-[140px] shadow-sm font-semibold text-sm h-10"
-                    >
-                      Edit Marks
-                    </Button>
-                  ) : (
-                    <SubmitButton 
-                      loading={saving} 
-                      loadingLabel="Saving…" 
-                      className="min-w-[140px] shadow-sm font-semibold text-sm h-10"
-                    >
-                      Save Marks
-                    </SubmitButton>
-                  )}
-                </div>
+              <div className="flex justify-start mt-4">
+                <SubmitButton 
+                  loading={saving} 
+                  loadingLabel="Saving…" 
+                  className="min-w-[140px] shadow-sm font-semibold text-sm h-10"
+                  disabled={!isEditMode}
+                >
+                  Save Marks
+                </SubmitButton>
               </div>
             </>
           )}
