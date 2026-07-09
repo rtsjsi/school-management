@@ -62,6 +62,12 @@ const navItems: NavItem[] = [
     roles: ACADEMIC_STUDENT_EXAM_ROLES,
   },
   {
+    href: "/dashboard/exams",
+    label: "Exams",
+    icon: FileQuestion,
+    roles: ACADEMIC_STUDENT_EXAM_ROLES,
+  },
+  {
     href: "/dashboard/fees",
     label: "Fees",
     icon: DollarSign,
@@ -78,12 +84,6 @@ const navItems: NavItem[] = [
     label: "Payroll",
     icon: Wallet,
     roles: ["principal", "admin", "auditor", "payroll"],
-  },
-  {
-    href: "/dashboard/exams",
-    label: "Exams",
-    icon: FileQuestion,
-    roles: ACADEMIC_STUDENT_EXAM_ROLES,
   },
   { href: "/dashboard/administration", label: "Administration", icon: Building2, roles: ["principal"] },
 ];
