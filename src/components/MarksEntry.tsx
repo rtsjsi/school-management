@@ -251,6 +251,9 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
       e.preventDefault();
       toggleAbsent(studentId, subjectId);
     }
+    if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+      e.preventDefault();
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -439,13 +442,14 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
                                   <>
                                     <Input
                                       type="number"
-                                      step={0.01}
+                                      step={1}
                                       min={0}
                                       max={maxMarks}
                                       className="w-14 h-8 text-center text-sm"
                                       value={cell.score}
                                       onChange={(e) => setCell(s.id, sub.id, { score: e.target.value })}
                                       onKeyDown={(ev) => handleKeyDown(ev, s.id, sub.id)}
+                                      onWheel={(e) => (e.target as HTMLInputElement).blur()}
                                       placeholder="—"
                                     />
                                     <span className="text-muted-foreground text-xs">/ {maxMarks}</span>
