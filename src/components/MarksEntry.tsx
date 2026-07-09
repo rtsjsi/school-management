@@ -30,6 +30,7 @@ type Exam = {
   id: string;
   name: string;
   standard: string | null;
+  term: string | null;
   academic_years: { id: string; name: string } | { id: string; name: string }[] | null;
 };
 
@@ -57,6 +58,7 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
   const [selectedExamId, setSelectedExamId] = useState("");
   const [standardFilter, setStandardFilter] = useState<string>("all");
   const [divisionFilter, setDivisionFilter] = useState<string>("all");
+  const [termFilter, setTermFilter] = useState<string>("all");
   const [marks, setMarks] = useState<Record<string, Record<string, CellState>>>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -83,7 +85,7 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
         .maybeSingle();
       let query = supabase
         .from("exams")
-        .select("id, name, standard, academic_years(id, name)")
+        .select("id, name, standard, term, academic_years(id, name)")
         .order("created_at", { ascending: false });
       if (ay?.id) query = query.eq("academic_year_id", ay.id);
       const { data: examData } = await query;
@@ -108,6 +110,13 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
       setSelectedExamId("");
     }
   }, [standardFilter, exam]);
+
+  // When Term filter changes, clear selected exam if it doesn't match
+  useEffect(() => {
+    if (exam && termFilter !== "all" && exam.term && exam.term !== termFilter) {
+      setSelectedExamId("");
+    }
+  }, [termFilter, exam]);
 
   // Load subjects for the selected exam
   useEffect(() => {
@@ -353,6 +362,19 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
               </Select>
             </div>
             <div className="space-y-2">
+              <Label>Term</Label>
+              <Select value={termFilter} onValueChange={setTermFilter}>
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="Term-1">Term-1</SelectItem>
+                  <SelectItem value="Term-2">Term-2</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
               <Label>Exam</Label>
               <Select value={selectedExamId} onValueChange={setSelectedExamId}>
                 <SelectTrigger className="w-[280px]">
@@ -361,8 +383,9 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
                 <SelectContent>
                   {exams
                     .filter((e) => standardFilter === "all" || e.standard === standardFilter || !e.standard)
+                    .filter((e) => termFilter === "all" || e.term === termFilter || !e.term)
                     .map((e) => {
-                      const label = [e.name, e.standard ?? "All"].filter(Boolean).join(" · ");
+                      const label = [e.name, e.term, e.standard ?? "All"].filter(Boolean).join(" · ");
                       return (
                         <SelectItem key={e.id} value={e.id}>
                           {label}
