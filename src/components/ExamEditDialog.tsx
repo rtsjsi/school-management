@@ -6,6 +6,7 @@ import { Pencil } from "lucide-react";
 import { fetchStandards } from "@/lib/lov";
 import type { StandardOption } from "@/lib/lov";
 import { updateExam } from "@/app/(workspace)/dashboard/exams/actions";
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,6 +38,9 @@ export function ExamEditDialog({ exam }: { exam: ExamRow }) {
     standardId: "",
     term: exam.term ?? "Term-1",
   });
+  const [subjects, setSubjects] = useState<{ id: string; name: string; code: string | null; evaluation_type: string }[]>([]);
+  const [maxMarks, setMaxMarks] = useState<Record<string, string>>({});
+  const [passingMarks, setPassingMarks] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetchStandards().then(setStandardsList);
@@ -50,8 +54,38 @@ export function ExamEditDialog({ exam }: { exam: ExamRow }) {
         term: exam.term ?? "Term-1",
       });
       setError(null);
+      
+      const supabase = createClient();
+      supabase
+        .from("exam_subjects")
+        .select("max_marks, passing_marks, subjects(id, name, code, evaluation_type, sort_order)")
+        .eq("exam_id", exam.id)
+        .then(({ data }) => {
+          if (data) {
+            // @ts-ignore
+            const rows = data.map(d => d.subjects).sort((a,b) => (a.sort_order || 0) - (b.sort_order || 0));
+            setSubjects(rows as any);
+            const maxM: Record<string, string> = {};
+            const passM: Record<string, string> = {};
+            data.forEach(d => {
+              // @ts-ignore
+              if (d.subjects.evaluation_type === 'mark') {
+                // @ts-ignore
+                maxM[d.subjects.id] = d.max_marks?.toString() || "";
+                // @ts-ignore
+                passM[d.subjects.id] = d.passing_marks?.toString() || "";
+              }
+            });
+            setMaxMarks(maxM);
+            setPassingMarks(passM);
+          }
+        });
+    } else {
+      setSubjects([]);
+      setMaxMarks({});
+      setPassingMarks({});
     }
-  }, [open, exam.name, exam.standard, exam.term, standardsList]);
+  }, [open, exam.id, exam.name, exam.standard, exam.term, standardsList]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,13 +102,38 @@ export function ExamEditDialog({ exam }: { exam: ExamRow }) {
       setError("Term is required.");
       return;
     }
+    const markBasedSubjects = subjects.filter((s) => s.evaluation_type === "mark");
+    for (const sub of markBasedSubjects) {
+      const val = maxMarks[sub.id]?.trim();
+      const num = val ? parseFloat(val) : NaN;
+      if (!val || isNaN(num) || num <= 0) {
+        setError(`Max marks is required for ${sub.code ?? sub.name} (marks-based subject).`);
+        return;
+      }
+    }
+
     const standardName = standardsList.find((s) => s.id === form.standardId)?.name ?? null;
+    const subjectMaxMarks: { subjectId: string; maxMarks: number; passingMarks: number | null }[] = [];
+    for (const sub of subjects) {
+      if (sub.evaluation_type === "mark") {
+        const val = parseFloat(maxMarks[sub.id] ?? "0");
+        const passVal = passingMarks[sub.id]?.trim();
+        const passNum = passVal ? parseFloat(passVal) : null;
+        if (!isNaN(val) && val > 0) {
+          subjectMaxMarks.push({ subjectId: sub.id, maxMarks: val, passingMarks: passNum });
+        }
+      } else {
+        subjectMaxMarks.push({ subjectId: sub.id, maxMarks: 100, passingMarks: null });
+      }
+    }
+
     setSaving(true);
     try {
       const result = await updateExam(exam.id, {
         name: form.name.trim(),
         standard: standardName,
         term: form.term,
+        subjectMaxMarks,
       });
       if (!result.ok) {
         setError(result.error);
@@ -95,7 +154,7 @@ export function ExamEditDialog({ exam }: { exam: ExamRow }) {
           Edit
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit exam</DialogTitle>
         </DialogHeader>
@@ -112,12 +171,9 @@ export function ExamEditDialog({ exam }: { exam: ExamRow }) {
             />
           </div>
           <div className="space-y-2">
-            <Label>Standard *</Label>
-            <Select
-              value={form.standardId || "_none"}
-              onValueChange={(v) => setForm((p) => ({ ...p, standardId: v === "_none" ? "" : v }))}
-            >
-              <SelectTrigger>
+            <Label>Standard</Label>
+            <Select disabled value={form.standardId || "_none"} onValueChange={() => {}}>
+              <SelectTrigger className="opacity-50">
                 <SelectValue placeholder="Select standard" />
               </SelectTrigger>
               <SelectContent>
@@ -131,12 +187,9 @@ export function ExamEditDialog({ exam }: { exam: ExamRow }) {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Term *</Label>
-            <Select
-              value={form.term}
-              onValueChange={(v) => setForm((p) => ({ ...p, term: v }))}
-            >
-              <SelectTrigger>
+            <Label>Term</Label>
+            <Select disabled value={form.term} onValueChange={() => {}}>
+              <SelectTrigger className="opacity-50">
                 <SelectValue placeholder="Select term" />
               </SelectTrigger>
               <SelectContent>
@@ -145,6 +198,60 @@ export function ExamEditDialog({ exam }: { exam: ExamRow }) {
               </SelectContent>
             </Select>
           </div>
+
+          {subjects.length > 0 && (
+            <div className="space-y-2">
+              <Label>Subjects &amp; marks</Label>
+              <div className="rounded-md border border-border divide-y divide-border">
+                {subjects.map((sub) => (
+                  <div
+                    key={sub.id}
+                    className="flex items-center justify-between gap-4 px-3 py-2.5"
+                  >
+                    <span className="text-sm font-medium">
+                      {sub.code ?? sub.name}
+                      {sub.evaluation_type === "grade" && (
+                        <span className="text-muted-foreground font-normal ml-1">(grade)</span>
+                      )}
+                    </span>
+                    {sub.evaluation_type === "mark" && (
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Label htmlFor={`edit-max-${sub.id}`} className="text-muted-foreground text-xs">
+                          Max *
+                        </Label>
+                        <Input
+                          id={`edit-max-${sub.id}`}
+                          type="number"
+                          min={1}
+                          className="w-20 h-8"
+                          value={maxMarks[sub.id] ?? ""}
+                          onChange={(e) =>
+                            setMaxMarks((p) => ({ ...p, [sub.id]: e.target.value }))
+                          }
+                          placeholder="Max"
+                        />
+                        <Label htmlFor={`edit-pass-${sub.id}`} className="text-muted-foreground text-xs ml-2">
+                          Pass
+                        </Label>
+                        <Input
+                          id={`edit-pass-${sub.id}`}
+                          type="number"
+                          min={1}
+                          className="w-20 h-8"
+                          value={passingMarks[sub.id] ?? ""}
+                          onChange={(e) =>
+                            setPassingMarks((p) => ({ ...p, [sub.id]: e.target.value }))
+                          }
+                          placeholder="Opt."
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel

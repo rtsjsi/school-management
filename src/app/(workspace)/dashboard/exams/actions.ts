@@ -29,10 +29,9 @@ export async function createExamWithSubjects(
   payload: {
     name: string;
     term: string | null;
-    description?: string | null;
     standard: string | null;
     academic_year_id: string;
-    subjectMaxMarks: { subjectId: string; maxMarks: number }[];
+    subjectMaxMarks: { subjectId: string; maxMarks: number; passingMarks?: number | null }[];
   }
 ): Promise<CreateExamResult> {
   const user = await requireUser();
@@ -47,19 +46,23 @@ export async function createExamWithSubjects(
       name: payload.name.trim(),
       term: payload.term,
       standard: payload.standard?.trim() || null,
-      description: payload.description?.trim() || null,
       academic_year_id: payload.academic_year_id.trim(),
+      created_by: user.id,
+      updated_by: user.id,
     })
     .select("id")
     .single();
 
   if (examErr || !exam) return { ok: false, error: examErr?.message ?? "Failed to create exam." };
 
-  for (const { subjectId, maxMarks } of payload.subjectMaxMarks) {
+  for (const { subjectId, maxMarks, passingMarks } of payload.subjectMaxMarks) {
     if (maxMarks <= 0) continue;
     await supabase
       .from("exam_subjects")
-      .upsert({ exam_id: exam.id, subject_id: subjectId, max_marks: maxMarks }, { onConflict: "exam_id,subject_id" });
+      .upsert(
+        { exam_id: exam.id, subject_id: subjectId, max_marks: maxMarks, passing_marks: passingMarks ?? null },
+        { onConflict: "exam_id,subject_id" }
+      );
   }
 
   return { ok: true, examId: exam.id };
@@ -69,7 +72,12 @@ export type UpdateExamResult = { ok: true } | { ok: false; error: string };
 
 export async function updateExam(
   examId: string,
-  payload: { name: string; standard: string | null; term: string | null }
+  payload: {
+    name: string;
+    standard: string | null;
+    term: string | null;
+    subjectMaxMarks: { subjectId: string; maxMarks: number; passingMarks?: number | null }[];
+  }
 ): Promise<UpdateExamResult> {
   const user = await requireUser();
   if (!isAdminOrAbove(user)) return { ok: false, error: "Unauthorized" };
@@ -85,9 +93,21 @@ export async function updateExam(
       standard: payload.standard.trim(),
       term: payload.term,
       updated_at: new Date().toISOString(),
+      updated_by: user.id,
     })
     .eq("id", examId);
 
   if (error) return { ok: false, error: error.message };
+
+  for (const { subjectId, maxMarks, passingMarks } of payload.subjectMaxMarks) {
+    if (maxMarks <= 0) continue;
+    await supabase
+      .from("exam_subjects")
+      .upsert(
+        { exam_id: examId, subject_id: subjectId, max_marks: maxMarks, passing_marks: passingMarks ?? null },
+        { onConflict: "exam_id,subject_id" }
+      );
+  }
+
   return { ok: true };
 }
