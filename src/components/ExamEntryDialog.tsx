@@ -89,10 +89,22 @@ export default function ExamEntryDialog() {
   }, [form.standardId]);
 
   useEffect(() => {
-    if (!open && !form.name) {
-      setError(null);
+    if (!open) {
+      setTimeout(() => {
+        setForm((p) => ({
+          name: "",
+          standardId: "",
+          academicYearId: p.academicYearId,
+          term: "Term-1",
+        }));
+        setSubjects([]);
+        setMaxMarks({});
+        setPassingMarks({});
+        setSelectedSubjects({});
+        setError(null);
+      }, 300); // Wait for fade out animation
     }
-  }, [open, form.name]);
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,16 +167,6 @@ export default function ExamEntryDialog() {
         return;
       }
 
-      setForm({
-        name: "",
-        standardId: "",
-        academicYearId: "",
-        term: "Term-1",
-      });
-      setSubjects([]);
-      setMaxMarks({});
-      setPassingMarks({});
-      setSelectedSubjects({});
       setOpen(false);
       router.refresh();
     } catch {
