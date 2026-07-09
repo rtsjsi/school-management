@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import ExamEntryDialog from "@/components/ExamEntryDialog";
 import { ExamEditDialog } from "@/components/ExamEditDialog";
