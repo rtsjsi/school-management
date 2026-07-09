@@ -1,0 +1,1 @@
+ALTER TABLE IF EXISTS exam_subjects ADD COLUMN IF NOT EXISTS passing_marks NUMERIC;

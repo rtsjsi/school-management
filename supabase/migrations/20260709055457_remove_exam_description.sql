@@ -1,0 +1,1 @@
+ALTER TABLE IF EXISTS exams DROP COLUMN IF EXISTS description;
