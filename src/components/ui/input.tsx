@@ -5,6 +5,20 @@ import { cn } from "@/lib/utils"
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
   ({ className, type, ...props }, ref) => {
     const isFile = type === "file";
+    const handleWheel = (e: React.WheelEvent<HTMLInputElement>) => {
+      if (type === "number") {
+        (e.target as HTMLInputElement).blur();
+      }
+      props.onWheel?.(e);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (type === "number" && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+        e.preventDefault();
+      }
+      props.onKeyDown?.(e);
+    };
+
     return (
       <input
         type={type}
@@ -16,6 +30,8 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
           className
         )}
         ref={ref}
+        onWheel={handleWheel}
+        onKeyDown={handleKeyDown}
         {...props}
       />
     )

@@ -25,11 +25,9 @@ export default async function ExamsPage() {
           <TabsTrigger value="reportcard">Report Card</TabsTrigger>
         </TabsList>
         <TabsContent value="exams" className="space-y-6">
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Suspense fallback={<TableSkeleton rows={3} columns={3} />}>
-              <ExamsList />
-            </Suspense>
-          </div>
+          <Suspense fallback={<TableSkeleton rows={3} columns={3} />}>
+            <ExamsList />
+          </Suspense>
         </TabsContent>
         <TabsContent value="marks" className="space-y-6">
           <MarksEntry allowedClassNames={allowedClassNames ?? undefined} />

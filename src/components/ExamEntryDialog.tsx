@@ -16,29 +16,43 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const TERMS = ["Term-1", "Term-2"] as const;
 
 type SubjectRow = { id: string; name: string; code: string | null; evaluation_type: string };
 
-export default function ExamEntryForm() {
+export default function ExamEntryDialog() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [standardsList, setStandardsList] = useState<StandardOption[]>([]);
+  const [academicYears, setAcademicYears] = useState<{ id: string; name: string; status?: string | null }[]>([]);
   const [subjects, setSubjects] = useState<SubjectRow[]>([]);
   const [form, setForm] = useState({
     name: "",
     standardId: "",
     academicYearId: "",
     term: "Term-1" as string,
-    description: "",
   });
   const [maxMarks, setMaxMarks] = useState<Record<string, string>>({});
+  const [passingMarks, setPassingMarks] = useState<Record<string, string>>({});
+  const [selectedSubjects, setSelectedSubjects] = useState<Record<string, boolean>>({});
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     fetchStandards().then(setStandardsList);
     fetchAcademicYears().then((list) => {
+      setAcademicYears(list);
       const active = list.find((y) => y.status === "active") ?? list[0];
       if (active) {
         setForm((p) => (p.academicYearId ? p : { ...p, academicYearId: active.id }));
@@ -50,6 +64,8 @@ export default function ExamEntryForm() {
     if (!form.standardId) {
       setSubjects([]);
       setMaxMarks({});
+      setPassingMarks({});
+      setSelectedSubjects({});
       return;
     }
     const supabase = createClient();
@@ -62,12 +78,33 @@ export default function ExamEntryForm() {
         const rows = (data ?? []) as SubjectRow[];
         setSubjects(rows);
         const next: Record<string, string> = {};
+        const sel: Record<string, boolean> = {};
         rows.forEach((s) => {
+          sel[s.id] = true;
           if (s.evaluation_type === "mark") next[s.id] = "100";
         });
         setMaxMarks(next);
+        setSelectedSubjects(sel);
       });
   }, [form.standardId]);
+
+  useEffect(() => {
+    if (!open) {
+      setTimeout(() => {
+        setForm((p) => ({
+          name: "",
+          standardId: "",
+          academicYearId: p.academicYearId,
+          term: "Term-1",
+        }));
+        setSubjects([]);
+        setMaxMarks({});
+        setPassingMarks({});
+        setSelectedSubjects({});
+        setError(null);
+      }, 300); // Wait for fade out animation
+    }
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,7 +126,8 @@ export default function ExamEntryForm() {
       return;
     }
 
-    const markBasedSubjects = subjects.filter((s) => s.evaluation_type === "mark");
+    const chosenSubjects = subjects.filter(s => selectedSubjects[s.id]);
+    const markBasedSubjects = chosenSubjects.filter((s) => s.evaluation_type === "mark");
     for (const sub of markBasedSubjects) {
       const val = maxMarks[sub.id]?.trim();
       const num = val ? parseFloat(val) : NaN;
@@ -100,13 +138,18 @@ export default function ExamEntryForm() {
     }
 
     const standardName = standardsList.find((s) => s.id === form.standardId)?.name ?? null;
-    const subjectMaxMarks: { subjectId: string; maxMarks: number }[] = [];
-    for (const sub of subjects) {
-      const val =
-        sub.evaluation_type === "mark"
-          ? parseFloat(maxMarks[sub.id] ?? "0")
-          : 100;
-      if (!isNaN(val) && val > 0) subjectMaxMarks.push({ subjectId: sub.id, maxMarks: val });
+    const subjectMaxMarks: { subjectId: string; maxMarks: number; passingMarks: number | null }[] = [];
+    for (const sub of chosenSubjects) {
+      if (sub.evaluation_type === "mark") {
+        const val = parseFloat(maxMarks[sub.id] ?? "0");
+        const passVal = passingMarks[sub.id]?.trim();
+        const passNum = passVal ? parseFloat(passVal) : null;
+        if (!isNaN(val) && val > 0) {
+          subjectMaxMarks.push({ subjectId: sub.id, maxMarks: val, passingMarks: passNum });
+        }
+      } else {
+        subjectMaxMarks.push({ subjectId: sub.id, maxMarks: 100, passingMarks: null });
+      }
     }
 
     setLoading(true);
@@ -114,7 +157,6 @@ export default function ExamEntryForm() {
       const result = await createExamWithSubjects({
         name: form.name.trim(),
         term: form.term,
-        description: form.description.trim() || null,
         standard: standardName,
         academic_year_id: form.academicYearId,
         subjectMaxMarks,
@@ -125,15 +167,7 @@ export default function ExamEntryForm() {
         return;
       }
 
-      setForm({
-        name: "",
-        standardId: "",
-        academicYearId: "",
-        term: "Term-1",
-        description: "",
-      });
-      setSubjects([]);
-      setMaxMarks({});
+      setOpen(false);
       router.refresh();
     } catch {
       setError("Something went wrong.");
@@ -143,7 +177,18 @@ export default function ExamEntryForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" className="h-8 gap-1">
+          <Plus className="h-3.5 w-3.5" />
+          Add Exam
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Add Exam</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
         <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>
       )}
@@ -157,7 +202,26 @@ export default function ExamEntryForm() {
           placeholder="e.g. Math Midterm"
         />
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="exam-academic-year">Academic Year *</Label>
+          <Select
+            value={form.academicYearId || "_none"}
+            onValueChange={(v) => setForm((p) => ({ ...p, academicYearId: v === "_none" ? "" : v }))}
+          >
+            <SelectTrigger id="exam-academic-year" className="w-full">
+              <SelectValue placeholder="Select academic year" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_none">Select academic year</SelectItem>
+              {academicYears.map((y) => (
+                <SelectItem key={y.id} value={y.id}>
+                  {y.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <div className="space-y-2">
           <Label htmlFor="exam-standard">Standard *</Label>
           <Select
@@ -200,7 +264,7 @@ export default function ExamEntryForm() {
         <div className="space-y-2">
           <Label>Subjects &amp; max marks</Label>
           <p className="text-xs text-muted-foreground">
-            Max marks is required for marks-based subjects. Grade-based subjects are excluded.
+            Max marks is required for marks-based subjects. Passing marks are optional. Grade-based subjects are excluded.
           </p>
           <div className="rounded-md border border-border divide-y divide-border">
             {subjects.map((sub) => (
@@ -208,16 +272,23 @@ export default function ExamEntryForm() {
                 key={sub.id}
                 className="flex items-center justify-between gap-4 px-3 py-2.5"
               >
-                <span className="text-sm font-medium">
-                  {sub.code ?? sub.name}
-                  {sub.evaluation_type === "grade" && (
-                    <span className="text-muted-foreground font-normal ml-1">(grade)</span>
-                  )}
-                </span>
-                {sub.evaluation_type === "mark" && (
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id={`sel-${sub.id}`}
+                    checked={!!selectedSubjects[sub.id]}
+                    onCheckedChange={(c) => setSelectedSubjects(p => ({ ...p, [sub.id]: !!c }))}
+                  />
+                  <Label htmlFor={`sel-${sub.id}`} className="text-sm font-medium cursor-pointer">
+                    {sub.code ?? sub.name}
+                    {sub.evaluation_type === "grade" && (
+                      <span className="text-muted-foreground font-normal ml-1">(grade)</span>
+                    )}
+                  </Label>
+                </div>
+                {sub.evaluation_type === "mark" && selectedSubjects[sub.id] && (
                   <div className="flex items-center gap-2 shrink-0">
                     <Label htmlFor={`max-${sub.id}`} className="text-muted-foreground text-xs">
-                      Max marks *
+                      Max *
                     </Label>
                     <Input
                       id={`max-${sub.id}`}
@@ -230,6 +301,20 @@ export default function ExamEntryForm() {
                       }
                       placeholder="e.g. 100"
                     />
+                    <Label htmlFor={`pass-${sub.id}`} className="text-muted-foreground text-xs ml-2">
+                      Pass
+                    </Label>
+                    <Input
+                      id={`pass-${sub.id}`}
+                      type="number"
+                      min={1}
+                      className="w-20 h-8"
+                      value={passingMarks[sub.id] ?? ""}
+                      onChange={(e) =>
+                        setPassingMarks((p) => ({ ...p, [sub.id]: e.target.value }))
+                      }
+                      placeholder="Opt."
+                    />
                   </div>
                 )}
               </div>
@@ -237,21 +322,16 @@ export default function ExamEntryForm() {
           </div>
         </div>
       )}
-      <div className="space-y-2">
-        <Label htmlFor="exam-desc">Description</Label>
-        <Input
-          id="exam-desc"
-          type="text"
-          value={form.description}
-          onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-          placeholder="Optional"
-        />
+      <div className="flex justify-end gap-2 pt-2">
+        <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+          Cancel
+        </Button>
+        <SubmitButton loading={loading} loadingLabel="Adding…">
+          Add exam
+        </SubmitButton>
       </div>
-      <div className="flex justify-start">
-      <SubmitButton loading={loading} loadingLabel="Adding…">
-        Add exam
-      </SubmitButton>
-    </div>
-    </form>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
