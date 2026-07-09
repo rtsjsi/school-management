@@ -102,16 +102,12 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
     }
   }, [supabase, allowedStandardSet]);
 
-  // When exam changes, reset filters to exam's standard
+  // When Standard filter changes, we should clear selected exam if it doesn't match
   useEffect(() => {
-    if (exam?.standard) {
-      setStandardFilter(exam.standard);
-      setDivisionFilter("all");
-    } else {
-      setStandardFilter("all");
-      setDivisionFilter("all");
+    if (exam && standardFilter !== "all" && exam.standard && exam.standard !== standardFilter) {
+      setSelectedExamId("");
     }
-  }, [selectedExamId, exam?.standard]);
+  }, [standardFilter, exam]);
 
   // Load subjects for effective grade
   useEffect(() => {
@@ -304,13 +300,6 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
     }
   };
 
-  // When exam is for a specific standard, only allow that standard (no other standards like Jr KG)
-  const standardsForFilter =
-    exam?.standard && exam.standard.trim() !== ""
-      ? [exam.standard]
-      : classNames.length > 0
-        ? classNames
-        : (Array.from(new Set(students.map((s) => s.standard).filter(Boolean))) as string[]);
   const divisions = Array.from(new Set(students.map((s) => s.division).filter(Boolean))) as string[];
   return (
     <Card>
@@ -323,55 +312,28 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
             </p>
           )}
 
-          {/* Filters: Exam, Standard, Division */}
+          {/* Filters: Standard, Division, Exam */}
           <div className="flex flex-wrap gap-4 items-end">
             <div className="space-y-2">
-              <Label>Exam</Label>
-              <Select value={selectedExamId} onValueChange={setSelectedExamId}>
-                <SelectTrigger className="w-[280px]">
-                  <SelectValue placeholder="Select exam" />
-                </SelectTrigger>
-                <SelectContent>
-                  {exams.map((e) => {
-                    const label = [e.name, e.standard ?? "All"].filter(Boolean).join(" · ");
-                    return (
-                      <SelectItem key={e.id} value={e.id}>
-                        {label}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
               <Label>Standard</Label>
-              <Select
-                value={standardFilter}
-                onValueChange={setStandardFilter}
-                disabled={!!(exam?.standard && exam.standard.trim() !== "")}
-              >
-                <SelectTrigger className="w-[120px]">
+              <Select value={standardFilter} onValueChange={setStandardFilter}>
+                <SelectTrigger className="w-[150px]">
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
-                  {!(exam?.standard && exam.standard.trim() !== "") && (
-                    <SelectItem value="all">All</SelectItem>
-                  )}
-                  {standardsForFilter.map((g) => (
+                  <SelectItem value="all">All</SelectItem>
+                  {classNames.map((g) => (
                     <SelectItem key={g} value={g}>
                       {g}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {exam?.standard && exam.standard.trim() !== "" && (
-                <p className="text-xs text-muted-foreground">Exam is for this standard only</p>
-              )}
             </div>
             <div className="space-y-2">
               <Label>Division</Label>
               <Select value={divisionFilter} onValueChange={setDivisionFilter}>
-                <SelectTrigger className="w-[100px]">
+                <SelectTrigger className="w-[120px]">
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
@@ -381,6 +343,26 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
                       {d}
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Exam</Label>
+              <Select value={selectedExamId} onValueChange={setSelectedExamId}>
+                <SelectTrigger className="w-[280px]">
+                  <SelectValue placeholder="Select exam" />
+                </SelectTrigger>
+                <SelectContent>
+                  {exams
+                    .filter((e) => standardFilter === "all" || e.standard === standardFilter || !e.standard)
+                    .map((e) => {
+                      const label = [e.name, e.standard ?? "All"].filter(Boolean).join(" · ");
+                      return (
+                        <SelectItem key={e.id} value={e.id}>
+                          {label}
+                        </SelectItem>
+                      );
+                  })}
                 </SelectContent>
               </Select>
             </div>

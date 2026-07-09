@@ -22,6 +22,9 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedExamId, setSelectedExamId] = useState("");
   const [selectedStudentId, setSelectedStudentId] = useState("");
+  const [standardFilter, setStandardFilter] = useState<string>("all");
+  const [divisionFilter, setDivisionFilter] = useState<string>("all");
+  const [classNames, setClassNames] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,6 +66,37 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
         setStudents(list);
       });
   }, [supabase, allowedPairSet]);
+
+  useEffect(() => {
+    if (allowedStandardSet) {
+      setClassNames(Array.from(allowedStandardSet));
+    } else {
+      supabase
+        .from("standards")
+        .select("name")
+        .order("sort_order")
+        .then(({ data }) => setClassNames((data ?? []).map((c: { name: string }) => c.name)));
+    }
+  }, [supabase, allowedStandardSet]);
+
+  useEffect(() => {
+    if (selectedExamId) {
+      const exam = exams.find(e => e.id === selectedExamId);
+      if (exam && standardFilter !== "all" && exam.standard && exam.standard !== standardFilter) {
+        setSelectedExamId("");
+      }
+    }
+    if (selectedStudentId) {
+      const student = students.find(s => s.id === selectedStudentId);
+      if (student) {
+        if (standardFilter !== "all" && student.standard !== standardFilter) {
+          setSelectedStudentId("");
+        } else if (divisionFilter !== "all" && student.division !== divisionFilter) {
+          setSelectedStudentId("");
+        }
+      }
+    }
+  }, [standardFilter, divisionFilter, exams, students, selectedExamId, selectedStudentId]);
 
   const handleGenerate = async () => {
     if (!selectedExamId || !selectedStudentId) {
@@ -152,6 +186,14 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
     }
   };
 
+  const filteredExams = exams.filter((e) => standardFilter === "all" || e.standard === standardFilter || !e.standard);
+  const divisions = Array.from(new Set(students.filter(s => standardFilter === "all" || s.standard === standardFilter).map((s) => s.division).filter(Boolean))) as string[];
+  const filteredStudents = students.filter((s) => {
+    if (standardFilter !== "all" && s.standard !== standardFilter) return false;
+    if (divisionFilter !== "all" && s.division !== divisionFilter) return false;
+    return true;
+  });
+
   return (
     <Card>
       <CardContent className="space-y-4 pt-6">
@@ -159,15 +201,47 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
           <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>
         )}
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="flex flex-wrap gap-4 items-end pb-2">
+          <div className="space-y-2">
+            <Label>Standard</Label>
+            <Select value={standardFilter} onValueChange={setStandardFilter}>
+              <SelectTrigger className="w-[120px]">
+                <SelectValue placeholder="All" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                {classNames.map((g) => (
+                  <SelectItem key={g} value={g}>
+                    {g}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Division</Label>
+            <Select value={divisionFilter} onValueChange={setDivisionFilter}>
+              <SelectTrigger className="w-[100px]">
+                <SelectValue placeholder="All" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                {divisions.map((d) => (
+                  <SelectItem key={d} value={d}>
+                    {d}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-2">
             <Label>Exam</Label>
             <Select value={selectedExamId} onValueChange={setSelectedExamId}>
-              <SelectTrigger>
+              <SelectTrigger className="w-[240px]">
                 <SelectValue placeholder="Select exam" />
               </SelectTrigger>
               <SelectContent>
-                {exams.map((e) => (
+                {filteredExams.map((e) => (
                   <SelectItem key={e.id} value={e.id}>
                     {e.name} – {e.term ?? "No term"}
                   </SelectItem>
@@ -178,11 +252,11 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
           <div className="space-y-2">
             <Label>Student</Label>
             <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
-              <SelectTrigger>
+              <SelectTrigger className="w-[240px]">
                 <SelectValue placeholder="Select student" />
               </SelectTrigger>
               <SelectContent>
-                {students.map((s) => (
+                {filteredStudents.map((s) => (
                   <SelectItem key={s.id} value={s.id}>
                     {s.full_name} {s.standard && s.division ? `(${s.standard} ${s.division})` : ""}
                   </SelectItem>
