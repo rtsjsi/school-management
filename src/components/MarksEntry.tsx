@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { createClient } from "@/lib/supabase/client";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -67,6 +68,7 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
   const [classList, setClassList] = useState<{ standardName: string; divisionName: string }[]>([]);
   const [examSubjectMaxMarks, setExamSubjectMaxMarks] = useState<Record<string, number>>({});
   const [isDirty, setIsDirty] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const exam = exams.find((e) => e.id === selectedExamId);
   const [effectiveStandard, effectiveDivision] = classFilter ? classFilter.split("\0") : [null, null];
@@ -226,6 +228,7 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
       }
       setMarks(initial);
       setIsDirty(false);
+      setIsEditMode(false);
     })().finally(() => setLoading(false));
   }, [supabase, selectedExamId, effectiveStandard, effectiveDivision, subjects, allowedPairSet]);
 
@@ -252,6 +255,7 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
   };
 
   const toggleAbsent = (studentId: string, subjectId: string) => {
+    if (!isEditMode) return;
     setIsDirty(true);
     setMarks((prev) => {
       const next = { ...prev };
@@ -341,6 +345,7 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
       }
 
       setIsDirty(false);
+      setIsEditMode(false);
       toast({
         title: "Marks saved successfully",
         description: "All changes have been securely recorded.",
@@ -469,11 +474,12 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
                                 }}
                               >
                                 {cell.is_absent ? (
-                                  <span className="text-destructive font-medium text-sm" title="Absent (right-click to toggle)">A</span>
+                                  <span className="text-destructive font-medium text-sm" title={isEditMode ? "Absent (right-click to toggle)" : "Absent"}>A</span>
                                 ) : isGradeBased ? (
                                   <Select
                                     value={cell.grade || "_"}
                                     onValueChange={(v) => setCell(s.id, sub.id, { grade: v === "_" ? "" : v })}
+                                    disabled={!isEditMode}
                                   >
                                     <SelectTrigger className="w-[72px] h-8 text-sm">
                                       <SelectValue placeholder="Grade" />
@@ -494,11 +500,12 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
                                       step={1}
                                       min={0}
                                       max={maxMarks}
-                                      className="w-14 h-8 text-center text-sm"
+                                      className="w-14 h-8 text-center text-sm disabled:opacity-100 disabled:bg-muted/50"
                                       value={cell.score}
                                       onChange={(e) => setCell(s.id, sub.id, { score: e.target.value })}
                                       onKeyDown={(ev) => handleKeyDown(ev, s.id, sub.id)}
                                       placeholder="—"
+                                      disabled={!isEditMode}
                                     />
                                     <span className="text-muted-foreground text-xs">/ {maxMarks}</span>
                                   </>
@@ -513,18 +520,55 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
                 </Table>
               </div>
               <div className="flex justify-between items-center mt-6 p-4 border rounded-md bg-muted/30">
-                <div className="flex items-center gap-2">
-                  <span className={`text-sm font-medium ${isDirty ? "text-amber-600 dark:text-amber-500" : "text-muted-foreground"}`}>
-                    {isDirty ? "● You have unsaved changes" : "✓ All changes saved"}
-                  </span>
+                <div className="flex items-center gap-4">
+                  {isEditMode ? (
+                    <>
+                      <span className={`text-sm font-medium ${isDirty ? "text-amber-600 dark:text-amber-500" : "text-muted-foreground"}`}>
+                        {isDirty ? "● You have unsaved changes" : "✓ No unsaved changes"}
+                      </span>
+                      {isDirty && (
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => {
+                            if (confirm("Discard unsaved changes?")) {
+                              loadStudentsAndMarks();
+                            }
+                          }}
+                        >
+                          Cancel Edits
+                        </Button>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-sm font-medium text-muted-foreground">
+                      Viewing marks in read-only mode
+                    </span>
+                  )}
                 </div>
-                <SubmitButton 
-                  loading={saving} 
-                  loadingLabel="Saving…" 
-                  className="min-w-[140px] shadow-sm font-semibold text-sm h-10"
-                >
-                  Save Marks
-                </SubmitButton>
+                <div className="flex gap-2">
+                  {!isEditMode ? (
+                    <Button 
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setIsEditMode(true);
+                      }} 
+                      className="min-w-[140px] shadow-sm font-semibold text-sm h-10"
+                    >
+                      Edit Marks
+                    </Button>
+                  ) : (
+                    <SubmitButton 
+                      loading={saving} 
+                      loadingLabel="Saving…" 
+                      className="min-w-[140px] shadow-sm font-semibold text-sm h-10"
+                    >
+                      Save Marks
+                    </SubmitButton>
+                  )}
+                </div>
               </div>
             </>
           )}
