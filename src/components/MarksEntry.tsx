@@ -109,30 +109,36 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
     }
   }, [standardFilter, exam]);
 
-  // Load subjects for effective grade
+  // Load subjects for the selected exam
   useEffect(() => {
-    if (!effectiveStandard) {
+    if (!selectedExamId) {
       setSubjects([]);
       return;
     }
     supabase
-      .from("standards")
-      .select("id")
-      .eq("name", effectiveStandard)
-      .maybeSingle()
-      .then(({ data: classRow }) => {
-        if (!classRow?.id) {
+      .from("exam_subjects")
+      .select(`
+        subject_id,
+        max_marks,
+        subjects (
+          id, name, code, evaluation_type, sort_order
+        )
+      `)
+      .eq("exam_id", selectedExamId)
+      .then(({ data }) => {
+        if (!data) {
           setSubjects([]);
           return;
         }
-        supabase
-          .from("subjects")
-          .select("id, name, code, evaluation_type")
-          .eq("standard_id", classRow.id)
-          .order("sort_order")
-          .then(({ data }) => setSubjects((data ?? []) as Subject[]));
+        // Filter out any broken relations
+        const validData = data.filter((row: any) => row.subjects);
+        // Sort by the subject's sort_order
+        validData.sort((a: any, b: any) => (a.subjects.sort_order || 0) - (b.subjects.sort_order || 0));
+        
+        const subList = validData.map((row: any) => row.subjects);
+        setSubjects(subList as Subject[]);
       });
-  }, [effectiveStandard, supabase]);
+  }, [selectedExamId, supabase]);
 
   // Load max marks per subject for selected exam
   useEffect(() => {

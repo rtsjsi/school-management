@@ -113,32 +113,27 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
         return;
       }
 
-      const studentStandard = student.standard;
       let subjectList: Subject[] = [];
-      if (studentStandard) {
-        const { data: classRow } = await supabase
-          .from("standards")
-          .select("id")
-          .eq("name", studentStandard)
-          .maybeSingle();
-        if (classRow?.id) {
-          const { data: subData } = await supabase
-            .from("subjects")
-            .select("id, name, evaluation_type")
-            .eq("standard_id", classRow.id)
-            .order("sort_order");
-          subjectList = (subData ?? []) as Subject[];
-        }
-      }
-
-      const { data: examSubs } = await supabase
-        .from("exam_subjects")
-        .select("subject_id, max_marks")
-        .eq("exam_id", selectedExamId);
       const examMaxMap: Record<string, number> = {};
-      (examSubs ?? []).forEach((r: { subject_id: string; max_marks: number }) => {
-        examMaxMap[r.subject_id] = Number(r.max_marks);
-      });
+
+      const { data: examSubsData } = await supabase
+        .from("exam_subjects")
+        .select(`
+          subject_id,
+          max_marks,
+          subjects (id, name, evaluation_type, sort_order)
+        `)
+        .eq("exam_id", selectedExamId);
+
+      if (examSubsData) {
+        const validSubs = examSubsData.filter((r: any) => r.subjects);
+        validSubs.sort((a: any, b: any) => (a.subjects.sort_order || 0) - (b.subjects.sort_order || 0));
+        subjectList = validSubs.map((r: any) => r.subjects) as Subject[];
+        
+        validSubs.forEach((r: any) => {
+          examMaxMap[r.subject_id] = Number(r.max_marks);
+        });
+      }
 
       const { data: marks } = await supabase
         .from("exam_result_subjects")
