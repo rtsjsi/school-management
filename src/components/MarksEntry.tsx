@@ -64,6 +64,7 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
   const [error, setError] = useState<string | null>(null);
   const [classList, setClassList] = useState<{ standardName: string; divisionName: string }[]>([]);
   const [examSubjectMaxMarks, setExamSubjectMaxMarks] = useState<Record<string, number>>({});
+  const [isDirty, setIsDirty] = useState(false);
 
   const exam = exams.find((e) => e.id === selectedExamId);
   const [effectiveStandard, effectiveDivision] = classFilter ? classFilter.split("\0") : [null, null];
@@ -222,6 +223,7 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
         );
       }
       setMarks(initial);
+      setIsDirty(false);
     })().finally(() => setLoading(false));
   }, [supabase, selectedExamId, effectiveStandard, effectiveDivision, subjects, allowedPairSet]);
 
@@ -235,6 +237,7 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
   }, [selectedExamId, subjects.length, effectiveStandard, effectiveDivision, loadStudentsAndMarks]);
 
   const setCell = (studentId: string, subjectId: string, patch: Partial<CellState>) => {
+    setIsDirty(true);
     setMarks((prev) => {
       const next = { ...prev };
       if (!next[studentId]) next[studentId] = {};
@@ -247,6 +250,7 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
   };
 
   const toggleAbsent = (studentId: string, subjectId: string) => {
+    setIsDirty(true);
     setMarks((prev) => {
       const next = { ...prev };
       if (!next[studentId]) next[studentId] = {};
@@ -262,6 +266,35 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
       toggleAbsent(studentId, subjectId);
     }
   };
+
+  // Prevent accidental navigation when there are unsaved changes
+  useEffect(() => {
+    if (!isDirty) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    const handleClick = (e: MouseEvent) => {
+      const target = (e.target as HTMLElement).closest("a");
+      if (target && target.href && target.target !== "_blank") {
+        if (target.href.startsWith(window.location.origin) && target.pathname !== window.location.pathname) {
+          if (!window.confirm("You have unsaved marks. Are you sure you want to leave this page and lose your changes?")) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }
+      }
+    };
+    document.addEventListener("click", handleClick, { capture: true });
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("click", handleClick, { capture: true });
+    };
+  }, [isDirty]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -302,6 +335,7 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
           { onConflict: "exam_id,student_id,subject_id" }
         );
       }
+      setIsDirty(false);
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Save failed");
@@ -469,9 +503,18 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
                   </TableBody>
                 </Table>
               </div>
-              <div className="flex justify-start">
-                <SubmitButton loading={saving} loadingLabel="Saving…">
-                  Save marks
+              <div className="flex justify-between items-center mt-6 p-4 border rounded-md bg-muted/30">
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm font-medium ${isDirty ? "text-amber-600 dark:text-amber-500" : "text-muted-foreground"}`}>
+                    {isDirty ? "● You have unsaved changes" : "✓ All changes saved"}
+                  </span>
+                </div>
+                <SubmitButton 
+                  loading={saving} 
+                  loadingLabel="Saving…" 
+                  className="min-w-[140px] shadow-sm font-semibold text-sm h-10"
+                >
+                  Save Marks
                 </SubmitButton>
               </div>
             </>
@@ -496,6 +539,17 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
           )}
         </form>
       </CardContent>
+
+      {/* Full-screen blocking loader */}
+      {saving && (
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="flex flex-col items-center gap-4 bg-card p-8 rounded-xl shadow-2xl border">
+            <div className="h-12 w-12 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+            <h3 className="text-lg font-semibold text-foreground">Saving marks...</h3>
+            <p className="text-sm text-muted-foreground">Please wait, do not close the application.</p>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }
