@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
 import { createClient } from "@/lib/supabase/client";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Input } from "@/components/ui/input";
@@ -42,6 +43,7 @@ type AllowedClassNames = { standardName: string; divisionName: string }[];
 
 export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: AllowedClassNames } = {}) {
   const router = useRouter();
+  const { toast } = useToast();
   const supabase = useMemo(() => createClient(), []);
   const allowedStandardSet = useMemo(() => {
     if (!allowedClassNames?.length) return null;
@@ -336,6 +338,10 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
         );
       }
       setIsDirty(false);
+      toast({
+        title: "Marks saved successfully",
+        description: "All changes have been securely recorded.",
+      });
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Save failed");
