@@ -61,7 +61,6 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
   const [classFilter, setClassFilter] = useState<string>("");
   const [termFilter, setTermFilter] = useState<string>("");
   const [marks, setMarks] = useState<Record<string, Record<string, CellState>>>({});
-  const [initialMarks, setInitialMarks] = useState<Record<string, Record<string, CellState>>>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -226,7 +225,6 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
         );
       }
       setMarks(initial);
-      setInitialMarks(JSON.parse(JSON.stringify(initial)));
       setIsDirty(false);
     })().finally(() => setLoading(false));
   }, [supabase, selectedExamId, effectiveStandard, effectiveDivision, subjects, allowedPairSet]);
@@ -320,17 +318,6 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
       }[] = [];
       for (const [studentId, subMap] of Object.entries(marks)) {
         for (const [subjectId, cell] of Object.entries(subMap)) {
-          const initialCell = initialMarks[studentId]?.[subjectId];
-          if (
-            initialCell &&
-            initialCell.score === cell.score &&
-            initialCell.max_score === cell.max_score &&
-            initialCell.grade === cell.grade &&
-            initialCell.is_absent === cell.is_absent
-          ) {
-            continue; // Skip unmodified cells
-          }
-
           const sub = subjects.find((s) => s.id === subjectId);
           const isGradeBased = sub?.evaluation_type === "grade";
           rows.push({
@@ -353,7 +340,6 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
         if (upsertError) throw upsertError;
       }
 
-      setInitialMarks(JSON.parse(JSON.stringify(marks)));
       setIsDirty(false);
       toast({
         title: "Marks saved successfully",
