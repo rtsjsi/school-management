@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const TERMS = ["Term-1", "Term-2"] as const;
 
@@ -45,6 +46,7 @@ export default function ExamEntryDialog() {
   });
   const [maxMarks, setMaxMarks] = useState<Record<string, string>>({});
   const [passingMarks, setPassingMarks] = useState<Record<string, string>>({});
+  const [selectedSubjects, setSelectedSubjects] = useState<Record<string, boolean>>({});
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -63,6 +65,7 @@ export default function ExamEntryDialog() {
       setSubjects([]);
       setMaxMarks({});
       setPassingMarks({});
+      setSelectedSubjects({});
       return;
     }
     const supabase = createClient();
@@ -75,10 +78,13 @@ export default function ExamEntryDialog() {
         const rows = (data ?? []) as SubjectRow[];
         setSubjects(rows);
         const next: Record<string, string> = {};
+        const sel: Record<string, boolean> = {};
         rows.forEach((s) => {
+          sel[s.id] = true;
           if (s.evaluation_type === "mark") next[s.id] = "100";
         });
         setMaxMarks(next);
+        setSelectedSubjects(sel);
       });
   }, [form.standardId]);
 
@@ -108,7 +114,8 @@ export default function ExamEntryDialog() {
       return;
     }
 
-    const markBasedSubjects = subjects.filter((s) => s.evaluation_type === "mark");
+    const chosenSubjects = subjects.filter(s => selectedSubjects[s.id]);
+    const markBasedSubjects = chosenSubjects.filter((s) => s.evaluation_type === "mark");
     for (const sub of markBasedSubjects) {
       const val = maxMarks[sub.id]?.trim();
       const num = val ? parseFloat(val) : NaN;
@@ -120,7 +127,7 @@ export default function ExamEntryDialog() {
 
     const standardName = standardsList.find((s) => s.id === form.standardId)?.name ?? null;
     const subjectMaxMarks: { subjectId: string; maxMarks: number; passingMarks: number | null }[] = [];
-    for (const sub of subjects) {
+    for (const sub of chosenSubjects) {
       if (sub.evaluation_type === "mark") {
         const val = parseFloat(maxMarks[sub.id] ?? "0");
         const passVal = passingMarks[sub.id]?.trim();
@@ -157,6 +164,7 @@ export default function ExamEntryDialog() {
       setSubjects([]);
       setMaxMarks({});
       setPassingMarks({});
+      setSelectedSubjects({});
       setOpen(false);
       router.refresh();
     } catch {
@@ -262,13 +270,20 @@ export default function ExamEntryDialog() {
                 key={sub.id}
                 className="flex items-center justify-between gap-4 px-3 py-2.5"
               >
-                <span className="text-sm font-medium">
-                  {sub.code ?? sub.name}
-                  {sub.evaluation_type === "grade" && (
-                    <span className="text-muted-foreground font-normal ml-1">(grade)</span>
-                  )}
-                </span>
-                {sub.evaluation_type === "mark" && (
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id={`sel-${sub.id}`}
+                    checked={!!selectedSubjects[sub.id]}
+                    onCheckedChange={(c) => setSelectedSubjects(p => ({ ...p, [sub.id]: !!c }))}
+                  />
+                  <Label htmlFor={`sel-${sub.id}`} className="text-sm font-medium cursor-pointer">
+                    {sub.code ?? sub.name}
+                    {sub.evaluation_type === "grade" && (
+                      <span className="text-muted-foreground font-normal ml-1">(grade)</span>
+                    )}
+                  </Label>
+                </div>
+                {sub.evaluation_type === "mark" && selectedSubjects[sub.id] && (
                   <div className="flex items-center gap-2 shrink-0">
                     <Label htmlFor={`max-${sub.id}`} className="text-muted-foreground text-xs">
                       Max *

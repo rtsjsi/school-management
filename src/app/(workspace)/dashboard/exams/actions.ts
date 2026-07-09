@@ -99,8 +99,15 @@ export async function updateExam(
 
   if (error) return { ok: false, error: error.message };
 
+  const selectedSubjectIds = payload.subjectMaxMarks.map(s => s.subjectId);
+  if (selectedSubjectIds.length > 0) {
+    await supabase.from("exam_subjects").delete().eq("exam_id", examId).not("subject_id", "in", `(${selectedSubjectIds.join(",")})`);
+  } else {
+    await supabase.from("exam_subjects").delete().eq("exam_id", examId);
+  }
+
   for (const { subjectId, maxMarks, passingMarks } of payload.subjectMaxMarks) {
-    if (maxMarks <= 0) continue;
+    if (maxMarks <= 0 && passingMarks == null) continue; // Note: For grade subjects maxMarks is 100 artificially, but we should insert them too. In ExamEntry it passes 100.
     await supabase
       .from("exam_subjects")
       .upsert(

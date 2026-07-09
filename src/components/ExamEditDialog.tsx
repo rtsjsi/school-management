@@ -24,6 +24,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type ExamRow = { id: string; name: string; standard: string | null; term: string | null };
 
@@ -41,49 +42,58 @@ export function ExamEditDialog({ exam }: { exam: ExamRow }) {
   const [subjects, setSubjects] = useState<{ id: string; name: string; code: string | null; evaluation_type: string }[]>([]);
   const [maxMarks, setMaxMarks] = useState<Record<string, string>>({});
   const [passingMarks, setPassingMarks] = useState<Record<string, string>>({});
+  const [selectedSubjects, setSelectedSubjects] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     fetchStandards().then(setStandardsList);
   }, []);
 
-  useEffect(() => {
-    if (open) {
+    if (open && standardsList.length > 0) {
+      const standardId = standardsList.find((s) => s.name === exam.standard)?.id ?? "";
       setForm({
         name: exam.name,
-        standardId: standardsList.find((s) => s.name === exam.standard)?.id ?? "",
+        standardId,
         term: exam.term ?? "Term-1",
       });
       setError(null);
       
+      if (!standardId) {
+        setSubjects([]);
+        return;
+      }
+
       const supabase = createClient();
-      supabase
-        .from("exam_subjects")
-        .select("max_marks, passing_marks, subjects(id, name, code, evaluation_type, sort_order)")
-        .eq("exam_id", exam.id)
-        .then(({ data }) => {
-          if (data) {
-            // @ts-ignore
-            const rows = data.map(d => d.subjects).sort((a,b) => (a.sort_order || 0) - (b.sort_order || 0));
-            setSubjects(rows as any);
-            const maxM: Record<string, string> = {};
-            const passM: Record<string, string> = {};
-            data.forEach(d => {
-              // @ts-ignore
-              if (d.subjects.evaluation_type === 'mark') {
-                // @ts-ignore
-                maxM[d.subjects.id] = d.max_marks?.toString() || "";
-                // @ts-ignore
-                passM[d.subjects.id] = d.passing_marks?.toString() || "";
-              }
-            });
-            setMaxMarks(maxM);
-            setPassingMarks(passM);
-          }
+      Promise.all([
+        supabase.from("subjects").select("id, name, code, evaluation_type, sort_order").eq("standard_id", standardId).order("sort_order"),
+        supabase.from("exam_subjects").select("subject_id, max_marks, passing_marks").eq("exam_id", exam.id)
+      ]).then(([allSubsRes, examSubsRes]) => {
+        const allSubs = allSubsRes.data ?? [];
+        const examSubs = examSubsRes.data ?? [];
+
+        setSubjects(allSubs as any);
+        const maxM: Record<string, string> = {};
+        const passM: Record<string, string> = {};
+        const sel: Record<string, boolean> = {};
+
+        allSubs.forEach((s: any) => {
+          sel[s.id] = false;
         });
-    } else {
+
+        examSubs.forEach((es: any) => {
+          sel[es.subject_id] = true;
+          if (es.max_marks != null) maxM[es.subject_id] = es.max_marks.toString();
+          if (es.passing_marks != null) passM[es.subject_id] = es.passing_marks.toString();
+        });
+
+        setMaxMarks(maxM);
+        setPassingMarks(passM);
+        setSelectedSubjects(sel);
+      });
+    } else if (!open) {
       setSubjects([]);
       setMaxMarks({});
       setPassingMarks({});
+      setSelectedSubjects({});
     }
   }, [open, exam.id, exam.name, exam.standard, exam.term, standardsList]);
 
@@ -102,7 +112,8 @@ export function ExamEditDialog({ exam }: { exam: ExamRow }) {
       setError("Term is required.");
       return;
     }
-    const markBasedSubjects = subjects.filter((s) => s.evaluation_type === "mark");
+    const chosenSubjects = subjects.filter(s => selectedSubjects[s.id]);
+    const markBasedSubjects = chosenSubjects.filter((s) => s.evaluation_type === "mark");
     for (const sub of markBasedSubjects) {
       const val = maxMarks[sub.id]?.trim();
       const num = val ? parseFloat(val) : NaN;
@@ -114,7 +125,7 @@ export function ExamEditDialog({ exam }: { exam: ExamRow }) {
 
     const standardName = standardsList.find((s) => s.id === form.standardId)?.name ?? null;
     const subjectMaxMarks: { subjectId: string; maxMarks: number; passingMarks: number | null }[] = [];
-    for (const sub of subjects) {
+    for (const sub of chosenSubjects) {
       if (sub.evaluation_type === "mark") {
         const val = parseFloat(maxMarks[sub.id] ?? "0");
         const passVal = passingMarks[sub.id]?.trim();
@@ -208,13 +219,20 @@ export function ExamEditDialog({ exam }: { exam: ExamRow }) {
                     key={sub.id}
                     className="flex items-center justify-between gap-4 px-3 py-2.5"
                   >
-                    <span className="text-sm font-medium">
-                      {sub.code ?? sub.name}
-                      {sub.evaluation_type === "grade" && (
-                        <span className="text-muted-foreground font-normal ml-1">(grade)</span>
-                      )}
-                    </span>
-                    {sub.evaluation_type === "mark" && (
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id={`edit-sel-${sub.id}`}
+                        checked={!!selectedSubjects[sub.id]}
+                        onCheckedChange={(c) => setSelectedSubjects(p => ({ ...p, [sub.id]: !!c }))}
+                      />
+                      <Label htmlFor={`edit-sel-${sub.id}`} className="text-sm font-medium cursor-pointer">
+                        {sub.code ?? sub.name}
+                        {sub.evaluation_type === "grade" && (
+                          <span className="text-muted-foreground font-normal ml-1">(grade)</span>
+                        )}
+                      </Label>
+                    </div>
+                    {sub.evaluation_type === "mark" && selectedSubjects[sub.id] && (
                       <div className="flex items-center gap-2 shrink-0">
                         <Label htmlFor={`edit-max-${sub.id}`} className="text-muted-foreground text-xs">
                           Max *
