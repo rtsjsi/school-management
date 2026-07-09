@@ -56,23 +56,17 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedExamId, setSelectedExamId] = useState("");
-  const [standardFilter, setStandardFilter] = useState<string>("all");
-  const [divisionFilter, setDivisionFilter] = useState<string>("all");
-  const [termFilter, setTermFilter] = useState<string>("all");
+  const [classFilter, setClassFilter] = useState<string>("");
+  const [termFilter, setTermFilter] = useState<string>("");
   const [marks, setMarks] = useState<Record<string, Record<string, CellState>>>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [classNames, setClassNames] = useState<string[]>([]);
+  const [classList, setClassList] = useState<{ standardName: string; divisionName: string }[]>([]);
   const [examSubjectMaxMarks, setExamSubjectMaxMarks] = useState<Record<string, number>>({});
 
   const exam = exams.find((e) => e.id === selectedExamId);
-  const effectiveStandard =
-    standardFilter && standardFilter !== "all"
-      ? standardFilter
-      : exam?.standard
-        ? exam.standard
-        : null;
+  const [effectiveStandard, effectiveDivision] = classFilter ? classFilter.split("\0") : [null, null];
 
   // Load current academic year exams and class names
   useEffect(() => {
@@ -93,30 +87,33 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
       if (allowedStandardSet) list = list.filter((e) => e.standard && allowedStandardSet.has(e.standard));
       setExams(list);
     })();
-    if (allowedStandardSet) {
-      setClassNames(Array.from(allowedStandardSet));
+    if (allowedClassNames?.length) {
+      setClassList(allowedClassNames);
     } else {
       supabase
-        .from("standards")
-        .select("name")
-        .order("sort_order")
-        .then(({ data }) => setClassNames((data ?? []).map((c: { name: string }) => c.name)));
+        .from("students")
+        .select("standard, division")
+        .eq("status", "active")
+        .then(({ data }) => {
+          const unique = new Map<string, { standardName: string; divisionName: string }>();
+          (data ?? []).forEach((row) => {
+            if (row.standard && row.division) {
+              const key = `${row.standard}\0${row.division}`;
+              unique.set(key, { standardName: row.standard, divisionName: row.division });
+            }
+          });
+          const list = Array.from(unique.values()).sort((a, b) => 
+            a.standardName.localeCompare(b.standardName) || a.divisionName.localeCompare(b.divisionName)
+          );
+          setClassList(list);
+        });
     }
-  }, [supabase, allowedStandardSet]);
+  }, [supabase, allowedClassNames]);
 
-  // When Standard filter changes, we should clear selected exam if it doesn't match
+  // Clear selected exam if filters change
   useEffect(() => {
-    if (exam && standardFilter !== "all" && exam.standard && exam.standard !== standardFilter) {
-      setSelectedExamId("");
-    }
-  }, [standardFilter, exam]);
-
-  // When Term filter changes, clear selected exam if it doesn't match
-  useEffect(() => {
-    if (exam && termFilter !== "all" && exam.term && exam.term !== termFilter) {
-      setSelectedExamId("");
-    }
-  }, [termFilter, exam]);
+    setSelectedExamId("");
+  }, [classFilter, termFilter]);
 
   // Load subjects for the selected exam
   useEffect(() => {
@@ -178,11 +175,9 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
         .select("id, full_name, standard, division")
         .eq("status", "active")
         .order("full_name");
-      // When exam is for a specific standard, always filter by that standard (ignore other selections)
-      const standardToUse =
-        exam?.standard && exam.standard.trim() !== "" ? exam.standard : standardFilter;
-      if (standardToUse && standardToUse !== "all") query = query.eq("standard", standardToUse);
-      if (divisionFilter && divisionFilter !== "all") query = query.eq("division", divisionFilter);
+      // Filter by the selected class
+      if (effectiveStandard) query = query.eq("standard", effectiveStandard);
+      if (effectiveDivision) query = query.eq("division", effectiveDivision);
 
       const { data: st } = await query;
       let studentList = (st ?? []) as Student[];
@@ -228,7 +223,7 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
       }
       setMarks(initial);
     })().finally(() => setLoading(false));
-  }, [supabase, selectedExamId, exam?.standard, standardFilter, divisionFilter, subjects, allowedPairSet]);
+  }, [supabase, selectedExamId, effectiveStandard, effectiveDivision, subjects, allowedPairSet]);
 
   useEffect(() => {
     if (!selectedExamId || subjects.length === 0) {
@@ -237,7 +232,7 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
       return;
     }
     loadStudentsAndMarks();
-  }, [selectedExamId, subjects.length, standardFilter, divisionFilter, loadStudentsAndMarks]);
+  }, [selectedExamId, subjects.length, effectiveStandard, effectiveDivision, loadStudentsAndMarks]);
 
   const setCell = (studentId: string, subjectId: string, patch: Partial<CellState>) => {
     setMarks((prev) => {
@@ -327,63 +322,48 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
             </p>
           )}
 
-          {/* Filters: Standard, Division, Exam */}
+          {/* Filters: Class, Term, Exam */}
           <div className="flex flex-wrap gap-4 items-end">
             <div className="space-y-2">
-              <Label>Standard</Label>
-              <Select value={standardFilter} onValueChange={setStandardFilter}>
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder="All" />
+              <Label>Class *</Label>
+              <Select value={classFilter} onValueChange={setClassFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Select class" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  {classNames.map((g) => (
-                    <SelectItem key={g} value={g}>
-                      {g}
-                    </SelectItem>
-                  ))}
+                  {classList.map((c) => {
+                    const key = `${c.standardName}\0${c.divisionName}`;
+                    return (
+                      <SelectItem key={key} value={key}>
+                        {c.standardName} / {c.divisionName}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Division</Label>
-              <Select value={divisionFilter} onValueChange={setDivisionFilter}>
-                <SelectTrigger className="w-[120px]">
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  {divisions.map((d) => (
-                    <SelectItem key={d} value={d}>
-                      {d}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Term</Label>
+              <Label>Term *</Label>
               <Select value={termFilter} onValueChange={setTermFilter}>
                 <SelectTrigger className="w-[120px]">
-                  <SelectValue placeholder="All" />
+                  <SelectValue placeholder="Select term" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
                   <SelectItem value="Term-1">Term-1</SelectItem>
                   <SelectItem value="Term-2">Term-2</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Exam</Label>
-              <Select value={selectedExamId} onValueChange={setSelectedExamId}>
+              <Label>Exam *</Label>
+              <Select value={selectedExamId} onValueChange={setSelectedExamId} disabled={!classFilter || !termFilter}>
                 <SelectTrigger className="w-[280px]">
-                  <SelectValue placeholder="Select exam" />
+                  <SelectValue placeholder={!classFilter || !termFilter ? "Select Class and Term first" : "Select exam"} />
                 </SelectTrigger>
                 <SelectContent>
                   {exams
-                    .filter((e) => standardFilter === "all" || e.standard === standardFilter || !e.standard)
-                    .filter((e) => termFilter === "all" || e.term === termFilter || !e.term)
+                    .filter((e) => !e.standard || e.standard === effectiveStandard)
+                    .filter((e) => e.term === termFilter)
                     .map((e) => {
                       const label = [e.name, e.term, e.standard ?? "All"].filter(Boolean).join(" · ");
                       return (
