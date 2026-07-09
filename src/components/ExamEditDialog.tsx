@@ -48,6 +48,7 @@ export function ExamEditDialog({ exam }: { exam: ExamRow }) {
     fetchStandards().then(setStandardsList);
   }, []);
 
+  useEffect(() => {
     if (open && standardsList.length > 0) {
       const standardId = standardsList.find((s) => s.name === exam.standard)?.id ?? "";
       setForm({
