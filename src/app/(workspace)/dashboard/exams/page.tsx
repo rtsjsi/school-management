@@ -23,8 +23,8 @@ export default async function ExamsPage() {
         <TabsList className="flex flex-nowrap gap-1 w-full">
           <TabsTrigger value="exams">Exams</TabsTrigger>
           <TabsTrigger value="marks">Record Marks</TabsTrigger>
-          <TabsTrigger value="reportcard">Report Card</TabsTrigger>
           <TabsTrigger value="gradesheet">Grade Sheet</TabsTrigger>
+          <TabsTrigger value="reportcard">Report Card</TabsTrigger>
         </TabsList>
         <TabsContent value="exams" className="space-y-6">
           <Suspense fallback={<TableSkeleton rows={3} columns={3} />}>
@@ -34,11 +34,11 @@ export default async function ExamsPage() {
         <TabsContent value="marks" className="space-y-6">
           <MarksEntry allowedClassNames={allowedClassNames ?? undefined} />
         </TabsContent>
-        <TabsContent value="reportcard" className="space-y-6">
-          <ReportCardGenerator allowedClassNames={allowedClassNames ?? undefined} />
-        </TabsContent>
         <TabsContent value="gradesheet" className="space-y-6">
           <GradeSheet allowedClassNames={allowedClassNames ?? undefined} />
+        </TabsContent>
+        <TabsContent value="reportcard" className="space-y-6">
+          <ReportCardGenerator allowedClassNames={allowedClassNames ?? undefined} />
         </TabsContent>
       </Tabs>
     </div>
