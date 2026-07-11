@@ -2,7 +2,7 @@
 
 Windows **x86** tools for biometric attendance machines (SBXPC protocol):
 
-- **AEMSAttendanceSync.exe** — tray app (scheduled pull)
+- **AEMSAttendanceSync.exe** — tray app (scheduled pull + optional cloud push)
 - **AEMSAttendanceSync-Setup.exe** — installer (Program Files, Start Menu, Desktop)
 - **AEMSAttendanceSync-CLI.exe** — command-line utility (logs, users, enroll)
 
@@ -11,6 +11,24 @@ Windows **x86** tools for biometric attendance machines (SBXPC protocol):
 - Windows 10/11 PC on the same LAN as the device
 - Device TCP port **5005** (default)
 - .NET Framework 4.0+ (built-in on modern Windows)
+- For cloud push: school management app URL + `ATTENDANCE_SYNC_API_KEY`
+
+## Cloud push (raw punches → Supabase)
+
+After each device pull, the tray can POST punches to:
+
+`POST {apiBaseUrl}/api/attendance-sync`
+
+Authorization: `Bearer {apiKey}` (same value as server env `ATTENDANCE_SYNC_API_KEY`).
+
+The API **only** inserts into `biometric_attendance_raw` (duplicates skipped). It does not update payroll tables.
+
+1. Set `ATTENDANCE_SYNC_API_KEY` on the web host (`.env.local` / `.env.development` / hosting env).
+2. In tray **Settings**: School app URL, API key, enable “Push punches…”.
+3. Local CSV under `%LocalAppData%\AEMS Attendance Sync\logs\` remains the offline backup.
+4. Failed pushes are queued in `pending_push\` and retried on the next sync.
+
+Occasional full dumps (`pullAll: true`) are safe — the server unique key ignores punches already stored.
 
 ## Build installer (recommended for school PCs)
 
@@ -50,7 +68,10 @@ Edit `config.json` (or use Settings in the tray app):
   "intervalMinutes": 5,
   "pullAll": false,
   "startWithWindows": true,
-  "configured": false
+  "configured": false,
+  "apiBaseUrl": "https://your-school-app.example.com",
+  "apiKey": "same-as-ATTENDANCE_SYNC_API_KEY",
+  "pushEnabled": false
 }
 ```
 

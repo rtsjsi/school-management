@@ -42,6 +42,7 @@ namespace AemsAttendanceSync
             {
                 try
                 {
+                    AppLog.Crash("UI thread exception", e.Exception);
                     MessageBox.Show(e.Exception.Message, "AEMS Attendance Sync",
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
@@ -52,12 +53,15 @@ namespace AemsAttendanceSync
                 try
                 {
                     var ex = e.ExceptionObject as Exception;
+                    AppLog.Crash("Unhandled exception (terminating=" + e.IsTerminating + ")", ex);
                     MessageBox.Show(ex != null ? ex.Message : "Unexpected error",
                         "AEMS Attendance Sync", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
                 catch { }
             };
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+
+            AppLog.Info("AEMS Attendance Sync started");
 
             using (var showEvent = new EventWaitHandle(false, EventResetMode.AutoReset, ShowEventName))
             {
@@ -69,6 +73,7 @@ namespace AemsAttendanceSync
                 }
                 finally
                 {
+                    AppLog.Info("AEMS Attendance Sync exiting");
                     try { if (_mutex != null) _mutex.ReleaseMutex(); } catch { }
                     if (_mutex != null) _mutex.Dispose();
                 }

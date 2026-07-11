@@ -7,7 +7,17 @@ On ANY school Windows PC:
   2. Double-click AEMSAttendanceSync.exe
   3. Enter the attendance machine IP (Test connection -> Save & Start).
 
-That is all.
+That is all for local logging.
+
+Cloud push to the school management app (optional):
+
+  4. In Settings, set School app URL (e.g. https://your-app.vercel.app).
+  5. Paste the API key (same as ATTENDANCE_SYNC_API_KEY on the server).
+  6. Enable "Push punches to school management app after each sync".
+
+Punches are stored in Supabase table biometric_attendance_raw only.
+Duplicates from a full re-sync are skipped. Local CSV stays in the logs folder.
+Failed cloud pushes are queued and retried automatically.
 
 - The app sits in the system tray (near the clock).
 - It pulls new punches every N minutes into the "logs" folder.

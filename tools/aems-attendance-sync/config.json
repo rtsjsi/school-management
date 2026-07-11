@@ -6,5 +6,8 @@
   "intervalMinutes": 5,
   "pullAll": false,
   "startWithWindows": true,
-  "configured": false
+  "configured": false,
+  "apiBaseUrl": "",
+  "apiKey": "",
+  "pushEnabled": false
 }

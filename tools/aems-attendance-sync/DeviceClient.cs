@@ -111,6 +111,7 @@ namespace AemsAttendanceSync
             }
 
             _connected = false;
+            AppLog.Error("ConnectTcpip failed for " + ip + ":" + _settings.Port + " — " + LastErrorText());
             return false;
         }
 
@@ -135,6 +136,12 @@ namespace AemsAttendanceSync
             return ErrorCodes.Describe(code) + " (" + code + ")";
         }
 
+        void Fail(string message)
+        {
+            AppLog.Error(message);
+            throw new InvalidOperationException(message);
+        }
+
         public GLogPosInfo GetGLogPosInfo()
         {
             EnsureConnected();
@@ -145,7 +152,7 @@ namespace AemsAttendanceSync
             SBXPCDLL.XML_AddLong(ref xml, "MachineID", _settings.MachineNumber);
 
             if (!SBXPCDLL.GeneralOperationXML(_settings.MachineNumber, ref xml))
-                throw new InvalidOperationException("GetGLogPosInfo failed: " + LastErrorText());
+                Fail("GetGLogPosInfo failed: " + LastErrorText());
 
             return new GLogPosInfo
             {
@@ -168,7 +175,7 @@ namespace AemsAttendanceSync
 
             bool enabledOff = SBXPCDLL.EnableDevice(_settings.MachineNumber, 0);
             if (!enabledOff)
-                throw new InvalidOperationException("EnableDevice(0) failed: " + LastErrorText());
+                Fail("EnableDevice(0) failed: " + LastErrorText());
 
             try
             {
@@ -177,7 +184,7 @@ namespace AemsAttendanceSync
                     : SBXPCDLL.ReadGeneralLogData(_settings.MachineNumber, 1);
 
                 if (!readOk)
-                    throw new InvalidOperationException(
+                    Fail(
                         (all ? "ReadAllGLogData" : "ReadGeneralLogData") + " failed: " + LastErrorText());
 
                 return DrainGLogs(all);
@@ -201,12 +208,12 @@ namespace AemsAttendanceSync
 
             bool enabledOff = SBXPCDLL.EnableDevice(_settings.MachineNumber, 0);
             if (!enabledOff)
-                throw new InvalidOperationException("EnableDevice(0) failed: " + LastErrorText());
+                Fail("EnableDevice(0) failed: " + LastErrorText());
 
             try
             {
                 if (!SBXPCDLL.ReadGLogWithPos(_settings.MachineNumber, startPos, endPos))
-                    throw new InvalidOperationException("ReadGLogWithPos failed: " + LastErrorText());
+                    Fail("ReadGLogWithPos failed: " + LastErrorText());
 
                 return DrainGLogs(false);
             }
@@ -233,7 +240,7 @@ namespace AemsAttendanceSync
             SBXPCDLL.XML_AddInt(ref xml, "EndPos", endPos);
 
             if (!SBXPCDLL.GeneralOperationXML(_settings.MachineNumber, ref xml))
-                throw new InvalidOperationException("DeleteGLogWithPos failed: " + LastErrorText());
+                Fail("DeleteGLogWithPos failed: " + LastErrorText());
         }
 
         /// <summary>
@@ -245,12 +252,12 @@ namespace AemsAttendanceSync
 
             bool enabledOff = SBXPCDLL.EnableDevice(_settings.MachineNumber, 0);
             if (!enabledOff)
-                throw new InvalidOperationException("EnableDevice(0) failed: " + LastErrorText());
+                Fail("EnableDevice(0) failed: " + LastErrorText());
 
             try
             {
                 if (!SBXPCDLL.EmptyGeneralLogData(_settings.MachineNumber))
-                    throw new InvalidOperationException("EmptyGeneralLogData failed: " + LastErrorText());
+                    Fail("EmptyGeneralLogData failed: " + LastErrorText());
             }
             finally
             {
@@ -268,7 +275,7 @@ namespace AemsAttendanceSync
             SBXPCDLL.XML_AddLong(ref xml, "MachineID", _settings.MachineNumber);
 
             if (!SBXPCDLL.GeneralOperationXML(_settings.MachineNumber, ref xml))
-                throw new InvalidOperationException("GetSLogPosInfo failed: " + LastErrorText());
+                Fail("GetSLogPosInfo failed: " + LastErrorText());
 
             return new GLogPosInfo
             {
@@ -290,7 +297,7 @@ namespace AemsAttendanceSync
 
             bool enabledOff = SBXPCDLL.EnableDevice(_settings.MachineNumber, 0);
             if (!enabledOff)
-                throw new InvalidOperationException("EnableDevice(0) failed: " + LastErrorText());
+                Fail("EnableDevice(0) failed: " + LastErrorText());
 
             try
             {
@@ -299,7 +306,7 @@ namespace AemsAttendanceSync
                     : SBXPCDLL.ReadSuperLogData(_settings.MachineNumber, 1);
 
                 if (!readOk)
-                    throw new InvalidOperationException(
+                    Fail(
                         (all ? "ReadAllSLogData" : "ReadSuperLogData") + " failed: " + LastErrorText());
 
                 return DrainSLogs(all);
@@ -320,12 +327,12 @@ namespace AemsAttendanceSync
 
             bool enabledOff = SBXPCDLL.EnableDevice(_settings.MachineNumber, 0);
             if (!enabledOff)
-                throw new InvalidOperationException("EnableDevice(0) failed: " + LastErrorText());
+                Fail("EnableDevice(0) failed: " + LastErrorText());
 
             try
             {
                 if (!SBXPCDLL.ReadSLogWithPos(_settings.MachineNumber, startPos, endPos))
-                    throw new InvalidOperationException("ReadSLogWithPos failed: " + LastErrorText());
+                    Fail("ReadSLogWithPos failed: " + LastErrorText());
 
                 return DrainSLogs(false);
             }
@@ -351,7 +358,7 @@ namespace AemsAttendanceSync
             SBXPCDLL.XML_AddInt(ref xml, "EndPos", endPos);
 
             if (!SBXPCDLL.GeneralOperationXML(_settings.MachineNumber, ref xml))
-                throw new InvalidOperationException("DeleteSLogWithPos failed: " + LastErrorText());
+                Fail("DeleteSLogWithPos failed: " + LastErrorText());
         }
 
         public void EmptyAllSLogs()
@@ -360,12 +367,12 @@ namespace AemsAttendanceSync
 
             bool enabledOff = SBXPCDLL.EnableDevice(_settings.MachineNumber, 0);
             if (!enabledOff)
-                throw new InvalidOperationException("EnableDevice(0) failed: " + LastErrorText());
+                Fail("EnableDevice(0) failed: " + LastErrorText());
 
             try
             {
                 if (!SBXPCDLL.EmptySuperLogData(_settings.MachineNumber))
-                    throw new InvalidOperationException("EmptySuperLogData failed: " + LastErrorText());
+                    Fail("EmptySuperLogData failed: " + LastErrorText());
             }
             finally
             {
@@ -448,12 +455,12 @@ namespace AemsAttendanceSync
 
             bool enabledOff = SBXPCDLL.EnableDevice(_settings.MachineNumber, 0);
             if (!enabledOff)
-                throw new InvalidOperationException("EnableDevice(0) failed: " + LastErrorText());
+                Fail("EnableDevice(0) failed: " + LastErrorText());
 
             try
             {
                 if (!SBXPCDLL.ReadAllUserID(_settings.MachineNumber))
-                    throw new InvalidOperationException("ReadAllUserID failed: " + LastErrorText());
+                    Fail("ReadAllUserID failed: " + LastErrorText());
 
                 var users = new List<UserIdRecord>();
                 var nameCache = new Dictionary<int, string>();
@@ -514,13 +521,13 @@ namespace AemsAttendanceSync
 
             bool enabledOff = SBXPCDLL.EnableDevice(_settings.MachineNumber, 0);
             if (!enabledOff)
-                throw new InvalidOperationException("EnableDevice(0) failed: " + LastErrorText());
+                Fail("EnableDevice(0) failed: " + LastErrorText());
 
             try
             {
                 string name;
                 if (!SBXPCDLL.GetUserName1(_settings.MachineNumber, enrollNo, out name))
-                    throw new InvalidOperationException("GetUserName1 failed: " + LastErrorText());
+                    Fail("GetUserName1 failed: " + LastErrorText());
                 return name ?? "";
             }
             finally
@@ -536,12 +543,12 @@ namespace AemsAttendanceSync
 
             bool enabledOff = SBXPCDLL.EnableDevice(_settings.MachineNumber, 0);
             if (!enabledOff)
-                throw new InvalidOperationException("EnableDevice(0) failed: " + LastErrorText());
+                Fail("EnableDevice(0) failed: " + LastErrorText());
 
             try
             {
                 if (!SBXPCDLL.SetUserName1(_settings.MachineNumber, enrollNo, name))
-                    throw new InvalidOperationException("SetUserName1 failed: " + LastErrorText());
+                    Fail("SetUserName1 failed: " + LastErrorText());
             }
             finally
             {
@@ -556,7 +563,7 @@ namespace AemsAttendanceSync
 
             bool enabledOff = SBXPCDLL.EnableDevice(_settings.MachineNumber, 0);
             if (!enabledOff)
-                throw new InvalidOperationException("EnableDevice(0) failed: " + LastErrorText());
+                Fail("EnableDevice(0) failed: " + LastErrorText());
 
             var templateInts = new int[BackupDecoder.MaxTemplateIntCount];
             GCHandle gh = GCHandle.Alloc(templateInts, GCHandleType.Pinned);
@@ -568,7 +575,7 @@ namespace AemsAttendanceSync
                 if (!SBXPCDLL.GetEnrollData1(
                     _settings.MachineNumber, enrollNo, backupNo,
                     out privilege, addr, out passwordOrCard))
-                    throw new InvalidOperationException("GetEnrollData1 failed: " + LastErrorText());
+                    Fail("GetEnrollData1 failed: " + LastErrorText());
 
                 return new EnrollTemplate
                 {
@@ -600,7 +607,7 @@ namespace AemsAttendanceSync
 
             bool enabledOff = SBXPCDLL.EnableDevice(_settings.MachineNumber, 0);
             if (!enabledOff)
-                throw new InvalidOperationException("EnableDevice(0) failed: " + LastErrorText());
+                Fail("EnableDevice(0) failed: " + LastErrorText());
 
             GCHandle gh = GCHandle.Alloc(buffer, GCHandleType.Pinned);
             try
@@ -608,7 +615,7 @@ namespace AemsAttendanceSync
                 IntPtr addr = gh.AddrOfPinnedObject();
                 if (!SBXPCDLL.SetEnrollData1(
                     _settings.MachineNumber, enrollNo, backupNo, privilege, addr, passwordOrCard))
-                    throw new InvalidOperationException("SetEnrollData1 failed: " + LastErrorText());
+                    Fail("SetEnrollData1 failed: " + LastErrorText());
             }
             finally
             {
@@ -624,13 +631,13 @@ namespace AemsAttendanceSync
 
             bool enabledOff = SBXPCDLL.EnableDevice(_settings.MachineNumber, 0);
             if (!enabledOff)
-                throw new InvalidOperationException("EnableDevice(0) failed: " + LastErrorText());
+                Fail("EnableDevice(0) failed: " + LastErrorText());
 
             try
             {
                 if (!SBXPCDLL.DeleteEnrollData(
                     _settings.MachineNumber, enrollNo, eMachineNo, backupNo))
-                    throw new InvalidOperationException("DeleteEnrollData failed: " + LastErrorText());
+                    Fail("DeleteEnrollData failed: " + LastErrorText());
             }
             finally
             {
@@ -645,13 +652,13 @@ namespace AemsAttendanceSync
 
             bool enabledOff = SBXPCDLL.EnableDevice(_settings.MachineNumber, 0);
             if (!enabledOff)
-                throw new InvalidOperationException("EnableDevice(0) failed: " + LastErrorText());
+                Fail("EnableDevice(0) failed: " + LastErrorText());
 
             try
             {
                 if (!SBXPCDLL.EnableUser(
                     _settings.MachineNumber, enrollNo, eMachineNo, backupNo, enabled ? (byte)1 : (byte)0))
-                    throw new InvalidOperationException("EnableUser failed: " + LastErrorText());
+                    Fail("EnableUser failed: " + LastErrorText());
             }
             finally
             {
@@ -665,12 +672,12 @@ namespace AemsAttendanceSync
 
             bool enabledOff = SBXPCDLL.EnableDevice(_settings.MachineNumber, 0);
             if (!enabledOff)
-                throw new InvalidOperationException("EnableDevice(0) failed: " + LastErrorText());
+                Fail("EnableDevice(0) failed: " + LastErrorText());
 
             try
             {
                 if (!SBXPCDLL.EmptyEnrollData(_settings.MachineNumber))
-                    throw new InvalidOperationException("EmptyEnrollData failed: " + LastErrorText());
+                    Fail("EmptyEnrollData failed: " + LastErrorText());
             }
             finally
             {
@@ -681,7 +688,7 @@ namespace AemsAttendanceSync
         private void EnsureConnected()
         {
             if (!_connected)
-                throw new InvalidOperationException("Not connected. Call Connect() first.");
+                Fail("Not connected. Call Connect() first.");
         }
 
         private static DateTime SafeDateTime(int yr, int mon, int day, int hr, int min, int sec)
@@ -710,7 +717,7 @@ namespace AemsAttendanceSync
 
             bool enabledOff = SBXPCDLL.EnableDevice(_settings.MachineNumber, 0);
             if (!enabledOff)
-                throw new InvalidOperationException("EnableDevice(0) failed: " + LastErrorText());
+                Fail("EnableDevice(0) failed: " + LastErrorText());
 
             try
             {
@@ -725,7 +732,10 @@ namespace AemsAttendanceSync
                     return null;
 
                 if (!SBXPCDLL.GeneralOperationXML(_settings.MachineNumber, ref xml))
+                {
+                    AppLog.Error("GetUserPhotoData failed for enroll " + enrollNo + ": " + LastErrorText());
                     return null;
+                }
 
                 const int photoSize = 8192;
                 var photoData = new byte[photoSize];

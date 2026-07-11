@@ -182,6 +182,10 @@ namespace AemsAttendanceSync
                     MessageBox.Show(skip + "\nClose the Users window, then sync.",
                         "AEMS Attendance Sync", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
+                else
+                {
+                    AppLog.Info("Scheduled sync skipped — User management is open");
+                }
                 UpdateTooltip(skip);
                 _main.RefreshStatus(skip);
                 return;
@@ -202,12 +206,13 @@ namespace AemsAttendanceSync
                 try
                 {
                     string busy;
-                    if (!DeviceGate.TryRun(DoSync, 30000, out busy))
+                    if (!DeviceGate.TryRun(() => DoSync(manual), 30000, out busy))
                         throw new InvalidOperationException(busy);
                 }
                 catch (Exception ex)
                 {
                     _lastStatus = "Error: " + ex.Message;
+                    AppLog.Error((manual ? "Manual" : "Scheduled") + " sync failed", ex);
                     try
                     {
                         _tray.ShowBalloonTip(4000, "AEMS Attendance Sync", _lastStatus, ToolTipIcon.Error);
@@ -223,8 +228,17 @@ namespace AemsAttendanceSync
             });
         }
 
-        void DoSync()
+        void DoSync(bool manual)
         {
+            // Retry any previously failed cloud pushes first (idempotent on server).
+            if (_config.CanPushCloud)
+            {
+                int pendingFailed;
+                int pendingOk = CloudPusher.RetryPending(_config, out pendingFailed);
+                if (pendingOk > 0 || pendingFailed > 0)
+                    AppLog.Info("Pending cloud retry: " + pendingOk + " ok, " + pendingFailed + " failed");
+            }
+
             using (var client = new DeviceClient(_config.ToDeviceSettings()))
             {
                 if (!client.Connect())
@@ -246,20 +260,64 @@ namespace AemsAttendanceSync
                     "glog_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".csv");
                 PunchExporter.WriteCsv(punches, file);
 
+                string cloudPart = "";
+                if (_config.CanPushCloud && punches.Count > 0)
+                {
+                    var push = CloudPusher.Push(_config, punches);
+                    if (push.Ok)
+                    {
+                        cloudPart = "; cloud OK";
+                        AppLog.Info("Cloud push OK: " + punches.Count + " punch(es) → " + Truncate(push.Body, 180));
+                    }
+                    else
+                    {
+                        try { CloudPusher.SavePending(_config, punches); }
+                        catch (Exception pendEx)
+                        {
+                            AppLog.Error("Failed to save pending cloud payload", pendEx);
+                        }
+                        cloudPart = "; cloud FAILED (queued)";
+                        AppLog.Error(
+                            "Cloud push failed HTTP " + push.StatusCode + " " +
+                            Truncate(push.Body ?? push.Error, 200));
+                    }
+                }
+                else if (_config.PushEnabled && !_config.CanPushCloud)
+                {
+                    cloudPart = "; cloud skipped (URL/key missing)";
+                }
+
                 _lastSyncAt = DateTime.Now;
                 _lastCount = punches.Count;
-                _lastStatus = "OK — " + punches.Count + " punch(es)";
+                _lastStatus = "OK — " + punches.Count + " punch(es)" + cloudPart;
+
+                if (manual)
+                    AppLog.Info("Manual sync completed: " + punches.Count + " punch(es) → " + Path.GetFileName(file) + cloudPart);
+                else
+                    AppLog.Info("Scheduled sync completed: " + punches.Count + " punch(es) → " + Path.GetFileName(file) + cloudPart);
 
                 if (punches.Count > 0)
                 {
                     try
                     {
-                        _tray.ShowBalloonTip(3000, "AEMS Attendance Sync",
-                            punches.Count + " punch(es) saved", ToolTipIcon.Info);
+                        string tip = punches.Count + " punch(es) saved";
+                        if (cloudPart.IndexOf("FAILED", StringComparison.Ordinal) >= 0)
+                            tip += " (cloud queued)";
+                        else if (cloudPart.IndexOf("cloud OK", StringComparison.Ordinal) >= 0)
+                            tip += " + pushed";
+                        _tray.ShowBalloonTip(3000, "AEMS Attendance Sync", tip, ToolTipIcon.Info);
                     }
                     catch { }
                 }
             }
+        }
+
+        static string Truncate(string s, int max)
+        {
+            if (string.IsNullOrEmpty(s)) return "";
+            s = s.Replace("\r", " ").Replace("\n", " ");
+            if (s.Length <= max) return s;
+            return s.Substring(0, max) + "...";
         }
 
         string BuildTooltip()

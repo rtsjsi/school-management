@@ -22,6 +22,13 @@ namespace AemsAttendanceSync
         public bool StartWithWindows { get; set; }
         public bool Configured { get; set; }
 
+        /// <summary>School management app base URL, e.g. https://your-app.vercel.app</summary>
+        public string ApiBaseUrl { get; set; }
+        /// <summary>Bearer token matching ATTENDANCE_SYNC_API_KEY on the server.</summary>
+        public string ApiKey { get; set; }
+        /// <summary>When true, POST punches to /api/attendance-sync after each device pull.</summary>
+        public bool PushEnabled { get; set; }
+
         public static string DataDir
         {
             get
@@ -58,7 +65,10 @@ namespace AemsAttendanceSync
                 IntervalMinutes = 5,
                 PullAll = false,
                 StartWithWindows = true,
-                Configured = false
+                Configured = false,
+                ApiBaseUrl = "",
+                ApiKey = "",
+                PushEnabled = false
             };
         }
 
@@ -71,6 +81,16 @@ namespace AemsAttendanceSync
                 Port = Port,
                 Password = Password
             };
+        }
+
+        public bool CanPushCloud
+        {
+            get
+            {
+                return PushEnabled
+                    && !string.IsNullOrWhiteSpace(ApiBaseUrl)
+                    && !string.IsNullOrWhiteSpace(ApiKey);
+            }
         }
 
         public static AppConfig Load()
@@ -110,7 +130,10 @@ namespace AemsAttendanceSync
             sb.AppendFormat(CultureInfo.InvariantCulture, "  \"intervalMinutes\": {0},\r\n", IntervalMinutes);
             sb.AppendFormat(CultureInfo.InvariantCulture, "  \"pullAll\": {0},\r\n", PullAll ? "true" : "false");
             sb.AppendFormat(CultureInfo.InvariantCulture, "  \"startWithWindows\": {0},\r\n", StartWithWindows ? "true" : "false");
-            sb.AppendFormat(CultureInfo.InvariantCulture, "  \"configured\": {0}\r\n", Configured ? "true" : "false");
+            sb.AppendFormat(CultureInfo.InvariantCulture, "  \"configured\": {0},\r\n", Configured ? "true" : "false");
+            sb.AppendFormat(CultureInfo.InvariantCulture, "  \"apiBaseUrl\": \"{0}\",\r\n", Escape(ApiBaseUrl));
+            sb.AppendFormat(CultureInfo.InvariantCulture, "  \"apiKey\": \"{0}\",\r\n", Escape(ApiKey));
+            sb.AppendFormat(CultureInfo.InvariantCulture, "  \"pushEnabled\": {0}\r\n", PushEnabled ? "true" : "false");
             sb.AppendLine("}");
             File.WriteAllText(ConfigPath, sb.ToString(), Encoding.UTF8);
         }
@@ -139,6 +162,11 @@ namespace AemsAttendanceSync
             string ip = ExtractString(json, "ip");
             if (ip != null) cfg.Ip = ip;
 
+            string apiBase = ExtractString(json, "apiBaseUrl");
+            if (apiBase != null) cfg.ApiBaseUrl = apiBase;
+            string apiKey = ExtractString(json, "apiKey");
+            if (apiKey != null) cfg.ApiKey = apiKey;
+
             int? v;
             v = ExtractInt(json, "machineNumber"); if (v.HasValue) cfg.MachineNumber = v.Value;
             v = ExtractInt(json, "port"); if (v.HasValue) cfg.Port = v.Value;
@@ -149,6 +177,7 @@ namespace AemsAttendanceSync
             b = ExtractBool(json, "pullAll"); if (b.HasValue) cfg.PullAll = b.Value;
             b = ExtractBool(json, "startWithWindows"); if (b.HasValue) cfg.StartWithWindows = b.Value;
             b = ExtractBool(json, "configured"); if (b.HasValue) cfg.Configured = b.Value;
+            b = ExtractBool(json, "pushEnabled"); if (b.HasValue) cfg.PushEnabled = b.Value;
         }
 
         static string Escape(string value)
@@ -168,7 +197,7 @@ namespace AemsAttendanceSync
             if (q1 < 0) return null;
             int q2 = json.IndexOf('"', q1 + 1);
             if (q2 < 0) return null;
-            return json.Substring(q1 + 1, q2 - q1 - 1);
+            return json.Substring(q1 + 1, q2 - q1 - 1).Replace("\\\"", "\"").Replace("\\\\", "\\");
         }
 
         static int? ExtractInt(string json, string key)

@@ -61,12 +61,14 @@ namespace AemsAttendanceSync
             }
             catch (AccessViolationException ex)
             {
+                AppLog.Crash("Native AccessViolation in device call", ex);
                 throw new InvalidOperationException(
                     "Biometric device communication crashed (native). Close other device tools and try again.",
                     ex);
             }
             catch (SEHException ex)
             {
+                AppLog.Error("Native SEHException in device call", ex);
                 throw new InvalidOperationException(
                     "Biometric device communication failed (native). Try again in a moment.",
                     ex);
@@ -83,12 +85,14 @@ namespace AemsAttendanceSync
             }
             catch (AccessViolationException ex)
             {
+                AppLog.Crash("Native AccessViolation in device call", ex);
                 throw new InvalidOperationException(
                     "Biometric device communication crashed (native). Close other device tools and try again.",
                     ex);
             }
             catch (SEHException ex)
             {
+                AppLog.Error("Native SEHException in device call", ex);
                 throw new InvalidOperationException(
                     "Biometric device communication failed (native). Try again in a moment.",
                     ex);
