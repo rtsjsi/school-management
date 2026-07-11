@@ -107,34 +107,96 @@ namespace AemsAttendanceSync
             if (_connected)
                 return true;
 
-            // Always clear stale native state before ConnectTcpip.
-            ResetNativeSession(_settings.MachineNumber);
-
             string ip = _settings.Ip.Trim();
-            for (int attempt = 1; attempt <= 3; attempt++)
+            int machine = _settings.MachineNumber;
+
+            // 1) Soft connect first — aggressive Disconnect beforehand can leave the SDK
+            //    returning false with GetLastError SUCCESS(0) even when the device is fine.
+            if (TryMarkConnected(SafeConnectTcpip(machine, ip, _settings.Port, _settings.Password), machine))
+                return true;
+
+            // 2) Reset + retry (covers stale ERR_NON_CARRYOUT sessions).
+            for (int attempt = 1; attempt <= 2; attempt++)
             {
-                if (attempt > 1)
-                {
-                    ResetNativeSession(_settings.MachineNumber);
-                    Thread.Sleep(400 * (attempt - 1));
-                }
+                ResetNativeSession(machine);
+                Thread.Sleep(300 * attempt);
 
-                bool ok = SafeConnectTcpip(
-                    _settings.MachineNumber,
-                    ip,
-                    _settings.Port,
-                    _settings.Password);
-
-                if (ok)
-                {
-                    _connected = true;
+                if (TryMarkConnected(SafeConnectTcpip(machine, ip, _settings.Port, _settings.Password), machine))
                     return true;
-                }
             }
 
             _connected = false;
             AppLog.Error("ConnectTcpip failed for " + ip + ":" + _settings.Port + " — " + LastErrorText());
             return false;
+        }
+
+        /// <summary>
+        /// Interpret ConnectTcpip result. SDK often returns false with SUCCESS(0) or
+        /// ERR_NON_CARRYOUT(5) when a session is already usable — probe before failing.
+        /// </summary>
+        bool TryMarkConnected(bool connectReturnedTrue, int machineNumber)
+        {
+            if (connectReturnedTrue)
+            {
+                _connected = true;
+                return true;
+            }
+
+            int err = ReadLastErrorCode();
+            // 5 = ERR_NON_CARRYOUT — DLL thinks a session is already active.
+            if (err == 5 || err == 0)
+            {
+                if (SoftProbeSession(machineNumber))
+                {
+                    AppLog.Info(
+                        "ConnectTcpip returned false (err=" + err +
+                        ") but session probe succeeded — treating as connected.");
+                    _connected = true;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        [System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptions]
+        [System.Security.SecurityCritical]
+        static bool SoftProbeSession(int machineNumber)
+        {
+            try
+            {
+                // EnableDevice only succeeds when a live session exists.
+                if (!SBXPCDLL.EnableDevice(machineNumber, 0))
+                    return false;
+                SBXPCDLL.EnableDevice(machineNumber, 1);
+                return true;
+            }
+            catch (AccessViolationException)
+            {
+                return false;
+            }
+            catch (SEHException)
+            {
+                return false;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        [System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptions]
+        [System.Security.SecurityCritical]
+        int ReadLastErrorCode()
+        {
+            try
+            {
+                int code;
+                if (SBXPCDLL.GetLastError(_settings.MachineNumber, out code))
+                    return code;
+            }
+            catch { }
+            return -1;
         }
 
         [System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptions]
@@ -195,6 +257,8 @@ namespace AemsAttendanceSync
                 int code;
                 if (!SBXPCDLL.GetLastError(_settings.MachineNumber, out code))
                     return "Unable to read last error";
+                if (code == 0)
+                    return "ConnectTcpip returned false with SUCCESS(0) — SDK quirk; try Sync now if device is online";
                 return ErrorCodes.Describe(code) + " (" + code + ")";
             }
             catch (AccessViolationException)
