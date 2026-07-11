@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -74,29 +74,40 @@ export function AttendanceDailyRegister() {
   const [selectedEmployee, setSelectedEmployee] = useState("all");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasFetched, setHasFetched] = useState(false);
 
-  const fetchData = useCallback(async (empId: string) => {
+  // Load employee list on mount (no punch data)
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/attendance-punches?employeesOnly=true");
+        const json = await res.json();
+        if (json.error) throw new Error(json.error);
+        setEmployees(json.employees ?? []);
+      } catch {
+        // silently fail, employees will be empty
+      }
+    })();
+  }, []);
+
+  const handleRefresh = async () => {
+    if (selectedEmployee === "all") return;
     setLoading(true);
     setError(null);
     try {
-      const params = new URLSearchParams();
-      if (empId && empId !== "all") params.set("employeeId", empId);
+      const params = new URLSearchParams({ employeeId: selectedEmployee });
       const res = await fetch(`/api/attendance-punches?${params.toString()}`);
       const json = await res.json();
       if (json.error) throw new Error(json.error);
-      setEmployees(json.employees ?? []);
       setPunches(json.punches ?? []);
+      setHasFetched(true);
     } catch (e) {
       setError((e as Error).message || "Failed to load punch data");
       setPunches([]);
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    fetchData(selectedEmployee);
-  }, [selectedEmployee, fetchData]);
+  };
 
   const handleEmployeeChange = (value: string) => {
     setSelectedEmployee(value);
@@ -114,10 +125,9 @@ export function AttendanceDailyRegister() {
             <Label>Employee</Label>
             <Select value={selectedEmployee} onValueChange={handleEmployeeChange}>
               <SelectTrigger>
-                <SelectValue placeholder="All Employees" />
+                <SelectValue placeholder="Select Employee" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Employees</SelectItem>
                 {employees.map((emp) => (
                   <SelectItem key={emp.id} value={emp.id}>
                     {emp.full_name}
@@ -128,8 +138,8 @@ export function AttendanceDailyRegister() {
           </div>
           <Button
             variant="outline"
-            onClick={() => fetchData(selectedEmployee)}
-            disabled={loading}
+            onClick={handleRefresh}
+            disabled={loading || selectedEmployee === "all"}
           >
             {loading ? "Loading…" : "Refresh"}
           </Button>
@@ -222,7 +232,9 @@ export function AttendanceDailyRegister() {
         {/* Empty state */}
         {!loading && punches.length === 0 && !error && (
           <p className="text-sm text-muted-foreground py-8 text-center">
-            No punch records found.
+            {hasFetched
+              ? "No punch records found for this employee."
+              : "Select an employee and click Refresh to view punch records."}
           </p>
         )}
       </CardContent>

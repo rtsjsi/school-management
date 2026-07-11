@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient();
     const { searchParams } = new URL(request.url);
     const employeeId = searchParams.get("employeeId");
+    const employeesOnly = searchParams.get("employeesOnly") === "true";
 
     // Fetch employee list for the filter dropdown
     const { data: employees, error: empError } = await supabase
@@ -17,6 +18,11 @@ export async function GET(request: NextRequest) {
 
     if (empError) {
       return NextResponse.json({ error: empError.message }, { status: 500 });
+    }
+
+    // If only employees requested, return early
+    if (employeesOnly) {
+      return NextResponse.json({ employees: employees ?? [] });
     }
 
     // Build punch query
