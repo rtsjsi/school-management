@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace AemsAttendanceSync
 {
@@ -69,11 +70,76 @@ namespace AemsAttendanceSync
             return result;
         }
 
+        /// <summary>
+        /// Pushes a saved pending-file payload. Pending files written before batch
+        /// chunking existed can still exceed the server's limit — detect and re-split
+        /// those in memory instead of failing forever with "Batch too large."
+        /// </summary>
         public static PushResult PushJsonFile(AppConfig config, string filePath)
         {
             string url = BuildUrl(config.ApiBaseUrl);
             string json = File.ReadAllText(filePath, Encoding.UTF8);
+
+            int machineNo;
+            List<string> punchObjects;
+            if (TryExtractPunchObjects(json, out machineNo, out punchObjects) && punchObjects.Count > MaxBatchSize)
+            {
+                PushResult result = null;
+                int sent = 0;
+                for (int offset = 0; offset < punchObjects.Count; offset += MaxBatchSize)
+                {
+                    int count = Math.Min(MaxBatchSize, punchObjects.Count - offset);
+                    string chunkJson = BuildPayloadJsonFromObjects(machineNo, punchObjects, offset, count);
+                    result = PostJson(url, config.ApiKey, chunkJson);
+                    if (!result.Ok)
+                    {
+                        result.Body = "Failed after " + sent + "/" + punchObjects.Count + " punch(es) pushed ("
+                            + (result.Body ?? result.Error) + ")";
+                        return result;
+                    }
+                    sent += count;
+                }
+                return result;
+            }
+
             return PostJson(url, config.ApiKey, json);
+        }
+
+        /// <summary>Extracts machineNo and each flat punch object's raw JSON text (no nested braces).</summary>
+        static bool TryExtractPunchObjects(string json, out int machineNo, out List<string> punchObjects)
+        {
+            machineNo = 0;
+            punchObjects = new List<string>();
+            if (string.IsNullOrEmpty(json)) return false;
+            try
+            {
+                Match mnoMatch = Regex.Match(json, "\"machineNo\"\\s*:\\s*(-?\\d+)");
+                if (mnoMatch.Success)
+                    machineNo = int.Parse(mnoMatch.Groups[1].Value, CultureInfo.InvariantCulture);
+
+                foreach (Match m in Regex.Matches(json, "\\{[^{}]*\\}"))
+                    punchObjects.Add(m.Value);
+                return punchObjects.Count > 0;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        static string BuildPayloadJsonFromObjects(int machineNo, List<string> objects, int offset, int count)
+        {
+            var sb = new StringBuilder();
+            sb.Append("{\"machineNo\":");
+            sb.Append(machineNo.ToString(CultureInfo.InvariantCulture));
+            sb.Append(",\"punches\":[");
+            for (int i = 0; i < count; i++)
+            {
+                if (i > 0) sb.Append(",");
+                sb.Append(objects[offset + i]);
+            }
+            sb.Append("]}");
+            return sb.ToString();
         }
 
         /// <summary>
