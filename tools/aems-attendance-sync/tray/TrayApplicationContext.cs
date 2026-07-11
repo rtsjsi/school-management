@@ -260,7 +260,10 @@ namespace AemsAttendanceSync
             using (var client = new DeviceClient(_config.ToDeviceSettings()))
             {
                 if (!client.Connect())
-                    throw new InvalidOperationException("Connect failed: " + client.LastErrorText());
+                {
+                    AppLog.Error("Device connect failed — " + client.LastErrorText());
+                    throw new InvalidOperationException(client.NotReachableMessage());
+                }
 
                 List<PunchRecord> punches;
                 try

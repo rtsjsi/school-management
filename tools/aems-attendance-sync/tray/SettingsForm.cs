@@ -137,7 +137,8 @@ namespace AemsAttendanceSync
                     {
                         if (!client.Connect())
                         {
-                            failDetail = client.LastErrorText();
+                            AppLog.Error("Test device failed — " + client.LastErrorText());
+                            failDetail = client.NotReachableMessage();
                             ok = false;
                             return;
                         }
@@ -154,7 +155,7 @@ namespace AemsAttendanceSync
                 if (!ok)
                 {
                     _status.ForeColor = Color.Firebrick;
-                    _status.Text = "Device failed: " + (failDetail ?? "connect rejected");
+                    _status.Text = failDetail ?? "Biometric device is not reachable at the configured IP.";
                     return;
                 }
 

@@ -197,9 +197,10 @@ namespace AemsAttendanceSync
             var client = new DeviceClient(settings);
             if (!client.Connect())
             {
-                string err = client.LastErrorText();
+                AppLog.Error("User management connect failed — " + client.LastErrorText());
+                string msg = client.NotReachableMessage();
                 try { client.Dispose(); } catch { }
-                throw new InvalidOperationException("Connect failed: " + err);
+                throw new InvalidOperationException(msg);
             }
             _session = client;
             DeviceSessionOpen = true;

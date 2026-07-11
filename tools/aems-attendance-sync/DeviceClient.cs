@@ -278,6 +278,15 @@ namespace AemsAttendanceSync
             }
         }
 
+        /// <summary>Clear user-facing message when Connect() fails.</summary>
+        public string NotReachableMessage()
+        {
+            return "Biometric device is not reachable at configured IP "
+                + _settings.Ip.Trim()
+                + " (port " + _settings.Port + "). "
+                + "Check the device is powered on, on the same network, and the IP in Settings is correct.";
+        }
+
         void Fail(string message)
         {
             AppLog.Error(message);
