@@ -1,0 +1,21 @@
+AEMS Attendance Sync - Plug and Play
+====================================
+
+On ANY school Windows PC:
+
+  1. Copy this whole folder anywhere (USB / Desktop / C:\AEMSAttendanceSync).
+  2. Double-click AEMSAttendanceSync.exe
+  3. Enter the attendance machine IP (Test connection -> Save & Start).
+
+That is all.
+
+- The app sits in the system tray (near the clock).
+- It pulls new punches every N minutes into the "logs" folder.
+- "Start with Windows" is ON by default (change in Settings).
+- Right-click tray -> User management to list/edit device users.
+
+Moving to another PC:
+  Copy this same folder -> double-click AEMSAttendanceSync.exe -> confirm IP if needed.
+
+Right-click tray icon:
+  Sync now | User management | Settings | Open logs folder | Exit

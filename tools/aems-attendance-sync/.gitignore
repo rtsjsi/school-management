@@ -1,0 +1,8 @@
+bin/
+obj/
+dist/
+logs/
+*.user
+*.suo
+.active-enrolls.txt
+active-enrolls.txt
