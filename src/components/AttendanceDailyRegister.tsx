@@ -23,25 +23,15 @@ import { Button } from "@/components/ui/button";
 
 type Employee = { id: string; full_name: string };
 
-type PunchRow = {
+type RawPunchRow = {
   id: string;
-  employee_id: string;
-  punch_date: string;
-  punch_time: string;
-  punch_type: string;
-  is_late: boolean;
-  is_early_departure: boolean;
-  source: string;
-  created_at: string;
-  employees: { full_name: string } | { full_name: string }[] | null;
+  enroll_no: string;
+  punched_at: string;
+  direction: string;
+  verify_method: string | null;
+  machine_no: number;
+  received_at: string;
 };
-
-function getEmployeeName(row: PunchRow): string {
-  if (Array.isArray(row.employees)) {
-    return (row.employees[0] as { full_name: string })?.full_name ?? "—";
-  }
-  return (row.employees as { full_name: string } | null)?.full_name ?? "—";
-}
 
 function formatDate(dateStr: string): string {
   try {
@@ -55,26 +45,28 @@ function formatDate(dateStr: string): string {
   }
 }
 
-function formatTime(timeStr: string): string {
+function formatTime(dateStr: string): string {
   try {
-    return new Date(timeStr).toLocaleTimeString("en-IN", {
+    return new Date(dateStr).toLocaleTimeString("en-IN", {
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
       hour12: true,
     });
   } catch {
-    return timeStr;
+    return dateStr;
   }
 }
 
 export function AttendanceDailyRegister() {
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [punches, setPunches] = useState<PunchRow[]>([]);
+  const [punches, setPunches] = useState<RawPunchRow[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState("all");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
   const [hasFetched, setHasFetched] = useState(false);
+  const [enrollNo, setEnrollNo] = useState<string | null>(null);
 
   // Load employee list on mount (no punch data)
   useEffect(() => {
@@ -94,12 +86,15 @@ export function AttendanceDailyRegister() {
     if (selectedEmployee === "all") return;
     setLoading(true);
     setError(null);
+    setWarning(null);
     try {
       const params = new URLSearchParams({ employeeId: selectedEmployee });
       const res = await fetch(`/api/attendance-punches?${params.toString()}`);
       const json = await res.json();
       if (json.error) throw new Error(json.error);
       setPunches(json.punches ?? []);
+      setEnrollNo(json.enrollNo ?? null);
+      setWarning(json.warning ?? null);
       setHasFetched(true);
     } catch (e) {
       setError((e as Error).message || "Failed to load punch data");
@@ -116,7 +111,7 @@ export function AttendanceDailyRegister() {
   return (
     <Card>
       <CardHeader className="pb-4">
-        <CardTitle className="text-lg font-semibold">Attendance Punch Records</CardTitle>
+        <CardTitle className="text-lg font-semibold">Biometric Punch Records</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Filters */}
@@ -150,6 +145,20 @@ export function AttendanceDailyRegister() {
           <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>
         )}
 
+        {/* Warning (e.g. no enroll number mapped) */}
+        {warning && (
+          <p className="text-sm text-amber-700 dark:text-amber-400 bg-amber-100/50 dark:bg-amber-950/30 p-2 rounded-md">
+            {warning}
+          </p>
+        )}
+
+        {/* Enroll number info */}
+        {hasFetched && enrollNo && (
+          <p className="text-xs text-muted-foreground">
+            Biometric Enroll No: <span className="font-medium">{enrollNo}</span>
+          </p>
+        )}
+
         {/* Loading */}
         {loading && (
           <p className="text-sm text-muted-foreground py-4 text-center">Loading punch data…</p>
@@ -168,58 +177,48 @@ export function AttendanceDailyRegister() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="sticky top-0 bg-background z-10 shadow-[0_1px_0_hsl(var(--border))]">
-                      Employee
-                    </TableHead>
-                    <TableHead className="sticky top-0 bg-background z-10 shadow-[0_1px_0_hsl(var(--border))]">
                       Date
                     </TableHead>
                     <TableHead className="sticky top-0 bg-background z-10 shadow-[0_1px_0_hsl(var(--border))]">
                       Time
                     </TableHead>
                     <TableHead className="sticky top-0 bg-background z-10 shadow-[0_1px_0_hsl(var(--border))]">
-                      Type
+                      Direction
                     </TableHead>
                     <TableHead className="sticky top-0 bg-background z-10 shadow-[0_1px_0_hsl(var(--border))]">
-                      Flags
+                      Verify Method
                     </TableHead>
                     <TableHead className="sticky top-0 bg-background z-10 shadow-[0_1px_0_hsl(var(--border))]">
-                      Source
+                      Machine
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {punches.map((row) => (
                     <TableRow key={row.id}>
-                      <TableCell className="font-medium">{getEmployeeName(row)}</TableCell>
                       <TableCell className="whitespace-nowrap">
-                        {formatDate(row.punch_date)}
+                        {formatDate(row.punched_at)}
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
-                        {formatTime(row.punch_time)}
+                        {formatTime(row.punched_at)}
                       </TableCell>
                       <TableCell>
                         <Badge
-                          variant={row.punch_type === "IN" ? "default" : "secondary"}
+                          variant={row.direction === "IN" ? "default" : "secondary"}
                           className={
-                            row.punch_type === "IN"
+                            row.direction === "IN"
                               ? "bg-emerald-100/50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 hover:bg-emerald-100/70"
                               : "bg-slate-100/50 text-slate-700 dark:bg-slate-800/30 dark:text-slate-400 hover:bg-slate-100/70"
                           }
                         >
-                          {row.punch_type}
+                          {row.direction}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        {row.is_late && (
-                          <span className="text-destructive text-xs font-medium mr-1">Late</span>
-                        )}
-                        {row.is_early_departure && (
-                          <span className="text-destructive text-xs font-medium">Early</span>
-                        )}
-                        {!row.is_late && !row.is_early_departure && "—"}
+                      <TableCell className="text-muted-foreground text-xs">
+                        {row.verify_method ?? "—"}
                       </TableCell>
-                      <TableCell className="capitalize text-muted-foreground text-xs">
-                        {row.source ?? "—"}
+                      <TableCell className="text-muted-foreground text-xs">
+                        {row.machine_no}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -230,7 +229,7 @@ export function AttendanceDailyRegister() {
         )}
 
         {/* Empty state */}
-        {!loading && punches.length === 0 && !error && (
+        {!loading && punches.length === 0 && !error && !warning && (
           <p className="text-sm text-muted-foreground py-8 text-center">
             {hasFetched
               ? "No punch records found for this employee."
