@@ -101,4 +101,4 @@ Run `.\AEMSAttendanceSync-CLI.exe --help` for the full command list.
 
 ## SDK libraries
 
-Native DLLs and P/Invoke wrapper are under `native\` and `sbxpc\`, sourced from the vendor SBXPC sample bundled in the repo docs folder.
+Native DLLs and P/Invoke wrapper are under `native\` and `sbxpc\` (vendor SBXPC / Z500 SDK).
