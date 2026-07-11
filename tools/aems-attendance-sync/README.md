@@ -3,7 +3,7 @@
 Windows **x86** tools for biometric attendance machines (SBXPC protocol):
 
 - **AEMSAttendanceSync.exe** — tray app (scheduled pull + optional cloud push)
-- **AEMSAttendanceSync-Setup.exe** — installer (Program Files, Start Menu, Desktop)
+- **AEMSAttendanceSync-Setup.exe** — single-file installer (embeds the app; no extra folder to copy)
 - **AEMSAttendanceSync-CLI.exe** — command-line utility (logs, users, enroll)
 
 ## Requirements
