@@ -44,9 +44,7 @@ export default async function PayrollPage() {
         </TabsContent>
 
         <TabsContent value="attendance" className="space-y-6">
-          <Suspense fallback={<TableSkeleton rows={5} columns={6} />}>
-            <AttendanceDailyRegister />
-          </Suspense>
+          <AttendanceDailyRegister />
         </TabsContent>
 
         <TabsContent value="review" className="space-y-6">

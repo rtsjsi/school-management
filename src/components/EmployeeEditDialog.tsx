@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { SubmitButton } from "@/components/ui/SubmitButton";
@@ -84,6 +84,35 @@ export function EmployeeEditDialog({
     ifsc_code: employee.ifsc_code || "",
     account_holder_name: employee.account_holder_name || "",
   });
+
+  useEffect(() => {
+    if (open) {
+      setForm({
+        full_name: employee.full_name || "",
+        email: employee.email || "",
+        phone_number: employee.phone_number || "",
+        address: employee.address || "",
+        aadhaar: employee.aadhaar || "",
+        pan: employee.pan || "",
+        role: employee.role || "staff",
+        employee_type: employee.employee_type || "full_time",
+        joining_date: employee.joining_date || "",
+        shift_start_time: timeForInput(employee.shift_start_time) || "09:00",
+        shift_end_time: timeForInput(employee.shift_end_time) || "17:00",
+        biometric_enroll_no: employee.biometric_enroll_no || "",
+        status: employee.status || "active",
+        monthly_salary: employee.monthly_salary?.toString() || "",
+        degree: employee.degree || "",
+        institution: employee.institution || "",
+        year_passed: employee.year_passed ? String(employee.year_passed) : "",
+        bank_name: employee.bank_name || "",
+        account_number: employee.account_number || "",
+        ifsc_code: employee.ifsc_code || "",
+        account_holder_name: employee.account_holder_name || "",
+      });
+      setError(null);
+    }
+  }, [open, employee]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { SubmitButton } from "@/components/ui/SubmitButton";
@@ -14,38 +14,58 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { EMPLOYEE_TYPES, EMPLOYEE_ROLES } from "@/lib/lov";
 import { reassignEmployeeIds } from "@/lib/employee-id";
 import { normalizeTimeForDb } from "@/lib/employee-shift";
 
+const INITIAL_FORM_STATE = {
+  full_name: "",
+  email: "",
+  phone_number: "",
+  address: "",
+  aadhaar: "",
+  pan: "",
+  role: "staff",
+  employee_type: "full_time",
+  joining_date: "",
+  shift_start_time: "09:00",
+  shift_end_time: "17:00",
+  biometric_enroll_no: "",
+  degree: "",
+  institution: "",
+  year_passed: "",
+  bank_name: "",
+  account_number: "",
+  ifsc_code: "",
+  account_holder_name: "",
+  monthly_salary: "",
+};
+
 export default function EmployeeEntryForm() {
   const router = useRouter();
   const { toast } = useToast();
+  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState({
-    full_name: "",
-    email: "",
-    phone_number: "",
-    address: "",
-    aadhaar: "",
-    pan: "",
-    role: "staff",
-    employee_type: "full_time",
-    joining_date: "",
-    shift_start_time: "09:00",
-    shift_end_time: "17:00",
-    biometric_enroll_no: "",
-    degree: "",
-    institution: "",
-    year_passed: "",
-    bank_name: "",
-    account_number: "",
-    ifsc_code: "",
-    account_holder_name: "",
-    monthly_salary: "",
-  });
+  const [form, setForm] = useState(INITIAL_FORM_STATE);
+
+  useEffect(() => {
+    if (open) {
+      setForm(INITIAL_FORM_STATE);
+      setError(null);
+    }
+  }, [open]);
 
   const requiredFields: { key: keyof typeof form; label: string }[] = [
     { key: "full_name", label: "Full name" },
@@ -137,13 +157,7 @@ export default function EmployeeEntryForm() {
         });
       }
 
-      setForm({
-        full_name: "", email: "", phone_number: "", address: "", aadhaar: "", pan: "",
-        role: "staff", employee_type: "full_time",
-        joining_date: "", shift_start_time: "09:00", shift_end_time: "17:00", biometric_enroll_no: "", degree: "", institution: "", year_passed: "",
-        bank_name: "", account_number: "", ifsc_code: "", account_holder_name: "",
-        monthly_salary: "",
-      });
+      setOpen(false);
       toast({
         title: "Employee added",
         description: `${form.full_name.trim()} has been added successfully.`,
@@ -163,6 +177,20 @@ export default function EmployeeEntryForm() {
   };
 
   return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button className="gap-1">
+          <UserPlus className="h-4 w-4" />
+          Add employee
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-[95vw] sm:max-w-5xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+        <DialogHeader>
+          <DialogTitle className="text-base">Add new employee</DialogTitle>
+          <DialogDescription>
+            Fill in the form to create a new employee record.
+          </DialogDescription>
+        </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>}
 
@@ -363,9 +391,12 @@ export default function EmployeeEntryForm() {
             </div>
           </div>
 
-          <div className="flex justify-start">
-          <SubmitButton loading={loading} loadingLabel="Adding…">Add Employee</SubmitButton>
-        </div>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <SubmitButton loading={loading} loadingLabel="Adding…">Add Employee</SubmitButton>
+          </div>
         </form>
+      </DialogContent>
+    </Dialog>
   );
 }
