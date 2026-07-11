@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
-import { deriveDailyStatus, dayWeight, DEFAULT_THRESHOLDS, employeeShiftLite } from "@/lib/attendance";
+import { dayWeight } from "@/lib/attendance";
 
 export const dynamic = "force-dynamic";
 
@@ -64,11 +64,7 @@ export async function GET(request: NextRequest) {
       .gte("attendance_date", start)
       .lte("attendance_date", end);
 
-    const { data: punches } = await supabase
-      .from("employee_attendance_punches")
-      .select("employee_id, punch_date, punch_type, punch_time")
-      .gte("punch_date", start)
-      .lte("punch_date", end);
+
 
     const { data: approved } = await supabase
       .from("employee_attendance_daily")
@@ -125,11 +121,7 @@ export async function GET(request: NextRequest) {
           presentDays += dayWeight(manEntry.status);
           continue;
         }
-        const dayPunches = (punches ?? []).filter((p) => p.employee_id === emp.id && p.punch_date === dStr);
-        if (dayPunches.length > 0) {
-          const derived = deriveDailyStatus(dayPunches, empShift, thresholds, isHoliday, isWeekend);
-          presentDays += dayWeight(derived.status);
-        }
+
       }
       presentDays = Math.round(presentDays * 2) / 2;
 

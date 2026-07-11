@@ -17,7 +17,6 @@ const PUBLIC_TABLES = [
   "academic_years",
   "employee_attendance_approvals",
   "employee_attendance_daily",
-  "employee_attendance_punches",
 
   "employees",
   "exam_result_subjects",
@@ -68,7 +67,6 @@ const INSERT_ORDER = [
   "public.expense_budgets",
   "public.expenses",
   "public.employee_attendance_daily",
-  "public.employee_attendance_punches",
   "public.employee_attendance_approvals",
 
 

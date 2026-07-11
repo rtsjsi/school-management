@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
-import { deriveDailyStatus, DEFAULT_THRESHOLDS, employeeShiftLite } from "@/lib/attendance";
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,15 +25,6 @@ export async function GET(request: NextRequest) {
       .eq("status", "active")
       .order("full_name");
 
-    const { data: settings } = await supabase
-      .from("payroll_settings")
-      .select("full_day_hours, half_day_hours")
-      .eq("id", 1)
-      .maybeSingle();
-    const thresholds = {
-      fullDayHours: Number(settings?.full_day_hours ?? DEFAULT_THRESHOLDS.fullDayHours),
-      halfDayHours: Number(settings?.half_day_hours ?? DEFAULT_THRESHOLDS.halfDayHours),
-    };
 
     const { data: holidays } = await supabase
       .from("holidays")
@@ -49,11 +39,7 @@ export async function GET(request: NextRequest) {
       .gte("attendance_date", start)
       .lte("attendance_date", end);
 
-    const { data: punches } = await supabase
-      .from("employee_attendance_punches")
-      .select("employee_id, punch_date, punch_type, punch_time, is_late, is_early_departure")
-      .gte("punch_date", start)
-      .lte("punch_date", end);
+
 
     const { data: approved } = await supabase
       .from("employee_attendance_daily")
@@ -107,31 +93,26 @@ export async function GET(request: NextRequest) {
           in_time = approvedEntry.in_time;
           out_time = approvedEntry.out_time;
           source = "approved";
-        } else {
-          const manEntry = (manual ?? []).find((m) => m.employee_id === emp.id && m.attendance_date === dStr && !m.is_approved);
-          if (manEntry) {
-            status = manEntry.status;
-            in_time = manEntry.in_time ?? undefined;
-            out_time = manEntry.out_time ?? undefined;
-            source = "manual";
           } else {
-            const dayPunches = (punches ?? []).filter((p) => p.employee_id === emp.id && p.punch_date === dStr);
-            const derived = deriveDailyStatus(dayPunches, employeeShiftLite(emp), thresholds, isHoliday, isWeekend);
-            status = derived.status;
-            in_time = derived.in_time;
-            out_time = derived.out_time;
-
-            if (dayPunches.length > 0) {
-              source = "biometric";
-            } else if (isHoliday) {
-              source = "holiday";
-            } else if (isWeekend) {
-              source = "weekend";
+            const manEntry = (manual ?? []).find((m) => m.employee_id === emp.id && m.attendance_date === dStr && !m.is_approved);
+            if (manEntry) {
+              status = manEntry.status;
+              in_time = manEntry.in_time ?? undefined;
+              out_time = manEntry.out_time ?? undefined;
+              source = "manual";
             } else {
-              source = "default";
+              if (isHoliday) {
+                status = "holiday";
+                source = "holiday";
+              } else if (isWeekend) {
+                status = "week_off";
+                source = "weekend";
+              } else {
+                status = "absent";
+                source = "default";
+              }
             }
           }
-        }
 
         if (!dailyData[dStr]) dailyData[dStr] = [];
         dailyData[dStr].push({
