@@ -108,6 +108,16 @@ namespace AemsAttendanceSync
                     _connected = true;
                     return true;
                 }
+
+                // Some SDK builds return false while GetLastError stays SUCCESS (0).
+                // Treat that as connected and verify with a lightweight follow-up.
+                int err;
+                if (SBXPCDLL.GetLastError(_settings.MachineNumber, out err) && err == 0)
+                {
+                    _connected = true;
+                    AppLog.Info("ConnectTcpip returned false with SUCCESS(0); treating as connected for " + ip);
+                    return true;
+                }
             }
 
             _connected = false;
