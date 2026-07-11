@@ -9,6 +9,13 @@ namespace AemsAttendanceSync
         const string MutexName = "Local\\AEMSAttendanceSync.SingleInstance";
         const string ShowEventName = "Local\\AEMSAttendanceSync.ShowMain";
 
+        /// <summary>
+        /// Signaled by the installer/uninstaller to ask a running instance to shut down
+        /// cleanly (release the device session) instead of being killed outright. Name
+        /// must match Installer.ExitEventName in setup/Installer.cs.
+        /// </summary>
+        internal const string ExitEventName = "Local\\AEMSAttendanceSync.RequestExit";
+
         static Mutex _mutex;
 
         [STAThread]
@@ -64,9 +71,11 @@ namespace AemsAttendanceSync
             AppLog.Info("AEMS Attendance Sync started");
 
             using (var showEvent = new EventWaitHandle(false, EventResetMode.AutoReset, ShowEventName))
+            using (var exitEvent = new EventWaitHandle(false, EventResetMode.AutoReset, ExitEventName))
             {
                 var ctx = new TrayApplicationContext();
                 StartShowWatcher(showEvent, ctx);
+                StartExitWatcher(exitEvent, ctx);
                 try
                 {
                     Application.Run(ctx);
@@ -98,6 +107,30 @@ namespace AemsAttendanceSync
             });
             thread.IsBackground = true;
             thread.Name = "AEMS-ShowWatcher";
+            thread.Start();
+        }
+
+        /// <summary>
+        /// Lets an external process (installer/uninstaller) ask this instance to shut
+        /// down cleanly — releases the device session before exiting — instead of being
+        /// killed. One-shot: once an exit is requested, the process is going away.
+        /// </summary>
+        static void StartExitWatcher(EventWaitHandle exitEvent, TrayApplicationContext ctx)
+        {
+            var thread = new Thread(() =>
+            {
+                try
+                {
+                    exitEvent.WaitOne();
+                    AppLog.Info("Graceful exit requested (installer/uninstaller)");
+                    try { ctx.RequestExit(); }
+                    catch { }
+                }
+                catch (ThreadAbortException) { }
+                catch { }
+            });
+            thread.IsBackground = true;
+            thread.Name = "AEMS-ExitWatcher";
             thread.Start();
         }
     }

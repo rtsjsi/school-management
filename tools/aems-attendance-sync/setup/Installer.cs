@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Threading;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
@@ -83,14 +84,62 @@ namespace AemsAttendanceSync.Setup
             WriteUninstallRegistry(setupDst);
         }
 
-        /// <summary>Kill tray app processes and wait so install files are not locked.</summary>
+        /// <summary>
+        /// Must match TrayProgram.ExitEventName in tray/TrayProgram.cs. Duplicated here
+        /// (rather than referenced) because Setup and Tray are separate assemblies.
+        /// </summary>
+        const string ExitEventName = "Local\\AEMSAttendanceSync.RequestExit";
+
+        /// <summary>
+        /// Stop tray app process(es) so install files are not locked. Prefers asking a
+        /// running instance to shut down cleanly (releases the biometric device session)
+        /// and only falls back to a hard kill if it does not exit in time — a hard kill
+        /// abandons any open device session and can cause ERR_NON_CARRYOUT on the next
+        /// connect attempt.
+        /// </summary>
         public static void StopRunningApp()
         {
+            if (TryGracefulStop(5000))
+                return;
+
             KillByName(Path.GetFileNameWithoutExtension(ExeName));
             System.Threading.Thread.Sleep(600);
             // Second pass in case a process was slow to exit.
             KillByName(Path.GetFileNameWithoutExtension(ExeName));
             System.Threading.Thread.Sleep(300);
+        }
+
+        /// <summary>Signals the running instance's exit watcher and waits for it to exit on its own.</summary>
+        static bool TryGracefulStop(int timeoutMs)
+        {
+            string processName = Path.GetFileNameWithoutExtension(ExeName);
+            if (Process.GetProcessesByName(processName).Length == 0)
+                return true; // nothing running
+
+            try
+            {
+                using (var ev = EventWaitHandle.OpenExisting(ExitEventName))
+                    ev.Set();
+            }
+            catch
+            {
+                // No running instance listening (older build, or already gone) — caller falls back to Kill().
+                return false;
+            }
+
+            int deadline = Environment.TickCount + timeoutMs;
+            while (Environment.TickCount < deadline)
+            {
+                bool anyAlive = false;
+                foreach (var p in Process.GetProcessesByName(processName))
+                {
+                    try { if (!p.HasExited) anyAlive = true; }
+                    catch { anyAlive = true; }
+                }
+                if (!anyAlive) return true;
+                Thread.Sleep(200);
+            }
+            return false;
         }
 
         public static void LaunchInstalledApp()

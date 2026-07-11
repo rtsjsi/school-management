@@ -93,6 +93,24 @@ namespace AemsAttendanceSync
             catch { }
         }
 
+        /// <summary>
+        /// Called by the installer/uninstaller (via TrayProgram's exit watcher) to ask
+        /// this instance to shut down cleanly instead of being killed. Must marshal to
+        /// the UI thread since ExitApp touches WinForms controls.
+        /// </summary>
+        public void RequestExit()
+        {
+            try
+            {
+                if (_main == null || _main.IsDisposed) return;
+                if (_main.InvokeRequired)
+                    _main.BeginInvoke(new Action(ExitApp));
+                else
+                    ExitApp();
+            }
+            catch { }
+        }
+
         void OpenLogs()
         {
             Directory.CreateDirectory(AppConfig.LogsDir);
@@ -343,13 +361,53 @@ namespace AemsAttendanceSync
         void ExitApp()
         {
             _timer.Stop();
-            _main.AllowClose();
+
+            // Let an in-flight sync finish its own clean Disconnect rather than abandoning
+            // it mid-session — an abrupt process exit while connected is exactly what
+            // leaves the device thinking a session is still active (ERR_NON_CARRYOUT on
+            // the next Connect).
+            WaitForSyncToFinish(5000);
+
             if (_usersForm != null && !_usersForm.IsDisposed)
                 _usersForm.Close();
+
+            ReleaseDeviceSession();
+
+            _main.AllowClose();
             _tray.Visible = false;
             _tray.Dispose();
             if (_appIcon != null) _appIcon.Dispose();
             ExitThread();
+        }
+
+        void WaitForSyncToFinish(int timeoutMs)
+        {
+            int deadline = Environment.TickCount + timeoutMs;
+            while (Environment.TickCount < deadline)
+            {
+                lock (_syncLock)
+                {
+                    if (!_syncing) return;
+                }
+                Thread.Sleep(100);
+            }
+            AppLog.Info("Exit: gave up waiting for in-flight sync after " + timeoutMs + "ms");
+        }
+
+        /// <summary>
+        /// Final safety net on quit — sends a clean disconnect to the device even if a
+        /// DeviceClient.Dispose() somewhere above didn't run. Safe to call even when no
+        /// session is open (ResetNativeSession swallows native errors).
+        /// </summary>
+        void ReleaseDeviceSession()
+        {
+            try
+            {
+                int machine = _config != null ? _config.ToDeviceSettings().MachineNumber : 1;
+                string busy;
+                DeviceGate.TryRun(() => DeviceClient.ResetNativeSession(machine), 3000, out busy);
+            }
+            catch { }
         }
 
         static Icon LoadAppIcon()

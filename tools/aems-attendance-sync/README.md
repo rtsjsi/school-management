@@ -75,6 +75,25 @@ Edit `config.json` (or use Settings in the tray app):
 }
 ```
 
+## Device session lifecycle (avoiding "session overlap" / ERR_NON_CARRYOUT)
+
+The biometric device only tolerates one active TCP session at a time. To avoid it thinking
+a session is still open:
+
+- **Always quit via the tray icon → Exit**, not Task Manager "End task". Exit waits for any
+  in-flight sync to finish its own clean disconnect, then explicitly releases the native
+  session before the process ends.
+- **Don't run the CLI while the tray app is running against the same device** — they are
+  separate processes and can't serialize access to each other; running both at once against
+  the same machine number is the one scenario this app can't protect against in software.
+- **Reinstalling/upgrading** now asks a running instance to shut down cleanly first (via a
+  named signal the tray app listens for) and only force-kills it if it doesn't exit within
+  ~5s — a hard kill skips the device disconnect handshake and is a common cause of
+  `ERR_NON_CARRYOUT (5)` on the very next connect.
+- If you still see `ERR_NON_CARRYOUT (5)`, it's usually a leftover session from an abrupt
+  shutdown (power loss, forced kill) — `Test device` in Settings resets the native session
+  before connecting, so retrying it once is usually enough.
+
 ## CLI examples
 
 ```powershell
