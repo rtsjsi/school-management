@@ -4,8 +4,6 @@ import { randomUUID, timingSafeEqual } from "crypto";
 
 export const dynamic = "force-dynamic";
 
-const MAX_BATCH = 2000;
-
 type IncomingPunch = {
   enrollNo?: unknown;
   punchedAt?: unknown;
@@ -105,12 +103,6 @@ export async function POST(request: NextRequest) {
     }
     if (punches.length === 0) {
       return NextResponse.json({ received: 0, inserted: 0, duplicatesSkipped: 0 });
-    }
-    if (punches.length > MAX_BATCH) {
-      return NextResponse.json(
-        { error: `Batch too large. Maximum ${MAX_BATCH} punches per request.` },
-        { status: 400 }
-      );
     }
 
     const syncBatchId = randomUUID();

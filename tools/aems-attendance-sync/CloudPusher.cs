@@ -15,8 +15,8 @@ namespace AemsAttendanceSync
     public static class CloudPusher
     {
         /// <summary>
-        /// Server (/api/attendance-sync) rejects requests over 2000 punches. Stay well
-        /// under that so a "download all logs" full sync never trips the limit.
+        /// Chunk size for HTTP requests and pending-retry files. There is no server-side
+        /// punch limit — the tray splits large syncs into multiple requests for reliability.
         /// </summary>
         const int MaxBatchSize = 500;
 
@@ -71,9 +71,8 @@ namespace AemsAttendanceSync
         }
 
         /// <summary>
-        /// Pushes a saved pending-file payload. Pending files written before batch
-        /// chunking existed can still exceed the server's limit — detect and re-split
-        /// those in memory instead of failing forever with "Batch too large."
+        /// Pushes a saved pending-file payload. Large pending files are re-split into
+        /// MaxBatchSize chunks in memory before sending.
         /// </summary>
         public static PushResult PushJsonFile(AppConfig config, string filePath)
         {
@@ -143,8 +142,8 @@ namespace AemsAttendanceSync
         }
 
         /// <summary>
-        /// Saves the batch for later retry. Splits into &lt;= MaxBatchSize files so a
-        /// retry (which POSTs one file as-is) never exceeds the server's limit either.
+        /// Saves the batch for later retry. Splits into MaxBatchSize files so each retry
+        /// POST is a manageable chunk.
         /// </summary>
         public static void SavePending(AppConfig config, IList<PunchRecord> punches)
         {
