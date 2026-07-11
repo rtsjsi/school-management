@@ -40,6 +40,8 @@ namespace AemsAttendanceSync
         private readonly DeviceSettings _settings;
         private bool _initialized;
         private bool _connected;
+        private static bool _globalNativeReady;
+        private static readonly object InitLock = new object();
 
         public DeviceClient(DeviceSettings settings)
         {
@@ -63,18 +65,38 @@ namespace AemsAttendanceSync
         /// <summary>
         /// Drop any orphaned native TCP session. ERR_NON_CARRYOUT (5) on Connect usually
         /// means the DLL still thinks a prior session is active.
+        /// Must not throw — EnableDevice/Disconnect can AV if no session exists.
         /// </summary>
+        [System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptions]
+        [System.Security.SecurityCritical]
         public static void ResetNativeSession(int machineNumber)
         {
-            try { SBXPCDLL.EnableDevice(machineNumber, 1); } catch { }
-            try { SBXPCDLL.Disconnect(machineNumber); } catch { }
+            try { SBXPCDLL.EnableDevice(machineNumber, 1); }
+            catch (AccessViolationException) { }
+            catch (SEHException) { }
+            catch { }
+
+            try { SBXPCDLL.Disconnect(machineNumber); }
+            catch (AccessViolationException) { }
+            catch (SEHException) { }
+            catch { }
+
+            try { Thread.Sleep(150); }
+            catch { }
         }
 
         public void Initialize()
         {
             if (_initialized) return;
-            SBXPCDLL.DotNET();
-            SBXPCDLL._DisableTranseiveCallback();
+            lock (InitLock)
+            {
+                if (!_globalNativeReady)
+                {
+                    SBXPCDLL.DotNET();
+                    SBXPCDLL._DisableTranseiveCallback();
+                    _globalNativeReady = true;
+                }
+            }
             _initialized = true;
         }
 
@@ -97,7 +119,7 @@ namespace AemsAttendanceSync
                     Thread.Sleep(400 * (attempt - 1));
                 }
 
-                bool ok = SBXPCDLL.ConnectTcpip(
+                bool ok = SafeConnectTcpip(
                     _settings.MachineNumber,
                     ip,
                     _settings.Port,
@@ -108,16 +130,6 @@ namespace AemsAttendanceSync
                     _connected = true;
                     return true;
                 }
-
-                // Some SDK builds return false while GetLastError stays SUCCESS (0).
-                // Treat that as connected and verify with a lightweight follow-up.
-                int err;
-                if (SBXPCDLL.GetLastError(_settings.MachineNumber, out err) && err == 0)
-                {
-                    _connected = true;
-                    AppLog.Info("ConnectTcpip returned false with SUCCESS(0); treating as connected for " + ip);
-                    return true;
-                }
             }
 
             _connected = false;
@@ -125,12 +137,48 @@ namespace AemsAttendanceSync
             return false;
         }
 
+        [System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptions]
+        [System.Security.SecurityCritical]
+        static bool SafeConnectTcpip(int machineNumber, string ip, int port, int password)
+        {
+            try
+            {
+                return SBXPCDLL.ConnectTcpip(machineNumber, ip, port, password);
+            }
+            catch (AccessViolationException ex)
+            {
+                AppLog.Crash("ConnectTcpip AccessViolation", ex);
+                return false;
+            }
+            catch (SEHException ex)
+            {
+                AppLog.Error("ConnectTcpip SEHException", ex);
+                return false;
+            }
+        }
+
+        [System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptions]
+        [System.Security.SecurityCritical]
         public void Disconnect()
         {
             if (!_connected) return;
             try
             {
+                try { SBXPCDLL.EnableDevice(_settings.MachineNumber, 1); }
+                catch { }
                 SBXPCDLL.Disconnect(_settings.MachineNumber);
+            }
+            catch (AccessViolationException ex)
+            {
+                AppLog.Crash("Disconnect AccessViolation", ex);
+            }
+            catch (SEHException ex)
+            {
+                AppLog.Error("Disconnect SEHException", ex);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Error("Disconnect failed", ex);
             }
             finally
             {
@@ -138,12 +186,25 @@ namespace AemsAttendanceSync
             }
         }
 
+        [System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptions]
+        [System.Security.SecurityCritical]
         public string LastErrorText()
         {
-            int code;
-            if (!SBXPCDLL.GetLastError(_settings.MachineNumber, out code))
+            try
+            {
+                int code;
+                if (!SBXPCDLL.GetLastError(_settings.MachineNumber, out code))
+                    return "Unable to read last error";
+                return ErrorCodes.Describe(code) + " (" + code + ")";
+            }
+            catch (AccessViolationException)
+            {
+                return "native crash reading error code";
+            }
+            catch
+            {
                 return "Unable to read last error";
-            return ErrorCodes.Describe(code) + " (" + code + ")";
+            }
         }
 
         void Fail(string message)

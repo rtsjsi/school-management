@@ -122,16 +122,37 @@ namespace AemsAttendanceSync
                     MachineNumber = (int)_machine.Value,
                     Password = (int)_password.Value
                 };
-                using (var client = new DeviceClient(settings))
+
+                bool ok = false;
+                string failDetail = null;
+                string busy;
+                if (!DeviceGate.TryRun(() =>
                 {
-                    if (!client.Connect())
+                    using (var client = new DeviceClient(settings))
                     {
-                        _status.ForeColor = Color.Firebrick;
-                        _status.Text = "Device failed: " + client.LastErrorText();
-                        return;
+                        if (!client.Connect())
+                        {
+                            failDetail = client.LastErrorText();
+                            ok = false;
+                            return;
+                        }
+                        client.Disconnect();
+                        ok = true;
                     }
-                    client.Disconnect();
+                }, 15000, out busy))
+                {
+                    _status.ForeColor = Color.Firebrick;
+                    _status.Text = "Device: " + (busy ?? "busy");
+                    return;
                 }
+
+                if (!ok)
+                {
+                    _status.ForeColor = Color.Firebrick;
+                    _status.Text = "Device failed: " + (failDetail ?? "connect rejected");
+                    return;
+                }
+
                 _status.ForeColor = Color.DarkGreen;
                 _status.Text = "Device OK. You can Save & Start.";
             }
