@@ -143,17 +143,24 @@ namespace AemsAttendanceSync
             }
 
             int err = ReadLastErrorCode();
-            // 5 = ERR_NON_CARRYOUT — DLL thinks a session is already active.
-            if (err == 5 || err == 0)
+
+            // 5 = ERR_NON_CARRYOUT — DLL already has an active session (common after a prior
+            // sync that did not fully tear down). Treat as connected; do not require probe
+            // because EnableDevice can also return NON_CARRYOUT on a live session.
+            if (err == 5)
             {
-                if (SoftProbeSession(machineNumber))
-                {
-                    AppLog.Info(
-                        "ConnectTcpip returned false (err=" + err +
-                        ") but session probe succeeded — treating as connected.");
-                    _connected = true;
-                    return true;
-                }
+                AppLog.Info("ConnectTcpip returned ERR_NON_CARRYOUT(5) — treating as already connected.");
+                _connected = true;
+                return true;
+            }
+
+            // 0 = SUCCESS leftover with false return — probe before trusting it.
+            if (err == 0 && SoftProbeSession(machineNumber))
+            {
+                AppLog.Info(
+                    "ConnectTcpip returned false (err=0) but session probe succeeded — treating as connected.");
+                _connected = true;
+                return true;
             }
 
             return false;

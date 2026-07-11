@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace AemsAttendanceSync
@@ -128,6 +129,10 @@ namespace AemsAttendanceSync
                 string busy;
                 if (!DeviceGate.TryRun(() =>
                 {
+                    // Clear any leftover native session from Sync so Test does not hit ERR_NON_CARRYOUT.
+                    DeviceClient.ResetNativeSession(settings.MachineNumber);
+                    Thread.Sleep(250);
+
                     using (var client = new DeviceClient(settings))
                     {
                         if (!client.Connect())
