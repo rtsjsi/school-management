@@ -13,6 +13,12 @@ namespace AemsAttendanceSync
     /// </summary>
     public static class CloudPusher
     {
+        /// <summary>
+        /// Server (/api/attendance-sync) rejects requests over 2000 punches. Stay well
+        /// under that so a "download all logs" full sync never trips the limit.
+        /// </summary>
+        const int MaxBatchSize = 500;
+
         public sealed class PushResult
         {
             public bool Ok;
@@ -26,14 +32,41 @@ namespace AemsAttendanceSync
             get { return Path.Combine(AppConfig.DataDir, "pending_push"); }
         }
 
+        /// <summary>
+        /// Pushes punches to the server, splitting into &lt;= MaxBatchSize chunks as
+        /// needed. Stops at the first failing chunk; already-pushed chunks are safe to
+        /// resend later since the server dedupes on insert.
+        /// </summary>
         public static PushResult Push(AppConfig config, IList<PunchRecord> punches)
         {
             if (config == null) throw new ArgumentNullException("config");
             if (punches == null) punches = new List<PunchRecord>();
 
             string url = BuildUrl(config.ApiBaseUrl);
-            string json = BuildPayloadJson(config.MachineNumber, punches);
-            return PostJson(url, config.ApiKey, json);
+
+            if (punches.Count <= MaxBatchSize)
+                return PostJson(url, config.ApiKey, BuildPayloadJson(config.MachineNumber, punches));
+
+            int totalBatches = (punches.Count + MaxBatchSize - 1) / MaxBatchSize;
+            int sent = 0;
+            PushResult result = null;
+            for (int offset = 0; offset < punches.Count; offset += MaxBatchSize)
+            {
+                int count = Math.Min(MaxBatchSize, punches.Count - offset);
+                var chunk = new List<PunchRecord>(count);
+                for (int i = 0; i < count; i++) chunk.Add(punches[offset + i]);
+
+                result = PostJson(url, config.ApiKey, BuildPayloadJson(config.MachineNumber, chunk));
+                if (!result.Ok)
+                {
+                    result.Body = "Failed after " + sent + "/" + punches.Count + " punch(es) pushed ("
+                        + (result.Body ?? result.Error) + ")";
+                    return result;
+                }
+                sent += count;
+            }
+            result.Body = sent + " punch(es) pushed in " + totalBatches + " batch(es). " + result.Body;
+            return result;
         }
 
         public static PushResult PushJsonFile(AppConfig config, string filePath)
@@ -43,10 +76,34 @@ namespace AemsAttendanceSync
             return PostJson(url, config.ApiKey, json);
         }
 
+        /// <summary>
+        /// Saves the batch for later retry. Splits into &lt;= MaxBatchSize files so a
+        /// retry (which POSTs one file as-is) never exceeds the server's limit either.
+        /// </summary>
         public static void SavePending(AppConfig config, IList<PunchRecord> punches)
         {
+            if (punches == null || punches.Count == 0) return;
             Directory.CreateDirectory(PendingDir);
-            string name = "pending_" + DateTime.Now.ToString("yyyyMMdd_HHmmss_fff") + ".json";
+
+            if (punches.Count <= MaxBatchSize)
+            {
+                WritePendingFile(config, punches, "");
+                return;
+            }
+
+            int part = 0;
+            for (int offset = 0; offset < punches.Count; offset += MaxBatchSize)
+            {
+                int count = Math.Min(MaxBatchSize, punches.Count - offset);
+                var chunk = new List<PunchRecord>(count);
+                for (int i = 0; i < count; i++) chunk.Add(punches[offset + i]);
+                WritePendingFile(config, chunk, "_p" + (part++).ToString("D3", CultureInfo.InvariantCulture));
+            }
+        }
+
+        static void WritePendingFile(AppConfig config, IList<PunchRecord> punches, string suffix)
+        {
+            string name = "pending_" + DateTime.Now.ToString("yyyyMMdd_HHmmss_fff") + suffix + ".json";
             string path = Path.Combine(PendingDir, name);
             File.WriteAllText(path, BuildPayloadJson(config.MachineNumber, punches), Encoding.UTF8);
         }

@@ -29,6 +29,8 @@ The API **only** inserts into `biometric_attendance_raw` (duplicates skipped). I
 4. Failed pushes are queued in `pending_push\` and retried on the next sync.
 
 Occasional full dumps (`pullAll: true`) are safe — the server unique key ignores punches already stored.
+The server caps a single request at 2000 punches; the tray app automatically splits larger
+syncs (and pending retries) into batches of 500, so a full-history dump never hits that limit.
 
 ## Build installer (single-file Setup.exe)
 
