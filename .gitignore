@@ -44,6 +44,8 @@ supabase/backups
 
 # temp files
 /tmp/
+/scratch/
+/temp_db_query*.js
 
 # typescript
 *.tsbuildinfo
