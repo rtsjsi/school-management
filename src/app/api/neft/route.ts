@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -23,9 +23,20 @@ export async function GET(request: NextRequest) {
     const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate();
     const end = `${y}-${m}-${String(lastDay).padStart(2, "0")}`;
 
+    const { data: finalized } = await supabase
+      .from("employee_attendance_finalized")
+      .select("employee_id, attendance_date, status")
+      .eq("month_year", monthYear);
+
+    // If there is no finalized data for the month, it hasn't been finalized.
+    // (Assuming at least one employee has data if it was finalized).
+    if (!finalized || finalized.length === 0) {
+      return NextResponse.json({ error: "Attendance for this month must be Finalized on the Review screen before generating payroll." }, { status: 400 });
+    }
+
     const { data: employees } = await supabase
       .from("employees")
-      .select("id, full_name, monthly_salary, bank_name, account_number, ifsc_code, account_holder_name, biometric_enroll_no")
+      .select("id, full_name, monthly_salary, bank_name, account_number, ifsc_code, account_holder_name")
       .eq("status", "active");
 
     const { data: settings } = await supabase
@@ -42,18 +53,6 @@ export async function GET(request: NextRequest) {
       .gte("date", start)
       .lte("date", end);
     const holidayDates = new Set((holidays ?? []).map((h) => h.date));
-
-    const admin = createAdminClient();
-    if (!admin) {
-      return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
-    }
-
-    // Fetch all punches for the month
-    const { data: punches } = await admin
-      .from("biometric_attendance_raw")
-      .select("enroll_no, punched_at, direction")
-      .gte("punched_at", `${start}T00:00:00Z`)
-      .lte("punched_at", `${end}T23:59:59Z`);
 
     const workingDays = (() => {
       let count = 0;
@@ -76,6 +75,9 @@ export async function GET(request: NextRequest) {
       });
     });
 
+    const finalizedMap = new Map<string, string>();
+    finalized.forEach(f => finalizedMap.set(`${f.employee_id}-${f.attendance_date}`, f.status));
+
     const rows: { employee_id: string; full_name: string; present_days: number; salary: number; gross_amount: number; deductions: number; net_amount: number; bank?: typeof bankMap extends Map<string, infer V> ? V : never }[] = [];
 
     for (const emp of employees ?? []) {
@@ -87,18 +89,11 @@ export async function GET(request: NextRequest) {
         const isHoliday = holidayDates.has(dStr);
         if (isHoliday || isWeekend) continue;
 
-        if (emp.biometric_enroll_no) {
-          const dayPunches = (punches ?? []).filter((p) => {
-            if (p.enroll_no !== emp.biometric_enroll_no) return false;
-            return p.punched_at.startsWith(dStr);
-          });
-          
-          if (dayPunches.length > 0) {
-            const hasInPunch = dayPunches.some(p => p.direction === 'IN' || !p.direction);
-            if (hasInPunch || dayPunches.length > 0) {
-              presentDays += 1;
-            }
-          }
+        const status = finalizedMap.get(`${emp.id}-${dStr}`);
+        if (status === "present" || status === "holiday" || status === "week_off") {
+          presentDays += 1;
+        } else if (status === "half_day") {
+          presentDays += 0.5;
         }
       }
 
@@ -125,7 +120,6 @@ export async function GET(request: NextRequest) {
     const payableRows = rows.filter((r) => r.net_amount > 0 && r.bank);
 
     if (format === "blkpay") {
-      // Inputs (from the generate form), falling back to saved defaults.
       const debitAccount = (searchParams.get("debitAccount") ?? settings?.debit_account_number ?? "").trim();
       const transactionType = (searchParams.get("transactionType") ?? settings?.transaction_type ?? "NEFT").trim().toUpperCase();
       const currency = (searchParams.get("currency") ?? settings?.currency ?? "INR").trim().toUpperCase();
@@ -140,7 +134,6 @@ export async function GET(request: NextRequest) {
       const fileStamp = `${yyyy}${mmNum}${dd}`;
       const monthLabel = new Date(`${monthYear}-01T00:00:00`).toLocaleString("en-US", { month: "short", year: "numeric" });
 
-      // Persist the entered values as the new defaults.
       await supabase.from("payroll_settings").upsert(
         {
           id: 1,
@@ -152,8 +145,6 @@ export async function GET(request: NextRequest) {
         },
         { onConflict: "id" }
       );
-
-
 
       const aoa: (string | number)[][] = [];
       for (const r of payableRows) {
@@ -189,7 +180,6 @@ export async function GET(request: NextRequest) {
         throw new Error("Template worksheet not found");
       }
       
-      // aoa contains the rows to append
       for (const row of aoa) {
         worksheet.addRow(row);
       }
@@ -205,8 +195,6 @@ export async function GET(request: NextRequest) {
     }
 
     if (format === "neft") {
-
-
       const lines: string[] = [];
       lines.push("NEFT Payment File");
       lines.push(`Generated: ${new Date().toISOString()}`);

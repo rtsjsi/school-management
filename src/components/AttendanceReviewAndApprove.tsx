@@ -112,13 +112,13 @@ export default function AttendanceReviewAndApprove() {
     }
   };
 
-  const handleApprove = async () => {
+  const handleFinalize = async () => {
     if (!data) return;
     setApproving(true);
     setError(null);
     const updates = Object.entries(edits).map(([key, v]) => {
       const [empId, attendance_date] = key.split("::");
-      return { employee_id: empId, attendance_date, status: v.status, in_time: v.in_time, out_time: v.out_time };
+      return { employee_id: empId, attendance_date, status: v.status };
     });
     try {
       if (updates.length > 0) {
@@ -131,7 +131,7 @@ export default function AttendanceReviewAndApprove() {
       const res = await fetch("/api/attendance-review", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "approve", monthYear: data.monthYear }),
+        body: JSON.stringify({ action: "finalize", monthYear: data.monthYear }),
       });
       const json = await res.json();
       if (json.error) throw new Error(json.error);
@@ -158,7 +158,12 @@ export default function AttendanceReviewAndApprove() {
           </Button>
           {data && !data.isApproved && hasEdits && (
             <Button onClick={handleSaveEdits} disabled={saving}>
-              {saving ? "Saving…" : "Save Corrections (WIP)"}
+              {saving ? "Saving…" : "Save Corrections"}
+            </Button>
+          )}
+          {data && !data.isApproved && (
+            <Button onClick={handleFinalize} disabled={approving} variant="default">
+              {approving ? "Finalizing…" : "Finalize Month"}
             </Button>
           )}
         </div>
@@ -169,7 +174,7 @@ export default function AttendanceReviewAndApprove() {
 
         {data?.isApproved && (
           <Badge className="mb-4" variant="default">
-            Approved on {data.approvedAt ? new Date(data.approvedAt).toLocaleString() : "—"}
+            Month Finalized (Locked for Payroll)
           </Badge>
         )}
 
@@ -206,7 +211,8 @@ export default function AttendanceReviewAndApprove() {
                         const status = getStatus(row);
                         const isEditable = row.source !== "holiday" && row.source !== "weekend";
                         return (
-                          <TableCell key={dayData.date} className={cn("text-center p-1", getStatusColor(status))}>
+                          <TableCell key={dayData.date} className={cn("text-center p-1 relative", getStatusColor(status))}>
+                            {row.isManual && <span className="absolute top-0 right-1 text-[10px] font-bold text-foreground/50" title="Manual Override">*</span>}
                             {isEditable ? (
                               <Select
                                 value={status}

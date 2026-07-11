@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -14,14 +14,10 @@ export async function GET(request: NextRequest) {
     const date = searchParams.get("date");
 
     const supabase = await createClient();
-    const admin = createAdminClient();
-    if (!admin) {
-      return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
-    }
 
     const { data: employees } = await supabase
       .from("employees")
-      .select("id, full_name, biometric_enroll_no")
+      .select("id, full_name")
       .eq("status", "active");
 
     const empList = employees ?? [];
@@ -39,12 +35,6 @@ export async function GET(request: NextRequest) {
         .lte("date", end);
       const holidayDates = new Set((holidays ?? []).map((h) => h.date));
 
-      const { data: punches } = await admin
-        .from("biometric_attendance_raw")
-        .select("enroll_no, punched_at, direction")
-        .gte("punched_at", `${start}T00:00:00Z`)
-        .lte("punched_at", `${end}T23:59:59Z`);
-
       const workingDays = (() => {
         let count = 0;
         for (let d = 1; d <= lastDay; d++) {
@@ -55,7 +45,17 @@ export async function GET(request: NextRequest) {
         return count;
       })();
 
+      const { data: finalized } = await supabase
+        .from("employee_attendance_finalized")
+        .select("employee_id, attendance_date, status")
+        .eq("month_year", month);
+
+      if (!finalized || finalized.length === 0) {
+        return NextResponse.json({ error: "Attendance for this month must be Finalized on the Review screen before viewing reports." }, { status: 400 });
+      }
+
       const result = empList.map((emp) => {
+        const empEntries = finalized.filter((f) => f.employee_id === emp.id);
         let presentDaysCount = 0;
 
         for (let d = 1; d <= lastDay; d++) {
@@ -65,18 +65,10 @@ export async function GET(request: NextRequest) {
           const isHoliday = holidayDates.has(dStr);
           if (isHoliday || isWeekend) continue;
 
-          if (emp.biometric_enroll_no) {
-            const dayPunches = (punches ?? []).filter((p) => {
-              if (p.enroll_no !== emp.biometric_enroll_no) return false;
-              return p.punched_at.startsWith(dStr);
-            });
-            
-            if (dayPunches.length > 0) {
-              const hasInPunch = dayPunches.some(p => p.direction === 'IN' || !p.direction);
-              if (hasInPunch || dayPunches.length > 0) {
-                presentDaysCount += 1;
-              }
-            }
+          const entry = empEntries.find((e) => e.attendance_date === dStr);
+          if (entry && (entry.status === "present" || entry.status === "half_day")) {
+            // we'll count half day as full for present/absent simple count, or 0.5 if required. The existing report used integers.
+            presentDaysCount += 1; 
           }
         }
 
@@ -96,40 +88,20 @@ export async function GET(request: NextRequest) {
     }
 
     if ((type === "late" || type === "early" || type === "absent") && date) {
-      const { data: holidays } = await supabase.from("holidays").select("date").eq("date", date);
-      const isHoliday = (holidays ?? []).length > 0;
-      const day = new Date(date).getDay();
-      const isWeekend = day === 0 || day === 6;
+      const monthYear = date.substring(0, 7);
+      
+      const { data: finalized } = await supabase
+        .from("employee_attendance_finalized")
+        .select("employee_id, status")
+        .eq("attendance_date", date);
 
-      if (isHoliday || isWeekend) {
+      if (!finalized || finalized.length === 0) {
         return NextResponse.json({ data: [] });
       }
 
-      const { data: punches } = await admin
-        .from("biometric_attendance_raw")
-        .select("enroll_no, punched_at, direction")
-        .gte("punched_at", `${date}T00:00:00Z`)
-        .lte("punched_at", `${date}T23:59:59Z`);
-
-      const presentIds = new Set<string>();
-
-      empList.forEach((emp) => {
-        if (!emp.biometric_enroll_no) return;
-        const dayPunches = (punches ?? []).filter((p) => {
-          if (p.enroll_no !== emp.biometric_enroll_no) return false;
-          return p.punched_at.startsWith(date);
-        });
-        
-        if (dayPunches.length > 0) {
-          const hasInPunch = dayPunches.some(p => p.direction === 'IN' || !p.direction);
-          if (hasInPunch || dayPunches.length > 0) {
-            presentIds.add(emp.id);
-          }
-        }
-      });
+      const presentIds = new Set(finalized.filter((f) => f.status === "present" || f.status === "half_day").map((f) => f.employee_id));
 
       if (type === "late" || type === "early") {
-        // Late and early concepts are disabled since we don't process exact times against shift configurations strictly right now
         return NextResponse.json({ data: [] });
       }
 
