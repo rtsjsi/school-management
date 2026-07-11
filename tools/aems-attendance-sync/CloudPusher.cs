@@ -100,6 +100,8 @@ namespace AemsAttendanceSync
 
         static PushResult PostJson(string url, string apiKey, string json)
         {
+            EnsureModernTls();
+
             var result = new PushResult();
             try
             {
@@ -152,6 +154,23 @@ namespace AemsAttendanceSync
                 result.Error = ex.Message;
             }
             return result;
+        }
+
+        /// <summary>
+        /// .NET 4.0 defaults to SSL3/TLS1.0; Vercel (and most hosts) require TLS 1.2+.
+        /// Tls12 = 3072 — cast because the enum member may be missing on older reference assemblies.
+        /// </summary>
+        static void EnsureModernTls()
+        {
+            try
+            {
+                const SecurityProtocolType tls12 = (SecurityProtocolType)3072;
+                const SecurityProtocolType tls11 = (SecurityProtocolType)768;
+                ServicePointManager.SecurityProtocol =
+                    ServicePointManager.SecurityProtocol | tls12 | tls11;
+                ServicePointManager.Expect100Continue = false;
+            }
+            catch { }
         }
 
         public static string BuildPayloadJson(int machineNo, IList<PunchRecord> punches)
