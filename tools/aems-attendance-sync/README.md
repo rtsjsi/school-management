@@ -30,14 +30,14 @@ The API **only** inserts into `biometric_attendance_raw` (duplicates skipped). I
 
 Occasional full dumps (`pullAll: true`) are safe — the server unique key ignores punches already stored.
 
-## Build installer (recommended for school PCs)
+## Build installer (single-file Setup.exe)
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\package-installer.ps1
 ```
 
-Output: `dist\AEMSAttendanceSync-Installer\`  
-Zip that folder and run `AEMSAttendanceSync-Setup.exe` on the school PC.
+Output: `dist\AEMSAttendanceSync-Installer\AEMSAttendanceSync-Setup.exe`  
+That one EXE embeds the whole app — copy only that file to the school PC and run as administrator.
 
 ## Build portable tray app
 

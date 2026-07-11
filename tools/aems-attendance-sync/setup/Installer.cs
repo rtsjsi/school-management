@@ -35,14 +35,6 @@ namespace AemsAttendanceSync.Setup
             }
         }
 
-        public static string PayloadDir
-        {
-            get
-            {
-                return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "app");
-            }
-        }
-
         public static string InstalledExe
         {
             get { return Path.Combine(InstallDir, ExeName); }
@@ -50,27 +42,22 @@ namespace AemsAttendanceSync.Setup
 
         public static void Install(Options options)
         {
-            if (!Directory.Exists(PayloadDir))
+            if (!PayloadArchive.HasEmbeddedPayload())
                 throw new InvalidOperationException(
-                    "Could not find the 'app' folder next to " + SetupExeName + ".\n" +
-                    "Keep Setup and the app folder together.");
+                    "This Setup.exe has no embedded app. Rebuild with package-installer.ps1.");
 
             // Reinstall / upgrade: stop the running tray app so EXE/DLLs can be overwritten.
             StopRunningApp();
 
             Directory.CreateDirectory(InstallDir);
-            CopyDirectory(PayloadDir, InstallDir);
+            PayloadArchive.ExtractTo(InstallDir);
             Directory.CreateDirectory(Path.Combine(InstallDir, "logs"));
 
-            string setupSrc = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, SetupExeName);
+            // Copy this Setup.exe into the install folder for Control Panel uninstall.
+            string setupSrc = Application.ExecutablePath;
             string setupDst = Path.Combine(InstallDir, SetupExeName);
             if (File.Exists(setupSrc))
                 CopyFileWithRetry(setupSrc, setupDst);
-
-            string destConfig = Path.Combine(InstallDir, "config.json");
-            string payloadConfig = Path.Combine(PayloadDir, "config.json");
-            if (!File.Exists(destConfig) && File.Exists(payloadConfig))
-                CopyFileWithRetry(payloadConfig, destConfig);
 
             string startMenuDir = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.CommonStartMenu),
@@ -269,24 +256,6 @@ namespace AemsAttendanceSync.Setup
                     key.SetValue(StartupValueName, "\"" + InstalledExe + "\"");
                 else
                     key.DeleteValue(StartupValueName, false);
-            }
-        }
-
-        static void CopyDirectory(string source, string dest)
-        {
-            Directory.CreateDirectory(dest);
-            foreach (string file in Directory.GetFiles(source))
-            {
-                string name = Path.GetFileName(file);
-                if (string.Equals(name, "config.json", StringComparison.OrdinalIgnoreCase)
-                    && File.Exists(Path.Combine(dest, name)))
-                    continue;
-                CopyFileWithRetry(file, Path.Combine(dest, name));
-            }
-            foreach (string dir in Directory.GetDirectories(source))
-            {
-                string name = Path.GetFileName(dir);
-                CopyDirectory(dir, Path.Combine(dest, name));
             }
         }
 

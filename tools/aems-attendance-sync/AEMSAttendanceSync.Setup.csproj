@@ -35,7 +35,11 @@
     <Compile Include="setup\SetupProgram.cs" />
     <Compile Include="setup\SetupForm.cs" />
     <Compile Include="setup\Installer.cs" />
+    <Compile Include="setup\PayloadArchive.cs" />
     <None Include="setup\app.manifest" />
+    <EmbeddedResource Include="setup\payload.pack" Condition="Exists('setup\payload.pack')">
+      <LogicalName>AemsAttendanceSync.Setup.payload.pack</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -1,6 +1,5 @@
 using System;
 using System.Drawing;
-using System.IO;
 using System.Windows.Forms;
 
 namespace AemsAttendanceSync.Setup
@@ -70,10 +69,10 @@ namespace AemsAttendanceSync.Setup
             _status.ForeColor = Color.DimGray;
             Controls.Add(_status);
 
-            if (!Directory.Exists(Installer.PayloadDir))
+            if (!PayloadArchive.HasEmbeddedPayload())
             {
                 _status.ForeColor = Color.Firebrick;
-                _status.Text = "Missing 'app' folder next to this Setup.";
+                _status.Text = "This Setup.exe is incomplete (no embedded app).";
                 _install.Enabled = false;
             }
         }

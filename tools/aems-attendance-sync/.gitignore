@@ -2,6 +2,7 @@ bin/
 obj/
 dist/
 logs/
+setup/payload.pack
 *.user
 *.suo
 .active-enrolls.txt
