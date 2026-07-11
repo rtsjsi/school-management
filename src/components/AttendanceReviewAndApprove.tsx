@@ -37,7 +37,7 @@ const getStatusColor = (status: string) => {
   }
 };
 
-type DayRow = { empId: string; empName: string; date: string; status: string; in_time?: string; out_time?: string; source: string };
+type DayRow = { empId: string; empName: string; date: string; status: string; in_time?: string; out_time?: string; source: string; isManual?: boolean };
 
 export default function AttendanceReviewAndApprove() {
   const [monthYear, setMonthYear] = useState(new Date().toISOString().slice(0, 7));
