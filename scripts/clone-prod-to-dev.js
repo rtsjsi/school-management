@@ -15,8 +15,6 @@ const DEFAULT_DEV_PASSWORD = "Angel@123";
 
 const PUBLIC_TABLES = [
   "academic_years",
-  "employee_attendance_approvals",
-  "employee_attendance_daily",
 
   "employees",
   "exam_result_subjects",
@@ -66,8 +64,6 @@ const INSERT_ORDER = [
   "public.expense_heads",
   "public.expense_budgets",
   "public.expenses",
-  "public.employee_attendance_daily",
-  "public.employee_attendance_approvals",
 
 
 ];

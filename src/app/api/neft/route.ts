@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
-import { dayWeight } from "@/lib/attendance";
 
 export const dynamic = "force-dynamic";
 
@@ -19,16 +18,6 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createClient();
 
-    const { data: approval } = await supabase
-      .from("employee_attendance_approvals")
-      .select("id")
-      .eq("month_year", monthYear)
-      .maybeSingle();
-
-    if (!approval) {
-      return NextResponse.json({ error: "Attendance for this month must be approved before generating NEFT file." }, { status: 400 });
-    }
-
     const [y, m] = monthYear.split("-");
     const start = `${y}-${m}-01`;
     const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate();
@@ -36,7 +25,7 @@ export async function GET(request: NextRequest) {
 
     const { data: employees } = await supabase
       .from("employees")
-      .select("id, full_name, monthly_salary, bank_name, account_number, ifsc_code, account_holder_name, shift_start_time, shift_end_time")
+      .select("id, full_name, monthly_salary, bank_name, account_number, ifsc_code, account_holder_name, biometric_enroll_no")
       .eq("status", "active");
 
     const { data: settings } = await supabase
@@ -46,10 +35,6 @@ export async function GET(request: NextRequest) {
       )
       .eq("id", 1)
       .maybeSingle();
-    const thresholds = {
-      fullDayHours: Number(settings?.full_day_hours ?? DEFAULT_THRESHOLDS.fullDayHours),
-      halfDayHours: Number(settings?.half_day_hours ?? DEFAULT_THRESHOLDS.halfDayHours),
-    };
 
     const { data: holidays } = await supabase
       .from("holidays")
@@ -58,22 +43,17 @@ export async function GET(request: NextRequest) {
       .lte("date", end);
     const holidayDates = new Set((holidays ?? []).map((h) => h.date));
 
-    const { data: manual } = await supabase
-      .from("employee_attendance_daily")
-      .select("employee_id, attendance_date, status, is_approved")
-      .gte("attendance_date", start)
-      .lte("attendance_date", end);
+    const admin = createAdminClient();
+    if (!admin) {
+      return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
+    }
 
-
-
-    const { data: approved } = await supabase
-      .from("employee_attendance_daily")
-      .select("employee_id, attendance_date, status")
-      .eq("month_year", monthYear)
-      .eq("is_approved", true);
-
-    const approvedMap = new Map<string, string>();
-    (approved ?? []).forEach((a) => approvedMap.set(`${a.employee_id}-${a.attendance_date}`, a.status));
+    // Fetch all punches for the month
+    const { data: punches } = await admin
+      .from("biometric_attendance_raw")
+      .select("enroll_no, punched_at, direction")
+      .gte("punched_at", `${start}T00:00:00Z`)
+      .lte("punched_at", `${end}T23:59:59Z`);
 
     const workingDays = (() => {
       let count = 0;
@@ -96,13 +76,10 @@ export async function GET(request: NextRequest) {
       });
     });
 
-
-
     const rows: { employee_id: string; full_name: string; present_days: number; salary: number; gross_amount: number; deductions: number; net_amount: number; bank?: typeof bankMap extends Map<string, infer V> ? V : never }[] = [];
 
     for (const emp of employees ?? []) {
       let presentDays = 0;
-      const empShift = employeeShiftLite(emp);
       for (let d = 1; d <= lastDay; d++) {
         const dStr = `${y}-${m}-${String(d).padStart(2, "0")}`;
         const day = new Date(dStr).getDay();
@@ -110,20 +87,20 @@ export async function GET(request: NextRequest) {
         const isHoliday = holidayDates.has(dStr);
         if (isHoliday || isWeekend) continue;
 
-        // Priority: approved daily status > any saved manual entry > derived from punches.
-        const approvedStatus = approvedMap.get(`${emp.id}-${dStr}`);
-        if (approvedStatus) {
-          presentDays += dayWeight(approvedStatus);
-          continue;
+        if (emp.biometric_enroll_no) {
+          const dayPunches = (punches ?? []).filter((p) => {
+            if (p.enroll_no !== emp.biometric_enroll_no) return false;
+            return p.punched_at.startsWith(dStr);
+          });
+          
+          if (dayPunches.length > 0) {
+            const hasInPunch = dayPunches.some(p => p.direction === 'IN' || !p.direction);
+            if (hasInPunch || dayPunches.length > 0) {
+              presentDays += 1;
+            }
+          }
         }
-        const manEntry = (manual ?? []).find((mm) => mm.employee_id === emp.id && mm.attendance_date === dStr);
-        if (manEntry) {
-          presentDays += dayWeight(manEntry.status);
-          continue;
-        }
-
       }
-      presentDays = Math.round(presentDays * 2) / 2;
 
       const baseSalary = Number(emp.monthly_salary ?? 0);
       const proratedBasic = workingDays > 0 ? (baseSalary / workingDays) * presentDays : 0;

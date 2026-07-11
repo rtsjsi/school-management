@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,9 +14,14 @@ export async function GET(request: NextRequest) {
     const date = searchParams.get("date");
 
     const supabase = await createClient();
+    const admin = createAdminClient();
+    if (!admin) {
+      return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
+    }
+
     const { data: employees } = await supabase
       .from("employees")
-      .select("id, full_name")
+      .select("id, full_name, biometric_enroll_no")
       .eq("status", "active");
 
     const empList = employees ?? [];
@@ -32,20 +39,48 @@ export async function GET(request: NextRequest) {
         .lte("date", end);
       const holidayDates = new Set((holidays ?? []).map((h) => h.date));
 
-      const { data: manual } = await supabase
-        .from("employee_attendance_daily")
-        .select("employee_id, attendance_date, status")
-        .gte("attendance_date", start)
-        .lte("attendance_date", end);
+      const { data: punches } = await admin
+        .from("biometric_attendance_raw")
+        .select("enroll_no, punched_at, direction")
+        .gte("punched_at", `${start}T00:00:00Z`)
+        .lte("punched_at", `${end}T23:59:59Z`);
 
+      const workingDays = (() => {
+        let count = 0;
+        for (let d = 1; d <= lastDay; d++) {
+          const dStr = `${y}-${m}-${String(d).padStart(2, "0")}`;
+          const day = new Date(dStr).getDay();
+          if (day !== 0 && day !== 6 && !holidayDates.has(dStr)) count++;
+        }
+        return count;
+      })();
 
       const result = empList.map((emp) => {
-        const manEntries = (manual ?? []).filter((m) => m.employee_id === emp.id);
-        const presentDays = new Set<string>();
-        manEntries.forEach((m) => {
-          if (m.status === "present" || m.status === "half_day") presentDays.add(m.attendance_date);
-        });
-        const present = presentDays.size;
+        let presentDaysCount = 0;
+
+        for (let d = 1; d <= lastDay; d++) {
+          const dStr = `${y}-${m}-${String(d).padStart(2, "0")}`;
+          const day = new Date(dStr).getDay();
+          const isWeekend = day === 0 || day === 6;
+          const isHoliday = holidayDates.has(dStr);
+          if (isHoliday || isWeekend) continue;
+
+          if (emp.biometric_enroll_no) {
+            const dayPunches = (punches ?? []).filter((p) => {
+              if (p.enroll_no !== emp.biometric_enroll_no) return false;
+              return p.punched_at.startsWith(dStr);
+            });
+            
+            if (dayPunches.length > 0) {
+              const hasInPunch = dayPunches.some(p => p.direction === 'IN' || !p.direction);
+              if (hasInPunch || dayPunches.length > 0) {
+                presentDaysCount += 1;
+              }
+            }
+          }
+        }
+
+        const present = presentDaysCount;
         const absent = Math.max(0, workingDays - present);
         const pct = workingDays > 0 ? (present / workingDays) * 100 : 0;
         return {
@@ -70,18 +105,31 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ data: [] });
       }
 
-      const { data: manual } = await supabase
-        .from("employee_attendance_daily")
-        .select("employee_id, status, employees(full_name)")
-        .eq("attendance_date", date);
+      const { data: punches } = await admin
+        .from("biometric_attendance_raw")
+        .select("enroll_no, punched_at, direction")
+        .gte("punched_at", `${date}T00:00:00Z`)
+        .lte("punched_at", `${date}T23:59:59Z`);
 
       const presentIds = new Set<string>();
-      (manual ?? []).forEach((m) => {
-        if (m.status === "present" || m.status === "half_day") presentIds.add(m.employee_id);
+
+      empList.forEach((emp) => {
+        if (!emp.biometric_enroll_no) return;
+        const dayPunches = (punches ?? []).filter((p) => {
+          if (p.enroll_no !== emp.biometric_enroll_no) return false;
+          return p.punched_at.startsWith(date);
+        });
+        
+        if (dayPunches.length > 0) {
+          const hasInPunch = dayPunches.some(p => p.direction === 'IN' || !p.direction);
+          if (hasInPunch || dayPunches.length > 0) {
+            presentIds.add(emp.id);
+          }
+        }
       });
 
       if (type === "late" || type === "early") {
-        // No punch-based late/early data available without employee_attendance_punches
+        // Late and early concepts are disabled since we don't process exact times against shift configurations strictly right now
         return NextResponse.json({ data: [] });
       }
 
@@ -103,7 +151,8 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ data: [] });
-  } catch {
+  } catch (e) {
+    console.error(e);
     return NextResponse.json({ data: [] });
   }
 }

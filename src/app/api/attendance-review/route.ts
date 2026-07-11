@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
@@ -21,10 +21,9 @@ export async function GET(request: NextRequest) {
 
     const { data: employees } = await supabase
       .from("employees")
-      .select("id, full_name, shift_start_time, shift_end_time")
+      .select("id, full_name, shift_start_time, shift_end_time, biometric_enroll_no")
       .eq("status", "active")
       .order("full_name");
-
 
     const { data: holidays } = await supabase
       .from("holidays")
@@ -33,34 +32,17 @@ export async function GET(request: NextRequest) {
       .lte("date", end);
     const holidayDates = new Set((holidays ?? []).map((h) => h.date));
 
-    const { data: manual } = await supabase
-      .from("employee_attendance_daily")
-      .select("employee_id, attendance_date, status, in_time, out_time, is_approved")
-      .gte("attendance_date", start)
-      .lte("attendance_date", end);
+    const admin = createAdminClient();
+    if (!admin) {
+      return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
+    }
 
-
-
-    const { data: approved } = await supabase
-      .from("employee_attendance_daily")
-      .select("employee_id, attendance_date, status, in_time, out_time")
-      .eq("month_year", monthYear)
-      .eq("is_approved", true);
-
-    const { data: monthApproval } = await supabase
-      .from("employee_attendance_approvals")
-      .select("id, approved_at")
-      .eq("month_year", monthYear)
-      .maybeSingle();
-
-    const approvedMap = new Map<string, { status: string; in_time?: string; out_time?: string }>();
-    (approved ?? []).forEach((a) => {
-      approvedMap.set(`${a.employee_id}-${a.attendance_date}`, {
-        status: a.status,
-        in_time: a.in_time ?? undefined,
-        out_time: a.out_time ?? undefined,
-      });
-    });
+    // Fetch all punches for the month
+    const { data: punches } = await admin
+      .from("biometric_attendance_raw")
+      .select("enroll_no, punched_at, direction")
+      .gte("punched_at", `${start}T00:00:00Z`)
+      .lte("punched_at", `${end}T23:59:59Z`);
 
     const workingDays = (() => {
       let count = 0;
@@ -86,33 +68,35 @@ export async function GET(request: NextRequest) {
         let out_time: string | undefined;
         let source = "default";
 
-        const approvedKey = `${emp.id}-${dStr}`;
-        const approvedEntry = approvedMap.get(approvedKey);
-        if (approvedEntry) {
-          status = approvedEntry.status;
-          in_time = approvedEntry.in_time;
-          out_time = approvedEntry.out_time;
-          source = "approved";
-          } else {
-            const manEntry = (manual ?? []).find((m) => m.employee_id === emp.id && m.attendance_date === dStr && !m.is_approved);
-            if (manEntry) {
-              status = manEntry.status;
-              in_time = manEntry.in_time ?? undefined;
-              out_time = manEntry.out_time ?? undefined;
-              source = "manual";
-            } else {
-              if (isHoliday) {
-                status = "holiday";
-                source = "holiday";
-              } else if (isWeekend) {
-                status = "week_off";
-                source = "weekend";
-              } else {
-                status = "absent";
-                source = "default";
-              }
+        // Check raw punches
+        if (emp.biometric_enroll_no) {
+          const dayPunches = (punches ?? []).filter((p) => {
+            if (p.enroll_no !== emp.biometric_enroll_no) return false;
+            // Compare local date portion
+            const localDate = new Date(p.punched_at).toISOString().split("T")[0]; // Assuming raw data is stored as UTC and ISO gives correct day, this may need adjustment based on timezone. Let's use simple match for now or just substring.
+            // Actually, a simpler way is to check if it starts with the date string if timezone allows
+            return p.punched_at.startsWith(dStr);
+          });
+          
+          if (dayPunches.length > 0) {
+            // User requirement: "if one IN punch means employee present"
+            const hasInPunch = dayPunches.some(p => p.direction === 'IN' || !p.direction);
+            if (hasInPunch || dayPunches.length > 0) {
+              status = "present";
+              source = "biometric";
             }
           }
+        }
+
+        if (status === "absent") {
+          if (isHoliday) {
+            status = "holiday";
+            source = "holiday";
+          } else if (isWeekend) {
+            status = "week_off";
+            source = "weekend";
+          }
+        }
 
         if (!dailyData[dStr]) dailyData[dStr] = [];
         dailyData[dStr].push({
@@ -142,8 +126,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       monthYear,
       workingDays,
-      isApproved: !!monthApproval,
-      approvedAt: monthApproval?.approved_at,
+      isApproved: false, // Legacy field
       employees: (employees ?? []).map((e) => ({
         id: e.id,
         full_name: e.full_name,
@@ -158,66 +141,6 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { action, monthYear, updates, remarks } = body as {
-      action: "save" | "approve";
-      monthYear?: string;
-      updates?: { employee_id: string; attendance_date: string; status: string; in_time?: string; out_time?: string }[];
-      remarks?: string;
-    };
-
-    if (!monthYear) {
-      return NextResponse.json({ error: "monthYear required" }, { status: 400 });
-    }
-
-    const supabase = await createClient();
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (action === "save" && Array.isArray(updates)) {
-      for (const u of updates) {
-        await supabase.from("employee_attendance_daily").upsert(
-          {
-            employee_id: u.employee_id,
-            attendance_date: u.attendance_date,
-            status: u.status,
-            in_time: u.in_time || null,
-            out_time: u.out_time || null,
-            month_year: monthYear,
-            source: "approved",
-            is_approved: true,
-            approved_by: user.id,
-            approved_at: new Date().toISOString(),
-            remarks: remarks || null,
-          },
-          { onConflict: "employee_id,attendance_date" }
-        );
-      }
-      return NextResponse.json({ success: true });
-    }
-
-    if (action === "approve") {
-      const { error } = await supabase.from("employee_attendance_approvals").upsert(
-        {
-          month_year: monthYear,
-          approved_by: user.id,
-          approved_at: new Date().toISOString(),
-          remarks: remarks || null,
-        },
-        { onConflict: "month_year" }
-      );
-      if (error) {
-        return NextResponse.json({ error: error.message }, { status: 400 });
-      }
-      return NextResponse.json({ success: true });
-    }
-
-    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
-  } catch (e) {
-    console.error(e);
-    return NextResponse.json({ error: "Failed" }, { status: 500 });
-  }
+  // Manual override table not yet implemented, returning 501
+  return NextResponse.json({ error: "Manual override table not yet implemented." }, { status: 501 });
 }

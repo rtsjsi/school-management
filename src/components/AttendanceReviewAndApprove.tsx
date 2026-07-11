@@ -72,10 +72,8 @@ export default function AttendanceReviewAndApprove() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => {
-    fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [monthYear]);
+  // Removed auto-fetch on mount. Data must be fetched manually.
+
 
   const getCellKey = (empId: string, date: string) => `${empId}::${date}`;
 
@@ -160,12 +158,7 @@ export default function AttendanceReviewAndApprove() {
           </Button>
           {data && !data.isApproved && hasEdits && (
             <Button onClick={handleSaveEdits} disabled={saving}>
-              {saving ? "Saving…" : "Save Corrections"}
-            </Button>
-          )}
-          {data && !data.isApproved && (
-            <Button onClick={handleApprove} disabled={approving}>
-              {approving ? "Approving…" : "Approve Month"}
+              {saving ? "Saving…" : "Save Corrections (WIP)"}
             </Button>
           )}
         </div>
