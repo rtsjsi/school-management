@@ -59,7 +59,6 @@ namespace AemsAttendanceSync
             Controls.Add(card);
 
             _indicator.Text = "⚪";
-            _indicator.Font = new Font("Segoe UI Emoji", 11f);
             _indicator.SetBounds(16, 16, 24, 22);
             card.Controls.Add(_indicator);
 
@@ -149,6 +148,12 @@ namespace AemsAttendanceSync
                 cfg.Ip, cfg.Port, cfg.MachineNumber);
             _status.Text = "Status: " + (statusText ?? "idle");
             _status.ForeColor = Color.FromArgb(40, 40, 40);
+            
+            // Set default green indicator when ready and waiting
+            if (_indicator.Text == "⚪" || _indicator.Text == "")
+            {
+                _indicator.Text = "🟢";
+            }
         }
 
         public void SetLastSync(DateTime? when, int count, string detail)

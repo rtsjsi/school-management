@@ -115,99 +115,100 @@ namespace AemsAttendanceSync
         void TestDeviceClick(object sender, EventArgs e)
         {
             AppLog.Separator();
+            AppLog.Info("--- Starting ['Test device' button] sequence ---");
             _status.Text = "⚪ Testing biometric device...";
             _status.ForeColor = Color.DimGray;
             Application.DoEvents();
-            try
+
+            var settings = new DeviceSettings
             {
-                var settings = new DeviceSettings
-                {
-                    Ip = _ip.Text.Trim(),
-                    Port = (int)_port.Value,
-                    MachineNumber = (int)_machine.Value,
-                    Password = (int)_password.Value
-                };
+                Ip = _ip.Text.Trim(),
+                Port = (int)_port.Value,
+                MachineNumber = (int)_machine.Value,
+                Password = (int)_password.Value
+            };
 
-                bool ok = false;
-                string failDetail = null;
-                string busy;
-                if (!DeviceGate.TryRun(() =>
+            ThreadPool.QueueUserWorkItem(_ =>
+            {
+                try
                 {
-                    // Clear any leftover native session from Sync so Test does not hit ERR_NON_CARRYOUT.
-                    DeviceClient.ResetNativeSession(settings.MachineNumber);
-                    Thread.Sleep(250);
-
-                    DeviceClient client = null;
-                    try
+                    bool ok = false;
+                    string failDetail = null;
+                    string busy;
+                    if (!DeviceGate.TryRun(() =>
                     {
-                        client = new DeviceClient(settings);
-                        if (!client.Connect())
+                        DeviceClient client = null;
+                        try
                         {
-                            bool healed = false;
-                            string macInput = _macAddress.Text.Trim();
-                            if (!string.IsNullOrWhiteSpace(macInput))
+                            client = new DeviceClient(settings);
+                            if (!client.Connect())
                             {
-                                string newIp = MacResolver.FindIpByMac(macInput, settings.Ip);
-                                if (newIp != null && newIp != settings.Ip)
+                                bool healed = false;
+                                string macInput = _macAddress.Text.Trim();
+                                if (!string.IsNullOrWhiteSpace(macInput))
                                 {
-                                    if (_ip.InvokeRequired)
-                                        _ip.BeginInvoke(new Action(() => _ip.Text = newIp));
-                                    else
-                                        _ip.Text = newIp;
-                                        
-                                    settings.Ip = newIp;
-                                    client.Dispose();
-                                    client = new DeviceClient(settings);
-                                    if (client.Connect())
+                                    string newIp = MacResolver.FindIpByMac(macInput, settings.Ip);
+                                    if (newIp != null && newIp != settings.Ip)
                                     {
-                                        healed = true;
+                                        if (_ip.InvokeRequired)
+                                            _ip.BeginInvoke(new Action(() => _ip.Text = newIp));
+                                        else
+                                            _ip.Text = newIp;
+                                            
+                                        settings.Ip = newIp;
+                                        client.Dispose();
+                                        client = new DeviceClient(settings);
+                                        if (client.Connect())
+                                        {
+                                            healed = true;
+                                        }
                                     }
                                 }
-                            }
 
-                            if (!healed)
-                            {
-                                AppLog.Error("['Test device' button] failed — " + client.LastErrorText());
-                                failDetail = client.NotReachableMessage();
-                                ok = false;
-                                return;
+                                if (!healed)
+                                {
+                                    AppLog.Error("['Test device' button] failed — " + client.LastErrorText());
+                                    failDetail = client.NotReachableMessage();
+                                    ok = false;
+                                    return;
+                                }
                             }
+                            
+                            AppLog.Info("['Test device' button] connection established successfully at " + settings.Ip + ":" + settings.Port);
+                            client.Disconnect();
+                            ok = true;
                         }
-                        
-                        AppLog.Info("['Test device' button] connection established successfully at " + settings.Ip + ":" + settings.Port);
-                        client.Disconnect();
-                        ok = true;
-                    }
-                    finally
-                    {
-                        if (client != null)
+                        finally
                         {
-                            client.Dispose();
+                            if (client != null)
+                            {
+                                client.Dispose();
+                            }
                         }
+                    }, 15000, out busy))
+                    {
+                        if (InvokeRequired) BeginInvoke(new Action(() => { _status.ForeColor = Color.Firebrick; _status.Text = "🔴 Device: " + (busy ?? "busy"); }));
+                        else { _status.ForeColor = Color.Firebrick; _status.Text = "🔴 Device: " + (busy ?? "busy"); }
+                        return;
                     }
-                }, 15000, out busy))
-                {
-                    _status.ForeColor = Color.Firebrick;
-                    _status.Text = "🔴 Device: " + (busy ?? "busy");
-                    return;
-                }
 
-                if (!ok)
-                {
-                    _status.ForeColor = Color.Firebrick;
-                    _status.Text = "🔴 " + (failDetail ?? "Biometric device is not reachable at the configured IP.");
-                    return;
-                }
+                    if (!ok)
+                    {
+                        if (InvokeRequired) BeginInvoke(new Action(() => { _status.ForeColor = Color.Firebrick; _status.Text = "🔴 " + (failDetail ?? "Biometric device is not reachable at the configured IP."); }));
+                        else { _status.ForeColor = Color.Firebrick; _status.Text = "🔴 " + (failDetail ?? "Biometric device is not reachable at the configured IP."); }
+                        return;
+                    }
 
-                _status.ForeColor = Color.DarkGreen;
-                _status.Text = "🟢 Device OK. You can Save & Start.";
-            }
-            catch (Exception ex)
-            {
-                AppLog.Error("['Test device' button] exception", ex);
-                _status.ForeColor = Color.Firebrick;
-                _status.Text = "🔴 Device: " + ex.Message;
-            }
+                    if (InvokeRequired) BeginInvoke(new Action(() => { _status.ForeColor = Color.DarkGreen; _status.Text = "🟢 Device OK. You can Save & Start."; }));
+                    else { _status.ForeColor = Color.DarkGreen; _status.Text = "🟢 Device OK. You can Save & Start."; }
+                }
+                catch (Exception ex)
+                {
+                    AppLog.Error("['Test device' button] exception", ex);
+                    if (InvokeRequired) BeginInvoke(new Action(() => { _status.ForeColor = Color.Firebrick; _status.Text = "🔴 Error: " + ex.Message; }));
+                    else { _status.ForeColor = Color.Firebrick; _status.Text = "🔴 Error: " + ex.Message; }
+                }
+            });
         }
 
         void TestCloudClick(object sender, EventArgs e)
