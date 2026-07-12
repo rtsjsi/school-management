@@ -58,20 +58,20 @@ namespace AemsAttendanceSync
             card.Padding = new Padding(12);
             Controls.Add(card);
 
-            _indicator.Text = "⚪";
-            _indicator.SetBounds(16, 16, 24, 22);
-            card.Controls.Add(_indicator);
-
             _device.Text = "Device: not configured";
-            _device.SetBounds(40, 16, 376, 22);
+            _device.SetBounds(16, 12, 400, 20);
             card.Controls.Add(_device);
 
+            _indicator.Text = "Connection: Unknown";
+            _indicator.SetBounds(16, 36, 400, 20);
+            card.Controls.Add(_indicator);
+
             _lastSync.Text = "Last sync: never";
-            _lastSync.SetBounds(16, 44, 400, 22);
+            _lastSync.SetBounds(16, 60, 400, 20);
             card.Controls.Add(_lastSync);
 
             _status.Text = "Status: idle";
-            _status.SetBounds(16, 72, 400, 22);
+            _status.SetBounds(16, 84, 400, 20);
             _status.ForeColor = Color.FromArgb(40, 40, 40);
             card.Controls.Add(_status);
 
@@ -136,7 +136,8 @@ namespace AemsAttendanceSync
             AppConfig cfg = _getConfig != null ? _getConfig() : null;
             if (cfg == null || !cfg.Configured)
             {
-                _indicator.Text = "⚪";
+                _indicator.Text = "Connection: Not Configured";
+                _indicator.ForeColor = Color.DarkOrange;
                 _device.Text = "Device: not configured — open Settings";
                 _lastSync.Text = "Last sync: —";
                 _status.Text = "Status: waiting for setup";
@@ -149,10 +150,10 @@ namespace AemsAttendanceSync
             _status.Text = "Status: " + (statusText ?? "idle");
             _status.ForeColor = Color.FromArgb(40, 40, 40);
             
-            // Set default green indicator when ready and waiting
-            if (_indicator.Text == "⚪" || _indicator.Text == "")
+            if (_indicator.Text == "Connection: Unknown" || _indicator.Text == "Connection: Not Configured" || _indicator.Text == "")
             {
-                _indicator.Text = "🟢";
+                _indicator.Text = "Connection: Ready";
+                _indicator.ForeColor = Color.DarkGreen;
             }
         }
 
@@ -181,7 +182,9 @@ namespace AemsAttendanceSync
                 _status.Text = "Status: " + detail;
                 bool isError = detail.StartsWith("Error", StringComparison.OrdinalIgnoreCase);
                 _status.ForeColor = isError ? Color.Firebrick : Color.FromArgb(40, 40, 40);
-                _indicator.Text = isError ? "🔴" : "🟢";
+                
+                _indicator.Text = isError ? "Connection: Error" : "Connection: OK";
+                _indicator.ForeColor = isError ? Color.Firebrick : Color.DarkGreen;
             }
         }
 
