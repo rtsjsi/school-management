@@ -144,6 +144,7 @@ export async function GET(request: NextRequest) {
       monthYear,
       workingDays,
       isApproved,
+      currentUserRole: user.role,
       employees: (employees ?? []).map((e) => ({
         id: e.id,
         full_name: e.full_name,
@@ -161,7 +162,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { action, monthYear, updates } = body as {
-      action: "save" | "finalize";
+      action: "save" | "finalize" | "unfreeze";
       monthYear?: string;
       updates?: { employee_id: string; attendance_date: string; status: string; }[];
     };
@@ -259,6 +260,23 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 400 });
       }
 
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === "unfreeze") {
+      if (user.role !== "principal") {
+        return NextResponse.json({ error: "Only Principal can unfreeze months." }, { status: 403 });
+      }
+      const { error } = await supabase
+        .from("employee_attendance_finalized")
+        .delete()
+        .eq("month_year", monthYear)
+        .eq("is_manual_override", false);
+        
+      if (error) {
+        console.error("Unfreeze error:", error);
+        return NextResponse.json({ error: error.message }, { status: 400 });
+      }
       return NextResponse.json({ success: true });
     }
 

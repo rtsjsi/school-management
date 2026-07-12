@@ -38,6 +38,7 @@ export function FeeStructureRowActions({ structure }: { structure: Structure }) 
             <DialogTitle>Edit Fee Structure</DialogTitle>
           </DialogHeader>
           <FeeStructureForm
+            key={editOpen ? "open" : "closed"}
             structureId={structure.id}
             onSuccess={() => setEditOpen(false)}
             onCancel={() => setEditOpen(false)}

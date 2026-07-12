@@ -47,10 +47,7 @@ namespace AemsAttendanceSync
             _timer = new System.Windows.Forms.Timer();
             _timer.Tick += (s, e) => StartSync(false);
 
-            if (!silent)
-            {
-                _main.Show();
-            }
+            // _main.Show(); is removed to start in tray only
             _main.RefreshStatus(_config.Configured ? "Ready" : "Not configured");
 
             if (_config.Configured)

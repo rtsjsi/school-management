@@ -901,7 +901,7 @@ export function ManageStudentsList({
                         Fill in the admission form to create a new student record.
                       </DialogDescription>
                     </DialogHeader>
-                    <StudentEntryForm />
+                    <StudentEntryForm key={addOpen ? "open" : "closed"} />
                   </DialogContent>
                 </Dialog>
               )}

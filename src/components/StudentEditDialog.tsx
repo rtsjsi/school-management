@@ -55,6 +55,11 @@ function StudentEditFormInline({ student, onSaved, onCancel }: StudentEditFormPr
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<StudentFormState>(() => studentFormFromRecord(student));
 
+  useEffect(() => {
+    setForm(studentFormFromRecord(student));
+    setError(null);
+  }, [student]);
+
   const set = (key: keyof StudentFormState, value: string | number | boolean) =>
     setForm((p) => ({ ...p, [key]: value }));
 
