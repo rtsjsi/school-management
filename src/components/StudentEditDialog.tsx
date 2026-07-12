@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { SubmitButton } from "@/components/ui/SubmitButton";
@@ -54,6 +54,11 @@ function StudentEditFormInline({ student, onSaved, onCancel }: StudentEditFormPr
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<StudentFormState>(() => studentFormFromRecord(student));
+
+  useEffect(() => {
+    setForm(studentFormFromRecord(student));
+    setError(null);
+  }, [student]);
 
   const set = (key: keyof StudentFormState, value: string | number | boolean) =>
     setForm((p) => ({ ...p, [key]: value }));

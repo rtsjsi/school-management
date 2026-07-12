@@ -155,3 +155,22 @@ export function dayWeight(status: string | null | undefined): number {
   if (status === "half_day") return 0.5;
   return 0;
 }
+
+/**
+ * Count working days (weekdays minus holidays) in a given month.
+ * Uses noon-anchored date parsing to avoid timezone edge cases.
+ */
+export function computeWorkingDays(
+  year: string,
+  month: string,
+  lastDay: number,
+  holidayDates: Set<string>,
+): number {
+  let count = 0;
+  for (let d = 1; d <= lastDay; d++) {
+    const dStr = `${year}-${month}-${String(d).padStart(2, "0")}`;
+    const day = new Date(`${dStr}T12:00:00`).getDay();
+    if (day !== 0 && day !== 6 && !holidayDates.has(dStr)) count++;
+  }
+  return count;
+}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
+import { dayWeight, computeWorkingDays } from "@/lib/attendance";
 
 export const dynamic = "force-dynamic";
 
@@ -35,15 +36,7 @@ export async function GET(request: NextRequest) {
         .lte("date", end);
       const holidayDates = new Set((holidays ?? []).map((h) => h.date));
 
-      const workingDays = (() => {
-        let count = 0;
-        for (let d = 1; d <= lastDay; d++) {
-          const dStr = `${y}-${m}-${String(d).padStart(2, "0")}`;
-          const day = new Date(dStr).getDay();
-          if (day !== 0 && day !== 6 && !holidayDates.has(dStr)) count++;
-        }
-        return count;
-      })();
+      const workingDays = computeWorkingDays(y, m, lastDay, holidayDates);
 
       const { data: finalized } = await supabase
         .from("employee_attendance_finalized")
@@ -56,23 +49,21 @@ export async function GET(request: NextRequest) {
 
       const result = empList.map((emp) => {
         const empEntries = finalized.filter((f) => f.employee_id === emp.id);
-        let presentDaysCount = 0;
+        let presentWeight = 0;
 
         for (let d = 1; d <= lastDay; d++) {
           const dStr = `${y}-${m}-${String(d).padStart(2, "0")}`;
-          const day = new Date(dStr).getDay();
+          const day = new Date(`${dStr}T12:00:00`).getDay();
           const isWeekend = day === 0 || day === 6;
           const isHoliday = holidayDates.has(dStr);
           if (isHoliday || isWeekend) continue;
 
           const entry = empEntries.find((e) => e.attendance_date === dStr);
-          if (entry && (entry.status === "present" || entry.status === "half_day")) {
-            // we'll count half day as full for present/absent simple count, or 0.5 if required. The existing report used integers.
-            presentDaysCount += 1; 
-          }
+          // Use dayWeight: present=1, half_day=0.5, absent/leave=0
+          presentWeight += dayWeight(entry?.status);
         }
 
-        const present = presentDaysCount;
+        const present = presentWeight;
         const absent = Math.max(0, workingDays - present);
         const pct = workingDays > 0 ? (present / workingDays) * 100 : 0;
         return {
@@ -80,16 +71,12 @@ export async function GET(request: NextRequest) {
           present,
           absent,
           percentage: pct,
-          late_count: 0,
-          early_count: 0,
         };
       });
       return NextResponse.json({ data: result });
     }
 
-    if ((type === "late" || type === "early" || type === "absent") && date) {
-      const monthYear = date.substring(0, 7);
-      
+    if (type === "absent" && date) {
       const { data: finalized } = await supabase
         .from("employee_attendance_finalized")
         .select("employee_id, status")
@@ -101,25 +88,17 @@ export async function GET(request: NextRequest) {
 
       const presentIds = new Set(finalized.filter((f) => f.status === "present" || f.status === "half_day").map((f) => f.employee_id));
 
-      if (type === "late" || type === "early") {
-        return NextResponse.json({ data: [] });
-      }
-
-      if (type === "absent") {
-        const absentIds = empList.filter((e) => !presentIds.has(e.id)).map((e) => e.id);
-        const result = absentIds.map((id) => {
-          const emp = empList.find((e) => e.id === id);
-          return {
-            employee_name: emp?.full_name ?? "—",
-            present: 0,
-            absent: 1,
-            percentage: 0,
-            late_count: 0,
-            early_count: 0,
-          };
-        });
-        return NextResponse.json({ data: result });
-      }
+      const absentIds = empList.filter((e) => !presentIds.has(e.id)).map((e) => e.id);
+      const result = absentIds.map((id) => {
+        const emp = empList.find((e) => e.id === id);
+        return {
+          employee_name: emp?.full_name ?? "—",
+          present: 0,
+          absent: 1,
+          percentage: 0,
+        };
+      });
+      return NextResponse.json({ data: result });
     }
 
     return NextResponse.json({ data: [] });
