@@ -235,12 +235,15 @@ namespace AemsAttendanceSync
                 req.ReadWriteTimeout = 60000;
                 req.UserAgent = "AEMSAttendanceSync/1.0";
 
+                AppLog.Info("Preparing POST request to cloud URL: " + url);
+
                 string key = (apiKey ?? "").Trim();
                 if (!string.IsNullOrEmpty(key))
                     req.Headers["Authorization"] = "Bearer " + key;
 
                 byte[] bytes = Encoding.UTF8.GetBytes(json ?? "{}");
                 req.ContentLength = bytes.Length;
+                AppLog.Info("Sending POST request with payload length: " + bytes.Length + " bytes");
                 using (Stream stream = req.GetRequestStream())
                 {
                     stream.Write(bytes, 0, bytes.Length);

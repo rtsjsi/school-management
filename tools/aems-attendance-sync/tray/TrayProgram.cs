@@ -19,7 +19,7 @@ namespace AemsAttendanceSync
         static Mutex _mutex;
 
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
             bool createdNew;
             try
@@ -73,7 +73,8 @@ namespace AemsAttendanceSync
             using (var showEvent = new EventWaitHandle(false, EventResetMode.AutoReset, ShowEventName))
             using (var exitEvent = new EventWaitHandle(false, EventResetMode.AutoReset, ExitEventName))
             {
-                var ctx = new TrayApplicationContext();
+                bool silent = args.Length > 0 && args[0].ToLowerInvariant() == "-silent";
+                var ctx = new TrayApplicationContext(silent);
                 StartShowWatcher(showEvent, ctx);
                 StartExitWatcher(exitEvent, ctx);
                 try

@@ -21,6 +21,19 @@ namespace AemsAttendanceSync
             }
         }
 
+        public static void Separator()
+        {
+            try
+            {
+                lock (Gate)
+                {
+                    Directory.CreateDirectory(AppConfig.LogsDir);
+                    File.AppendAllText(TodayFilePath, Environment.NewLine + new string('=', 80) + Environment.NewLine, Encoding.UTF8);
+                }
+            }
+            catch { }
+        }
+
         public static void Info(string message)
         {
             Write("INFO", message, null);

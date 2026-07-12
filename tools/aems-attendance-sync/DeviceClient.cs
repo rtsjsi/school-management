@@ -149,9 +149,14 @@ namespace AemsAttendanceSync
             // because EnableDevice can also return NON_CARRYOUT on a live session.
             if (err == 5)
             {
-                AppLog.Info("ConnectTcpip returned ERR_NON_CARRYOUT(5) — treating as already connected.");
-                _connected = true;
-                return true;
+                if (SoftProbeSession(machineNumber))
+                {
+                    AppLog.Info("ConnectTcpip returned ERR_NON_CARRYOUT(5) and probe succeeded — treating as connected.");
+                    _connected = true;
+                    return true;
+                }
+                AppLog.Info("ConnectTcpip returned ERR_NON_CARRYOUT(5) but probe failed — device is busy or session is dead.");
+                return false;
             }
 
             // 0 = SUCCESS leftover with false return — probe before trusting it.
@@ -233,9 +238,11 @@ namespace AemsAttendanceSync
             if (!_connected) return;
             try
             {
+                AppLog.Info("Closing connection and sending Disconnect signal to device...");
                 try { SBXPCDLL.EnableDevice(_settings.MachineNumber, 1); }
                 catch { }
                 SBXPCDLL.Disconnect(_settings.MachineNumber);
+                AppLog.Info("Device Disconnect signal sent.");
             }
             catch (AccessViolationException ex)
             {
@@ -281,10 +288,9 @@ namespace AemsAttendanceSync
         /// <summary>Clear user-facing message when Connect() fails.</summary>
         public string NotReachableMessage()
         {
-            return "Biometric device is not reachable at configured IP "
-                + _settings.Ip.Trim()
-                + " (port " + _settings.Port + "). "
-                + "Check the device is powered on, on the same network, and the IP in Settings is correct.";
+            return "Biometric device is not reachable at configured IP " + _settings.Ip + " (port " + _settings.Port + ").\n" +
+                   "Check the device is powered on, on the same network, and the IP in Settings is correct.\n" +
+                   "Detail: " + LastErrorText();
         }
 
         void Fail(string message)

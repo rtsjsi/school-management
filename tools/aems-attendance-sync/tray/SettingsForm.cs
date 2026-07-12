@@ -11,6 +11,7 @@ namespace AemsAttendanceSync
         readonly NumericUpDown _port = new NumericUpDown();
         readonly NumericUpDown _machine = new NumericUpDown();
         readonly NumericUpDown _password = new NumericUpDown();
+        readonly TextBox _macAddress = new TextBox();
         readonly NumericUpDown _interval = new NumericUpDown();
         readonly CheckBox _pullAll = new CheckBox();
         readonly CheckBox _startWithWindows = new CheckBox();
@@ -32,11 +33,12 @@ namespace AemsAttendanceSync
             MaximizeBox = false;
             MinimizeBox = false;
             StartPosition = FormStartPosition.CenterScreen;
-            ClientSize = new Size(480, 500);
+            ClientSize = new Size(480, 540);
             Font = new Font("Segoe UI", 9F);
 
             int y = 16;
             AddLabel("Device IP", 16, y); _ip.SetBounds(160, y - 2, 290, 24); _ip.Text = cfg.Ip ?? ""; Controls.Add(_ip); y += 36;
+            AddLabel("MAC Address", 16, y); _macAddress.SetBounds(160, y - 2, 290, 24); _macAddress.Text = cfg.MacAddress ?? ""; Controls.Add(_macAddress); y += 36;
             AddLabel("Port", 16, y); _port.SetBounds(160, y - 2, 100, 24); _port.Minimum = 1; _port.Maximum = 65535; _port.Value = Clamp(cfg.Port, 1, 65535); Controls.Add(_port); y += 36;
             AddLabel("Machine number", 16, y); _machine.SetBounds(160, y - 2, 100, 24); _machine.Minimum = 1; _machine.Maximum = 999; _machine.Value = Clamp(cfg.MachineNumber, 1, 999); Controls.Add(_machine); y += 36;
             AddLabel("Comm password", 16, y); _password.SetBounds(160, y - 2, 100, 24); _password.Minimum = 0; _password.Maximum = 999999; _password.Value = Clamp(cfg.Password, 0, 999999); Controls.Add(_password); y += 36;
@@ -90,6 +92,7 @@ namespace AemsAttendanceSync
             y += 40;
 
             _status.SetBounds(16, y, 440, 48);
+            _status.Font = new Font("Segoe UI Emoji", 9F);
             _status.ForeColor = Color.DimGray;
             Controls.Add(_status);
         }
@@ -111,7 +114,8 @@ namespace AemsAttendanceSync
 
         void TestDeviceClick(object sender, EventArgs e)
         {
-            _status.Text = "Testing biometric device...";
+            AppLog.Separator();
+            _status.Text = "⚪ Testing biometric device...";
             _status.ForeColor = Color.DimGray;
             Application.DoEvents();
             try
@@ -133,44 +137,82 @@ namespace AemsAttendanceSync
                     DeviceClient.ResetNativeSession(settings.MachineNumber);
                     Thread.Sleep(250);
 
-                    using (var client = new DeviceClient(settings))
+                    DeviceClient client = null;
+                    try
                     {
+                        client = new DeviceClient(settings);
                         if (!client.Connect())
                         {
-                            AppLog.Error("Test device failed — " + client.LastErrorText());
-                            failDetail = client.NotReachableMessage();
-                            ok = false;
-                            return;
+                            bool healed = false;
+                            string macInput = _macAddress.Text.Trim();
+                            if (!string.IsNullOrWhiteSpace(macInput))
+                            {
+                                string newIp = MacResolver.FindIpByMac(macInput, settings.Ip);
+                                if (newIp != null && newIp != settings.Ip)
+                                {
+                                    if (_ip.InvokeRequired)
+                                        _ip.BeginInvoke(new Action(() => _ip.Text = newIp));
+                                    else
+                                        _ip.Text = newIp;
+                                        
+                                    settings.Ip = newIp;
+                                    client.Dispose();
+                                    client = new DeviceClient(settings);
+                                    if (client.Connect())
+                                    {
+                                        healed = true;
+                                    }
+                                }
+                            }
+
+                            if (!healed)
+                            {
+                                AppLog.Error("['Test device' button] failed — " + client.LastErrorText());
+                                failDetail = client.NotReachableMessage();
+                                ok = false;
+                                return;
+                            }
                         }
+                        
+                        AppLog.Info("['Test device' button] connection established successfully at " + settings.Ip + ":" + settings.Port);
                         client.Disconnect();
                         ok = true;
+                    }
+                    finally
+                    {
+                        if (client != null)
+                        {
+                            client.Dispose();
+                        }
                     }
                 }, 15000, out busy))
                 {
                     _status.ForeColor = Color.Firebrick;
-                    _status.Text = "Device: " + (busy ?? "busy");
+                    _status.Text = "🔴 Device: " + (busy ?? "busy");
                     return;
                 }
 
                 if (!ok)
                 {
                     _status.ForeColor = Color.Firebrick;
-                    _status.Text = failDetail ?? "Biometric device is not reachable at the configured IP.";
+                    _status.Text = "🔴 " + (failDetail ?? "Biometric device is not reachable at the configured IP.");
                     return;
                 }
 
                 _status.ForeColor = Color.DarkGreen;
-                _status.Text = "Device OK. You can Save & Start.";
+                _status.Text = "🟢 Device OK. You can Save & Start.";
             }
             catch (Exception ex)
             {
+                AppLog.Error("['Test device' button] exception", ex);
                 _status.ForeColor = Color.Firebrick;
-                _status.Text = "Device: " + ex.Message;
+                _status.Text = "🔴 Device: " + ex.Message;
             }
         }
 
         void TestCloudClick(object sender, EventArgs e)
         {
+            AppLog.Separator();
             string url = _apiBaseUrl.Text.Trim().TrimEnd('/');
             string key = _apiKey.Text.Trim();
 
@@ -231,6 +273,7 @@ namespace AemsAttendanceSync
             }
             catch (Exception ex)
             {
+                AppLog.Error("['Test cloud' button] exception", ex);
                 _status.ForeColor = Color.Firebrick;
                 _status.Text = "Cloud: " + ex.Message;
             }
@@ -269,6 +312,7 @@ namespace AemsAttendanceSync
             }
 
             Result.Ip = _ip.Text.Trim();
+            Result.MacAddress = _macAddress.Text.Trim();
             Result.Port = (int)_port.Value;
             Result.MachineNumber = (int)_machine.Value;
             Result.Password = (int)_password.Value;
@@ -279,6 +323,10 @@ namespace AemsAttendanceSync
             Result.ApiKey = _apiKey.Text.Trim();
             Result.PushEnabled = _pushEnabled.Checked;
             Result.Configured = true;
+
+            AppLog.Info(string.Format("User saved Settings (IP: {0}, Port: {1}, Machine: {2}, Interval: {3}m, Push: {4})",
+                Result.Ip, Result.Port, Result.MachineNumber, Result.IntervalMinutes, Result.PushEnabled));
+
             DialogResult = DialogResult.OK;
             Close();
         }

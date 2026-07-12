@@ -40,6 +40,7 @@
     <Compile Include="tray\UsersForm.cs" />
     <Compile Include="AppConfig.cs" />
     <Compile Include="AppLog.cs" />
+    <Compile Include="MacResolver.cs" />
     <Compile Include="CloudPusher.cs" />
     <Compile Include="DeviceClient.cs" />
     <Compile Include="DeviceGate.cs" />

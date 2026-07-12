@@ -21,6 +21,7 @@ namespace AemsAttendanceSync
         public bool PullAll { get; set; }
         public bool StartWithWindows { get; set; }
         public bool Configured { get; set; }
+        public string MacAddress { get; set; }
 
         /// <summary>School management app base URL, e.g. https://your-app.vercel.app</summary>
         public string ApiBaseUrl { get; set; }
@@ -68,7 +69,8 @@ namespace AemsAttendanceSync
                 Configured = false,
                 ApiBaseUrl = "",
                 ApiKey = "",
-                PushEnabled = false
+                PushEnabled = false,
+                MacAddress = ""
             };
         }
 
@@ -133,7 +135,8 @@ namespace AemsAttendanceSync
             sb.AppendFormat(CultureInfo.InvariantCulture, "  \"configured\": {0},\r\n", Configured ? "true" : "false");
             sb.AppendFormat(CultureInfo.InvariantCulture, "  \"apiBaseUrl\": \"{0}\",\r\n", Escape(ApiBaseUrl));
             sb.AppendFormat(CultureInfo.InvariantCulture, "  \"apiKey\": \"{0}\",\r\n", Escape(ApiKey));
-            sb.AppendFormat(CultureInfo.InvariantCulture, "  \"pushEnabled\": {0}\r\n", PushEnabled ? "true" : "false");
+            sb.AppendFormat(CultureInfo.InvariantCulture, "  \"pushEnabled\": {0},\r\n", PushEnabled ? "true" : "false");
+            sb.AppendFormat(CultureInfo.InvariantCulture, "  \"macAddress\": \"{0}\"\r\n", Escape(MacAddress));
             sb.AppendLine("}");
             File.WriteAllText(ConfigPath, sb.ToString(), Encoding.UTF8);
         }
@@ -166,6 +169,9 @@ namespace AemsAttendanceSync
             if (apiBase != null) cfg.ApiBaseUrl = apiBase;
             string apiKey = ExtractString(json, "apiKey");
             if (apiKey != null) cfg.ApiKey = apiKey;
+
+            string mac = ExtractString(json, "macAddress");
+            if (mac != null) cfg.MacAddress = mac;
 
             int? v;
             v = ExtractInt(json, "machineNumber"); if (v.HasValue) cfg.MachineNumber = v.Value;
@@ -246,7 +252,7 @@ namespace AemsAttendanceSync
                 if (enabled)
                 {
                     string exe = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AEMSAttendanceSync.exe");
-                    key.SetValue(AppName, "\"" + exe + "\"");
+                    key.SetValue(AppName, "\"" + exe + "\" -silent");
                 }
                 else
                 {

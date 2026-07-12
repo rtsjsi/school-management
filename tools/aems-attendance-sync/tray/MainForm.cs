@@ -11,6 +11,7 @@ namespace AemsAttendanceSync
     public sealed class MainForm : Form
     {
         readonly Label _title = new Label();
+        readonly Label _indicator = new Label();
         readonly Label _device = new Label();
         readonly Label _lastSync = new Label();
         readonly Label _status = new Label();
@@ -57,8 +58,13 @@ namespace AemsAttendanceSync
             card.Padding = new Padding(12);
             Controls.Add(card);
 
+            _indicator.Text = "⚪";
+            _indicator.Font = new Font("Segoe UI Emoji", 11f);
+            _indicator.SetBounds(16, 16, 24, 22);
+            card.Controls.Add(_indicator);
+
             _device.Text = "Device: not configured";
-            _device.SetBounds(16, 16, 400, 22);
+            _device.SetBounds(40, 16, 376, 22);
             card.Controls.Add(_device);
 
             _lastSync.Text = "Last sync: never";
@@ -131,6 +137,7 @@ namespace AemsAttendanceSync
             AppConfig cfg = _getConfig != null ? _getConfig() : null;
             if (cfg == null || !cfg.Configured)
             {
+                _indicator.Text = "⚪";
                 _device.Text = "Device: not configured — open Settings";
                 _lastSync.Text = "Last sync: —";
                 _status.Text = "Status: waiting for setup";
@@ -153,6 +160,12 @@ namespace AemsAttendanceSync
                 return;
             }
 
+            AppConfig cfg = _getConfig != null ? _getConfig() : null;
+            if (cfg != null && cfg.Configured)
+            {
+                _device.Text = string.Format("Device: {0}:{1}  (machine {2})", cfg.Ip, cfg.Port, cfg.MachineNumber);
+            }
+
             if (!when.HasValue)
                 _lastSync.Text = "Last sync: never";
             else
@@ -161,9 +174,9 @@ namespace AemsAttendanceSync
             if (!string.IsNullOrEmpty(detail))
             {
                 _status.Text = "Status: " + detail;
-                _status.ForeColor = detail.StartsWith("Error", StringComparison.OrdinalIgnoreCase)
-                    ? Color.Firebrick
-                    : Color.FromArgb(40, 40, 40);
+                bool isError = detail.StartsWith("Error", StringComparison.OrdinalIgnoreCase);
+                _status.ForeColor = isError ? Color.Firebrick : Color.FromArgb(40, 40, 40);
+                _indicator.Text = isError ? "🔴" : "🟢";
             }
         }
 

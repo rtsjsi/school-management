@@ -21,7 +21,7 @@ namespace AemsAttendanceSync
         int _lastCount;
         UsersForm _usersForm;
 
-        public TrayApplicationContext()
+        public TrayApplicationContext(bool silent = false)
         {
             _config = AppConfig.Load();
             Directory.CreateDirectory(AppConfig.LogsDir);
@@ -47,7 +47,10 @@ namespace AemsAttendanceSync
             _timer = new System.Windows.Forms.Timer();
             _timer.Tick += (s, e) => StartSync(false);
 
-            _main.Show();
+            if (!silent)
+            {
+                _main.Show();
+            }
             _main.RefreshStatus(_config.Configured ? "Ready" : "Not configured");
 
             if (_config.Configured)
@@ -76,6 +79,7 @@ namespace AemsAttendanceSync
 
         void ShowMain()
         {
+            AppLog.Info("User opened Main Window");
             _main.ShowFromTray();
         }
 
@@ -119,6 +123,7 @@ namespace AemsAttendanceSync
 
         void ShowUsers()
         {
+            AppLog.Info("User opened User Management Window");
             try
             {
                 if (!_config.Configured)
@@ -151,6 +156,7 @@ namespace AemsAttendanceSync
 
         void ShowSettings()
         {
+            AppLog.Info("User opened Settings Window");
             using (var form = new SettingsForm(_config))
             {
                 if (_appIcon != null) form.Icon = _appIcon;
@@ -176,6 +182,7 @@ namespace AemsAttendanceSync
 
         void ApplyRuntime()
         {
+            AppLog.Info("Applying configuration to runtime (Interval: " + _config.IntervalMinutes + " mins, Push: " + _config.PushEnabled + ")");
             StartupHelper.Apply(_config.StartWithWindows);
             _timer.Stop();
             _timer.Interval = Math.Max(1, _config.IntervalMinutes) * 60 * 1000;
@@ -211,7 +218,11 @@ namespace AemsAttendanceSync
 
             lock (_syncLock)
             {
-                if (_syncing) return;
+                if (_syncing)
+                {
+                    AppLog.Info("Sync skipped — another sync is already in progress.");
+                    return;
+                }
                 _syncing = true;
             }
 
@@ -248,6 +259,9 @@ namespace AemsAttendanceSync
 
         void DoSync(bool manual)
         {
+            AppLog.Separator();
+            AppLog.Info("--- Starting " + (manual ? "['Sync now' button]" : "scheduled") + " sync sequence ---");
+
             // Retry any previously failed cloud pushes first (idempotent on server).
             if (_config.CanPushCloud)
             {
@@ -257,13 +271,40 @@ namespace AemsAttendanceSync
                     AppLog.Info("Pending cloud retry: " + pendingOk + " ok, " + pendingFailed + " failed");
             }
 
-            using (var client = new DeviceClient(_config.ToDeviceSettings()))
+            DeviceClient client = null;
+            try
             {
+                client = new DeviceClient(_config.ToDeviceSettings());
                 if (!client.Connect())
                 {
-                    AppLog.Error("Device connect failed — " + client.LastErrorText());
-                    throw new InvalidOperationException(client.NotReachableMessage());
+                    bool healed = false;
+                    if (!string.IsNullOrWhiteSpace(_config.MacAddress))
+                    {
+                        AppLog.Info("Connect failed, attempting MAC-based IP resolution for " + _config.MacAddress);
+                        string newIp = MacResolver.FindIpByMac(_config.MacAddress, _config.Ip);
+                        if (newIp != null && newIp != _config.Ip)
+                        {
+                            AppLog.Info("Resolved MAC to new IP: " + newIp + ". Updating config...");
+                            _config.Ip = newIp;
+                            try { _config.Save(); } catch { }
+                            
+                            client.Dispose();
+                            client = new DeviceClient(_config.ToDeviceSettings());
+                            if (client.Connect())
+                            {
+                                healed = true;
+                            }
+                        }
+                    }
+
+                    if (!healed)
+                    {
+                        AppLog.Error("Device connect failed — " + client.LastErrorText());
+                        throw new InvalidOperationException(client.NotReachableMessage());
+                    }
                 }
+
+                AppLog.Info("Device connection established successfully at " + _config.Ip + ":" + _config.Port);
 
                 List<PunchRecord> punches;
                 try
@@ -282,8 +323,9 @@ namespace AemsAttendanceSync
                 PunchExporter.WriteCsv(punches, file);
 
                 string cloudPart = "";
-                if (_config.CanPushCloud && punches.Count > 0)
+                if (_config.PushEnabled && _config.CanPushCloud && punches.Count > 0)
                 {
+                    AppLog.Info("Pushing " + punches.Count + " punch(es) to cloud API at: " + _config.ApiBaseUrl);
                     var push = CloudPusher.Push(_config, punches);
                     if (push.Ok)
                     {
@@ -313,9 +355,9 @@ namespace AemsAttendanceSync
                 _lastStatus = "OK — " + punches.Count + " punch(es)" + cloudPart;
 
                 if (manual)
-                    AppLog.Info("Manual sync completed: " + punches.Count + " punch(es) → " + Path.GetFileName(file) + cloudPart);
+                    AppLog.Info("['Sync now' button] sync completed: " + punches.Count + " punch(es) → " + Path.GetFileName(file) + cloudPart);
                 else
-                    AppLog.Info("Scheduled sync completed: " + punches.Count + " punch(es) → " + Path.GetFileName(file) + cloudPart);
+                    AppLog.Info("[Background timer] sync completed: " + punches.Count + " punch(es) → " + Path.GetFileName(file) + cloudPart);
 
                 if (punches.Count > 0)
                 {
@@ -329,6 +371,13 @@ namespace AemsAttendanceSync
                         _tray.ShowBalloonTip(3000, "AEMS Attendance Sync", tip, ToolTipIcon.Info);
                     }
                     catch { }
+                }
+            }
+            finally
+            {
+                if (client != null)
+                {
+                    client.Dispose();
                 }
             }
         }
@@ -346,8 +395,15 @@ namespace AemsAttendanceSync
             string when = _lastSyncAt.HasValue
                 ? _lastSyncAt.Value.ToString("HH:mm:ss")
                 : "never";
-            string tip = "AEMS Attendance Sync\nLast: " + when + " (" + _lastCount + ")\n" + _lastStatus;
-            if (tip.Length > 60) tip = tip.Substring(0, 60);
+            
+            string symbol = "⚪";
+            if (_lastStatus != null && _lastStatus.StartsWith("Error", StringComparison.OrdinalIgnoreCase))
+                symbol = "🔴";
+            else if (_lastStatus != null && _lastStatus.StartsWith("OK", StringComparison.OrdinalIgnoreCase))
+                symbol = "🟢";
+
+            string tip = symbol + " AEMS Attendance Sync\nLast: " + when + " (" + _lastCount + ")\n" + _lastStatus;
+            if (tip.Length > 63) tip = tip.Substring(0, 63);
             return tip;
         }
 
