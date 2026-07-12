@@ -117,8 +117,27 @@ export default function AttendanceReviewAndApprove() {
       });
       const json = await res.json();
       if (json.error) throw new Error(json.error);
+      
+      // Update local state instead of refetching
+      setData((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          dailyData: prev.dailyData.map((day) => ({
+            ...day,
+            rows: day.rows.map((row) => {
+              const key = getCellKey(row.empId, row.date);
+              const edit = edits[key];
+              if (edit) {
+                return { ...row, status: edit.status, isManual: true };
+              }
+              return row;
+            }),
+          })),
+        };
+      });
+      
       setEdits({});
-      fetchData();
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -193,7 +212,7 @@ export default function AttendanceReviewAndApprove() {
                 type="month" 
                 value={monthYear} 
                 onChange={(e) => setMonthYear(e.target.value)} 
-                className="h-9 w-[160px] bg-background"
+                className="h-9 w-[180px] sm:w-[200px] bg-background"
               />
             </div>
             <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="h-9 px-3 gap-2">
