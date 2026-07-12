@@ -302,7 +302,7 @@ namespace AemsAttendanceSync.Setup
             {
                 if (key == null) return;
                 if (enabled)
-                    key.SetValue(StartupValueName, "\"" + InstalledExe + "\"");
+                    key.SetValue(StartupValueName, "\"" + InstalledExe + "\" -silent");
                 else
                     key.DeleteValue(StartupValueName, false);
             }

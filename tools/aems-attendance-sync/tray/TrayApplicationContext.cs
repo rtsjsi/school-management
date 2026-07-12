@@ -35,7 +35,7 @@ namespace AemsAttendanceSync
                 ShowUsers,
                 ShowSettings,
                 OpenLogs);
-            MainForm = _main;
+            // MainForm = _main; // Removed to prevent auto-show on Application.Run
 
             _tray = new NotifyIcon();
             _tray.Icon = _appIcon;
@@ -58,6 +58,11 @@ namespace AemsAttendanceSync
             else
             {
                 UpdateTooltip("Not configured — open Settings");
+            }
+
+            if (!silent)
+            {
+                _main.ShowFromTray();
             }
         }
 
