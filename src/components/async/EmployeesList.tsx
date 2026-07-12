@@ -15,8 +15,7 @@ export async function EmployeesList() {
     .select(
       "id, employee_id, full_name, email, phone_number, address, aadhaar, pan, role, employee_type, joining_date, status, monthly_salary, degree, institution, year_passed, bank_name, account_number, ifsc_code, account_holder_name, shift_start_time, shift_end_time, biometric_enroll_no"
     )
-    .order("created_at", { ascending: false })
-    .limit(50);
+    .order("created_at", { ascending: false });
 
   const canEdit = isAdminOrAbove(user);
   return (

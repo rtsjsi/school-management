@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
+import { dayWeight, computeWorkingDays } from "@/lib/attendance";
 
 export const dynamic = "force-dynamic";
 
@@ -54,15 +55,7 @@ export async function GET(request: NextRequest) {
       .lte("date", end);
     const holidayDates = new Set((holidays ?? []).map((h) => h.date));
 
-    const workingDays = (() => {
-      let count = 0;
-      for (let d = 1; d <= lastDay; d++) {
-        const dStr = `${y}-${m}-${String(d).padStart(2, "0")}`;
-        const day = new Date(dStr).getDay();
-        if (day !== 0 && day !== 6 && !holidayDates.has(dStr)) count++;
-      }
-      return count;
-    })();
+    const workingDays = computeWorkingDays(y, m, lastDay, holidayDates);
 
     const bankMap = new Map<string, { account_number: string; ifsc_code: string; account_holder_name: string; bank_name: string }>();
     (employees ?? []).forEach((e) => {
@@ -84,17 +77,13 @@ export async function GET(request: NextRequest) {
       let presentDays = 0;
       for (let d = 1; d <= lastDay; d++) {
         const dStr = `${y}-${m}-${String(d).padStart(2, "0")}`;
-        const day = new Date(dStr).getDay();
+        const day = new Date(`${dStr}T12:00:00`).getDay();
         const isWeekend = day === 0 || day === 6;
         const isHoliday = holidayDates.has(dStr);
         if (isHoliday || isWeekend) continue;
 
         const status = finalizedMap.get(`${emp.id}-${dStr}`);
-        if (status === "present" || status === "holiday" || status === "week_off") {
-          presentDays += 1;
-        } else if (status === "half_day") {
-          presentDays += 0.5;
-        }
+        presentDays += dayWeight(status);
       }
 
       const baseSalary = Number(emp.monthly_salary ?? 0);

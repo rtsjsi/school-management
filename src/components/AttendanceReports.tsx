@@ -8,6 +8,13 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -16,7 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-type ReportType = "monthly" | "late" | "early" | "absent";
+type ReportType = "monthly" | "absent";
 
 export default function AttendanceReports() {
   const [reportType, setReportType] = useState<ReportType>("monthly");
@@ -24,7 +31,7 @@ export default function AttendanceReports() {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [data, setData] = useState<Record<string, unknown>[] | null>(null);
   const [loading, setLoading] = useState(false);
-  type SortKey = "employee_name" | "present" | "absent" | "percentage" | "late_count" | "early_count";
+  type SortKey = "employee_name" | "present" | "absent" | "percentage";
   type SortDir = "asc" | "desc";
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -70,14 +77,6 @@ export default function AttendanceReports() {
           av = Number(a.percentage ?? 0);
           bv = Number(b.percentage ?? 0);
           break;
-        case "late_count":
-          av = Number(a.late_count ?? 0);
-          bv = Number(b.late_count ?? 0);
-          break;
-        case "early_count":
-          av = Number(a.early_count ?? 0);
-          bv = Number(b.early_count ?? 0);
-          break;
       }
       if (av < bv) return sortDir === "asc" ? -1 : 1;
       if (av > bv) return sortDir === "asc" ? 1 : -1;
@@ -95,16 +94,15 @@ export default function AttendanceReports() {
         <div className="flex flex-wrap gap-4 items-end mb-4">
           <div className="space-y-2">
             <Label>Report Type</Label>
-            <select
-              value={reportType}
-              onChange={(e) => setReportType(e.target.value as ReportType)}
-              className="flex h-9 w-40 rounded-md border border-input bg-transparent px-3 py-2 text-sm"
-            >
-              <option value="monthly">Monthly Summary</option>
-              <option value="late">Late Arrivals</option>
-              <option value="early">Early Departures</option>
-              <option value="absent">Absentee List</option>
-            </select>
+            <Select value={reportType} onValueChange={(v) => setReportType(v as ReportType)}>
+              <SelectTrigger className="h-9 w-[200px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="monthly">Monthly Summary</SelectItem>
+                <SelectItem value="absent">Absentee List</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           {reportType === "monthly" && (
             <div className="space-y-2">
@@ -112,7 +110,7 @@ export default function AttendanceReports() {
               <Input type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
             </div>
           )}
-          {(reportType === "late" || reportType === "early" || reportType === "absent") && (
+          {reportType === "absent" && (
             <div className="space-y-2">
               <Label>Date</Label>
               <DatePicker value={date} onChange={setDate} />
@@ -139,12 +137,6 @@ export default function AttendanceReports() {
                 <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("percentage")}>
                   <span className="inline-flex items-center gap-1">% <SortIcon col="percentage" /></span>
                 </TableHead>
-                <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("late_count")}>
-                  <span className="inline-flex items-center gap-1">Late <SortIcon col="late_count" /></span>
-                </TableHead>
-                <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("early_count")}>
-                  <span className="inline-flex items-center gap-1">Early <SortIcon col="early_count" /></span>
-                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -154,8 +146,6 @@ export default function AttendanceReports() {
                   <TableCell>{Number(row.present ?? 0)}</TableCell>
                   <TableCell>{Number(row.absent ?? 0)}</TableCell>
                   <TableCell>{Number(row.percentage ?? 0).toFixed(1)}%</TableCell>
-                  <TableCell>{Number(row.late_count ?? 0)}</TableCell>
-                  <TableCell>{Number(row.early_count ?? 0)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -51,6 +52,7 @@ const getStatusColor = (status: string) => {
 type DayRow = { empId: string; empName: string; date: string; status: string; in_time?: string; out_time?: string; source: string; isManual?: boolean };
 
 export default function AttendanceReviewAndApprove() {
+  const { toast } = useToast();
   const [monthYear, setMonthYear] = useState(new Date().toISOString().slice(0, 7));
   const [data, setData] = useState<{
     monthYear: string;
@@ -138,6 +140,7 @@ export default function AttendanceReviewAndApprove() {
       });
       
       setEdits({});
+      toast({ title: "Corrections saved", description: `${updates.length} attendance correction(s) saved successfully.` });
     } catch (e) {
       setError((e as Error).message);
     } finally {

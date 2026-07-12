@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
-import { getUser } from "@/lib/auth";
+import { getUser, canAccessPayroll } from "@/lib/auth";
+import {
+  deriveDailyStatus,
+  employeeShiftLite,
+  dayWeight,
+  computeWorkingDays,
+  type PunchLite,
+} from "@/lib/attendance";
 
 export async function GET(request: NextRequest) {
   try {
@@ -50,7 +57,6 @@ export async function GET(request: NextRequest) {
       .select("employee_id, attendance_date, status, is_manual_override")
       .eq("month_year", monthYear);
 
-    // Is the month fully finalized? (Check if we have a lot of rows, or we can just rely on the UI)
     // If there's at least one non-manual row, it means it was finalized.
     const isApproved = (finalizedData ?? []).some(f => !f.is_manual_override);
 
@@ -59,53 +65,36 @@ export async function GET(request: NextRequest) {
       manualOverrides.set(`${f.employee_id}-${f.attendance_date}`, f.status);
     });
 
-    const workingDays = (() => {
-      let count = 0;
-      for (let d = 1; d <= lastDay; d++) {
-        const dStr = `${y}-${m}-${String(d).padStart(2, "0")}`;
-        const day = new Date(dStr).getDay();
-        if (day !== 0 && day !== 6 && !holidayDates.has(dStr)) count++;
-      }
-      return count;
-    })();
+    const workingDays = computeWorkingDays(y, m, lastDay, holidayDates);
 
     const dailyData: Record<string, { empId: string; empName: string; date: string; status: string; source: string; isManual: boolean }[]> = {};
 
     for (const emp of employees ?? []) {
+      const shift = employeeShiftLite(emp);
+
       for (let d = 1; d <= lastDay; d++) {
         const dStr = `${y}-${m}-${String(d).padStart(2, "0")}`;
-        const day = new Date(dStr).getDay();
+        const day = new Date(`${dStr}T12:00:00`).getDay();
         const isWeekend = day === 0 || day === 6;
         const isHoliday = holidayDates.has(dStr);
 
-        let status = "absent";
+        let status: string;
         let source = "default";
         let isManual = false;
 
-        // 1. Base derivation from biometric
+        // 1. Derive from biometric punches using the shared function
         if (emp.biometric_enroll_no) {
-          const dayPunches = (punches ?? []).filter((p) => {
-            if (p.enroll_no !== emp.biometric_enroll_no) return false;
-            return p.punched_at.startsWith(dStr);
-          });
-          
-          if (dayPunches.length > 0) {
-            const hasInPunch = dayPunches.some(p => p.direction === 'IN' || !p.direction);
-            if (hasInPunch || dayPunches.length > 0) {
-              status = "present";
-              source = "biometric";
-            }
-          }
-        }
+          const dayPunches: PunchLite[] = (punches ?? [])
+            .filter((p) => p.enroll_no === emp.biometric_enroll_no && p.punched_at.startsWith(dStr))
+            .map((p) => ({ punch_type: p.direction, punch_time: p.punched_at }));
 
-        if (status === "absent") {
-          if (isHoliday) {
-            status = "holiday";
-            source = "holiday";
-          } else if (isWeekend) {
-            status = "week_off";
-            source = "weekend";
-          }
+          const derived = deriveDailyStatus(dayPunches, shift, undefined, isHoliday, isWeekend);
+          status = derived.status;
+          source = dayPunches.length > 0 ? "biometric" : "default";
+        } else {
+          // No biometric enrollment — use deriveDailyStatus with empty punches for holiday/weekend detection
+          const derived = deriveDailyStatus([], shift, undefined, isHoliday, isWeekend);
+          status = derived.status;
         }
 
         // 2. Overlay manual overrides
@@ -128,14 +117,20 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Use dayWeight for present-day counts (half_day = 0.5, not 1.0)
     const presentCounts: Record<string, number> = {};
     (employees ?? []).forEach((e) => {
       presentCounts[e.id] = 0;
     });
     Object.values(dailyData).forEach((dayRows) => {
       dayRows.forEach((r) => {
-        if (r.status === "present" || r.status === "half_day") {
-          presentCounts[r.empId] = (presentCounts[r.empId] ?? 0) + 1;
+        const dStr = r.date;
+        const day = new Date(`${dStr}T12:00:00`).getDay();
+        const isWeekend = day === 0 || day === 6;
+        const isHoliday = holidayDates.has(dStr);
+        // Only count working days for present-day summary
+        if (!isWeekend && !isHoliday) {
+          presentCounts[r.empId] = (presentCounts[r.empId] ?? 0) + dayWeight(r.status);
         }
       });
     });
@@ -160,6 +155,16 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // S2: Role check — only payroll-authorized users can modify attendance
+    if (!canAccessPayroll(user)) {
+      return NextResponse.json({ error: "You do not have permission to modify attendance records." }, { status: 403 });
+    }
+
     const body = await request.json();
     const { action, monthYear, updates } = body as {
       action: "save" | "finalize" | "unfreeze";
@@ -172,10 +177,6 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = await createClient();
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     if (action === "save" && Array.isArray(updates)) {
       // Upsert manual overrides
@@ -196,45 +197,58 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === "finalize") {
-      // Re-run the full derivation (like GET) but save EVERYTHING to DB
       const [y, m] = monthYear.split("-");
       const start = `${y}-${m}-01`;
       const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate();
       const end = `${y}-${m}-${String(lastDay).padStart(2, "0")}`;
 
-      const { data: employees } = await supabase.from("employees").select("id, biometric_enroll_no").eq("status", "active");
+      const { data: employees } = await supabase
+        .from("employees")
+        .select("id, shift_start_time, shift_end_time, biometric_enroll_no")
+        .eq("status", "active");
       const { data: holidays } = await supabase.from("holidays").select("date").gte("date", start).lte("date", end);
       const holidayDates = new Set((holidays ?? []).map((h) => h.date));
 
       const admin = createAdminClient();
-      const { data: punches } = await admin!.from("biometric_attendance_raw").select("enroll_no, punched_at, direction").gte("punched_at", `${start}T00:00:00Z`).lte("punched_at", `${end}T23:59:59Z`);
+      const { data: punches } = await admin!
+        .from("biometric_attendance_raw")
+        .select("enroll_no, punched_at, direction")
+        .gte("punched_at", `${start}T00:00:00Z`)
+        .lte("punched_at", `${end}T23:59:59Z`);
 
-      const { data: overrides } = await supabase.from("employee_attendance_finalized").select("employee_id, attendance_date, status").eq("month_year", monthYear).eq("is_manual_override", true);
+      const { data: overrides } = await supabase
+        .from("employee_attendance_finalized")
+        .select("employee_id, attendance_date, status")
+        .eq("month_year", monthYear)
+        .eq("is_manual_override", true);
       const manualOverrides = new Map<string, string>();
       (overrides ?? []).forEach(f => manualOverrides.set(`${f.employee_id}-${f.attendance_date}`, f.status));
 
       const rowsToInsert = [];
 
       for (const emp of employees ?? []) {
+        const shift = employeeShiftLite(emp);
+
         for (let d = 1; d <= lastDay; d++) {
           const dStr = `${y}-${m}-${String(d).padStart(2, "0")}`;
-          const day = new Date(dStr).getDay();
+          const day = new Date(`${dStr}T12:00:00`).getDay();
           const isWeekend = day === 0 || day === 6;
           const isHoliday = holidayDates.has(dStr);
 
-          let status = "absent";
+          let status: string;
           let isManual = false;
 
+          // Use shared derivation function
           if (emp.biometric_enroll_no) {
-            const dayPunches = (punches ?? []).filter((p) => p.enroll_no === emp.biometric_enroll_no && p.punched_at.startsWith(dStr));
-            if (dayPunches.length > 0) {
-              const hasInPunch = dayPunches.some(p => p.direction === 'IN' || !p.direction);
-              if (hasInPunch || dayPunches.length > 0) status = "present";
-            }
-          }
-          if (status === "absent") {
-            if (isHoliday) status = "holiday";
-            else if (isWeekend) status = "week_off";
+            const dayPunches: PunchLite[] = (punches ?? [])
+              .filter((p) => p.enroll_no === emp.biometric_enroll_no && p.punched_at.startsWith(dStr))
+              .map((p) => ({ punch_type: p.direction, punch_time: p.punched_at }));
+
+            const derived = deriveDailyStatus(dayPunches, shift, undefined, isHoliday, isWeekend);
+            status = derived.status;
+          } else {
+            const derived = deriveDailyStatus([], shift, undefined, isHoliday, isWeekend);
+            status = derived.status;
           }
 
           const overrideStatus = manualOverrides.get(`${emp.id}-${dStr}`);
