@@ -35,14 +35,14 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-const STATUSES = ["present", "absent", "half_day", "leave", "holiday", "week_off"] as const;
+const STATUSES = ["present", "absent", "half_day", "casual_leave", "holiday", "week_off"] as const;
 
 const getStatusColor = (status: string) => {
   switch (status) {
     case "present": return "bg-emerald-100/50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400";
     case "absent": return "bg-rose-100/50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400";
     case "half_day": return "bg-amber-100/50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400";
-    case "leave": return "bg-blue-100/50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400";
+    case "casual_leave": return "bg-blue-100/50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400";
     case "holiday": return "bg-purple-100/50 text-purple-700 dark:bg-purple-950/30 dark:text-purple-400";
     case "week_off": return "bg-slate-100/50 text-slate-700 dark:bg-slate-800/30 dark:text-slate-400";
     default: return "";

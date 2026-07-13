@@ -29,7 +29,7 @@ export type AttendanceThresholds = { fullDayHours: number; halfDayHours: number 
 export const DEFAULT_THRESHOLDS: AttendanceThresholds = { fullDayHours: 6, halfDayHours: 3 };
 
 export type DerivedDay = {
-  status: "present" | "half_day" | "absent" | "holiday" | "week_off";
+  status: "present" | "half_day" | "absent" | "holiday" | "week_off" | "casual_leave";
   in_time?: string; // HH:MM:SS in IST
   out_time?: string; // HH:MM:SS in IST
   worked_hours: number;
@@ -151,7 +151,7 @@ export function deriveDailyStatus(
 
 /** Payable weight of a day: present/holiday/week_off = 1, half day = 0.5, otherwise 0. */
 export function dayWeight(status: string | null | undefined): number {
-  if (status === "present" || status === "holiday" || status === "week_off") return 1;
+  if (status === "present" || status === "holiday" || status === "week_off" || status === "casual_leave") return 1;
   if (status === "half_day") return 0.5;
   return 0;
 }

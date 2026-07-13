@@ -20,6 +20,7 @@ import type { StaffTableEmployee } from "@/components/EmployeesTable";
 import { computeEmployeeCompleteness, completenessBadgeClassNames } from "@/lib/master-data-completeness";
 import { EMPLOYEE_ROLES, EMPLOYEE_TYPES } from "@/lib/lov";
 import { formatTimeShort } from "@/lib/employee-shift";
+import { EmployeePayrollInfo } from "./EmployeePayrollInfo";
 
 interface EmployeeViewDialogProps {
   employee: StaffTableEmployee;
@@ -190,6 +191,10 @@ export function EmployeeViewDialog({ employee, open, onOpenChange }: EmployeeVie
               </Section>
             </>
           )}
+
+          <hr className="border-border/40" />
+          <EmployeePayrollInfo employeeId={employee.id} />
+          
         </div>
       </DialogContent>
     </Dialog>

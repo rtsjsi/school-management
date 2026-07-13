@@ -49,6 +49,10 @@ const INITIAL_FORM_STATE = {
   account_number: "",
   ifsc_code: "",
   account_holder_name: "",
+  basic_salary: "",
+  allowance: "",
+  child_allowance: "",
+  pf_deduction: "",
   monthly_salary: "",
 };
 
@@ -142,6 +146,33 @@ export default function EmployeeEntryForm() {
         });
         return;
       }
+
+      // Insert initial salary history
+      const basic = form.basic_salary ? parseFloat(form.basic_salary) : 0;
+      const allowance = form.allowance ? parseFloat(form.allowance) : 0;
+      const child_allowance = form.child_allowance ? parseFloat(form.child_allowance) : 0;
+      const pf_deduction = form.pf_deduction ? parseFloat(form.pf_deduction) : 0;
+      
+      await supabase.from("employee_salary_history").insert({
+        employee_id: emp.id,
+        effective_from_date: form.joining_date || new Date().toISOString().split('T')[0],
+        basic_salary: basic,
+        allowance: allowance,
+        child_allowance: child_allowance,
+        pf_deduction: pf_deduction
+      });
+
+      // Insert default casual leave balance for current year
+      const y = new Date().getFullYear();
+      const m = new Date().getMonth() + 1;
+      const academicYear = m >= 4 ? `${y}-${y + 1}` : `${y - 1}-${y}`;
+      await supabase.from("employee_leave_balances").insert({
+        employee_id: emp.id,
+        academic_year: academicYear,
+        leave_type: "casual_leave",
+        allocated_days: 5,
+        used_days: 0
+      });
 
       const { error: reassignError } = await reassignEmployeeIds(supabase);
       if (reassignError) {
@@ -273,14 +304,85 @@ export default function EmployeeEntryForm() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Monthly Salary (₹)</Label>
+              <Label>Basic Salary (₹)</Label>
               <Input
                 type="number"
                 min={0}
                 step={0.01}
+                value={form.basic_salary}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const basic = parseFloat(val || "0");
+                  const all = parseFloat(form.allowance || "0");
+                  const child = parseFloat(form.child_allowance || "0");
+                  const pf = parseFloat(form.pf_deduction || "0");
+                  setForm((p) => ({ ...p, basic_salary: val, monthly_salary: String(basic + all + child - pf) }));
+                }}
+                placeholder="Basic"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Allowance (₹)</Label>
+              <Input
+                type="number"
+                min={0}
+                step={0.01}
+                value={form.allowance}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const basic = parseFloat(form.basic_salary || "0");
+                  const all = parseFloat(val || "0");
+                  const child = parseFloat(form.child_allowance || "0");
+                  const pf = parseFloat(form.pf_deduction || "0");
+                  setForm((p) => ({ ...p, allowance: val, monthly_salary: String(basic + all + child - pf) }));
+                }}
+                placeholder="Allowance"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Child Allowance (₹)</Label>
+              <Input
+                type="number"
+                min={0}
+                step={0.01}
+                value={form.child_allowance}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const basic = parseFloat(form.basic_salary || "0");
+                  const all = parseFloat(form.allowance || "0");
+                  const child = parseFloat(val || "0");
+                  const pf = parseFloat(form.pf_deduction || "0");
+                  setForm((p) => ({ ...p, child_allowance: val, monthly_salary: String(basic + all + child - pf) }));
+                }}
+                placeholder="Child Allowance"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>PF Deduction (₹)</Label>
+              <Input
+                type="number"
+                min={0}
+                step={0.01}
+                value={form.pf_deduction}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const basic = parseFloat(form.basic_salary || "0");
+                  const all = parseFloat(form.allowance || "0");
+                  const child = parseFloat(form.child_allowance || "0");
+                  const pf = parseFloat(val || "0");
+                  setForm((p) => ({ ...p, pf_deduction: val, monthly_salary: String(basic + all + child - pf) }));
+                }}
+                placeholder="PF"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Net Salary (Auto)</Label>
+              <Input
+                type="text"
                 value={form.monthly_salary}
-                onChange={(e) => setForm((p) => ({ ...p, monthly_salary: e.target.value }))}
-                placeholder="For NEFT/payroll"
+                disabled
+                className="bg-muted"
+                placeholder="Calculated"
               />
             </div>
             <div className="space-y-2">
