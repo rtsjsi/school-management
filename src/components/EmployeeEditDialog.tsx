@@ -269,8 +269,8 @@ export function EmployeeEditDialog({
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Monthly Salary (₹) *</Label>
-              <Input type="number" min={0} step={0.01} value={form.monthly_salary} onChange={(e) => setForm((p) => ({ ...p, monthly_salary: e.target.value }))} placeholder="For NEFT" required />
+              <Label>Monthly Salary (₹)</Label>
+              <Input type="number" min={0} step={0.01} value={form.monthly_salary} onChange={(e) => setForm((p) => ({ ...p, monthly_salary: e.target.value }))} placeholder="For NEFT" />
             </div>
             <div className="space-y-2">
               <Label>Joining Date *</Label>
@@ -350,39 +350,35 @@ export function EmployeeEditDialog({
             <h4 className="text-sm font-semibold">Bank Account (Salary)</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Bank Name *</Label>
+                <Label>Bank Name</Label>
                 <Input
                   value={form.bank_name}
                   onChange={(e) => setForm((p) => ({ ...p, bank_name: e.target.value }))}
                   placeholder="Bank name"
-                  required
                 />
               </div>
               <div className="space-y-2">
-                <Label>Account Number *</Label>
+                <Label>Account Number</Label>
                 <Input
                   value={form.account_number}
                   onChange={(e) => setForm((p) => ({ ...p, account_number: e.target.value }))}
                   placeholder="Account number"
-                  required
                 />
               </div>
               <div className="space-y-2">
-                <Label>IFSC Code *</Label>
+                <Label>IFSC Code</Label>
                 <Input
                   value={form.ifsc_code}
                   onChange={(e) => setForm((p) => ({ ...p, ifsc_code: e.target.value }))}
                   placeholder="IFSC"
-                  required
                 />
               </div>
               <div className="space-y-2">
-                <Label>Account Holder Name *</Label>
+                <Label>Account Holder Name</Label>
                 <Input
                   value={form.account_holder_name}
                   onChange={(e) => setForm((p) => ({ ...p, account_holder_name: e.target.value }))}
                   placeholder="As per bank"
-                  required
                 />
               </div>
             </div>

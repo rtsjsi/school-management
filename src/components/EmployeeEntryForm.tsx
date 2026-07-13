@@ -77,14 +77,9 @@ export default function EmployeeEntryForm() {
     { key: "role", label: "Role" },
     { key: "employee_type", label: "Employee type" },
     { key: "joining_date", label: "Joining date" },
-    { key: "monthly_salary", label: "Monthly salary" },
     { key: "degree", label: "Degree" },
     { key: "institution", label: "Institution" },
     { key: "year_passed", label: "Year passed" },
-    { key: "bank_name", label: "Bank name" },
-    { key: "account_number", label: "Account number" },
-    { key: "ifsc_code", label: "IFSC code" },
-    { key: "account_holder_name", label: "Account holder name" },
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -278,7 +273,7 @@ export default function EmployeeEntryForm() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Monthly Salary (₹) *</Label>
+              <Label>Monthly Salary (₹)</Label>
               <Input
                 type="number"
                 min={0}
@@ -286,7 +281,6 @@ export default function EmployeeEntryForm() {
                 value={form.monthly_salary}
                 onChange={(e) => setForm((p) => ({ ...p, monthly_salary: e.target.value }))}
                 placeholder="For NEFT/payroll"
-                required
               />
             </div>
             <div className="space-y-2">
@@ -353,39 +347,35 @@ export default function EmployeeEntryForm() {
             <h4 className="text-sm font-semibold">Bank Account (Salary)</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Bank Name *</Label>
+                <Label>Bank Name</Label>
                 <Input
                   value={form.bank_name}
                   onChange={(e) => setForm((p) => ({ ...p, bank_name: e.target.value }))}
                   placeholder="Bank name"
-                  required
                 />
               </div>
               <div className="space-y-2">
-                <Label>Account Number *</Label>
+                <Label>Account Number</Label>
                 <Input
                   value={form.account_number}
                   onChange={(e) => setForm((p) => ({ ...p, account_number: e.target.value }))}
                   placeholder="Account number"
-                  required
                 />
               </div>
               <div className="space-y-2">
-                <Label>IFSC Code *</Label>
+                <Label>IFSC Code</Label>
                 <Input
                   value={form.ifsc_code}
                   onChange={(e) => setForm((p) => ({ ...p, ifsc_code: e.target.value }))}
                   placeholder="IFSC"
-                  required
                 />
               </div>
               <div className="space-y-2">
-                <Label>Account Holder Name *</Label>
+                <Label>Account Holder Name</Label>
                 <Input
                   value={form.account_holder_name}
                   onChange={(e) => setForm((p) => ({ ...p, account_holder_name: e.target.value }))}
                   placeholder="As per bank"
-                  required
                 />
               </div>
             </div>
