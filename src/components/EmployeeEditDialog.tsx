@@ -9,6 +9,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -213,69 +214,73 @@ export function EmployeeEditDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>}
-          <div className="space-y-2">
-            <Label>Employee ID</Label>
-            <Input value={employee.employee_id ?? "—"} readOnly disabled className="bg-muted font-mono" />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Full name *</Label>
-              <Input value={form.full_name} onChange={(e) => setForm((p) => ({ ...p, full_name: e.target.value }))} required />
-            </div>
-            <div className="space-y-2">
-              <Label>Email *</Label>
-              <Input type="email" value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} required />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Phone *</Label>
-              <Input value={form.phone_number} onChange={(e) => setForm((p) => ({ ...p, phone_number: e.target.value }))} required />
-            </div>
-            <div className="space-y-2">
-              <Label>Address *</Label>
-              <Input value={form.address} onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))} required />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Aadhaar *</Label>
-              <Input value={form.aadhaar} onChange={(e) => setForm((p) => ({ ...p, aadhaar: e.target.value }))} required />
-            </div>
-            <div className="space-y-2">
-              <Label>PAN *</Label>
-              <Input value={form.pan} onChange={(e) => setForm((p) => ({ ...p, pan: e.target.value }))} required />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Role *</Label>
-              <Select value={form.role} onValueChange={(v) => setForm((p) => ({ ...p, role: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {EMPLOYEE_ROLES.map((r) => <SelectItem key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Employee Type *</Label>
-              <Select value={form.employee_type} onValueChange={(v) => setForm((p) => ({ ...p, employee_type: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {EMPLOYEE_TYPES.map((t) => <SelectItem key={t} value={t}>{t.replace("_", " ")}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Monthly Salary (₹)</Label>
-              <Input type="number" min={0} step={0.01} value={form.monthly_salary} onChange={(e) => setForm((p) => ({ ...p, monthly_salary: e.target.value }))} placeholder="For NEFT" />
-            </div>
-            <div className="space-y-2">
-              <Label>Joining Date *</Label>
-              <DatePicker value={form.joining_date} onChange={(isoDate) => setForm((p) => ({ ...p, joining_date: isoDate }))} />
-            </div>
+          
+          <Tabs defaultValue="details" className="w-full">
+            <TabsList className="w-full grid grid-cols-2">
+              <TabsTrigger value="details">Personal & Job Details</TabsTrigger>
+              <TabsTrigger value="salary">Salary & Bank Details</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="details" className="space-y-4 mt-4">
+              <div className="space-y-2">
+                <Label>Employee ID</Label>
+                <Input value={employee.employee_id ?? "—"} readOnly disabled className="bg-muted font-mono" />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Full name *</Label>
+                  <Input value={form.full_name} onChange={(e) => setForm((p) => ({ ...p, full_name: e.target.value }))} required />
+                </div>
+                <div className="space-y-2">
+                  <Label>Email *</Label>
+                  <Input type="email" value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} required />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Phone *</Label>
+                  <Input value={form.phone_number} onChange={(e) => setForm((p) => ({ ...p, phone_number: e.target.value }))} required />
+                </div>
+                <div className="space-y-2">
+                  <Label>Address *</Label>
+                  <Input value={form.address} onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))} required />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Aadhaar *</Label>
+                  <Input value={form.aadhaar} onChange={(e) => setForm((p) => ({ ...p, aadhaar: e.target.value }))} required />
+                </div>
+                <div className="space-y-2">
+                  <Label>PAN *</Label>
+                  <Input value={form.pan} onChange={(e) => setForm((p) => ({ ...p, pan: e.target.value }))} required />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Role *</Label>
+                  <Select value={form.role} onValueChange={(v) => setForm((p) => ({ ...p, role: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {EMPLOYEE_ROLES.map((r) => <SelectItem key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Employee Type *</Label>
+                  <Select value={form.employee_type} onValueChange={(v) => setForm((p) => ({ ...p, employee_type: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {EMPLOYEE_TYPES.map((t) => <SelectItem key={t} value={t}>{t.replace("_", " ")}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Joining Date *</Label>
+                  <DatePicker value={form.joining_date} onChange={(isoDate) => setForm((p) => ({ ...p, joining_date: isoDate }))} />
+                </div>
             <div className="space-y-2">
               <Label>Shift Start Time</Label>
               <Input
@@ -314,43 +319,53 @@ export function EmployeeEditDialog({
                 placeholder="EnNo on the device (e.g. 5)"
               />
             </div>
-          </div>
-          <div className="space-y-4 pt-4 border-t">
-            <h4 className="text-sm font-semibold">Qualification</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>Degree *</Label>
-                <Input
-                  value={form.degree}
-                  onChange={(e) => setForm((p) => ({ ...p, degree: e.target.value }))}
-                  placeholder="e.g. B.Ed"
-                  required
-                />
               </div>
-              <div className="space-y-2">
-                <Label>Institution *</Label>
-                <Input
-                  value={form.institution}
-                  onChange={(e) => setForm((p) => ({ ...p, institution: e.target.value }))}
-                  placeholder="College/University"
-                  required
-                />
+              <div className="space-y-4 pt-4 border-t">
+                <h4 className="text-sm font-semibold">Qualification</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>Degree *</Label>
+                    <Input
+                      value={form.degree}
+                      onChange={(e) => setForm((p) => ({ ...p, degree: e.target.value }))}
+                      placeholder="e.g. B.Ed"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Institution *</Label>
+                    <Input
+                      value={form.institution}
+                      onChange={(e) => setForm((p) => ({ ...p, institution: e.target.value }))}
+                      placeholder="College/University"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Year Passed *</Label>
+                    <Input
+                      type="number"
+                      value={form.year_passed}
+                      onChange={(e) => setForm((p) => ({ ...p, year_passed: e.target.value }))}
+                      placeholder="2020"
+                      required
+                    />
+                  </div>
+                </div>
               </div>
+            </TabsContent>
+
+            <TabsContent value="salary" className="space-y-4 mt-4">
               <div className="space-y-2">
-                <Label>Year Passed *</Label>
-                <Input
-                  type="number"
-                  value={form.year_passed}
-                  onChange={(e) => setForm((p) => ({ ...p, year_passed: e.target.value }))}
-                  placeholder="2020"
-                  required
-                />
+                <Label>Monthly Salary (₹)</Label>
+                <Input type="number" min={0} step={0.01} value={form.monthly_salary} onChange={(e) => setForm((p) => ({ ...p, monthly_salary: e.target.value }))} placeholder="For NEFT" />
               </div>
-            </div>
-            <h4 className="text-sm font-semibold">Bank Account (Salary)</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Bank Name</Label>
+              
+              <div className="space-y-4 pt-4 border-t">
+                <h4 className="text-sm font-semibold">Bank Account (Salary)</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Bank Name</Label>
                 <Input
                   value={form.bank_name}
                   onChange={(e) => setForm((p) => ({ ...p, bank_name: e.target.value }))}
@@ -373,16 +388,19 @@ export function EmployeeEditDialog({
                   placeholder="IFSC"
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Account Holder Name</Label>
-                <Input
-                  value={form.account_holder_name}
-                  onChange={(e) => setForm((p) => ({ ...p, account_holder_name: e.target.value }))}
-                  placeholder="As per bank"
-                />
+                  <div className="space-y-2">
+                    <Label>Account Holder Name</Label>
+                    <Input
+                      value={form.account_holder_name}
+                      onChange={(e) => setForm((p) => ({ ...p, account_holder_name: e.target.value }))}
+                      placeholder="As per bank"
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            </TabsContent>
+          </Tabs>
+
           <div className="flex gap-2 justify-end pt-4">
             <Button type="button" variant="outline" onClick={() => setOpen?.(false)}>Cancel</Button>
             <SubmitButton loading={loading} loadingLabel="Saving…">Save</SubmitButton>
