@@ -65,7 +65,7 @@ function parseEmployeeIdNum(id?: string | null): number {
   return Number.isFinite(n) ? n : Number.MAX_SAFE_INTEGER;
 }
 
-type SortKey = "employee_id" | "full_name" | "email" | "shift" | "status" | "data_pct";
+type SortKey = "employee_id" | "bio_enroll_no" | "full_name" | "email" | "shift" | "status" | "data_pct";
 type SortDir = "asc" | "desc";
 type CompletenessFilter = "all" | "complete" | "incomplete";
 
@@ -136,6 +136,7 @@ export function EmployeesTable({
           e.employee_id,
           e.phone_number,
           e.aadhaar,
+          e.biometric_enroll_no,
           shiftTimesLabel(e),
         ]
           .filter(Boolean)
@@ -164,6 +165,10 @@ export function EmployeesTable({
         case "employee_id":
           av = parseEmployeeIdNum(a.employee_id);
           bv = parseEmployeeIdNum(b.employee_id);
+          break;
+        case "bio_enroll_no":
+          av = (a.biometric_enroll_no ?? "").toLowerCase();
+          bv = (b.biometric_enroll_no ?? "").toLowerCase();
           break;
         case "full_name":
           av = (a.full_name ?? "").toLowerCase();
@@ -196,6 +201,7 @@ export function EmployeesTable({
     () =>
       sortedEmployees.map((e) => ({
         employee_id: e.employee_id ?? "—",
+        biometric_enroll_no: e.biometric_enroll_no ?? "—",
         full_name: e.full_name ?? "—",
         email: e.email ?? "—",
         shift: shiftTimesLabel(e),
@@ -333,6 +339,14 @@ export function EmployeesTable({
               </TableHead>
               <TableHead
                 className="cursor-pointer select-none hover:text-foreground"
+                onClick={() => handleSort("bio_enroll_no")}
+              >
+                <span className="inline-flex items-center gap-1">
+                  Bio Enroll # <SortIcon col="bio_enroll_no" />
+                </span>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none hover:text-foreground"
                 onClick={() => handleSort("full_name")}
               >
                 <span className="inline-flex items-center gap-1">
@@ -380,6 +394,7 @@ export function EmployeesTable({
               return (
                 <TableRow key={e.id}>
                   <TableCell className="font-mono text-xs">{e.employee_id ?? "—"}</TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">{e.biometric_enroll_no ?? "—"}</TableCell>
                   <TableCell className="font-medium">{e.full_name}</TableCell>
                   <TableCell className="text-muted-foreground text-sm">{e.email ?? "—"}</TableCell>
                   <TableCell className="text-sm">{shiftLabel}</TableCell>
