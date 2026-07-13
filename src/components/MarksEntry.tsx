@@ -36,7 +36,7 @@ type Exam = {
   academic_years: { id: string; name: string } | { id: string; name: string }[] | null;
 };
 
-type Student = { id: string; full_name: string; standard: string | null; division: string | null };
+type Student = { id: string; full_name: string; standard: string | null; division: string | null; roll_number: number | null };
 type Subject = { id: string; name: string; code: string | null; evaluation_type: string };
 type CellState = { score: string; max_score: string; grade: string; is_absent: boolean };
 
@@ -177,7 +177,7 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
     (async () => {
       let query = supabase
         .from("students")
-        .select("id, full_name, standard, division")
+        .select("id, full_name, standard, division, roll_number")
         .eq("status", "active")
         .order("full_name");
       // Filter by the selected class
@@ -191,6 +191,12 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
           allowedPairSet.has(`${s.standard ?? ""}\0${s.division ?? ""}`)
         );
       }
+      studentList.sort((a, b) => {
+        const rollA = a.roll_number ?? 999999;
+        const rollB = b.roll_number ?? 999999;
+        if (rollA !== rollB) return rollA - rollB;
+        return a.full_name.localeCompare(b.full_name);
+      });
       setStudents(studentList);
 
       const initial: Record<string, Record<string, CellState>> = {};
@@ -450,8 +456,9 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="sticky left-0 z-10 bg-muted/80 min-w-[140px]">Student</TableHead>
-                      <TableHead className="sticky left-[140px] z-10 bg-muted/80 min-w-[72px]">Std / Div</TableHead>
+                      <TableHead className="sticky left-0 z-10 bg-muted/80 min-w-[80px] w-[80px]">Roll No</TableHead>
+                      <TableHead className="sticky left-[80px] z-10 bg-muted/80 min-w-[180px] w-[180px]">Student</TableHead>
+                      <TableHead className="sticky left-[260px] z-10 bg-muted/80 min-w-[90px] w-[90px]">Std / Div</TableHead>
                       {subjects.map((sub) => (
                         <TableHead
                           key={sub.id}
@@ -466,10 +473,13 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
                   <TableBody>
                     {students.map((s) => (
                       <TableRow key={s.id}>
-                        <TableCell className="sticky left-0 z-10 bg-background font-medium">
+                        <TableCell className="sticky left-0 z-10 bg-background font-medium text-sm text-center">
+                          {s.roll_number ?? "—"}
+                        </TableCell>
+                        <TableCell className="sticky left-[80px] z-10 bg-background font-medium whitespace-nowrap overflow-hidden text-ellipsis max-w-[180px]" title={s.full_name}>
                           {s.full_name}
                         </TableCell>
-                        <TableCell className="sticky left-[140px] z-10 bg-background text-muted-foreground text-sm">
+                        <TableCell className="sticky left-[260px] z-10 bg-background text-muted-foreground text-sm">
                           {s.standard ?? "—"} / {s.division ?? "—"}
                         </TableCell>
                         {subjects.map((sub) => {
