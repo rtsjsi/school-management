@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getUser, canAccessPayroll } from "@/lib/auth";
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getUser();
     if (!user || !canAccessPayroll(user)) {
@@ -11,11 +11,14 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     const supabase = await createClient();
     
+    const resolvedParams = await params;
+    const { id } = resolvedParams;
+
     // Fetch salary history
     const { data: salaryHistory, error: err1 } = await supabase
       .from("employee_salary_history")
       .select("*")
-      .eq("employee_id", params.id)
+      .eq("employee_id", id)
       .order("effective_from_date", { ascending: false });
 
     if (err1) throw err1;
@@ -24,7 +27,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const { data: leaveBalances, error: err2 } = await supabase
       .from("employee_leave_balances")
       .select("*")
-      .eq("employee_id", params.id)
+      .eq("employee_id", id)
       .order("academic_year", { ascending: false });
 
     if (err2) throw err2;
@@ -36,7 +39,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getUser();
     if (!user || !canAccessPayroll(user)) {
@@ -47,11 +50,14 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     const { action, payload } = body;
     const supabase = await createClient();
 
+    const resolvedParams = await params;
+    const { id } = resolvedParams;
+
     if (action === "add_salary_revision") {
       const { effective_from_date, basic_salary, allowance, child_allowance, pf_deduction } = payload;
       
       const { error } = await supabase.from("employee_salary_history").insert({
-        employee_id: params.id,
+        employee_id: id,
         effective_from_date,
         basic_salary: parseFloat(basic_salary || "0"),
         allowance: parseFloat(allowance || "0"),
@@ -68,7 +74,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       
       const { error } = await supabase.from("employee_leave_balances").update({
         allocated_days: parseFloat(allocated_days || "0")
-      }).eq("employee_id", params.id)
+      }).eq("employee_id", id)
         .eq("academic_year", academic_year)
         .eq("leave_type", leave_type);
         

@@ -229,7 +229,7 @@ export function EmployeePayrollInfo({ employeeId }: { employeeId: string }) {
                           <Input 
                             type="number" 
                             className="w-16 h-7 text-center mx-auto" 
-                            value={editingLeave.allocated}
+                            value={editingLeave?.allocated ?? ""}
                             onChange={e => setEditingLeave(p => p ? { ...p, allocated: e.target.value } : null)}
                           />
                         ) : (

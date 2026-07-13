@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
     const finalizedMap = new Map<string, string>();
     finalized.forEach(f => finalizedMap.set(`${f.employee_id}-${f.attendance_date}`, f.status));
 
-    const rows: { employee_id: string; full_name: string; present_days: number; salary: number; gross_amount: number; deductions: number; net_amount: number; bank?: typeof bankMap extends Map<string, infer V> ? V : never }[] = [];
+    const rows: { employee_id: string; full_name: string; present_days: number; salary: number; basic_salary: number; allowance: number; child_allowance: number; pf_deduction: number; gross_amount: number; deductions: number; net_amount: number; bank?: typeof bankMap extends Map<string, infer V> ? V : never }[] = [];
 
     for (const emp of employees ?? []) {
       let presentDays = 0;
