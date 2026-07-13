@@ -298,20 +298,17 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
     window.history.pushState(null, "", window.location.href);
     window.addEventListener("popstate", handlePopState);
 
-    const handleClick = (e: MouseEvent) => {
+    const handleInteraction = (e: Event) => {
       const target = e.target as HTMLElement;
       const a = target.closest("a");
       const button = target.closest("button");
       const isTab = button?.getAttribute("role") === "tab";
 
-      if (a && a.href && a.target !== "_blank") {
-        if (a.href.startsWith(window.location.origin) && a.pathname !== window.location.pathname) {
-          if (!window.confirm("You have unsaved marks. Are you sure you want to leave this page and lose your changes?")) {
-            e.preventDefault();
-            e.stopPropagation();
-          }
+      if (isTab && (e.type === "mousedown" || e.type === "keydown")) {
+        if (e.type === "keydown") {
+          const key = (e as KeyboardEvent).key;
+          if (!["Enter", " ", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(key)) return;
         }
-      } else if (isTab) {
         const isCurrentTab = button.getAttribute("data-state") === "active";
         if (!isCurrentTab) {
           if (!window.confirm("You have unsaved marks. Are you sure you want to switch tabs and lose your changes?")) {
@@ -319,14 +316,28 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
             e.stopPropagation();
           }
         }
+      } else if (a && e.type === "click") {
+        if (a.href && a.target !== "_blank") {
+          if (a.href.startsWith(window.location.origin) && a.pathname !== window.location.pathname) {
+            if (!window.confirm("You have unsaved marks. Are you sure you want to leave this page and lose your changes?")) {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          }
+        }
       }
     };
-    document.addEventListener("click", handleClick, { capture: true });
+    
+    document.addEventListener("click", handleInteraction, { capture: true });
+    document.addEventListener("mousedown", handleInteraction, { capture: true });
+    document.addEventListener("keydown", handleInteraction, { capture: true });
 
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
       window.removeEventListener("popstate", handlePopState);
-      document.removeEventListener("click", handleClick, { capture: true });
+      document.removeEventListener("click", handleInteraction, { capture: true });
+      document.removeEventListener("mousedown", handleInteraction, { capture: true });
+      document.removeEventListener("keydown", handleInteraction, { capture: true });
     };
   }, [isDirty]);
 
