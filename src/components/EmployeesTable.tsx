@@ -330,7 +330,7 @@ export function EmployeesTable({
           <TableHeader>
             <TableRow>
               <TableHead
-                className="cursor-pointer select-none hover:text-foreground"
+                className="cursor-pointer select-none hover:text-foreground w-[90px]"
                 onClick={() => handleSort("employee_id")}
               >
                 <span className="inline-flex items-center gap-1">
@@ -338,7 +338,7 @@ export function EmployeesTable({
                 </span>
               </TableHead>
               <TableHead
-                className="cursor-pointer select-none hover:text-foreground"
+                className="cursor-pointer select-none hover:text-foreground w-[110px]"
                 onClick={() => handleSort("bio_enroll_no")}
               >
                 <span className="inline-flex items-center gap-1">
@@ -362,7 +362,7 @@ export function EmployeesTable({
                 </span>
               </TableHead>
               <TableHead
-                className="cursor-pointer select-none hover:text-foreground"
+                className="cursor-pointer select-none hover:text-foreground w-[130px]"
                 onClick={() => handleSort("shift")}
               >
                 <span className="inline-flex items-center gap-1">
@@ -370,7 +370,7 @@ export function EmployeesTable({
                 </span>
               </TableHead>
               <TableHead
-                className="cursor-pointer select-none hover:text-foreground"
+                className="cursor-pointer select-none hover:text-foreground w-[100px]"
                 onClick={() => handleSort("status")}
               >
                 <span className="inline-flex items-center gap-1">
@@ -378,14 +378,14 @@ export function EmployeesTable({
                 </span>
               </TableHead>
               <TableHead
-                className="cursor-pointer select-none hover:text-foreground text-center"
+                className="cursor-pointer select-none hover:text-foreground text-center w-[100px]"
                 onClick={() => handleSort("data_pct")}
               >
                 <span className="inline-flex items-center gap-1">
                   Data&nbsp;% <SortIcon col="data_pct" />
                 </span>
               </TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="text-right w-[60px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -395,9 +395,9 @@ export function EmployeesTable({
                 <TableRow key={e.id}>
                   <TableCell className="font-mono text-xs">{e.employee_id ?? "—"}</TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">{e.biometric_enroll_no ?? "—"}</TableCell>
-                  <TableCell className="font-medium">{e.full_name}</TableCell>
-                  <TableCell className="text-muted-foreground text-sm">{e.email ?? "—"}</TableCell>
-                  <TableCell className="text-sm">{shiftLabel}</TableCell>
+                  <TableCell className="font-medium max-w-[150px] truncate" title={e.full_name}>{e.full_name}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm max-w-[150px] truncate" title={e.email ?? ""}>{e.email ?? "—"}</TableCell>
+                  <TableCell className="text-sm max-w-[130px] truncate" title={shiftLabel}>{shiftLabel}</TableCell>
                   <TableCell>
                     <Badge variant={(e.status as string) === "active" ? "default" : "secondary"}>
                       {e.status ?? "active"}
