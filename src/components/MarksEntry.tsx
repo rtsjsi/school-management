@@ -289,11 +289,32 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
 
+    const handlePopState = (e: PopStateEvent) => {
+      if (!window.confirm("You have unsaved marks. Are you sure you want to go back and lose your changes?")) {
+        // Push state back to prevent leaving
+        window.history.pushState(null, "", window.location.href);
+      }
+    };
+    window.history.pushState(null, "", window.location.href);
+    window.addEventListener("popstate", handlePopState);
+
     const handleClick = (e: MouseEvent) => {
-      const target = (e.target as HTMLElement).closest("a");
-      if (target && target.href && target.target !== "_blank") {
-        if (target.href.startsWith(window.location.origin) && target.pathname !== window.location.pathname) {
+      const target = e.target as HTMLElement;
+      const a = target.closest("a");
+      const button = target.closest("button");
+      const isTab = button?.getAttribute("role") === "tab";
+
+      if (a && a.href && a.target !== "_blank") {
+        if (a.href.startsWith(window.location.origin) && a.pathname !== window.location.pathname) {
           if (!window.confirm("You have unsaved marks. Are you sure you want to leave this page and lose your changes?")) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }
+      } else if (isTab) {
+        const isCurrentTab = button.getAttribute("data-state") === "active";
+        if (!isCurrentTab) {
+          if (!window.confirm("You have unsaved marks. Are you sure you want to switch tabs and lose your changes?")) {
             e.preventDefault();
             e.stopPropagation();
           }
@@ -304,6 +325,7 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
 
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("popstate", handlePopState);
       document.removeEventListener("click", handleClick, { capture: true });
     };
   }, [isDirty]);
@@ -363,6 +385,24 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
     }
   };
 
+  const handleClassFilterChange = (val: string) => {
+    if (isDirty && !window.confirm("You have unsaved marks. Are you sure you want to change class and lose them?")) return;
+    setIsDirty(false);
+    setClassFilter(val);
+  };
+
+  const handleTermFilterChange = (val: string) => {
+    if (isDirty && !window.confirm("You have unsaved marks. Are you sure you want to change term and lose them?")) return;
+    setIsDirty(false);
+    setTermFilter(val);
+  };
+
+  const handleExamChange = (val: string) => {
+    if (isDirty && !window.confirm("You have unsaved marks. Are you sure you want to change exam and lose them?")) return;
+    setIsDirty(false);
+    setSelectedExamId(val);
+  };
+
   const divisions = Array.from(new Set(students.map((s) => s.division).filter(Boolean))) as string[];
   return (
     <Card>
@@ -379,7 +419,7 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
           <div className="flex flex-wrap gap-4 items-end">
             <div className="space-y-2">
               <Label>Class *</Label>
-              <Select value={classFilter} onValueChange={setClassFilter}>
+              <Select value={classFilter} onValueChange={handleClassFilterChange}>
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Select class" />
                 </SelectTrigger>
@@ -397,7 +437,7 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
             </div>
             <div className="space-y-2">
               <Label>Term *</Label>
-              <Select value={termFilter} onValueChange={setTermFilter}>
+              <Select value={termFilter} onValueChange={handleTermFilterChange}>
                 <SelectTrigger className="w-[120px]">
                   <SelectValue placeholder="Select term" />
                 </SelectTrigger>
@@ -409,7 +449,7 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
             </div>
             <div className="space-y-2">
               <Label>Exam *</Label>
-              <Select value={selectedExamId} onValueChange={setSelectedExamId} disabled={!classFilter || !termFilter}>
+              <Select value={selectedExamId} onValueChange={handleExamChange} disabled={!classFilter || !termFilter}>
                 <SelectTrigger className="w-[280px]">
                   <SelectValue placeholder={!classFilter || !termFilter ? "Select Class and Term first" : "Select exam"} />
                 </SelectTrigger>
@@ -458,7 +498,6 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
                     <TableRow>
                       <TableHead className="sticky left-0 z-10 bg-muted/80 min-w-[80px] w-[80px]">Roll No</TableHead>
                       <TableHead className="sticky left-[80px] z-10 bg-muted/80 min-w-[180px] w-[180px]">Student</TableHead>
-                      <TableHead className="sticky left-[260px] z-10 bg-muted/80 min-w-[90px] w-[90px]">Std / Div</TableHead>
                       {subjects.map((sub) => (
                         <TableHead
                           key={sub.id}
@@ -478,9 +517,6 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
                         </TableCell>
                         <TableCell className="sticky left-[80px] z-10 bg-background font-medium whitespace-nowrap overflow-hidden text-ellipsis max-w-[180px]" title={s.full_name}>
                           {s.full_name}
-                        </TableCell>
-                        <TableCell className="sticky left-[260px] z-10 bg-background text-muted-foreground text-sm">
-                          {s.standard ?? "—"} / {s.division ?? "—"}
                         </TableCell>
                         {subjects.map((sub) => {
                           const cell = marks[s.id]?.[sub.id] ?? { score: "", max_score: "", grade: "", is_absent: false };
