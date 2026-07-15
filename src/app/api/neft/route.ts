@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
-import { dayWeight, computeWorkingDays } from "@/lib/attendance";
+import { dayWeight, computeWorkingDays, isPayableWorkingDay } from "@/lib/attendance";
 
 export const dynamic = "force-dynamic";
 
@@ -89,10 +89,8 @@ export async function GET(request: NextRequest) {
       let presentDays = 0;
       for (let d = 1; d <= lastDay; d++) {
         const dStr = `${y}-${m}-${String(d).padStart(2, "0")}`;
-        const day = new Date(`${dStr}T12:00:00`).getDay();
-        const isWeekend = day === 0 || day === 6;
-        const isHoliday = holidayDates.has(dStr);
-        if (isHoliday || isWeekend) continue;
+        // Mon–Sat payable days (Saturday counts as paid holiday); skip Sunday + calendar holidays
+        if (!isPayableWorkingDay(dStr, holidayDates)) continue;
 
         const status = finalizedMap.get(`${emp.id}-${dStr}`);
         presentDays += dayWeight(status);
