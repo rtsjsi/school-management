@@ -17,6 +17,12 @@ import { EMPLOYEE_TYPES, EMPLOYEE_ROLES } from "@/lib/lov";
 import { reassignEmployeeIds } from "@/lib/employee-id";
 import { normalizeTimeForDb, timeForInput } from "@/lib/employee-shift";
 
+function netSalary(basic: string, other: string, child: string): string {
+  const total =
+    parseFloat(basic || "0") + parseFloat(other || "0") + parseFloat(child || "0");
+  return Number.isFinite(total) ? String(total) : "";
+}
+
 interface EmployeeEditDialogProps {
   employee: {
     id: string;
@@ -34,6 +40,10 @@ interface EmployeeEditDialogProps {
     shift_end_time?: string | null;
     biometric_enroll_no?: string | null;
     status?: string | null;
+    basic_salary?: number | null;
+    other_allowance?: number | null;
+    child_allowance?: number | null;
+    casual_leave_balance?: number | null;
     monthly_salary?: number | null;
     degree?: string | null;
     institution?: string | null;
@@ -62,57 +72,49 @@ export function EmployeeEditDialog({
   const setOpen = isControlled ? controlledOnOpenChange : setLocalOpen;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState({
-    full_name: employee.full_name || "",
-    email: employee.email || "",
-    phone_number: employee.phone_number || "",
-    address: employee.address || "",
-    aadhaar: employee.aadhaar || "",
-    pan: employee.pan || "",
-    role: employee.role || "staff",
-    employee_type: employee.employee_type || "full_time",
-    joining_date: employee.joining_date || "",
-    shift_start_time: timeForInput(employee.shift_start_time) || "09:00",
-    shift_end_time: timeForInput(employee.shift_end_time) || "17:00",
-    biometric_enroll_no: employee.biometric_enroll_no || "",
-    status: employee.status || "active",
-    monthly_salary: employee.monthly_salary?.toString() || "",
-    degree: employee.degree || "",
-    institution: employee.institution || "",
-    year_passed: employee.year_passed ? String(employee.year_passed) : "",
-    bank_name: employee.bank_name || "",
-    account_number: employee.account_number || "",
-    ifsc_code: employee.ifsc_code || "",
-    account_holder_name: employee.account_holder_name || "",
-  });
+
+  const buildForm = () => {
+    const basic = employee.basic_salary != null ? String(employee.basic_salary) : "";
+    const other = employee.other_allowance != null ? String(employee.other_allowance) : "";
+    const child = employee.child_allowance != null ? String(employee.child_allowance) : "";
+    return {
+      full_name: employee.full_name || "",
+      email: employee.email || "",
+      phone_number: employee.phone_number || "",
+      address: employee.address || "",
+      aadhaar: employee.aadhaar || "",
+      pan: employee.pan || "",
+      role: employee.role || "staff",
+      employee_type: employee.employee_type || "full_time",
+      joining_date: employee.joining_date || "",
+      shift_start_time: timeForInput(employee.shift_start_time) || "09:00",
+      shift_end_time: timeForInput(employee.shift_end_time) || "17:00",
+      biometric_enroll_no: employee.biometric_enroll_no || "",
+      status: employee.status || "active",
+      basic_salary: basic,
+      other_allowance: other,
+      child_allowance: child,
+      casual_leave_balance:
+        employee.casual_leave_balance != null ? String(employee.casual_leave_balance) : "5",
+      monthly_salary: netSalary(basic, other, child) || (employee.monthly_salary?.toString() || ""),
+      degree: employee.degree || "",
+      institution: employee.institution || "",
+      year_passed: employee.year_passed ? String(employee.year_passed) : "",
+      bank_name: employee.bank_name || "",
+      account_number: employee.account_number || "",
+      ifsc_code: employee.ifsc_code || "",
+      account_holder_name: employee.account_holder_name || "",
+    };
+  };
+
+  const [form, setForm] = useState(buildForm);
 
   useEffect(() => {
     if (open) {
-      setForm({
-        full_name: employee.full_name || "",
-        email: employee.email || "",
-        phone_number: employee.phone_number || "",
-        address: employee.address || "",
-        aadhaar: employee.aadhaar || "",
-        pan: employee.pan || "",
-        role: employee.role || "staff",
-        employee_type: employee.employee_type || "full_time",
-        joining_date: employee.joining_date || "",
-        shift_start_time: timeForInput(employee.shift_start_time) || "09:00",
-        shift_end_time: timeForInput(employee.shift_end_time) || "17:00",
-        biometric_enroll_no: employee.biometric_enroll_no || "",
-        status: employee.status || "active",
-        monthly_salary: employee.monthly_salary?.toString() || "",
-        degree: employee.degree || "",
-        institution: employee.institution || "",
-        year_passed: employee.year_passed ? String(employee.year_passed) : "",
-        bank_name: employee.bank_name || "",
-        account_number: employee.account_number || "",
-        ifsc_code: employee.ifsc_code || "",
-        account_holder_name: employee.account_holder_name || "",
-      });
+      setForm(buildForm());
       setError(null);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset from current employee when dialog opens
   }, [open, employee]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -130,6 +132,11 @@ export function EmployeeEditDialog({
     setLoading(true);
     try {
       const supabase = createClient();
+      const basic = form.basic_salary ? parseFloat(form.basic_salary) : 0;
+      const other = form.other_allowance ? parseFloat(form.other_allowance) : 0;
+      const child = form.child_allowance ? parseFloat(form.child_allowance) : 0;
+      const monthly = basic + other + child;
+
       const { error: err } = await supabase
         .from("employees")
         .update({
@@ -146,7 +153,13 @@ export function EmployeeEditDialog({
           shift_end_time: normalizeTimeForDb(form.shift_end_time),
           biometric_enroll_no: form.biometric_enroll_no.trim() || null,
           status: form.status,
-          monthly_salary: form.monthly_salary ? parseFloat(form.monthly_salary) : null,
+          basic_salary: basic,
+          other_allowance: other,
+          child_allowance: child,
+          casual_leave_balance: form.casual_leave_balance
+            ? parseFloat(form.casual_leave_balance)
+            : 5,
+          monthly_salary: monthly || null,
           degree: form.degree.trim() || null,
           institution: form.institution.trim() || null,
           year_passed: form.year_passed ? parseInt(form.year_passed) : null,
@@ -214,7 +227,7 @@ export function EmployeeEditDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>}
-          
+
           <Tabs defaultValue="details" className="w-full">
             <TabsList className="w-full grid grid-cols-2">
               <TabsTrigger value="details">Personal & Job Details</TabsTrigger>
@@ -281,44 +294,44 @@ export function EmployeeEditDialog({
                   <Label>Joining Date *</Label>
                   <DatePicker value={form.joining_date} onChange={(isoDate) => setForm((p) => ({ ...p, joining_date: isoDate }))} />
                 </div>
-            <div className="space-y-2">
-              <Label>Shift Start Time</Label>
-              <Input
-                type="time"
-                value={form.shift_start_time}
-                onChange={(e) => setForm((p) => ({ ...p, shift_start_time: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Shift End Time</Label>
-              <Input
-                type="time"
-                value={form.shift_end_time}
-                onChange={(e) => setForm((p) => ({ ...p, shift_end_time: e.target.value }))}
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select value={form.status} onValueChange={(v) => setForm((p) => ({ ...p, status: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="resigned">Resigned</SelectItem>
-                  <SelectItem value="terminated">Terminated</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Biometric Enrollment No</Label>
-              <Input
-                value={form.biometric_enroll_no}
-                onChange={(e) => setForm((p) => ({ ...p, biometric_enroll_no: e.target.value }))}
-                placeholder="EnNo on the device (e.g. 5)"
-              />
-            </div>
+                <div className="space-y-2">
+                  <Label>Shift Start Time</Label>
+                  <Input
+                    type="time"
+                    value={form.shift_start_time}
+                    onChange={(e) => setForm((p) => ({ ...p, shift_start_time: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Shift End Time</Label>
+                  <Input
+                    type="time"
+                    value={form.shift_end_time}
+                    onChange={(e) => setForm((p) => ({ ...p, shift_end_time: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Status</Label>
+                  <Select value={form.status} onValueChange={(v) => setForm((p) => ({ ...p, status: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                      <SelectItem value="resigned">Resigned</SelectItem>
+                      <SelectItem value="terminated">Terminated</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Biometric Enrollment No</Label>
+                  <Input
+                    value={form.biometric_enroll_no}
+                    onChange={(e) => setForm((p) => ({ ...p, biometric_enroll_no: e.target.value }))}
+                    placeholder="EnNo on the device (e.g. 5)"
+                  />
+                </div>
               </div>
               <div className="space-y-4 pt-4 border-t">
                 <h4 className="text-sm font-semibold">Qualification</h4>
@@ -356,38 +369,111 @@ export function EmployeeEditDialog({
             </TabsContent>
 
             <TabsContent value="salary" className="space-y-4 mt-4">
-              <div className="space-y-2">
-                <Label>Monthly Salary (₹)</Label>
-                <Input type="number" min={0} step={0.01} value={form.monthly_salary} onChange={(e) => setForm((p) => ({ ...p, monthly_salary: e.target.value }))} placeholder="For NEFT" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Basic Salary (₹)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={form.basic_salary}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setForm((p) => ({
+                        ...p,
+                        basic_salary: val,
+                        monthly_salary: netSalary(val, p.other_allowance, p.child_allowance),
+                      }));
+                    }}
+                    placeholder="Basic"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Other Allowance (₹)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={form.other_allowance}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setForm((p) => ({
+                        ...p,
+                        other_allowance: val,
+                        monthly_salary: netSalary(p.basic_salary, val, p.child_allowance),
+                      }));
+                    }}
+                    placeholder="Other Allowance"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Child Allowance (₹)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={form.child_allowance}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setForm((p) => ({
+                        ...p,
+                        child_allowance: val,
+                        monthly_salary: netSalary(p.basic_salary, p.other_allowance, val),
+                      }));
+                    }}
+                    placeholder="Child Allowance"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Casual Leave Balance</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={0.5}
+                    value={form.casual_leave_balance}
+                    onChange={(e) => setForm((p) => ({ ...p, casual_leave_balance: e.target.value }))}
+                    placeholder="Days"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Net Salary (Auto)</Label>
+                  <Input
+                    type="text"
+                    value={form.monthly_salary}
+                    disabled
+                    className="bg-muted"
+                    placeholder="Calculated"
+                  />
+                </div>
               </div>
-              
+
               <div className="space-y-4 pt-4 border-t">
                 <h4 className="text-sm font-semibold">Bank Account (Salary)</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Bank Name</Label>
-                <Input
-                  value={form.bank_name}
-                  onChange={(e) => setForm((p) => ({ ...p, bank_name: e.target.value }))}
-                  placeholder="Bank name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Account Number</Label>
-                <Input
-                  value={form.account_number}
-                  onChange={(e) => setForm((p) => ({ ...p, account_number: e.target.value }))}
-                  placeholder="Account number"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>IFSC Code</Label>
-                <Input
-                  value={form.ifsc_code}
-                  onChange={(e) => setForm((p) => ({ ...p, ifsc_code: e.target.value }))}
-                  placeholder="IFSC"
-                />
-              </div>
+                    <Input
+                      value={form.bank_name}
+                      onChange={(e) => setForm((p) => ({ ...p, bank_name: e.target.value }))}
+                      placeholder="Bank name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Account Number</Label>
+                    <Input
+                      value={form.account_number}
+                      onChange={(e) => setForm((p) => ({ ...p, account_number: e.target.value }))}
+                      placeholder="Account number"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>IFSC Code</Label>
+                    <Input
+                      value={form.ifsc_code}
+                      onChange={(e) => setForm((p) => ({ ...p, ifsc_code: e.target.value }))}
+                      placeholder="IFSC"
+                    />
+                  </div>
                   <div className="space-y-2">
                     <Label>Account Holder Name</Label>
                     <Input

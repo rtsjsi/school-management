@@ -9,7 +9,7 @@ export const EMPLOYEE_COMPLETENESS_FIELDS = [
   "role",
   "employee_type",
   "joining_date",
-  "monthly_salary",
+  "basic_salary",
   "degree",
   "institution",
   "year_passed",

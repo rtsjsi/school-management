@@ -9,44 +9,6 @@ import {
   type PunchLite,
 } from "@/lib/attendance";
 
-async function recalculateLeaveBalances(supabase: any, empIds: string[], monthYear: string) {
-  if (empIds.length === 0) return;
-  const [y, m] = monthYear.split("-").map(Number);
-  const academicYear = m >= 4 ? `${y}-${y + 1}` : `${y - 1}-${y}`;
-  const start = `${academicYear.split("-")[0]}-04-01`;
-  const end = `${academicYear.split("-")[1]}-03-31`;
-
-  for (const empId of empIds) {
-    const { data: leaves } = await supabase
-      .from("employee_attendance_finalized")
-      .select("attendance_date")
-      .eq("employee_id", empId)
-      .eq("status", "casual_leave")
-      .gte("attendance_date", start)
-      .lte("attendance_date", end);
-    const usedDays = (leaves ?? []).length;
-    
-    // Only update if the row exists, or insert with default 5 if it doesn't
-    const { data: existing } = await supabase
-      .from("employee_leave_balances")
-      .select("allocated_days")
-      .eq("employee_id", empId)
-      .eq("academic_year", academicYear)
-      .eq("leave_type", "casual_leave")
-      .single();
-
-    const allocated = existing?.allocated_days ?? 5; // Default to 5
-
-    await supabase.from("employee_leave_balances").upsert({
-      employee_id: empId,
-      academic_year: academicYear,
-      leave_type: "casual_leave",
-      allocated_days: allocated,
-      used_days: usedDays
-    }, { onConflict: "employee_id,academic_year,leave_type" });
-  }
-}
-
 export async function GET(request: NextRequest) {
   try {
     const user = await getUser();
@@ -232,9 +194,6 @@ export async function POST(request: NextRequest) {
         );
       }
       
-      const empIds = Array.from(new Set(updates.map((u: any) => u.employee_id)));
-      await recalculateLeaveBalances(supabase, empIds as string[], monthYear);
-      
       return NextResponse.json({ success: true });
     }
 
@@ -316,9 +275,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 400 });
       }
 
-      const empIds = Array.from(new Set(rowsToInsert.map(r => r.employee_id)));
-      await recalculateLeaveBalances(supabase, empIds, monthYear);
-
       return NextResponse.json({ success: true });
     }
 
@@ -336,10 +292,6 @@ export async function POST(request: NextRequest) {
         console.error("Unfreeze error:", error);
         return NextResponse.json({ error: error.message }, { status: 400 });
       }
-      
-      const { data: employees } = await supabase.from("employees").select("id").eq("status", "active");
-      const empIds = (employees ?? []).map((e: any) => e.id);
-      await recalculateLeaveBalances(supabase, empIds, monthYear);
       
       return NextResponse.json({ success: true });
     }

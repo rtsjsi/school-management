@@ -37,13 +37,8 @@ export async function GET(request: NextRequest) {
 
     const { data: employees } = await supabase
       .from("employees")
-      .select("id, full_name, monthly_salary, bank_name, account_number, ifsc_code, account_holder_name")
+      .select("id, full_name, basic_salary, other_allowance, child_allowance, monthly_salary, bank_name, account_number, ifsc_code, account_holder_name")
       .eq("status", "active");
-
-    const { data: salaryHistory } = await supabase
-      .from("employee_salary_history")
-      .select("*")
-      .order("effective_from_date", { ascending: false });
 
     const { data: settings } = await supabase
       .from("payroll_settings")
@@ -76,7 +71,19 @@ export async function GET(request: NextRequest) {
     const finalizedMap = new Map<string, string>();
     finalized.forEach(f => finalizedMap.set(`${f.employee_id}-${f.attendance_date}`, f.status));
 
-    const rows: { employee_id: string; full_name: string; present_days: number; salary: number; basic_salary: number; allowance: number; child_allowance: number; pf_deduction: number; gross_amount: number; deductions: number; net_amount: number; bank?: typeof bankMap extends Map<string, infer V> ? V : never }[] = [];
+    const rows: {
+      employee_id: string;
+      full_name: string;
+      present_days: number;
+      salary: number;
+      basic_salary: number;
+      other_allowance: number;
+      child_allowance: number;
+      gross_amount: number;
+      deductions: number;
+      net_amount: number;
+      bank?: typeof bankMap extends Map<string, infer V> ? V : never;
+    }[] = [];
 
     for (const emp of employees ?? []) {
       let presentDays = 0;
@@ -91,53 +98,34 @@ export async function GET(request: NextRequest) {
         presentDays += dayWeight(status);
       }
 
-      const history = (salaryHistory ?? []).filter((s: any) => s.employee_id === emp.id && s.effective_from_date <= end);
-      const effective = history.length > 0 ? history[0] : null;
-      
-      const basicSalary = Number(effective?.basic_salary ?? emp.monthly_salary ?? 0);
-      const allowance = Number(effective?.allowance ?? 0);
-      const childAllowance = Number(effective?.child_allowance ?? 0);
-      const pfDeduction = Number(effective?.pf_deduction ?? 0);
+      const basicSalary = Number(emp.basic_salary ?? emp.monthly_salary ?? 0);
+      const otherAllowance = Number(emp.other_allowance ?? 0);
+      const childAllowance = Number(emp.child_allowance ?? 0);
 
       const proratedBasic = workingDays > 0 ? (basicSalary / workingDays) * presentDays : 0;
-      const proratedAllowance = workingDays > 0 ? (allowance / workingDays) * presentDays : 0;
-      const proratedChildAllowance = workingDays > 0 ? (childAllowance / workingDays) * presentDays : 0;
-      
-      const grossAmount = Math.round((proratedBasic + proratedAllowance + proratedChildAllowance) * 100) / 100;
-      const netAmount = Math.max(0, Math.round((grossAmount - pfDeduction) * 100) / 100);
+      const proratedOther = workingDays > 0 ? (otherAllowance / workingDays) * presentDays : 0;
+      const proratedChild = workingDays > 0 ? (childAllowance / workingDays) * presentDays : 0;
+
+      const netAmount = Math.max(
+        0,
+        Math.round((proratedBasic + proratedOther + proratedChild) * 100) / 100
+      );
       const bank = bankMap.get(emp.id);
 
       rows.push({
         employee_id: emp.id,
         full_name: emp.full_name,
         present_days: presentDays,
-        salary: basicSalary,
+        salary: basicSalary + otherAllowance + childAllowance,
         basic_salary: basicSalary,
-        allowance,
+        other_allowance: otherAllowance,
         child_allowance: childAllowance,
-        pf_deduction: pfDeduction,
-        gross_amount: grossAmount,
-        deductions: pfDeduction,
+        gross_amount: netAmount,
+        deductions: 0,
         net_amount: netAmount,
         bank,
       });
     }
-
-    const payslipUpserts = rows.map(r => ({
-      employee_id: r.employee_id,
-      month_year: monthYear,
-      present_days: r.present_days,
-      basic_salary_snapshot: r.basic_salary,
-      allowance_snapshot: r.allowance,
-      child_allowance_snapshot: r.child_allowance,
-      pf_deduction_snapshot: r.pf_deduction,
-      gross_amount: r.gross_amount,
-      net_amount: r.net_amount,
-      status: "finalized",
-      updated_at: new Date().toISOString()
-    }));
-
-    await supabase.from("payslips").upsert(payslipUpserts, { onConflict: "employee_id,month_year" });
 
     const payableRows = rows.filter((r) => r.net_amount > 0 && r.bank);
 
