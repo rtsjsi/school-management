@@ -6,6 +6,10 @@ import {
   employeeShiftLite,
   dayWeight,
   computeWorkingDays,
+  deriveCalendarFlags,
+  isPayableWorkingDay,
+  isSaturdayPaidHoliday,
+  isSundayWeekOff,
   type PunchLite,
 } from "@/lib/attendance";
 
@@ -112,9 +116,8 @@ export async function GET(request: NextRequest) {
 
       for (let d = 1; d <= lastDay; d++) {
         const dStr = `${y}-${m}-${String(d).padStart(2, "0")}`;
-        const day = new Date(`${dStr}T12:00:00`).getDay();
-        const isWeekend = day === 0 || day === 6;
-        const isHoliday = holidayDates.has(dStr);
+        const isCalendarHoliday = holidayDates.has(dStr);
+        const { isHoliday, isWeekOff } = deriveCalendarFlags(dStr, holidayDates);
 
         let status: string;
         let source = "default";
@@ -126,13 +129,19 @@ export async function GET(request: NextRequest) {
             .filter((p) => p.enroll_no === emp.biometric_enroll_no && p.punched_at.startsWith(dStr))
             .map((p) => ({ punch_type: p.direction, punch_time: p.punched_at }));
 
-          const derived = deriveDailyStatus(dayPunches, shift, undefined, isHoliday, isWeekend);
+          const derived = deriveDailyStatus(dayPunches, shift, undefined, isHoliday, isWeekOff);
           status = derived.status;
           source = dayPunches.length > 0 ? "biometric" : "default";
         } else {
           // No biometric enrollment — use deriveDailyStatus with empty punches for holiday/weekend detection
-          const derived = deriveDailyStatus([], shift, undefined, isHoliday, isWeekend);
+          const derived = deriveDailyStatus([], shift, undefined, isHoliday, isWeekOff);
           status = derived.status;
+        }
+
+        // Lock calendar holidays, Sundays, and auto Saturday paid holidays in the grid
+        if (source !== "biometric" && source !== "manual") {
+          if (isCalendarHoliday || isSaturdayPaidHoliday(dStr)) source = "holiday";
+          else if (isSundayWeekOff(dStr)) source = "weekend";
         }
 
         // 2. Overlay manual overrides
@@ -162,12 +171,8 @@ export async function GET(request: NextRequest) {
     });
     Object.values(dailyData).forEach((dayRows) => {
       dayRows.forEach((r) => {
-        const dStr = r.date;
-        const day = new Date(`${dStr}T12:00:00`).getDay();
-        const isWeekend = day === 0 || day === 6;
-        const isHoliday = holidayDates.has(dStr);
-        // Only count working days for present-day summary
-        if (!isWeekend && !isHoliday) {
+        // Count Mon–Sat (incl. Saturday paid holidays); skip Sunday and calendar holidays
+        if (isPayableWorkingDay(r.date, holidayDates)) {
           presentCounts[r.empId] = (presentCounts[r.empId] ?? 0) + dayWeight(r.status);
         }
       });
@@ -273,9 +278,7 @@ export async function POST(request: NextRequest) {
 
         for (let d = 1; d <= lastDay; d++) {
           const dStr = `${y}-${m}-${String(d).padStart(2, "0")}`;
-          const day = new Date(`${dStr}T12:00:00`).getDay();
-          const isWeekend = day === 0 || day === 6;
-          const isHoliday = holidayDates.has(dStr);
+          const { isHoliday, isWeekOff } = deriveCalendarFlags(dStr, holidayDates);
 
           let status: string;
           let isManual = false;
@@ -286,10 +289,10 @@ export async function POST(request: NextRequest) {
               .filter((p) => p.enroll_no === emp.biometric_enroll_no && p.punched_at.startsWith(dStr))
               .map((p) => ({ punch_type: p.direction, punch_time: p.punched_at }));
 
-            const derived = deriveDailyStatus(dayPunches, shift, undefined, isHoliday, isWeekend);
+            const derived = deriveDailyStatus(dayPunches, shift, undefined, isHoliday, isWeekOff);
             status = derived.status;
           } else {
-            const derived = deriveDailyStatus([], shift, undefined, isHoliday, isWeekend);
+            const derived = deriveDailyStatus([], shift, undefined, isHoliday, isWeekOff);
             status = derived.status;
           }
 

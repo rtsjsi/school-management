@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
-import { dayWeight, computeWorkingDays } from "@/lib/attendance";
+import { dayWeight, computeWorkingDays, isPayableWorkingDay } from "@/lib/attendance";
 
 export const dynamic = "force-dynamic";
 
@@ -53,13 +53,11 @@ export async function GET(request: NextRequest) {
 
         for (let d = 1; d <= lastDay; d++) {
           const dStr = `${y}-${m}-${String(d).padStart(2, "0")}`;
-          const day = new Date(`${dStr}T12:00:00`).getDay();
-          const isWeekend = day === 0 || day === 6;
-          const isHoliday = holidayDates.has(dStr);
-          if (isHoliday || isWeekend) continue;
+          // Mon–Sat payable days (Saturday = paid holiday); skip Sunday + calendar holidays
+          if (!isPayableWorkingDay(dStr, holidayDates)) continue;
 
           const entry = empEntries.find((e) => e.attendance_date === dStr);
-          // Use dayWeight: present=1, half_day=0.5, absent/leave=0
+          // Use dayWeight: present=1, half_day=0.5, holiday/week_off/casual_leave=1, absent=0
           presentWeight += dayWeight(entry?.status);
         }
 

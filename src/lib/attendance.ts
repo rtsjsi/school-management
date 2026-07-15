@@ -156,8 +156,57 @@ export function dayWeight(status: string | null | undefined): number {
   return 0;
 }
 
+/** JS Date#getDay(): 0 = Sunday, 6 = Saturday. */
+export const SUNDAY = 0;
+export const SATURDAY = 6;
+
 /**
- * Count working days (weekdays minus holidays) in a given month.
+ * School week rules:
+ * - Sunday is the only non-working week off (not counted for payroll).
+ * - Saturday is a school working / payable day, but staff are not expected
+ *   to punch — treat empty attendance as a paid holiday.
+ * - Calendar holidays (from `holidays`) are excluded from working-day totals
+ *   (paid implicitly via monthly proration).
+ */
+export function dayOfWeek(dateStr: string): number {
+  return new Date(`${dateStr}T12:00:00`).getDay();
+}
+
+/** True only for Sunday — the unpaid / non-working week off. */
+export function isSundayWeekOff(dateStr: string): boolean {
+  return dayOfWeek(dateStr) === SUNDAY;
+}
+
+/** Saturday: payable school day, auto paid-holiday when staff do not attend. */
+export function isSaturdayPaidHoliday(dateStr: string): boolean {
+  return dayOfWeek(dateStr) === SATURDAY;
+}
+
+/**
+ * Days that count toward working-day totals and attendance proration:
+ * Mon–Sat, excluding calendar holidays. Sundays are never counted.
+ */
+export function isPayableWorkingDay(dateStr: string, holidayDates: Set<string>): boolean {
+  return !isSundayWeekOff(dateStr) && !holidayDates.has(dateStr);
+}
+
+/**
+ * Flags for `deriveDailyStatus` empty-punch defaults.
+ * Saturday is passed as holiday so no punches → paid holiday, not absent.
+ */
+export function deriveCalendarFlags(
+  dateStr: string,
+  holidayDates: Set<string>,
+): { isHoliday: boolean; isWeekOff: boolean } {
+  return {
+    isHoliday: holidayDates.has(dateStr) || isSaturdayPaidHoliday(dateStr),
+    isWeekOff: isSundayWeekOff(dateStr),
+  };
+}
+
+/**
+ * Count payable working days (Mon–Sat minus calendar holidays) in a month.
+ * Saturdays are included so staff are paid for them as paid holidays.
  * Uses noon-anchored date parsing to avoid timezone edge cases.
  */
 export function computeWorkingDays(
@@ -169,8 +218,7 @@ export function computeWorkingDays(
   let count = 0;
   for (let d = 1; d <= lastDay; d++) {
     const dStr = `${year}-${month}-${String(d).padStart(2, "0")}`;
-    const day = new Date(`${dStr}T12:00:00`).getDay();
-    if (day !== 0 && day !== 6 && !holidayDates.has(dStr)) count++;
+    if (isPayableWorkingDay(dStr, holidayDates)) count++;
   }
   return count;
 }
