@@ -360,6 +360,8 @@ function StudentExitDialog({
         .from("students")
         .update({
           status: "inactive",
+          // Free the roll number so it can be reassigned to active/new students
+          roll_number: null,
         })
         .eq("id", studentId);
       if (updErr) {
@@ -415,8 +417,9 @@ function StudentExitDialog({
         <DialogHeader>
           <DialogTitle className="text-base">Exit student</DialogTitle>
           <DialogDescription>
-            Mark <span className="font-semibold text-foreground">{studentName}</span> as inactive. All
-            records will remain in the system for reports and history.
+            Mark <span className="font-semibold text-foreground">{studentName}</span> as inactive and
+            release their roll number so it can be assigned to another student. All records will
+            remain in the system for reports and history.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
