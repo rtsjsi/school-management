@@ -20,7 +20,6 @@ import type { StaffTableEmployee } from "@/components/EmployeesTable";
 import { computeEmployeeCompleteness, completenessBadgeClassNames } from "@/lib/master-data-completeness";
 import { EMPLOYEE_ROLES, EMPLOYEE_TYPES } from "@/lib/lov";
 import { formatTimeShort } from "@/lib/employee-shift";
-import { EmployeePayrollInfo } from "./EmployeePayrollInfo";
 
 interface EmployeeViewDialogProps {
   employee: StaffTableEmployee;
@@ -158,8 +157,28 @@ export function EmployeeViewDialog({ employee, open, onOpenChange }: EmployeeVie
               <InfoRow label="Shift Start Time" value={formatTimeShort(employee.shift_start_time) || "—"} />
               <InfoRow label="Shift End Time" value={formatTimeShort(employee.shift_end_time) || "—"} />
               <InfoRow
-                label="Monthly Salary"
-                value={employee.monthly_salary != null ? `₹${employee.monthly_salary.toLocaleString("en-IN")}` : "—"}
+                label="Basic Salary"
+                value={employee.basic_salary != null ? `₹${Number(employee.basic_salary).toLocaleString("en-IN")}` : "—"}
+              />
+              <InfoRow
+                label="Other Allowance"
+                value={employee.other_allowance != null ? `₹${Number(employee.other_allowance).toLocaleString("en-IN")}` : "—"}
+              />
+              <InfoRow
+                label="Child Allowance"
+                value={employee.child_allowance != null ? `₹${Number(employee.child_allowance).toLocaleString("en-IN")}` : "—"}
+              />
+              <InfoRow
+                label="Net Salary"
+                value={employee.monthly_salary != null ? `₹${Number(employee.monthly_salary).toLocaleString("en-IN")}` : "—"}
+              />
+              <InfoRow
+                label="Casual Leave Balance"
+                value={
+                  employee.casual_leave_balance != null
+                    ? `${Number(employee.casual_leave_balance)} day(s)`
+                    : "—"
+                }
               />
               <InfoRow label="Biometric Enroll No" value={employee.biometric_enroll_no ?? "—"} mono />
             </div>
@@ -191,10 +210,6 @@ export function EmployeeViewDialog({ employee, open, onOpenChange }: EmployeeVie
               </Section>
             </>
           )}
-
-          <hr className="border-border/40" />
-          <EmployeePayrollInfo employeeId={employee.id} />
-          
         </div>
       </DialogContent>
     </Dialog>

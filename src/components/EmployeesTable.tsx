@@ -47,6 +47,10 @@ export type StaffTableEmployee = {
   employee_type?: string | null;
   joining_date?: string | null;
   status?: string | null;
+  basic_salary?: number | null;
+  other_allowance?: number | null;
+  child_allowance?: number | null;
+  casual_leave_balance?: number | null;
   monthly_salary?: number | null;
   degree?: string | null;
   institution?: string | null;
