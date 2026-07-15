@@ -28,8 +28,17 @@ export type AttendanceThresholds = { fullDayHours: number; halfDayHours: number 
 
 export const DEFAULT_THRESHOLDS: AttendanceThresholds = { fullDayHours: 6, halfDayHours: 3 };
 
+export type AttendanceStatus =
+  | "present"
+  | "half_day"
+  | "absent"
+  | "holiday"
+  | "week_off"
+  | "casual_leave"
+  | "leave_without_pay";
+
 export type DerivedDay = {
-  status: "present" | "half_day" | "absent" | "holiday" | "week_off" | "casual_leave";
+  status: AttendanceStatus;
   in_time?: string; // HH:MM:SS in IST
   out_time?: string; // HH:MM:SS in IST
   worked_hours: number;
@@ -37,6 +46,9 @@ export type DerivedDay = {
   is_early_departure: boolean;
   single_punch: boolean;
 };
+
+/** Unpaid; used when a paid Saturday is sandwiched by Friday/Monday leave. */
+export const LEAVE_WITHOUT_PAY = "leave_without_pay" as const;
 
 const IST_TZ = "Asia/Kolkata";
 
@@ -149,16 +161,44 @@ export function deriveDailyStatus(
   };
 }
 
-/** Payable weight of a day: present/holiday/week_off = 1, half day = 0.5, otherwise 0. */
+/**
+ * Payable weight of a day:
+ * present / holiday / week_off / casual_leave = 1,
+ * half_day = 0.5,
+ * leave_without_pay / absent / anything else = 0.
+ */
 export function dayWeight(status: string | null | undefined): number {
   if (status === "present" || status === "holiday" || status === "week_off" || status === "casual_leave") return 1;
   if (status === "half_day") return 0.5;
+  // leave_without_pay and absent intentionally weigh 0
   return 0;
 }
 
 /** JS Date#getDay(): 0 = Sunday, 6 = Saturday. */
 export const SUNDAY = 0;
+export const FRIDAY = 5;
 export const SATURDAY = 6;
+export const MONDAY = 1;
+
+/** Statuses that mean the employee took leave / was away (triggers Saturday LWP). */
+export function isLeaveTriggerStatus(status: string | null | undefined): boolean {
+  return (
+    status === "absent" ||
+    status === "casual_leave" ||
+    status === "leave_without_pay" ||
+    status === "leave"
+  );
+}
+
+/** Add calendar days to a YYYY-MM-DD string (noon-anchored). */
+export function addCalendarDays(dateStr: string, delta: number): string {
+  const d = new Date(`${dateStr}T12:00:00`);
+  d.setDate(d.getDate() + delta);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
 
 /**
  * School week rules:
@@ -221,4 +261,60 @@ export function computeWorkingDays(
     if (isPayableWorkingDay(dStr, holidayDates)) count++;
   }
   return count;
+}
+
+/**
+ * Bridging Saturday rule (school payroll):
+ * - Leave/absent on Friday → that week's Saturday becomes leave_without_pay (weight 0).
+ * - Leave/absent on Monday → previous week's Saturday becomes leave_without_pay.
+ *
+ * Only rewrites Saturdays that are still auto paid holidays (or empty unpaid defaults).
+ * Does not override present / half_day / casual_leave on Saturday, nor dates in
+ * `manualOverrideDates` (manual corrections win).
+ *
+ * `statusByDate` should include Friday/Monday neighbors even when they fall outside
+ * the review month so month-boundary Saturdays resolve correctly.
+ */
+export function applySaturdayLwpRule(
+  statusByDate: Map<string, string>,
+  holidayDates: Set<string>,
+  monthStart: string,
+  monthEnd: string,
+  manualOverrideDates: Set<string> = new Set(),
+): Map<string, string> {
+  const result = new Map(statusByDate);
+  const start = new Date(`${monthStart}T12:00:00`);
+  const end = new Date(`${monthEnd}T12:00:00`);
+
+  for (let cur = new Date(start); cur <= end; cur.setDate(cur.getDate() + 1)) {
+    const y = cur.getFullYear();
+    const m = String(cur.getMonth() + 1).padStart(2, "0");
+    const day = String(cur.getDate()).padStart(2, "0");
+    const sat = `${y}-${m}-${day}`;
+
+    if (dayOfWeek(sat) !== SATURDAY) continue;
+    // Calendar holiday Saturdays are not payable working days — leave alone.
+    if (holidayDates.has(sat)) continue;
+    if (manualOverrideDates.has(sat)) continue;
+
+    const friday = addCalendarDays(sat, -1);
+    const monday = addCalendarDays(sat, 2);
+    const triggered =
+      isLeaveTriggerStatus(result.get(friday)) || isLeaveTriggerStatus(result.get(monday));
+    if (!triggered) continue;
+
+    const current = result.get(sat);
+    // Keep real worked / granted leave on Saturday; rewrite paid-holiday defaults to LWP.
+    if (
+      current === "present" ||
+      current === "half_day" ||
+      current === "casual_leave" ||
+      current === LEAVE_WITHOUT_PAY
+    ) {
+      continue;
+    }
+    result.set(sat, LEAVE_WITHOUT_PAY);
+  }
+
+  return result;
 }

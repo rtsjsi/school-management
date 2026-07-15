@@ -35,7 +35,9 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-const STATUSES = ["present", "absent", "half_day", "casual_leave", "holiday", "week_off"] as const;
+const STATUSES = ["present", "absent", "half_day", "casual_leave", "leave_without_pay", "holiday", "week_off"] as const;
+
+const formatStatusLabel = (status: string) => status.replaceAll("_", " ");
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -43,6 +45,7 @@ const getStatusColor = (status: string) => {
     case "absent": return "bg-rose-100/50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400";
     case "half_day": return "bg-amber-100/50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400";
     case "casual_leave": return "bg-blue-100/50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400";
+    case "leave_without_pay": return "bg-orange-100/50 text-orange-800 dark:bg-orange-950/30 dark:text-orange-400";
     case "holiday": return "bg-purple-100/50 text-purple-700 dark:bg-purple-950/30 dark:text-purple-400";
     case "week_off": return "bg-slate-100/50 text-slate-700 dark:bg-slate-800/30 dark:text-slate-400";
     default: return "";
@@ -119,28 +122,11 @@ export default function AttendanceReviewAndApprove() {
       });
       const json = await res.json();
       if (json.error) throw new Error(json.error);
-      
-      // Update local state instead of refetching
-      setData((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          dailyData: prev.dailyData.map((day) => ({
-            ...day,
-            rows: day.rows.map((row) => {
-              const key = getCellKey(row.empId, row.date);
-              const edit = edits[key];
-              if (edit) {
-                return { ...row, status: edit.status, isManual: true };
-              }
-              return row;
-            }),
-          })),
-        };
-      });
-      
+
       setEdits({});
       toast({ title: "Corrections saved", description: `${updates.length} attendance correction(s) saved successfully.` });
+      // Refetch so Friday/Monday leave recalculates adjacent Saturday as LWP and present days.
+      fetchData();
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -375,14 +361,14 @@ export default function AttendanceReviewAndApprove() {
                                   <SelectContent className="z-50 min-w-[120px]">
                                     {STATUSES.map((s) => (
                                       <SelectItem key={s} value={s} className="text-[11px]">
-                                        {s.replace("_", " ")}
+                                        {formatStatusLabel(s)}
                                       </SelectItem>
                                     ))}
                                   </SelectContent>
                                 </Select>
                               ) : (
                                 <div className="flex h-full w-full items-center justify-center font-medium">
-                                  <span className="text-[10px] uppercase tracking-tighter max-w-[60px] truncate">{status.replace("_", " ")}</span>
+                                  <span className="text-[10px] uppercase tracking-tighter max-w-[60px] truncate">{formatStatusLabel(status)}</span>
                                 </div>
                               )}
                             </TableCell>

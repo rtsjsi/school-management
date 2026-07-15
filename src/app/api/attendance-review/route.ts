@@ -10,8 +10,15 @@ import {
   isPayableWorkingDay,
   isSaturdayPaidHoliday,
   isSundayWeekOff,
+  addCalendarDays,
+  applySaturdayLwpRule,
+  LEAVE_WITHOUT_PAY,
   type PunchLite,
 } from "@/lib/attendance";
+
+function monthYearOf(dateStr: string): string {
+  return dateStr.slice(0, 7);
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,6 +34,9 @@ export async function GET(request: NextRequest) {
     const start = `${y}-${m}-01`;
     const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate();
     const end = `${y}-${m}-${String(lastDay).padStart(2, "0")}`;
+    // Need Friday before first Saturday and Monday after last Saturday (month edges).
+    const rangeStart = addCalendarDays(start, -1);
+    const rangeEnd = addCalendarDays(end, 2);
 
     const supabase = await createClient();
 
@@ -39,8 +49,8 @@ export async function GET(request: NextRequest) {
     const { data: holidays } = await supabase
       .from("holidays")
       .select("date")
-      .gte("date", start)
-      .lte("date", end);
+      .gte("date", rangeStart)
+      .lte("date", rangeEnd);
     const holidayDates = new Set((holidays ?? []).map((h) => h.date));
 
     const admin = createAdminClient();
@@ -48,36 +58,51 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
     }
 
-    // Fetch all punches for the month
     const { data: punches } = await admin
       .from("biometric_attendance_raw")
       .select("enroll_no, punched_at, direction")
-      .gte("punched_at", `${start}T00:00:00Z`)
-      .lte("punched_at", `${end}T23:59:59Z`);
+      .gte("punched_at", `${rangeStart}T00:00:00Z`)
+      .lte("punched_at", `${rangeEnd}T23:59:59Z`);
 
-    // Fetch manual overrides and finalized state
+    const adjacentMonths = Array.from(
+      new Set([monthYearOf(rangeStart), monthYear, monthYearOf(rangeEnd)])
+    );
+
     const { data: finalizedData } = await supabase
       .from("employee_attendance_finalized")
-      .select("employee_id, attendance_date, status, is_manual_override")
-      .eq("month_year", monthYear);
+      .select("employee_id, attendance_date, status, is_manual_override, month_year")
+      .in("month_year", adjacentMonths);
 
-    // If there's at least one non-manual row, it means it was finalized.
-    const isApproved = (finalizedData ?? []).some(f => !f.is_manual_override);
+    const isApproved = (finalizedData ?? [])
+      .filter((f) => f.month_year === monthYear)
+      .some((f) => !f.is_manual_override);
 
     const manualOverrides = new Map<string, string>();
-    (finalizedData ?? []).filter(f => f.is_manual_override).forEach(f => {
-      manualOverrides.set(`${f.employee_id}-${f.attendance_date}`, f.status);
-    });
+    (finalizedData ?? [])
+      .filter((f) => f.is_manual_override)
+      .forEach((f) => {
+        manualOverrides.set(`${f.employee_id}-${f.attendance_date}`, f.status);
+      });
 
     const workingDays = computeWorkingDays(y, m, lastDay, holidayDates);
 
-    const dailyData: Record<string, { empId: string; empName: string; date: string; status: string; source: string; isManual: boolean }[]> = {};
+    const dailyData: Record<
+      string,
+      { empId: string; empName: string; date: string; status: string; source: string; isManual: boolean }[]
+    > = {};
 
     for (const emp of employees ?? []) {
       const shift = employeeShiftLite(emp);
+      const statusByDate = new Map<string, string>();
+      const metaByDate = new Map<string, { source: string; isManual: boolean }>();
+      const manualDates = new Set<string>();
 
-      for (let d = 1; d <= lastDay; d++) {
-        const dStr = `${y}-${m}-${String(d).padStart(2, "0")}`;
+      for (
+        let cur = new Date(`${rangeStart}T12:00:00`);
+        cur <= new Date(`${rangeEnd}T12:00:00`);
+        cur.setDate(cur.getDate() + 1)
+      ) {
+        const dStr = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}-${String(cur.getDate()).padStart(2, "0")}`;
         const isCalendarHoliday = holidayDates.has(dStr);
         const { isHoliday, isWeekOff } = deriveCalendarFlags(dStr, holidayDates);
 
@@ -85,7 +110,6 @@ export async function GET(request: NextRequest) {
         let source = "default";
         let isManual = false;
 
-        // 1. Derive from biometric punches using the shared function
         if (emp.biometric_enroll_no) {
           const dayPunches: PunchLite[] = (punches ?? [])
             .filter((p) => p.enroll_no === emp.biometric_enroll_no && p.punched_at.startsWith(dStr))
@@ -95,23 +119,36 @@ export async function GET(request: NextRequest) {
           status = derived.status;
           source = dayPunches.length > 0 ? "biometric" : "default";
         } else {
-          // No biometric enrollment — use deriveDailyStatus with empty punches for holiday/weekend detection
           const derived = deriveDailyStatus([], shift, undefined, isHoliday, isWeekOff);
           status = derived.status;
         }
 
-        // Lock calendar holidays, Sundays, and auto Saturday paid holidays in the grid
-        if (source !== "biometric" && source !== "manual") {
+        if (source !== "biometric") {
           if (isCalendarHoliday || isSaturdayPaidHoliday(dStr)) source = "holiday";
           else if (isSundayWeekOff(dStr)) source = "weekend";
         }
 
-        // 2. Overlay manual overrides
         const overrideStatus = manualOverrides.get(`${emp.id}-${dStr}`);
         if (overrideStatus) {
           status = overrideStatus;
           source = "manual";
           isManual = true;
+          manualDates.add(dStr);
+        }
+
+        statusByDate.set(dStr, status);
+        metaByDate.set(dStr, { source, isManual });
+      }
+
+      const withLwp = applySaturdayLwpRule(statusByDate, holidayDates, start, end, manualDates);
+
+      for (let d = 1; d <= lastDay; d++) {
+        const dStr = `${y}-${m}-${String(d).padStart(2, "0")}`;
+        let status = withLwp.get(dStr) ?? "absent";
+        let { source, isManual } = metaByDate.get(dStr) ?? { source: "default", isManual: false };
+
+        if (status === LEAVE_WITHOUT_PAY && source === "holiday" && !isManual) {
+          source = "lwp_rule";
         }
 
         if (!dailyData[dStr]) dailyData[dStr] = [];
@@ -126,14 +163,13 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Use dayWeight for present-day counts (half_day = 0.5, not 1.0)
+    // Use dayWeight for present-day counts (half_day = 0.5, leave_without_pay = 0)
     const presentCounts: Record<string, number> = {};
     (employees ?? []).forEach((e) => {
       presentCounts[e.id] = 0;
     });
     Object.values(dailyData).forEach((dayRows) => {
       dayRows.forEach((r) => {
-        // Count Mon–Sat (incl. Saturday paid holidays); skip Sunday and calendar holidays
         if (isPayableWorkingDay(r.date, holidayDates)) {
           presentCounts[r.empId] = (presentCounts[r.empId] ?? 0) + dayWeight(r.status);
         }
@@ -198,7 +234,7 @@ export async function POST(request: NextRequest) {
           { onConflict: "employee_id,attendance_date" }
         );
       }
-      
+
       return NextResponse.json({ success: true });
     }
 
@@ -207,42 +243,58 @@ export async function POST(request: NextRequest) {
       const start = `${y}-${m}-01`;
       const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate();
       const end = `${y}-${m}-${String(lastDay).padStart(2, "0")}`;
+      const rangeStart = addCalendarDays(start, -1);
+      const rangeEnd = addCalendarDays(end, 2);
 
       const { data: employees } = await supabase
         .from("employees")
         .select("id, shift_start_time, shift_end_time, biometric_enroll_no")
         .eq("status", "active");
-      const { data: holidays } = await supabase.from("holidays").select("date").gte("date", start).lte("date", end);
+      const { data: holidays } = await supabase
+        .from("holidays")
+        .select("date")
+        .gte("date", rangeStart)
+        .lte("date", rangeEnd);
       const holidayDates = new Set((holidays ?? []).map((h) => h.date));
 
       const admin = createAdminClient();
       const { data: punches } = await admin!
         .from("biometric_attendance_raw")
         .select("enroll_no, punched_at, direction")
-        .gte("punched_at", `${start}T00:00:00Z`)
-        .lte("punched_at", `${end}T23:59:59Z`);
+        .gte("punched_at", `${rangeStart}T00:00:00Z`)
+        .lte("punched_at", `${rangeEnd}T23:59:59Z`);
+
+      const adjacentMonths = Array.from(
+        new Set([monthYearOf(rangeStart), monthYear, monthYearOf(rangeEnd)])
+      );
 
       const { data: overrides } = await supabase
         .from("employee_attendance_finalized")
         .select("employee_id, attendance_date, status")
-        .eq("month_year", monthYear)
+        .in("month_year", adjacentMonths)
         .eq("is_manual_override", true);
       const manualOverrides = new Map<string, string>();
-      (overrides ?? []).forEach(f => manualOverrides.set(`${f.employee_id}-${f.attendance_date}`, f.status));
+      (overrides ?? []).forEach((f) =>
+        manualOverrides.set(`${f.employee_id}-${f.attendance_date}`, f.status)
+      );
 
       const rowsToInsert = [];
 
       for (const emp of employees ?? []) {
         const shift = employeeShiftLite(emp);
+        const statusByDate = new Map<string, string>();
+        const manualDates = new Set<string>();
 
-        for (let d = 1; d <= lastDay; d++) {
-          const dStr = `${y}-${m}-${String(d).padStart(2, "0")}`;
+        for (
+          let cur = new Date(`${rangeStart}T12:00:00`);
+          cur <= new Date(`${rangeEnd}T12:00:00`);
+          cur.setDate(cur.getDate() + 1)
+        ) {
+          const dStr = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}-${String(cur.getDate()).padStart(2, "0")}`;
           const { isHoliday, isWeekOff } = deriveCalendarFlags(dStr, holidayDates);
 
           let status: string;
-          let isManual = false;
 
-          // Use shared derivation function
           if (emp.biometric_enroll_no) {
             const dayPunches: PunchLite[] = (punches ?? [])
               .filter((p) => p.enroll_no === emp.biometric_enroll_no && p.punched_at.startsWith(dStr))
@@ -258,8 +310,18 @@ export async function POST(request: NextRequest) {
           const overrideStatus = manualOverrides.get(`${emp.id}-${dStr}`);
           if (overrideStatus) {
             status = overrideStatus;
-            isManual = true;
+            if (dStr >= start && dStr <= end) manualDates.add(dStr);
           }
+
+          statusByDate.set(dStr, status);
+        }
+
+        const withLwp = applySaturdayLwpRule(statusByDate, holidayDates, start, end, manualDates);
+
+        for (let d = 1; d <= lastDay; d++) {
+          const dStr = `${y}-${m}-${String(d).padStart(2, "0")}`;
+          const status = withLwp.get(dStr) ?? "absent";
+          const isManual = manualDates.has(dStr);
 
           rowsToInsert.push({
             employee_id: emp.id,
@@ -272,7 +334,9 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      const { error } = await supabase.from("employee_attendance_finalized").upsert(rowsToInsert, { onConflict: "employee_id,attendance_date" });
+      const { error } = await supabase
+        .from("employee_attendance_finalized")
+        .upsert(rowsToInsert, { onConflict: "employee_id,attendance_date" });
       if (error) {
         console.error("Upsert error:", error);
         return NextResponse.json({ error: error.message }, { status: 400 });
@@ -290,12 +354,12 @@ export async function POST(request: NextRequest) {
         .delete()
         .eq("month_year", monthYear)
         .eq("is_manual_override", false);
-        
+
       if (error) {
         console.error("Unfreeze error:", error);
         return NextResponse.json({ error: error.message }, { status: 400 });
       }
-      
+
       return NextResponse.json({ success: true });
     }
 
