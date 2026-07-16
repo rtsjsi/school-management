@@ -11,6 +11,7 @@ import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { calculatePercentage } from "@/lib/grade-utils";
 
 type Exam = { id: string; name: string; standard: string | null; term: string | null };
 type Student = { id: string; full_name: string; standard: string | null; division: string | null; roll_number?: number; gr_number?: string };
@@ -130,10 +131,15 @@ export default function GradeSheet({ allowedClassNames }: { allowedClassNames?: 
       return null;
     }
 
+    const examMaxMap: Record<string, number> = {};
     if (examSubsData) {
       const validSubs = examSubsData.filter((r: any) => r.subjects);
       validSubs.sort((a: any, b: any) => (a.subjects.sort_order || 0) - (b.subjects.sort_order || 0));
       subjectList = validSubs.map((r: any) => r.subjects) as Subject[];
+      
+      validSubs.forEach((r: any) => {
+        examMaxMap[r.subject_id] = Number(r.max_marks);
+      });
     }
     
     if (subjectList.length === 0) {
@@ -143,7 +149,7 @@ export default function GradeSheet({ allowedClassNames }: { allowedClassNames?: 
 
     const { data: marks, error: marksError } = await supabase
       .from("exam_result_subjects")
-      .select("student_id, subject_id, score, grade, is_absent")
+      .select("student_id, subject_id, score, max_score, grade, is_absent")
       .eq("exam_id", selectedExamId);
 
     if (marksError) {
@@ -161,7 +167,7 @@ export default function GradeSheet({ allowedClassNames }: { allowedClassNames?: 
       });
     }
 
-    return { exam, filteredStudents, subjectList, marksMap };
+    return { exam, filteredStudents, subjectList, marksMap, examMaxMap };
   };
 
   const handleDownloadExcel = async () => {
@@ -171,14 +177,11 @@ export default function GradeSheet({ allowedClassNames }: { allowedClassNames?: 
       const data = await fetchData();
       if (!data) return;
 
-      const { exam, filteredStudents, subjectList, marksMap } = data;
+      const { exam, filteredStudents, subjectList, marksMap, examMaxMap } = data;
 
       const header = ["Roll No", "Student Name", "Standard", "Division", ...subjectList.map(s => s.name), "Total", "Percentage"];
       
       const rows = filteredStudents.map(student => {
-        let total = 0;
-        let maxTotal = 0;
-        
         const rowData: any[] = [
           student.roll_number || "",
           student.full_name,
@@ -186,26 +189,37 @@ export default function GradeSheet({ allowedClassNames }: { allowedClassNames?: 
           student.division || ""
         ];
 
-        subjectList.forEach(subject => {
+        const marksForCalc = subjectList.map(subject => {
           const mark = marksMap[student.id]?.[subject.id];
-          if (mark) {
-            if (mark.is_absent) {
-              rowData.push("AB");
-            } else if (subject.evaluation_type === "grade") {
-              rowData.push(mark.grade || "");
-            } else {
-              rowData.push(mark.score !== null ? mark.score : "");
-              total += Number(mark.score || 0);
-              // Approximate max total (ideally max_marks should be used here, but for simplicity we skip precise percentage calculation if not fully available, or we just display total)
-              maxTotal += 100; // Assuming 100 max if not specified in this simple view
-            }
+          const isGradeBased = subject.evaluation_type === "grade";
+          const subjectMax = mark?.max_score ?? examMaxMap[subject.id] ?? 100;
+          
+          if (isGradeBased) {
+            rowData.push(mark ? (mark.grade || "") : "");
           } else {
-            rowData.push("");
+            if (mark) {
+              if (mark.is_absent) {
+                rowData.push("AB");
+              } else {
+                rowData.push(mark.score !== null ? mark.score : "");
+              }
+            } else {
+              rowData.push("");
+            }
           }
+          
+          return {
+            score: mark?.score,
+            maxScore: subjectMax,
+            isAbsent: mark?.is_absent || false,
+            isGradeBased
+          };
         });
         
-        rowData.push(total);
-        rowData.push(maxTotal > 0 ? ((total / maxTotal) * 100).toFixed(2) + "%" : "");
+        const { totalObtained, percentage } = calculatePercentage(marksForCalc);
+        
+        rowData.push(totalObtained);
+        rowData.push(percentage !== "—" ? `${percentage}%` : "");
 
         return rowData;
       });
@@ -242,7 +256,7 @@ export default function GradeSheet({ allowedClassNames }: { allowedClassNames?: 
       const data = await fetchData();
       if (!data) return;
 
-      const { exam, filteredStudents, subjectList, marksMap } = data;
+      const { exam, filteredStudents, subjectList, marksMap, examMaxMap } = data;
 
       const doc = new jsPDF({ orientation: "landscape" });
       
@@ -254,9 +268,6 @@ export default function GradeSheet({ allowedClassNames }: { allowedClassNames?: 
       const head = [["Roll No", "Name", "Std", "Div", ...subjectList.map(s => s.name), "Total", "%"]];
       
       const body = filteredStudents.map(student => {
-        let total = 0;
-        let maxTotal = 0;
-        
         const rowData = [
           student.roll_number?.toString() || "-",
           student.full_name,
@@ -264,25 +275,37 @@ export default function GradeSheet({ allowedClassNames }: { allowedClassNames?: 
           student.division || "-"
         ];
 
-        subjectList.forEach(subject => {
+        const marksForCalc = subjectList.map(subject => {
           const mark = marksMap[student.id]?.[subject.id];
-          if (mark) {
-            if (mark.is_absent) {
-              rowData.push("AB");
-            } else if (subject.evaluation_type === "grade") {
-              rowData.push(mark.grade || "-");
-            } else {
-              rowData.push(mark.score?.toString() || "-");
-              total += Number(mark.score || 0);
-              maxTotal += 100;
-            }
+          const isGradeBased = subject.evaluation_type === "grade";
+          const subjectMax = mark?.max_score ?? examMaxMap[subject.id] ?? 100;
+          
+          if (isGradeBased) {
+            rowData.push(mark ? (mark.grade || "-") : "-");
           } else {
-            rowData.push("-");
+            if (mark) {
+              if (mark.is_absent) {
+                rowData.push("AB");
+              } else {
+                rowData.push(mark.score?.toString() || "-");
+              }
+            } else {
+              rowData.push("-");
+            }
           }
+          
+          return {
+            score: mark?.score,
+            maxScore: subjectMax,
+            isAbsent: mark?.is_absent || false,
+            isGradeBased
+          };
         });
         
-        rowData.push(total.toString());
-        rowData.push(maxTotal > 0 ? ((total / maxTotal) * 100).toFixed(2) + "%" : "-");
+        const { totalObtained, percentage } = calculatePercentage(marksForCalc);
+        
+        rowData.push(totalObtained.toString());
+        rowData.push(percentage !== "—" ? `${percentage}%` : "-");
 
         return rowData;
       });
