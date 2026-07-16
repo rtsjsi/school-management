@@ -628,7 +628,7 @@ export async function generateMultiExamReportCardPDF(data: MultiExamReportCardDa
           display = examData.grade || "—";
           doc.setTextColor(...COLORS.navyLight);
         } else {
-          display = examData.score !== null ? String(examData.score) : "—";
+          display = examData.score !== null ? `${examData.score}/${examData.maxScore}` : "—";
           doc.setTextColor(...COLORS.darkText);
         }
       }
