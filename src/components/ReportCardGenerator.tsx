@@ -5,9 +5,9 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { PdfIcon } from "@/components/ui/export-icons";
-import { Download } from "lucide-react";
+import { Download, FileText, Users, Loader2 } from "lucide-react";
 import JSZip from "jszip";
 import { generateReportCardPDF, generateMultiExamReportCardPDF } from "@/lib/report-card-pdf";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
@@ -199,9 +199,11 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
             isAbsent: row?.is_absent ?? false,
           };
         });
-        pdfBlob = generateReportCardPDF({
+        pdfBlob = await generateReportCardPDF({
           schoolName: school.name,
           schoolAddress: school.address,
+          schoolLogoUrl: school.logoUrl ?? undefined,
+          principalSignatureUrl: school.principalSignatureUrl ?? undefined,
           studentName: student.full_name,
           standard: student.standard ?? undefined,
           division: student.division ?? undefined,
@@ -254,9 +256,11 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
           };
         });
 
-        pdfBlob = generateMultiExamReportCardPDF({
+        pdfBlob = await generateMultiExamReportCardPDF({
           schoolName: school.name,
           schoolAddress: school.address,
+          schoolLogoUrl: school.logoUrl ?? undefined,
+          principalSignatureUrl: school.principalSignatureUrl ?? undefined,
           studentName: student.full_name,
           standard: student.standard ?? undefined,
           division: student.division ?? undefined,
@@ -328,9 +332,11 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
               isAbsent: row?.is_absent ?? false,
             };
           });
-          pdfBlob = generateReportCardPDF({
+          pdfBlob = await generateReportCardPDF({
             schoolName: school.name,
             schoolAddress: school.address,
+            schoolLogoUrl: school.logoUrl ?? undefined,
+            principalSignatureUrl: school.principalSignatureUrl ?? undefined,
             studentName: student.full_name,
             standard: student.standard ?? undefined,
             division: student.division ?? undefined,
@@ -383,9 +389,11 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
             };
           });
   
-          pdfBlob = generateMultiExamReportCardPDF({
+          pdfBlob = await generateMultiExamReportCardPDF({
             schoolName: school.name,
             schoolAddress: school.address,
+            schoolLogoUrl: school.logoUrl ?? undefined,
+            principalSignatureUrl: school.principalSignatureUrl ?? undefined,
             studentName: student.full_name,
             standard: student.standard ?? undefined,
             division: student.division ?? undefined,
@@ -427,104 +435,145 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
 
   return (
     <Card>
-      <CardContent className="space-y-4 pt-6">
+      <CardHeader className="pb-4">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center h-9 w-9 rounded-lg bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400">
+            <FileText className="h-5 w-5" />
+          </div>
+          <div>
+            <CardTitle className="text-lg">Report Card Generator</CardTitle>
+            <CardDescription>Generate professional report cards for individual students or download a ZIP for the entire class.</CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-5">
         {error && (
-          <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>
+          <p className="text-sm text-destructive bg-destructive/10 p-2.5 rounded-md border border-destructive/20">{error}</p>
         )}
 
-        <div className="flex flex-wrap gap-4 items-end pb-2">
-          <div className="space-y-2">
-            <Label>Standard</Label>
-            <Select value={standardFilter} onValueChange={setStandardFilter}>
-              <SelectTrigger className="w-[120px]">
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                {classNames.map((g) => (
-                  <SelectItem key={g} value={g}>
-                    {g}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>Division</Label>
-            <Select value={divisionFilter} onValueChange={setDivisionFilter}>
-              <SelectTrigger className="w-[100px]">
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                {divisions.map((d) => (
-                  <SelectItem key={d} value={d}>
-                    {d}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="space-y-2">
-            <Label>Report Type</Label>
-            <Select value={reportType} onValueChange={(val: any) => setReportType(val)}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Select type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="single">Single Exam</SelectItem>
-                <SelectItem value="term-1">Term 1 Report Card</SelectItem>
-                <SelectItem value="term-2">Term 2 Report Card</SelectItem>
-                <SelectItem value="annual">Annual Report Card</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {reportType === "single" && (
-            <div className="space-y-2">
-              <Label>Exam</Label>
-              <Select value={selectedExamId} onValueChange={setSelectedExamId}>
-                <SelectTrigger className="w-[240px]">
-                  <SelectValue placeholder="Select exam" />
+        {/* ── Filter Section ── */}
+        <div className="space-y-3">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Class Filter</p>
+          <div className="flex flex-wrap gap-3 items-end">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Standard</Label>
+              <Select value={standardFilter} onValueChange={setStandardFilter}>
+                <SelectTrigger className="w-[120px] h-9">
+                  <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
-                  {filteredExams.map((e) => (
-                    <SelectItem key={e.id} value={e.id}>
-                      {e.name} – {e.term ?? "No term"}
+                  <SelectItem value="all">All</SelectItem>
+                  {classNames.map((g) => (
+                    <SelectItem key={g} value={g}>
+                      {g}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-          )}
-
-          <div className="space-y-2">
-            <Label>Student</Label>
-            <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
-              <SelectTrigger className="w-[240px]">
-                <SelectValue placeholder="Select student" />
-              </SelectTrigger>
-              <SelectContent>
-                {filteredStudents.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.full_name} {s.standard && s.division ? `(${s.standard} ${s.division})` : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Division</Label>
+              <Select value={divisionFilter} onValueChange={setDivisionFilter}>
+                <SelectTrigger className="w-[100px] h-9">
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  {divisions.map((d) => (
+                    <SelectItem key={d} value={d}>
+                      {d}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 
-        <div className="flex gap-2">
-          <Button size="sm" className="gap-1.5 bg-red-600 hover:bg-red-700 text-white shadow-sm" onClick={handleGenerate} disabled={loading || (reportType === "single" && !selectedExamId) || !selectedStudentId}>
-            <PdfIcon className="h-4 w-4" />
+        <hr className="border-border/50" />
+
+        {/* ── Report Configuration ── */}
+        <div className="space-y-3">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Report Configuration</p>
+          <div className="flex flex-wrap gap-3 items-end">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Report Type</Label>
+              <Select value={reportType} onValueChange={(val: any) => setReportType(val)}>
+                <SelectTrigger className="w-[200px] h-9">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="single">Single Exam</SelectItem>
+                  <SelectItem value="term-1">Term 1 Report Card</SelectItem>
+                  <SelectItem value="term-2">Term 2 Report Card</SelectItem>
+                  <SelectItem value="annual">Annual Report Card</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {reportType === "single" && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">Exam</Label>
+                <Select value={selectedExamId} onValueChange={setSelectedExamId}>
+                  <SelectTrigger className="w-[240px] h-9">
+                    <SelectValue placeholder="Select exam" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredExams.map((e) => (
+                      <SelectItem key={e.id} value={e.id}>
+                        {e.name} – {e.term ?? "No term"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <Label className="text-xs">Student</Label>
+              <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
+                <SelectTrigger className="w-[260px] h-9">
+                  <SelectValue placeholder="Select student" />
+                </SelectTrigger>
+                <SelectContent>
+                  {filteredStudents.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.full_name} {s.standard && s.division ? `(${s.standard} ${s.division})` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Actions ── */}
+        <div className="flex flex-wrap items-center gap-3 pt-1">
+          <Button
+            size="sm"
+            className="gap-1.5 bg-red-600 hover:bg-red-700 text-white shadow-sm h-9 px-4"
+            onClick={handleGenerate}
+            disabled={loading || (reportType === "single" && !selectedExamId) || !selectedStudentId}
+          >
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <PdfIcon className="h-4 w-4" />}
             {loading ? "Generating..." : "Generate Report Card"}
           </Button>
-          <Button size="sm" variant="outline" className="gap-1.5 shadow-sm" onClick={handleGenerateZip} disabled={loading || (reportType === "single" && !selectedExamId) || standardFilter === "all"}>
-            <Download className="h-4 w-4" />
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5 shadow-sm h-9 px-4"
+            onClick={handleGenerateZip}
+            disabled={loading || (reportType === "single" && !selectedExamId) || standardFilter === "all"}
+          >
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
             {loading ? "Generating ZIP..." : "Download Class (ZIP)"}
           </Button>
+          {standardFilter !== "all" && (
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <Users className="h-3.5 w-3.5" />
+              {filteredStudents.length} student{filteredStudents.length !== 1 ? "s" : ""} in selection
+            </span>
+          )}
         </div>
       </CardContent>
     </Card>

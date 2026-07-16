@@ -44,3 +44,23 @@ export function drawWrappedText(
   });
   return y;
 }
+
+/**
+ * Fetch an image URL and convert it to a base64 data-URL suitable for jsPDF.addImage().
+ * Returns null on any failure so callers can gracefully degrade.
+ */
+export async function urlToDataUrl(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url, { cache: "force-cache" });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return await new Promise<string | null>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(typeof reader.result === "string" ? reader.result : null);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}

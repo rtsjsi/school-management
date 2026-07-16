@@ -1,6 +1,6 @@
 import { jsPDF } from "jspdf";
 import { formatFeeCollectionDisplayDate } from "./utils";
-import { drawWrappedText } from "./pdf-utils";
+import { drawWrappedText, urlToDataUrl } from "./pdf-utils";
 
 const ONES = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
 const TENS = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
@@ -94,21 +94,8 @@ export function quarterLabel(quarter: number): string {
   return `Q${quarter} (${months})`;
 }
 
-async function urlToDataUrl(url: string): Promise<string | null> {
-  try {
-    const res = await fetch(url, { cache: "force-cache" });
-    if (!res.ok) return null;
-    const blob = await res.blob();
-    return await new Promise<string | null>((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(typeof reader.result === "string" ? reader.result : null);
-      reader.onerror = () => resolve(null);
-      reader.readAsDataURL(blob);
-    });
-  } catch {
-    return null;
-  }
-}
+// urlToDataUrl is now imported from pdf-utils (see import at top)
+
 
 export async function generateReceiptPDF(data: ReceiptData): Promise<Blob> {
   const doc = new jsPDF({ unit: "mm", format: "a6", orientation: "portrait" });
