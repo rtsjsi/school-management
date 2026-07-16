@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
-import { dayWeight, computeWorkingDays } from "@/lib/attendance";
+import { computeWorkingDays, addCalendarDays, computePayablePresentDays } from "@/lib/attendance";
 
 export const dynamic = "force-dynamic";
+
+function monthYearOf(dateStr: string): string {
+  return dateStr.slice(0, 7);
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -23,21 +27,25 @@ export async function GET(request: NextRequest) {
     const start = `${y}-${m}-01`;
     const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate();
     const end = `${y}-${m}-${String(lastDay).padStart(2, "0")}`;
+    const rangeStart = addCalendarDays(start, -3);
+    const rangeEnd = addCalendarDays(end, 3);
+    const adjacentMonths = Array.from(
+      new Set([monthYearOf(rangeStart), monthYear, monthYearOf(rangeEnd)])
+    );
 
     const { data: finalized } = await supabase
       .from("employee_attendance_finalized")
-      .select("employee_id, attendance_date, status")
-      .eq("month_year", monthYear);
+      .select("employee_id, attendance_date, status, is_late, month_year")
+      .in("month_year", adjacentMonths);
 
-    // If there is no finalized data for the month, it hasn't been finalized.
-    // (Assuming at least one employee has data if it was finalized).
-    if (!finalized || finalized.length === 0) {
+    const monthFinalized = (finalized ?? []).filter((f) => f.month_year === monthYear);
+    if (monthFinalized.length === 0) {
       return NextResponse.json({ error: "Attendance for this month must be Finalized on the Review screen before generating payroll." }, { status: 400 });
     }
 
     const { data: employees } = await supabase
       .from("employees")
-      .select("id, full_name, monthly_salary, bank_name, account_number, ifsc_code, account_holder_name")
+      .select("id, full_name, basic_salary, other_allowance, child_allowance, monthly_salary, bank_name, account_number, ifsc_code, account_holder_name")
       .eq("status", "active");
 
     const { data: settings } = await supabase
@@ -51,8 +59,8 @@ export async function GET(request: NextRequest) {
     const { data: holidays } = await supabase
       .from("holidays")
       .select("date")
-      .gte("date", start)
-      .lte("date", end);
+      .gte("date", rangeStart)
+      .lte("date", rangeEnd);
     const holidayDates = new Set((holidays ?? []).map((h) => h.date));
 
     const workingDays = computeWorkingDays(y, m, lastDay, holidayDates);
@@ -68,39 +76,75 @@ export async function GET(request: NextRequest) {
       });
     });
 
-    const finalizedMap = new Map<string, string>();
-    finalized.forEach(f => finalizedMap.set(`${f.employee_id}-${f.attendance_date}`, f.status));
-
-    const rows: { employee_id: string; full_name: string; present_days: number; salary: number; gross_amount: number; deductions: number; net_amount: number; bank?: typeof bankMap extends Map<string, infer V> ? V : never }[] = [];
+    const rows: {
+      employee_id: string;
+      full_name: string;
+      present_days: number;
+      attendance_days: number;
+      sandwich_deduction: number;
+      late_in_count: number;
+      late_in_deduction: number;
+      salary: number;
+      basic_salary: number;
+      other_allowance: number;
+      child_allowance: number;
+      gross_amount: number;
+      deductions: number;
+      net_amount: number;
+      bank?: typeof bankMap extends Map<string, infer V> ? V : never;
+    }[] = [];
 
     for (const emp of employees ?? []) {
-      let presentDays = 0;
-      for (let d = 1; d <= lastDay; d++) {
-        const dStr = `${y}-${m}-${String(d).padStart(2, "0")}`;
-        const day = new Date(`${dStr}T12:00:00`).getDay();
-        const isWeekend = day === 0 || day === 6;
-        const isHoliday = holidayDates.has(dStr);
-        if (isHoliday || isWeekend) continue;
-
-        const status = finalizedMap.get(`${emp.id}-${dStr}`);
-        presentDays += dayWeight(status);
+      const statusByDate = new Map<string, string>();
+      const lateByDate = new Map<string, boolean>();
+      for (const f of finalized ?? []) {
+        if (f.employee_id !== emp.id) continue;
+        statusByDate.set(f.attendance_date, f.status);
+        if (f.attendance_date >= start && f.attendance_date <= end) {
+          lateByDate.set(f.attendance_date, !!f.is_late);
+        }
       }
 
-      const baseSalary = Number(emp.monthly_salary ?? 0);
-      const proratedBasic = workingDays > 0 ? (baseSalary / workingDays) * presentDays : 0;
-      const allowances = 0;
-      const grossAmount = Math.round((proratedBasic + allowances) * 100) / 100;
-      const deductions = 0;
-      const netAmount = Math.round((grossAmount - deductions) * 100) / 100;
+      const payable = computePayablePresentDays({
+        statusByDate,
+        lateByDate,
+        holidayDates,
+        monthStart: start,
+        monthEnd: end,
+        year: y,
+        month: m,
+        lastDay,
+      });
+
+      const presentDays = payable.payableDays;
+      const basicSalary = Number(emp.basic_salary ?? emp.monthly_salary ?? 0);
+      const otherAllowance = Number(emp.other_allowance ?? 0);
+      const childAllowance = Number(emp.child_allowance ?? 0);
+
+      const proratedBasic = workingDays > 0 ? (basicSalary / workingDays) * presentDays : 0;
+      const proratedOther = workingDays > 0 ? (otherAllowance / workingDays) * presentDays : 0;
+      const proratedChild = workingDays > 0 ? (childAllowance / workingDays) * presentDays : 0;
+
+      const netAmount = Math.max(
+        0,
+        Math.round((proratedBasic + proratedOther + proratedChild) * 100) / 100
+      );
       const bank = bankMap.get(emp.id);
 
       rows.push({
         employee_id: emp.id,
         full_name: emp.full_name,
         present_days: presentDays,
-        salary: baseSalary,
-        gross_amount: grossAmount,
-        deductions,
+        attendance_days: payable.attendanceDays,
+        sandwich_deduction: payable.sandwichDeduction,
+        late_in_count: payable.lateInCount,
+        late_in_deduction: payable.lateInDeduction,
+        salary: basicSalary + otherAllowance + childAllowance,
+        basic_salary: basicSalary,
+        other_allowance: otherAllowance,
+        child_allowance: childAllowance,
+        gross_amount: netAmount,
+        deductions: 0,
         net_amount: netAmount,
         bank,
       });
@@ -160,15 +204,15 @@ export async function GET(request: NextRequest) {
       const ExcelJS = await import("exceljs");
       const workbook = new ExcelJS.Workbook();
       const path = await import("path");
-      
+
       const templatePath = path.join(process.cwd(), "public", "templates", "BLKPAY_TEMPLATE.xlsx");
       await workbook.xlsx.readFile(templatePath);
-      
+
       const worksheet = workbook.getWorksheet(1);
       if (!worksheet) {
         throw new Error("Template worksheet not found");
       }
-      
+
       for (const row of aoa) {
         worksheet.addRow(row);
       }

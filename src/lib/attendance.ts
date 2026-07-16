@@ -28,8 +28,17 @@ export type AttendanceThresholds = { fullDayHours: number; halfDayHours: number 
 
 export const DEFAULT_THRESHOLDS: AttendanceThresholds = { fullDayHours: 6, halfDayHours: 3 };
 
+export type AttendanceStatus =
+  | "present"
+  | "half_day"
+  | "absent"
+  | "holiday"
+  | "week_off"
+  | "casual_leave"
+  | "leave_without_pay";
+
 export type DerivedDay = {
-  status: "present" | "half_day" | "absent" | "holiday" | "week_off";
+  status: AttendanceStatus;
   in_time?: string; // HH:MM:SS in IST
   out_time?: string; // HH:MM:SS in IST
   worked_hours: number;
@@ -37,6 +46,9 @@ export type DerivedDay = {
   is_early_departure: boolean;
   single_punch: boolean;
 };
+
+/** Unpaid day (manual). Fri/Mon sandwich is applied as a salary deduction, not auto LWP. */
+export const LEAVE_WITHOUT_PAY = "leave_without_pay" as const;
 
 const IST_TZ = "Asia/Kolkata";
 
@@ -149,15 +161,92 @@ export function deriveDailyStatus(
   };
 }
 
-/** Payable weight of a day: present/holiday/week_off = 1, half day = 0.5, otherwise 0. */
+/**
+ * Payable weight of a day:
+ * present / holiday / week_off / casual_leave = 1,
+ * half_day = 0.5,
+ * leave_without_pay / absent / anything else = 0.
+ */
 export function dayWeight(status: string | null | undefined): number {
-  if (status === "present" || status === "holiday" || status === "week_off") return 1;
+  if (status === "present" || status === "holiday" || status === "week_off" || status === "casual_leave") return 1;
   if (status === "half_day") return 0.5;
+  // leave_without_pay and absent intentionally weigh 0
   return 0;
 }
 
+/** JS Date#getDay(): 0 = Sunday, 6 = Saturday. */
+export const SUNDAY = 0;
+export const FRIDAY = 5;
+export const SATURDAY = 6;
+export const MONDAY = 1;
+
+/** Statuses that mean the employee took leave / was away (triggers sandwich salary deduction). */
+export function isLeaveTriggerStatus(status: string | null | undefined): boolean {
+  return (
+    status === "absent" ||
+    status === "casual_leave" ||
+    status === "leave_without_pay" ||
+    status === "leave"
+  );
+}
+
+/** Add calendar days to a YYYY-MM-DD string (noon-anchored). */
+export function addCalendarDays(dateStr: string, delta: number): string {
+  const d = new Date(`${dateStr}T12:00:00`);
+  d.setDate(d.getDate() + delta);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 /**
- * Count working days (weekdays minus holidays) in a given month.
+ * School week rules:
+ * - Sunday is the only non-working week off (not counted for payroll).
+ * - Saturday is a school working / payable day, but staff are not expected
+ *   to punch — treat empty attendance as a paid holiday.
+ * - Calendar holidays (from `holidays`) are excluded from working-day totals
+ *   (paid implicitly via monthly proration).
+ */
+export function dayOfWeek(dateStr: string): number {
+  return new Date(`${dateStr}T12:00:00`).getDay();
+}
+
+/** True only for Sunday — the unpaid / non-working week off. */
+export function isSundayWeekOff(dateStr: string): boolean {
+  return dayOfWeek(dateStr) === SUNDAY;
+}
+
+/** Saturday: payable school day, auto paid-holiday when staff do not attend. */
+export function isSaturdayPaidHoliday(dateStr: string): boolean {
+  return dayOfWeek(dateStr) === SATURDAY;
+}
+
+/**
+ * Days that count toward working-day totals and attendance proration:
+ * Mon–Sat, excluding calendar holidays. Sundays are never counted.
+ */
+export function isPayableWorkingDay(dateStr: string, holidayDates: Set<string>): boolean {
+  return !isSundayWeekOff(dateStr) && !holidayDates.has(dateStr);
+}
+
+/**
+ * Flags for `deriveDailyStatus` empty-punch defaults.
+ * Saturday is passed as holiday so no punches → paid holiday, not absent.
+ */
+export function deriveCalendarFlags(
+  dateStr: string,
+  holidayDates: Set<string>,
+): { isHoliday: boolean; isWeekOff: boolean } {
+  return {
+    isHoliday: holidayDates.has(dateStr) || isSaturdayPaidHoliday(dateStr),
+    isWeekOff: isSundayWeekOff(dateStr),
+  };
+}
+
+/**
+ * Count payable working days (Mon–Sat minus calendar holidays) in a month.
+ * Saturdays are included so staff are paid for them as paid holidays.
  * Uses noon-anchored date parsing to avoid timezone edge cases.
  */
 export function computeWorkingDays(
@@ -169,8 +258,190 @@ export function computeWorkingDays(
   let count = 0;
   for (let d = 1; d <= lastDay; d++) {
     const dStr = `${year}-${month}-${String(d).padStart(2, "0")}`;
-    const day = new Date(`${dStr}T12:00:00`).getDay();
-    if (day !== 0 && day !== 6 && !holidayDates.has(dStr)) count++;
+    if (isPayableWorkingDay(dStr, holidayDates)) count++;
   }
   return count;
+}
+
+/** Late first-IN punches required to deduct one salary day. */
+export const LATE_INS_PER_ABSENT = 3;
+
+/** Days that can accumulate toward the late-IN salary rule. */
+export function countsTowardLatePunch(status: string | null | undefined): boolean {
+  return status === "present" || status === "half_day";
+}
+
+/**
+ * Saturday related to a Friday or Monday leave trigger.
+ * Friday leave → that week's Saturday; Monday leave → previous Saturday.
+ */
+export function sandwichSaturdayForLeaveDay(dateStr: string): string | null {
+  const dow = dayOfWeek(dateStr);
+  if (dow === FRIDAY) return addCalendarDays(dateStr, 1);
+  if (dow === MONDAY) return addCalendarDays(dateStr, -2);
+  return null;
+}
+
+/**
+ * Whether a Saturday still counts as a paid day that sandwich leave should unpaid
+ * via salary deduction (attendance status is left unchanged).
+ */
+export function saturdayQualifiesForSandwichDeduction(
+  saturdayStatus: string | null | undefined,
+  holidayDates: Set<string>,
+  saturday: string,
+): boolean {
+  if (holidayDates.has(saturday)) return false;
+  // Already unpaid or actively worked / granted leave — do not deduct again.
+  if (
+    saturdayStatus === "present" ||
+    saturdayStatus === "half_day" ||
+    saturdayStatus === "casual_leave" ||
+    saturdayStatus === LEAVE_WITHOUT_PAY ||
+    saturdayStatus === "absent" ||
+    saturdayStatus === "leave"
+  ) {
+    return false;
+  }
+  // Typical case: auto paid holiday (or empty) Saturday.
+  return true;
+}
+
+/**
+ * Sandwich salary deduction for month M (does not mutate Saturday statuses):
+ * Leave on Fri/Mon in M → deduct 1 payable day in M for the related Saturday.
+ * Earliest Fri/Mon leave trigger owns the Saturday so cross-month edges do not double-charge.
+ *
+ * `statusByDate` should include neighbors a few days before/after the month.
+ */
+export function computeSandwichDeduction(
+  statusByDate: Map<string, string>,
+  holidayDates: Set<string>,
+  monthStart: string,
+  monthEnd: string,
+): number {
+  const chargedSaturdays = new Set<string>();
+  const start = new Date(`${monthStart}T12:00:00`);
+  const end = new Date(`${monthEnd}T12:00:00`);
+
+  for (let cur = new Date(start); cur <= end; cur.setDate(cur.getDate() + 1)) {
+    const y = cur.getFullYear();
+    const m = String(cur.getMonth() + 1).padStart(2, "0");
+    const day = String(cur.getDate()).padStart(2, "0");
+    const dStr = `${y}-${m}-${day}`;
+
+    const dow = dayOfWeek(dStr);
+    if (dow !== FRIDAY && dow !== MONDAY) continue;
+    if (!isLeaveTriggerStatus(statusByDate.get(dStr))) continue;
+
+    const saturday = sandwichSaturdayForLeaveDay(dStr);
+    if (!saturday || chargedSaturdays.has(saturday)) continue;
+
+    const friday = addCalendarDays(saturday, -1);
+    const monday = addCalendarDays(saturday, 2);
+    const triggers: string[] = [];
+    if (isLeaveTriggerStatus(statusByDate.get(friday))) triggers.push(friday);
+    if (isLeaveTriggerStatus(statusByDate.get(monday))) triggers.push(monday);
+    if (triggers.length === 0) continue;
+    triggers.sort();
+    const earliest = triggers[0];
+    // Charge only in the month that owns the earliest leave trigger.
+    if (earliest < monthStart || earliest > monthEnd) continue;
+
+    if (!saturdayQualifiesForSandwichDeduction(statusByDate.get(saturday), holidayDates, saturday)) {
+      continue;
+    }
+
+    chargedSaturdays.add(saturday);
+  }
+
+  return chargedSaturdays.size;
+}
+
+/**
+ * Count late first-IN days in the month that count toward salary (present / half_day).
+ */
+export function countLateInPunches(
+  statusByDate: Map<string, string>,
+  lateByDate: Map<string, boolean>,
+  monthStart: string,
+  monthEnd: string,
+): number {
+  let count = 0;
+  const start = new Date(`${monthStart}T12:00:00`);
+  const end = new Date(`${monthEnd}T12:00:00`);
+
+  for (let cur = new Date(start); cur <= end; cur.setDate(cur.getDate() + 1)) {
+    const y = cur.getFullYear();
+    const m = String(cur.getMonth() + 1).padStart(2, "0");
+    const day = String(cur.getDate()).padStart(2, "0");
+    const dStr = `${y}-${m}-${day}`;
+    if (!lateByDate.get(dStr)) continue;
+    if (!countsTowardLatePunch(statusByDate.get(dStr))) continue;
+    count += 1;
+  }
+  return count;
+}
+
+export type PayablePresentBreakdown = {
+  attendanceDays: number;
+  sandwichDeduction: number;
+  lateInCount: number;
+  lateInDeduction: number;
+  payableDays: number;
+};
+
+/**
+ * Salary payable present days for a month:
+ * attendance weights − sandwich (Fri/Mon leave) − floor(late first-INs / 3).
+ * Does not rewrite Saturday attendance statuses.
+ */
+export function computePayablePresentDays(args: {
+  statusByDate: Map<string, string>;
+  lateByDate?: Map<string, boolean>;
+  holidayDates: Set<string>;
+  monthStart: string;
+  monthEnd: string;
+  year: string;
+  month: string;
+  lastDay: number;
+  lateInsPerAbsent?: number;
+}): PayablePresentBreakdown {
+  const {
+    statusByDate,
+    lateByDate = new Map(),
+    holidayDates,
+    monthStart,
+    monthEnd,
+    year,
+    month,
+    lastDay,
+    lateInsPerAbsent = LATE_INS_PER_ABSENT,
+  } = args;
+
+  let attendanceDays = 0;
+  for (let d = 1; d <= lastDay; d++) {
+    const dStr = `${year}-${month}-${String(d).padStart(2, "0")}`;
+    if (!isPayableWorkingDay(dStr, holidayDates)) continue;
+    attendanceDays += dayWeight(statusByDate.get(dStr));
+  }
+
+  const sandwichDeduction = computeSandwichDeduction(
+    statusByDate,
+    holidayDates,
+    monthStart,
+    monthEnd,
+  );
+  const lateInCount = countLateInPunches(statusByDate, lateByDate, monthStart, monthEnd);
+  const lateInDeduction =
+    lateInsPerAbsent > 0 ? Math.floor(lateInCount / lateInsPerAbsent) : 0;
+  const payableDays = Math.max(0, attendanceDays - sandwichDeduction - lateInDeduction);
+
+  return {
+    attendanceDays,
+    sandwichDeduction,
+    lateInCount,
+    lateInDeduction,
+    payableDays,
+  };
 }

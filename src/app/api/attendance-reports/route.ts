@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
-import { dayWeight, computeWorkingDays } from "@/lib/attendance";
+import { computeWorkingDays, addCalendarDays, computePayablePresentDays } from "@/lib/attendance";
 
 export const dynamic = "force-dynamic";
+
+function monthYearOf(dateStr: string): string {
+  return dateStr.slice(0, 7);
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,43 +31,55 @@ export async function GET(request: NextRequest) {
       const [y, m] = month.split("-");
       const start = `${y}-${m}-01`;
       const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate();
-      const end = `${y}-${m}-${lastDay}`;
+      const end = `${y}-${m}-${String(lastDay).padStart(2, "0")}`;
+      const rangeStart = addCalendarDays(start, -3);
+      const rangeEnd = addCalendarDays(end, 3);
+      const adjacentMonths = Array.from(
+        new Set([monthYearOf(rangeStart), month, monthYearOf(rangeEnd)])
+      );
 
       const { data: holidays } = await supabase
         .from("holidays")
         .select("date")
-        .gte("date", start)
-        .lte("date", end);
+        .gte("date", rangeStart)
+        .lte("date", rangeEnd);
       const holidayDates = new Set((holidays ?? []).map((h) => h.date));
 
       const workingDays = computeWorkingDays(y, m, lastDay, holidayDates);
 
       const { data: finalized } = await supabase
         .from("employee_attendance_finalized")
-        .select("employee_id, attendance_date, status")
-        .eq("month_year", month);
+        .select("employee_id, attendance_date, status, is_late, month_year")
+        .in("month_year", adjacentMonths);
 
-      if (!finalized || finalized.length === 0) {
+      const monthFinalized = (finalized ?? []).filter((f) => f.month_year === month);
+      if (monthFinalized.length === 0) {
         return NextResponse.json({ error: "Attendance for this month must be Finalized on the Review screen before viewing reports." }, { status: 400 });
       }
 
       const result = empList.map((emp) => {
-        const empEntries = finalized.filter((f) => f.employee_id === emp.id);
-        let presentWeight = 0;
-
-        for (let d = 1; d <= lastDay; d++) {
-          const dStr = `${y}-${m}-${String(d).padStart(2, "0")}`;
-          const day = new Date(`${dStr}T12:00:00`).getDay();
-          const isWeekend = day === 0 || day === 6;
-          const isHoliday = holidayDates.has(dStr);
-          if (isHoliday || isWeekend) continue;
-
-          const entry = empEntries.find((e) => e.attendance_date === dStr);
-          // Use dayWeight: present=1, half_day=0.5, absent/leave=0
-          presentWeight += dayWeight(entry?.status);
+        const statusByDate = new Map<string, string>();
+        const lateByDate = new Map<string, boolean>();
+        for (const f of finalized ?? []) {
+          if (f.employee_id !== emp.id) continue;
+          statusByDate.set(f.attendance_date, f.status);
+          if (f.attendance_date >= start && f.attendance_date <= end) {
+            lateByDate.set(f.attendance_date, !!f.is_late);
+          }
         }
 
-        const present = presentWeight;
+        const payable = computePayablePresentDays({
+          statusByDate,
+          lateByDate,
+          holidayDates,
+          monthStart: start,
+          monthEnd: end,
+          year: y,
+          month: m,
+          lastDay,
+        });
+
+        const present = payable.payableDays;
         const absent = Math.max(0, workingDays - present);
         const pct = workingDays > 0 ? (present / workingDays) * 100 : 0;
         return {
@@ -71,6 +87,10 @@ export async function GET(request: NextRequest) {
           present,
           absent,
           percentage: pct,
+          attendance_days: payable.attendanceDays,
+          sandwich_deduction: payable.sandwichDeduction,
+          late_in_count: payable.lateInCount,
+          late_in_deduction: payable.lateInDeduction,
         };
       });
       return NextResponse.json({ data: result });

@@ -35,21 +35,44 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-const STATUSES = ["present", "absent", "half_day", "leave", "holiday", "week_off"] as const;
+const STATUSES = ["present", "absent", "half_day", "casual_leave", "leave_without_pay", "holiday", "week_off"] as const;
+
+const formatStatusLabel = (status: string) => status.replaceAll("_", " ");
 
 const getStatusColor = (status: string) => {
   switch (status) {
     case "present": return "bg-emerald-100/50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400";
     case "absent": return "bg-rose-100/50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400";
     case "half_day": return "bg-amber-100/50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400";
-    case "leave": return "bg-blue-100/50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400";
+    case "casual_leave": return "bg-blue-100/50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400";
+    case "leave_without_pay": return "bg-orange-100/50 text-orange-800 dark:bg-orange-950/30 dark:text-orange-400";
     case "holiday": return "bg-purple-100/50 text-purple-700 dark:bg-purple-950/30 dark:text-purple-400";
     case "week_off": return "bg-slate-100/50 text-slate-700 dark:bg-slate-800/30 dark:text-slate-400";
     default: return "";
   }
 };
 
-type DayRow = { empId: string; empName: string; date: string; status: string; in_time?: string; out_time?: string; source: string; isManual?: boolean };
+type DayRow = {
+  empId: string;
+  empName: string;
+  date: string;
+  status: string;
+  in_time?: string;
+  out_time?: string;
+  source: string;
+  isManual?: boolean;
+  isLate?: boolean;
+};
+
+type EmployeeRow = {
+  id: string;
+  full_name: string;
+  presentDays: number;
+  attendanceDays?: number;
+  sandwichDeduction?: number;
+  lateInCount?: number;
+  lateInDeduction?: number;
+};
 
 export default function AttendanceReviewAndApprove() {
   const { toast } = useToast();
@@ -60,7 +83,7 @@ export default function AttendanceReviewAndApprove() {
     isApproved: boolean;
     currentUserRole?: string;
     approvedAt?: string;
-    employees: { id: string; full_name: string; presentDays: number }[];
+    employees: EmployeeRow[];
     dailyData: { date: string; rows: DayRow[] }[];
   } | null>(null);
   const [loading, setLoading] = useState(false);
@@ -119,28 +142,11 @@ export default function AttendanceReviewAndApprove() {
       });
       const json = await res.json();
       if (json.error) throw new Error(json.error);
-      
-      // Update local state instead of refetching
-      setData((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          dailyData: prev.dailyData.map((day) => ({
-            ...day,
-            rows: day.rows.map((row) => {
-              const key = getCellKey(row.empId, row.date);
-              const edit = edits[key];
-              if (edit) {
-                return { ...row, status: edit.status, isManual: true };
-              }
-              return row;
-            }),
-          })),
-        };
-      });
-      
+
       setEdits({});
       toast({ title: "Corrections saved", description: `${updates.length} attendance correction(s) saved successfully.` });
+      // Refetch so Fri/Mon leave and late-IN deductions refresh payable days.
+      fetchData();
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -203,6 +209,8 @@ export default function AttendanceReviewAndApprove() {
   const hasEdits = Object.keys(edits).length > 0;
   
   const totalPresentDays = data ? data.employees.reduce((acc, emp) => acc + emp.presentDays, 0) : 0;
+  const totalSandwich = data ? data.employees.reduce((acc, emp) => acc + (emp.sandwichDeduction ?? 0), 0) : 0;
+  const totalLateDeduction = data ? data.employees.reduce((acc, emp) => acc + (emp.lateInDeduction ?? 0), 0) : 0;
 
   return (
     <Card className="shadow-sm border-border/60">
@@ -274,7 +282,7 @@ export default function AttendanceReviewAndApprove() {
 
         {data && (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card className="bg-muted/40 border-border/50 shadow-none">
                 <CardContent className="p-4 flex items-center gap-4">
                   <div className="p-2 bg-blue-100 text-blue-700 rounded-md dark:bg-blue-900/30 dark:text-blue-400">
@@ -303,9 +311,22 @@ export default function AttendanceReviewAndApprove() {
                     <CheckCircle2 className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Total Present Days</p>
+                    <p className="text-sm font-medium text-muted-foreground">Payable Present Days</p>
                     <p className="text-2xl font-bold">{totalPresentDays}</p>
                   </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-muted/40 border-border/50 shadow-none">
+                <CardContent className="p-4">
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Salary deductions</p>
+                  <p className="text-sm">
+                    Sandwich: <span className="font-semibold">{totalSandwich}</span>
+                    {" · "}
+                    Late IN (÷3): <span className="font-semibold">{totalLateDeduction}</span>
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Fri/Mon leave unpaid adjacent Saturday via salary. Each 3 late first-IN punches = 1 day.
+                  </p>
                 </CardContent>
               </Card>
             </div>
@@ -331,7 +352,17 @@ export default function AttendanceReviewAndApprove() {
                         <TableCell className="sticky left-0 bg-background z-10 font-medium shadow-[1px_0_0_hsl(var(--border))]">
                           <div className="flex flex-col">
                             <span className="truncate">{emp.full_name}</span>
-                            <span className="text-[10px] text-muted-foreground font-normal">{emp.presentDays} present days</span>
+                            <span className="text-[10px] text-muted-foreground font-normal">
+                              {emp.presentDays} payable
+                              {(emp.sandwichDeduction || emp.lateInDeduction)
+                                ? ` (−${(emp.sandwichDeduction ?? 0) + (emp.lateInDeduction ?? 0)} ded.)`
+                                : ""}
+                            </span>
+                            {(emp.lateInCount ?? 0) > 0 && (
+                              <span className="text-[10px] text-amber-700 dark:text-amber-400 font-normal">
+                                {emp.lateInCount} late IN
+                              </span>
+                            )}
                           </div>
                         </TableCell>
                         {data.dailyData.slice(0, 31).map((dayData) => {
@@ -361,7 +392,13 @@ export default function AttendanceReviewAndApprove() {
                                   <PencilLine className="h-2.5 w-2.5" />
                                 </div>
                               )}
-                              
+                              {row.isLate && (
+                                <div
+                                  className="absolute bottom-0.5 left-0.5 h-1.5 w-1.5 rounded-full bg-amber-500"
+                                  title="Late first IN (vs shift start)"
+                                />
+                              )}
+
                               {isActive ? (
                                 <Select
                                   defaultOpen={true}
@@ -375,14 +412,14 @@ export default function AttendanceReviewAndApprove() {
                                   <SelectContent className="z-50 min-w-[120px]">
                                     {STATUSES.map((s) => (
                                       <SelectItem key={s} value={s} className="text-[11px]">
-                                        {s.replace("_", " ")}
+                                        {formatStatusLabel(s)}
                                       </SelectItem>
                                     ))}
                                   </SelectContent>
                                 </Select>
                               ) : (
                                 <div className="flex h-full w-full items-center justify-center font-medium">
-                                  <span className="text-[10px] uppercase tracking-tighter max-w-[60px] truncate">{status.replace("_", " ")}</span>
+                                  <span className="text-[10px] uppercase tracking-tighter max-w-[60px] truncate">{formatStatusLabel(status)}</span>
                                 </div>
                               )}
                             </TableCell>

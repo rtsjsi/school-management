@@ -30,7 +30,17 @@ export default function NEFTGeneration() {
   const [data, setData] = useState<{
     monthYear: string;
     workingDays: number;
-    rows: { full_name: string; present_days: number; salary: number; net_amount: number; bank?: { account_number: string; ifsc_code: string; account_holder_name: string } }[];
+    rows: {
+      full_name: string;
+      present_days: number;
+      attendance_days?: number;
+      sandwich_deduction?: number;
+      late_in_count?: number;
+      late_in_deduction?: number;
+      salary: number;
+      net_amount: number;
+      bank?: { account_number: string; ifsc_code: string; account_holder_name: string };
+    }[];
     skipped: { full_name: string; net_amount: number }[];
     settings?: { debitAccount: string; transactionType: string; currency: string; remarksPrefix: string };
   } | null>(null);
@@ -218,7 +228,8 @@ export default function NEFTGeneration() {
                     <TableHeader>
                       <TableRow className="bg-muted/50 hover:bg-muted/50">
                         <TableHead className="sticky top-0 bg-muted/95 backdrop-blur-sm shadow-[0_1px_0_hsl(var(--border))] font-semibold">Employee</TableHead>
-                        <TableHead className="sticky top-0 bg-muted/95 backdrop-blur-sm shadow-[0_1px_0_hsl(var(--border))] font-semibold">Present Days</TableHead>
+                        <TableHead className="sticky top-0 bg-muted/95 backdrop-blur-sm shadow-[0_1px_0_hsl(var(--border))] font-semibold">Payable Days</TableHead>
+                        <TableHead className="sticky top-0 bg-muted/95 backdrop-blur-sm shadow-[0_1px_0_hsl(var(--border))] font-semibold">Deductions</TableHead>
                         <TableHead className="sticky top-0 bg-muted/95 backdrop-blur-sm shadow-[0_1px_0_hsl(var(--border))] font-semibold">Base Salary</TableHead>
                         <TableHead className="sticky top-0 bg-muted/95 backdrop-blur-sm shadow-[0_1px_0_hsl(var(--border))] font-semibold">Net Amount</TableHead>
                         <TableHead className="sticky top-0 bg-muted/95 backdrop-blur-sm shadow-[0_1px_0_hsl(var(--border))] font-semibold">Account</TableHead>
@@ -228,7 +239,26 @@ export default function NEFTGeneration() {
                       {data.rows.map((r) => (
                         <TableRow key={r.full_name} className="hover:bg-muted/30 transition-colors">
                           <TableCell className="font-medium">{r.full_name}</TableCell>
-                          <TableCell className="text-muted-foreground">{r.present_days}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            <div className="flex flex-col">
+                              <span>{r.present_days}</span>
+                              {typeof r.attendance_days === "number" && r.attendance_days !== r.present_days && (
+                                <span className="text-[10px] text-muted-foreground">from {r.attendance_days} attended</span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {(r.sandwich_deduction || r.late_in_deduction)
+                              ? [
+                                  r.sandwich_deduction ? `Sandwich −${r.sandwich_deduction}` : null,
+                                  r.late_in_deduction
+                                    ? `Late IN −${r.late_in_deduction} (${r.late_in_count ?? 0}×)`
+                                    : null,
+                                ]
+                                  .filter(Boolean)
+                                  .join(" · ")
+                              : "—"}
+                          </TableCell>
                           <TableCell className="font-mono text-muted-foreground">₹{r.salary.toLocaleString()}</TableCell>
                           <TableCell className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">₹{r.net_amount.toLocaleString()}</TableCell>
                           <TableCell className="font-mono text-xs">
