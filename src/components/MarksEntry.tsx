@@ -470,7 +470,7 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
                     .filter((e) => !e.standard || e.standard === effectiveStandard)
                     .filter((e) => e.term === termFilter)
                     .map((e) => {
-                      const label = [e.name, e.term, e.standard ?? "All"].filter(Boolean).join(" · ");
+                      const label = e.name;
                       return (
                         <SelectItem key={e.id} value={e.id}>
                           {label}

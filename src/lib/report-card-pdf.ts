@@ -292,16 +292,7 @@ function drawStudentInfo(
 // ── Helper: draw footer ─────────────────────────────────────────────────────
 
 function drawFooter(doc: jsPDF, academicYear?: string) {
-  const w = doc.internal.pageSize.getWidth();
-  const h = doc.internal.pageSize.getHeight();
-  doc.setFontSize(7);
-  doc.setFont("helvetica", "italic");
-  doc.setTextColor(...COLORS.mutedText);
-  const today = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
-  doc.text(`Generated on ${today}`, 14, h - 12);
-  if (academicYear) {
-    doc.text(`Academic Year: ${academicYear}`, w - 14, h - 12, { align: "right" });
-  }
+  // Removed "Generated on" and "Academic Year:" from footer as per user request
 }
 
 // ── Helper: draw signature section ──────────────────────────────────────────

@@ -514,14 +514,14 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
             {reportType === "single" && (
               <div className="space-y-1.5">
                 <Label className="text-xs">Exam</Label>
-                <Select value={selectedExamId} onValueChange={setSelectedExamId}>
+                <Select value={selectedExamId} onValueChange={setSelectedExamId} disabled={standardFilter === "all" || divisionFilter === "all"}>
                   <SelectTrigger className="w-[240px] h-9">
-                    <SelectValue placeholder="Select exam" />
+                    <SelectValue placeholder={standardFilter === "all" || divisionFilter === "all" ? "Select Standard & Division" : "Select exam"} />
                   </SelectTrigger>
                   <SelectContent>
                     {filteredExams.map((e) => (
                       <SelectItem key={e.id} value={e.id}>
-                        {e.name} – {e.term ?? "No term"}
+                        {e.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
