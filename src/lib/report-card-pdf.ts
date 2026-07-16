@@ -1,5 +1,6 @@
 import { jsPDF } from "jspdf";
 import { PDF_LAYOUT } from "./pdf-utils";
+import { calculatePercentage } from "./grade-utils";
 
 export interface ReportCardSubject {
   subjectName: string;
@@ -114,13 +115,16 @@ export function generateReportCardPDF(data: ReportCardData): Blob {
   doc.line(margin, y, w - margin, y);
   y += lh;
 
-  let totalMax = 0;
-  let totalObtained = 0;
+  const marksForCalc = data.subjects.map(sub => ({
+    score: sub.score,
+    maxScore: sub.maxScore,
+    isAbsent: sub.isAbsent,
+    isGradeBased: sub.maxScore === 0 && sub.grade !== undefined
+  }));
+
+  const { totalObtained, totalMax, percentage } = calculatePercentage(marksForCalc);
 
   for (const sub of data.subjects) {
-    totalMax += sub.maxScore;
-    const obtained = sub.isAbsent ? 0 : (sub.score ?? 0);
-    totalObtained += obtained;
     const displayMarks = sub.isAbsent
       ? "Absent"
       : sub.grade != null
@@ -147,9 +151,8 @@ export function generateReportCardPDF(data: ReportCardData): Blob {
   doc.text(String(totalObtained), colMarks, y, { align: "right" });
   y += lh + blockGap;
 
-  const percentage = totalMax > 0 ? ((totalObtained / totalMax) * 100).toFixed(2) : "—";
   doc.setFont("helvetica", "normal");
-  doc.text(`Percentage: ${percentage}%`, margin, y);
+  doc.text(`Percentage: ${percentage !== "—" ? percentage + "%" : "—"}`, margin, y);
   y += lh + blockGap;
 
   doc.line(margin, y, w - margin, y);
