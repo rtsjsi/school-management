@@ -216,7 +216,8 @@ function drawStudentInfo(
   // Row 1: Name / Standard
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...COLORS.mutedText);
-  doc.text("Name:", colLeft, iy);
+  doc.text("Name", colLeft, iy);
+  doc.text(":", colLeft + 20, iy);
   doc.setTextColor(...COLORS.darkText);
   doc.setFont("helvetica", "normal");
   const nameVal = data.studentName || "—";
@@ -227,7 +228,8 @@ function drawStudentInfo(
 
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...COLORS.mutedText);
-  doc.text("Standard:", colRight, iy);
+  doc.text("Standard", colRight, iy);
+  doc.text(":", colRight + 20, iy);
   doc.setTextColor(...COLORS.darkText);
   doc.setFont("helvetica", "normal");
   doc.text(data.standard ?? "—", colRight + labelW, iy);
@@ -236,14 +238,16 @@ function drawStudentInfo(
   // Row 2: Division / Roll No
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...COLORS.mutedText);
-  doc.text("Division:", colLeft, iy);
+  doc.text("Division", colLeft, iy);
+  doc.text(":", colLeft + 20, iy);
   doc.setTextColor(...COLORS.darkText);
   doc.setFont("helvetica", "normal");
   doc.text(data.division ?? "—", colLeft + labelW, iy);
 
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...COLORS.mutedText);
-  doc.text("Roll No.:", colRight, iy);
+  doc.text("Roll No.", colRight, iy);
+  doc.text(":", colRight + 20, iy);
   doc.setTextColor(...COLORS.darkText);
   doc.setFont("helvetica", "normal");
   doc.text(String(data.rollNumber ?? "—"), colRight + labelW, iy);
@@ -252,14 +256,16 @@ function drawStudentInfo(
   // Row 3: GR No / Academic Year
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...COLORS.mutedText);
-  doc.text("GR No.:", colLeft, iy);
+  doc.text("GR No.", colLeft, iy);
+  doc.text(":", colLeft + 20, iy);
   doc.setTextColor(...COLORS.darkText);
   doc.setFont("helvetica", "normal");
   doc.text(data.studentId ?? "—", colLeft + labelW, iy);
 
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...COLORS.mutedText);
-  doc.text("Acad. Year:", colRight, iy);
+  doc.text("Year", colRight, iy);
+  doc.text(":", colRight + 20, iy);
   doc.setTextColor(...COLORS.darkText);
   doc.setFont("helvetica", "normal");
   doc.text(data.academicYear ?? "—", colRight + labelW, iy);
@@ -269,7 +275,8 @@ function drawStudentInfo(
   if (data.examInfo) {
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...COLORS.mutedText);
-    doc.text("Exam:", colLeft, iy);
+    doc.text("Exam", colLeft, iy);
+    doc.text(":", colLeft + 20, iy);
     doc.setTextColor(...COLORS.darkText);
     doc.setFont("helvetica", "normal");
     const examLines = doc.splitTextToSize(data.examInfo, contentW - padX * 2 - labelW);
@@ -348,8 +355,8 @@ export async function generateReportCardPDF(data: ReportCardData): Promise<Blob>
 
   drawPageBorder(doc);
 
-  const schoolName = data.schoolName ?? "SCHOOL NAME";
-  const schoolAddress = data.schoolAddress ?? "Address";
+  const schoolName = (data.schoolName ?? "SCHOOL NAME") + " - GU033";
+  const schoolAddress = "Affiliated to CISCE (ICSE / ISC).\n" + (data.schoolAddress ?? "Address");
 
   let y = await drawHeader(doc, schoolName, schoolAddress, "REPORT CARD", data.schoolLogoUrl);
 
@@ -397,8 +404,8 @@ export async function generateReportCardPDF(data: ReportCardData): Promise<Blob>
   doc.setFontSize(9);
   doc.setTextColor(...COLORS.white);
   doc.text("Subject", colSubject + 4, y + headerH / 2 + 1.2);
-  doc.text("Max", colMax, y + headerH / 2 + 1.2, { align: "center" });
-  doc.text("Marks", colMarks, y + headerH / 2 + 1.2, { align: "center" });
+  doc.text("Max. Marks", colMax, y + headerH / 2 + 1.2, { align: "center" });
+  doc.text("Marks Obt.", colMarks, y + headerH / 2 + 1.2, { align: "center" });
   if (hasGrades) {
     doc.text("Grade", colGrade - 4, y + headerH / 2 + 1.2, { align: "center" });
   }
@@ -486,22 +493,13 @@ export async function generateReportCardPDF(data: ReportCardData): Promise<Blob>
   const pctText = percentage !== "—" ? `${percentage}%` : "—";
   doc.text(`Percentage: ${pctText}`, margin + 6, y + resultH / 2 + 1.5);
 
-  // Performance label
-  if (percentage !== "—") {
-    const pctNum = parseFloat(percentage);
-    let perfLabel = "";
-    let perfColor: [number, number, number] = COLORS.darkText;
-    if (pctNum >= 90) { perfLabel = "Outstanding"; perfColor = [25, 135, 84]; }
-    else if (pctNum >= 75) { perfLabel = "Excellent"; perfColor = [13, 110, 253]; }
-    else if (pctNum >= 60) { perfLabel = "Very Good"; perfColor = [13, 110, 253]; }
-    else if (pctNum >= 45) { perfLabel = "Good"; perfColor = [255, 153, 0]; }
-    else if (pctNum >= 33) { perfLabel = "Pass"; perfColor = [255, 153, 0]; }
-    else { perfLabel = "Needs Improvement"; perfColor = [220, 53, 69]; }
+  // Removed performance label as per user request
 
-    doc.setTextColor(...perfColor);
-    doc.text(perfLabel, w - margin - 6, y + resultH / 2 + 1.5, { align: "right" });
-  }
-  y += resultH + 4;
+  y += resultH + 8;
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...COLORS.mutedText);
+  doc.text("Remarks ____________________________________________________________________", margin + 6, y);
+  y += 4;
 
   // ── Signatures ──
   await drawSignatures(doc, y, data.principalSignatureUrl);
