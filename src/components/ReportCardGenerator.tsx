@@ -7,20 +7,24 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { PdfIcon } from "@/components/ui/export-icons";
-import { generateReportCardPDF } from "@/lib/report-card-pdf";
+import { Download } from "lucide-react";
+import JSZip from "jszip";
+import { generateReportCardPDF, generateMultiExamReportCardPDF } from "@/lib/report-card-pdf";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 import { fetchAcademicYears, AcademicYearOption } from "@/lib/lov";
 
 type Exam = { id: string; name: string; standard: string | null; term: string | null; academic_year_id: string | null };
 type Student = { id: string; full_name: string; standard: string | null; division: string | null; roll_number?: number; gr_number?: string };
-type Subject = { id: string; name: string; evaluation_type?: string; max_marks?: number | null };
+type Subject = { id: string; name: string; evaluation_type?: string; sort_order?: number; max_marks?: number | null };
 type ExamResultSubject = { student_id: string; subject_id: string; score: number | null; max_score: number | null; grade: string | null; is_absent: boolean };
 
 type AllowedClassNames = { standardName: string; divisionName: string }[];
+type ReportType = "single" | "term-1" | "term-2" | "annual";
 
 export default function ReportCardGenerator({ allowedClassNames }: { allowedClassNames?: AllowedClassNames } = {}) {
   const [exams, setExams] = useState<Exam[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
+  const [reportType, setReportType] = useState<ReportType>("single");
   const [selectedExamId, setSelectedExamId] = useState("");
   const [selectedStudentId, setSelectedStudentId] = useState("");
   const [standardFilter, setStandardFilter] = useState<string>("all");
@@ -50,7 +54,8 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
     supabase
       .from("exams")
       .select("id, name, standard, term, academic_year_id")
-      .order("created_at", { ascending: false })
+      .order("term", { ascending: true })
+      .order("name", { ascending: true })
       .then(({ data }) => {
         let list = (data ?? []) as Exam[];
         if (allowedStandardSet) list = list.filter((e) => e.standard && allowedStandardSet.has(e.standard));
@@ -84,7 +89,7 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
   }, [supabase, allowedStandardSet]);
 
   useEffect(() => {
-    if (selectedExamId) {
+    if (reportType === "single" && selectedExamId) {
       const exam = exams.find(e => e.id === selectedExamId);
       if (exam && standardFilter !== "all" && exam.standard && exam.standard !== standardFilter) {
         setSelectedExamId("");
@@ -100,90 +105,313 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
         }
       }
     }
-  }, [standardFilter, divisionFilter, exams, students, selectedExamId, selectedStudentId]);
+  }, [standardFilter, divisionFilter, exams, students, selectedExamId, selectedStudentId, reportType]);
+
+  const getTargetExams = () => {
+    if (reportType === "single") {
+      const exam = exams.find((e) => e.id === selectedExamId);
+      return exam ? [exam] : [];
+    }
+    const filtered = exams.filter((e) => standardFilter === "all" || e.standard === standardFilter || !e.standard);
+    if (reportType === "term-1") return filtered.filter(e => e.term === "Term-1");
+    if (reportType === "term-2") return filtered.filter(e => e.term === "Term-2");
+    return filtered; // annual
+  };
+
+  const getReportTitle = () => {
+    if (reportType === "term-1") return "Term 1 Report Card";
+    if (reportType === "term-2") return "Term 2 Report Card";
+    return "Annual Report Card";
+  };
+
+  const fetchMultiExamData = async (targetExams: Exam[], targetStudents: Student[]) => {
+    const examIds = targetExams.map(e => e.id);
+    const studentIds = targetStudents.map(s => s.id);
+
+    const { data: examSubsData } = await supabase
+      .from("exam_subjects")
+      .select(`
+        exam_id,
+        subject_id,
+        max_marks,
+        subjects (id, name, evaluation_type, sort_order)
+      `)
+      .in("exam_id", examIds);
+
+    const validSubs = (examSubsData ?? []).filter((r: any) => r.subjects);
+    
+    const subjectMap = new Map<string, Subject>();
+    const examMaxMap = new Map<string, number>(); 
+    
+    validSubs.forEach((r: any) => {
+      if (!subjectMap.has(r.subject_id)) {
+        subjectMap.set(r.subject_id, r.subjects);
+      }
+      examMaxMap.set(`${r.exam_id}_${r.subject_id}`, Number(r.max_marks));
+    });
+
+    const subjectList = Array.from(subjectMap.values());
+    subjectList.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+
+    const { data: allMarks } = await supabase
+      .from("exam_result_subjects")
+      .select("student_id, exam_id, subject_id, score, max_score, grade, is_absent")
+      .in("exam_id", examIds)
+      .in("student_id", studentIds);
+
+    const rows = (allMarks ?? []) as (ExamResultSubject & { exam_id: string })[];
+    
+    return { subjectList, examMaxMap, rows };
+  };
 
   const handleGenerate = async () => {
-    if (!selectedExamId || !selectedStudentId) {
-      setError("Select exam and student.");
+    const targetExams = getTargetExams();
+    if (targetExams.length === 0) {
+      setError(reportType === "single" ? "Select an exam." : "No exams found for this class.");
+      return;
+    }
+    if (!selectedStudentId) {
+      setError("Select student.");
       return;
     }
     setLoading(true);
     setError(null);
     try {
-      const exam = exams.find((e) => e.id === selectedExamId);
       const student = students.find((s) => s.id === selectedStudentId);
-      if (!exam || !student) {
-        setError("Exam or student not found.");
-        return;
-      }
+      if (!student) throw new Error("Student not found.");
 
-      let subjectList: Subject[] = [];
-      const examMaxMap: Record<string, number> = {};
+      const { subjectList, examMaxMap, rows } = await fetchMultiExamData(targetExams, [student]);
 
-      const { data: examSubsData } = await supabase
-        .from("exam_subjects")
-        .select(`
-          subject_id,
-          max_marks,
-          subjects (id, name, evaluation_type, sort_order)
-        `)
-        .eq("exam_id", selectedExamId);
+      let pdfBlob: Blob;
+      const acYear = academicYears.find(y => y.id === targetExams[0]?.academic_year_id)?.name;
 
-      if (examSubsData) {
-        const validSubs = examSubsData.filter((r: any) => r.subjects);
-        validSubs.sort((a: any, b: any) => (a.subjects.sort_order || 0) - (b.subjects.sort_order || 0));
-        subjectList = validSubs.map((r: any) => r.subjects) as Subject[];
-        
-        validSubs.forEach((r: any) => {
-          examMaxMap[r.subject_id] = Number(r.max_marks);
+      if (reportType === "single") {
+        const exam = targetExams[0];
+        const reportSubjects = subjectList.map((sub) => {
+          const row = rows.find((r) => r.subject_id === sub.id && r.exam_id === exam.id);
+          const isGradeBased = sub.evaluation_type === "grade";
+          const maxScore = isGradeBased ? 0 : (row?.max_score ?? examMaxMap.get(`${exam.id}_${sub.id}`) ?? 100);
+          return {
+            subjectName: sub.name,
+            maxScore: Number(maxScore),
+            score: row?.is_absent ? null : (isGradeBased ? null : (row?.score ?? null)),
+            grade: row?.is_absent ? null : (isGradeBased ? (row?.grade ?? null) : null),
+            isAbsent: row?.is_absent ?? false,
+          };
+        });
+        pdfBlob = generateReportCardPDF({
+          schoolName: school.name,
+          schoolAddress: school.address,
+          studentName: student.full_name,
+          standard: student.standard ?? undefined,
+          division: student.division ?? undefined,
+          rollNumber: student.roll_number,
+          studentId: student.gr_number,
+          academicYear: acYear,
+          examName: exam.name,
+          subjects: reportSubjects,
+        });
+      } else {
+        const reportSubjects = subjectList.map((sub) => {
+          const isGradeBased = sub.evaluation_type === "grade";
+          const examsData = targetExams.map(ex => {
+            const row = rows.find(r => r.subject_id === sub.id && r.exam_id === ex.id);
+            const maxScore = isGradeBased ? 0 : (row?.max_score ?? examMaxMap.get(`${ex.id}_${sub.id}`) ?? 100);
+            return {
+              examId: ex.id,
+              score: row?.is_absent ? null : (isGradeBased ? null : (row?.score ?? null)),
+              maxScore: Number(maxScore),
+              grade: row?.is_absent ? null : (isGradeBased ? (row?.grade ?? null) : null),
+              isAbsent: row?.is_absent ?? false,
+              isGradeBased
+            };
+          });
+
+          let totalScore: number | null = null;
+          let totalMax = 0;
+          let anyMarksFound = false;
+
+          if (!isGradeBased) {
+            totalScore = 0;
+            examsData.forEach(ed => {
+              if (examMaxMap.has(`${ed.examId}_${sub.id}`)) {
+                totalMax += ed.maxScore;
+                if (!ed.isAbsent && ed.score != null) {
+                  totalScore = (totalScore ?? 0) + ed.score;
+                  anyMarksFound = true;
+                }
+              }
+            });
+            if (!anyMarksFound) totalScore = null;
+          }
+
+          return {
+            subjectName: sub.name,
+            exams: examsData,
+            totalScore,
+            totalMax,
+            finalGrade: isGradeBased ? (examsData.slice(-1)[0]?.grade ?? null) : null
+          };
+        });
+
+        pdfBlob = generateMultiExamReportCardPDF({
+          schoolName: school.name,
+          schoolAddress: school.address,
+          studentName: student.full_name,
+          standard: student.standard ?? undefined,
+          division: student.division ?? undefined,
+          rollNumber: student.roll_number,
+          studentId: student.gr_number,
+          academicYear: acYear,
+          reportTitle: getReportTitle(),
+          exams: targetExams.map(e => ({ id: e.id, name: e.name })),
+          subjects: reportSubjects,
         });
       }
-
-      const { data: marks } = await supabase
-        .from("exam_result_subjects")
-        .select("student_id, subject_id, score, max_score, grade, is_absent")
-        .eq("exam_id", selectedExamId)
-        .eq("student_id", selectedStudentId);
-
-      const rows = (marks ?? []) as ExamResultSubject[];
-
-      const reportSubjects = subjectList.map((sub) => {
-        const row = rows.find((r) => r.subject_id === sub.id);
-        const isGradeBased = sub.evaluation_type === "grade";
-        const maxScore = isGradeBased ? 0 : (row?.max_score ?? examMaxMap[sub.id] ?? 100);
-        return {
-          subjectName: sub.name,
-          maxScore: Number(maxScore),
-          score: row?.is_absent ? null : (isGradeBased ? null : (row?.score ?? null)),
-          grade: row?.is_absent ? null : (isGradeBased ? (row?.grade ?? null) : null),
-          isAbsent: row?.is_absent ?? false,
-        };
-      });
-
-      const examAcYearId = exam.academic_year_id;
-      const acYear = academicYears.find(y => y.id === examAcYearId)?.name;
-
-      const pdfBlob = generateReportCardPDF({
-        schoolName: school.name,
-        schoolAddress: school.address,
-        studentName: student.full_name,
-        standard: student.standard ?? undefined,
-        division: student.division ?? undefined,
-        rollNumber: student.roll_number,
-        studentId: student.gr_number,
-        academicYear: acYear,
-        examName: exam.name,
-        subjects: reportSubjects,
-      });
 
       const url = URL.createObjectURL(pdfBlob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `report_card_${student.full_name.replace(/\s+/g, "_")}_${exam.name.replace(/\s+/g, "_")}.pdf`;
+      const fileNameSuffix = reportType === "single" ? targetExams[0].name : reportType;
+      a.download = `report_card_${student.full_name.replace(/\s+/g, "_")}_${fileNameSuffix.replace(/\s+/g, "_")}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to generate report card");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGenerateZip = async () => {
+    const targetExams = getTargetExams();
+    if (targetExams.length === 0) {
+      setError(reportType === "single" ? "Select an exam." : "No exams found for this class.");
+      return;
+    }
+    if (standardFilter === "all") {
+      setError("Select a standard to download class ZIP.");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const classStudents = students.filter(s => {
+        if (standardFilter !== "all" && s.standard !== standardFilter) return false;
+        if (divisionFilter !== "all" && s.division !== divisionFilter) return false;
+        return true;
+      });
+
+      if (classStudents.length === 0) {
+        throw new Error("No students found in this class.");
+      }
+
+      const { subjectList, examMaxMap, rows } = await fetchMultiExamData(targetExams, classStudents);
+      const acYear = academicYears.find(y => y.id === targetExams[0]?.academic_year_id)?.name;
+
+      const zip = new JSZip();
+
+      for (const student of classStudents) {
+        let pdfBlob: Blob;
+        
+        if (reportType === "single") {
+          const exam = targetExams[0];
+          const reportSubjects = subjectList.map((sub) => {
+            const row = rows.find((r) => r.subject_id === sub.id && r.exam_id === exam.id && r.student_id === student.id);
+            const isGradeBased = sub.evaluation_type === "grade";
+            const maxScore = isGradeBased ? 0 : (row?.max_score ?? examMaxMap.get(`${exam.id}_${sub.id}`) ?? 100);
+            return {
+              subjectName: sub.name,
+              maxScore: Number(maxScore),
+              score: row?.is_absent ? null : (isGradeBased ? null : (row?.score ?? null)),
+              grade: row?.is_absent ? null : (isGradeBased ? (row?.grade ?? null) : null),
+              isAbsent: row?.is_absent ?? false,
+            };
+          });
+          pdfBlob = generateReportCardPDF({
+            schoolName: school.name,
+            schoolAddress: school.address,
+            studentName: student.full_name,
+            standard: student.standard ?? undefined,
+            division: student.division ?? undefined,
+            rollNumber: student.roll_number,
+            studentId: student.gr_number,
+            academicYear: acYear,
+            examName: exam.name,
+            subjects: reportSubjects,
+          });
+        } else {
+          const reportSubjects = subjectList.map((sub) => {
+            const isGradeBased = sub.evaluation_type === "grade";
+            const examsData = targetExams.map(ex => {
+              const row = rows.find(r => r.subject_id === sub.id && r.exam_id === ex.id && r.student_id === student.id);
+              const maxScore = isGradeBased ? 0 : (row?.max_score ?? examMaxMap.get(`${ex.id}_${sub.id}`) ?? 100);
+              return {
+                examId: ex.id,
+                score: row?.is_absent ? null : (isGradeBased ? null : (row?.score ?? null)),
+                maxScore: Number(maxScore),
+                grade: row?.is_absent ? null : (isGradeBased ? (row?.grade ?? null) : null),
+                isAbsent: row?.is_absent ?? false,
+                isGradeBased
+              };
+            });
+  
+            let totalScore: number | null = null;
+            let totalMax = 0;
+            let anyMarksFound = false;
+  
+            if (!isGradeBased) {
+              totalScore = 0;
+              examsData.forEach(ed => {
+                if (examMaxMap.has(`${ed.examId}_${sub.id}`)) { 
+                  totalMax += ed.maxScore;
+                  if (!ed.isAbsent && ed.score != null) {
+                    totalScore = (totalScore ?? 0) + ed.score;
+                    anyMarksFound = true;
+                  }
+                }
+              });
+              if (!anyMarksFound) totalScore = null;
+            }
+  
+            return {
+              subjectName: sub.name,
+              exams: examsData,
+              totalScore,
+              totalMax,
+              finalGrade: isGradeBased ? (examsData.slice(-1)[0]?.grade ?? null) : null
+            };
+          });
+  
+          pdfBlob = generateMultiExamReportCardPDF({
+            schoolName: school.name,
+            schoolAddress: school.address,
+            studentName: student.full_name,
+            standard: student.standard ?? undefined,
+            division: student.division ?? undefined,
+            rollNumber: student.roll_number,
+            studentId: student.gr_number,
+            academicYear: acYear,
+            reportTitle: getReportTitle(),
+            exams: targetExams.map(e => ({ id: e.id, name: e.name })),
+            subjects: reportSubjects,
+          });
+        }
+
+        const fileName = `${student.roll_number ?? "00"}_${student.full_name.replace(/\s+/g, "_")}.pdf`;
+        zip.file(fileName, pdfBlob);
+      }
+
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      const fileNameSuffix = reportType === "single" ? targetExams[0].name : reportType;
+      a.download = `ReportCards_${standardFilter}${divisionFilter !== "all" ? `_${divisionFilter}` : ""}_${fileNameSuffix.replace(/\s+/g, "_")}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to generate class ZIP");
     } finally {
       setLoading(false);
     }
@@ -237,21 +465,40 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
               </SelectContent>
             </Select>
           </div>
+          
           <div className="space-y-2">
-            <Label>Exam</Label>
-            <Select value={selectedExamId} onValueChange={setSelectedExamId}>
-              <SelectTrigger className="w-[240px]">
-                <SelectValue placeholder="Select exam" />
+            <Label>Report Type</Label>
+            <Select value={reportType} onValueChange={(val: any) => setReportType(val)}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Select type" />
               </SelectTrigger>
               <SelectContent>
-                {filteredExams.map((e) => (
-                  <SelectItem key={e.id} value={e.id}>
-                    {e.name} – {e.term ?? "No term"}
-                  </SelectItem>
-                ))}
+                <SelectItem value="single">Single Exam</SelectItem>
+                <SelectItem value="term-1">Term 1 Report Card</SelectItem>
+                <SelectItem value="term-2">Term 2 Report Card</SelectItem>
+                <SelectItem value="annual">Annual Report Card</SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+          {reportType === "single" && (
+            <div className="space-y-2">
+              <Label>Exam</Label>
+              <Select value={selectedExamId} onValueChange={setSelectedExamId}>
+                <SelectTrigger className="w-[240px]">
+                  <SelectValue placeholder="Select exam" />
+                </SelectTrigger>
+                <SelectContent>
+                  {filteredExams.map((e) => (
+                    <SelectItem key={e.id} value={e.id}>
+                      {e.name} – {e.term ?? "No term"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label>Student</Label>
             <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
@@ -269,10 +516,16 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
           </div>
         </div>
 
-        <Button size="sm" className="gap-1.5 bg-red-600 hover:bg-red-700 text-white shadow-sm" onClick={handleGenerate} disabled={loading || !selectedExamId || !selectedStudentId}>
-          <PdfIcon className="h-4 w-4" />
-          {loading ? "Generating…" : "Generate Report Card"}
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" className="gap-1.5 bg-red-600 hover:bg-red-700 text-white shadow-sm" onClick={handleGenerate} disabled={loading || (reportType === "single" && !selectedExamId) || !selectedStudentId}>
+            <PdfIcon className="h-4 w-4" />
+            {loading ? "Generating..." : "Generate Report Card"}
+          </Button>
+          <Button size="sm" variant="outline" className="gap-1.5 shadow-sm" onClick={handleGenerateZip} disabled={loading || (reportType === "single" && !selectedExamId) || standardFilter === "all"}>
+            <Download className="h-4 w-4" />
+            {loading ? "Generating ZIP..." : "Download Class (ZIP)"}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

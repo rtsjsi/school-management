@@ -13,7 +13,8 @@ export async function ExamsList() {
   let query = supabase
     .from("exams")
     .select("id, name, standard, term")
-    .order("created_at", { ascending: false });
+    .order("term", { ascending: true })
+    .order("name", { ascending: true });
   if (activeYearId) query = query.eq("academic_year_id", activeYearId);
   const { data: exams } = await query;
 
