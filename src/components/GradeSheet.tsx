@@ -50,7 +50,8 @@ export default function GradeSheet({ allowedClassNames }: { allowedClassNames?: 
     supabase
       .from("exams")
       .select("id, name, standard, term")
-      .order("created_at", { ascending: false })
+      .order("term", { ascending: true })
+      .order("name", { ascending: true })
       .then(({ data }) => {
         let list = (data ?? []) as Exam[];
         if (allowedStandardSet) list = list.filter((e) => !e.standard || allowedStandardSet.has(e.standard));

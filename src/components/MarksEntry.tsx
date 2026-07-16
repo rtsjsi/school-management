@@ -85,7 +85,8 @@ export default function MarksEntry({ allowedClassNames }: { allowedClassNames?: 
       let query = supabase
         .from("exams")
         .select("id, name, standard, term, academic_years(id, name)")
-        .order("created_at", { ascending: false });
+        .order("term", { ascending: true })
+        .order("name", { ascending: true });
       if (ay?.id) query = query.eq("academic_year_id", ay.id);
       const { data: examData } = await query;
       let list = (examData ?? []) as unknown as Exam[];
