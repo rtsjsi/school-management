@@ -15,21 +15,22 @@ Each run creates a new timestamped folder under `Clone/`, so you always have his
 
 **Auth:** `auth.users`
 
-**Public (24 tables):**
-`academic_years`, `employee_attendance_finalized`, `employees`,
+**Public (28 tables):**
+`academic_years`, `biometric_attendance_raw`, `employee_attendance_finalized`, `employees`,
 `exam_result_subjects`, `exam_subjects`,
-`exams`, `expense_budgets`, `expense_heads`, `expenses`, `fee_collections`, `fee_structure_items`,
-`fee_structures`, `holidays`, `profile_allowed_classes`, `profiles`,
-`school_settings`, `standard_divisions`, `standards`,
-`student_documents`, `student_enrollments`, `student_photos`, `students`, `subjects`
+`exams`, `expense_budgets`, `expense_heads`, `expenses`, `fee_collections`, `fee_refunds`,
+`fee_structure_items`, `fee_structures`, `holidays`, `payroll_settings`,
+`profile_allowed_classes`, `profiles`, `school_settings`, `standard_divisions`, `standards`,
+`student_documents`, `student_enrollments`, `student_photos`, `students`, `subjects`,
+`timetable_entries`, `timetable_settings`
 
 **Storage:** All buckets and files.
 
 ## Prerequisites
 
 - `.env.main` with prod `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`
-- `.env.development` with dev `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_PROJECT_REF`
-- Dev database password set as an environment variable
+- `.env.development` with dev `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_PROJECT_ID`
+- Dev database password set as an environment variable (or `SUPABASE_DB_PASSWORD` in `.env.development`)
 
 ## Run
 
