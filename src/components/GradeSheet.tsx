@@ -378,14 +378,14 @@ export default function GradeSheet({ allowedClassNames }: { allowedClassNames?: 
           </div>
           <div className="space-y-2">
             <Label>Exam</Label>
-            <Select value={selectedExamId} onValueChange={setSelectedExamId}>
+            <Select value={selectedExamId} onValueChange={setSelectedExamId} disabled={standardFilter === "all" || divisionFilter === "all"}>
               <SelectTrigger className="w-[240px]">
-                <SelectValue placeholder="Select exam" />
+                <SelectValue placeholder={standardFilter === "all" || divisionFilter === "all" ? "Select Standard & Division" : "Select exam"} />
               </SelectTrigger>
               <SelectContent>
                 {filteredExams.map((e) => (
                   <SelectItem key={e.id} value={e.id}>
-                    {e.name} – {e.term ?? "No term"}
+                    {e.name}
                   </SelectItem>
                 ))}
               </SelectContent>
