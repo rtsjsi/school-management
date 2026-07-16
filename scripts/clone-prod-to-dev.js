@@ -15,6 +15,7 @@ const DEFAULT_DEV_PASSWORD = "Angel@123";
 
 const PUBLIC_TABLES = [
   "academic_years",
+  "biometric_attendance_raw",
   "employee_attendance_finalized",
   "employees",
   "exam_result_subjects",
@@ -24,12 +25,13 @@ const PUBLIC_TABLES = [
   "expense_heads",
   "expenses",
   "fee_collections",
+  "fee_refunds",
   "fee_structure_items",
   "fee_structures",
   "holidays",
+  "payroll_settings",
   "profile_allowed_classes",
   "profiles",
-
   "school_settings",
   "standard_divisions",
   "standards",
@@ -38,17 +40,22 @@ const PUBLIC_TABLES = [
   "student_photos",
   "students",
   "subjects",
+  "timetable_entries",
+  "timetable_settings",
 ];
 
 const INSERT_ORDER = [
   "auth.users",
   "public.profiles",
   "public.school_settings",
+  "public.payroll_settings",
   "public.academic_years",
   "public.standards",
   "public.standard_divisions",
   "public.profile_allowed_classes",
   "public.subjects",
+  "public.timetable_settings",
+  "public.timetable_entries",
   "public.employees",
   "public.holidays",
   "public.students",
@@ -61,11 +68,12 @@ const INSERT_ORDER = [
   "public.fee_structures",
   "public.fee_structure_items",
   "public.fee_collections",
+  "public.fee_refunds",
   "public.expense_heads",
   "public.expense_budgets",
   "public.expenses",
+  "public.biometric_attendance_raw",
   "public.employee_attendance_finalized",
-
 ];
 
 const MIME_MAP = {
