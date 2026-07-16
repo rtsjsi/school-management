@@ -9,8 +9,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { PdfIcon } from "@/components/ui/export-icons";
 import { generateReportCardPDF } from "@/lib/report-card-pdf";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
+import { fetchAcademicYears, AcademicYearOption } from "@/lib/lov";
 
-type Exam = { id: string; name: string; standard: string | null; term: string | null };
+type Exam = { id: string; name: string; standard: string | null; term: string | null; academic_year_id: string | null };
 type Student = { id: string; full_name: string; standard: string | null; division: string | null; roll_number?: number; gr_number?: string };
 type Subject = { id: string; name: string; evaluation_type?: string; max_marks?: number | null };
 type ExamResultSubject = { student_id: string; subject_id: string; score: number | null; max_score: number | null; grade: string | null; is_absent: boolean };
@@ -25,6 +26,7 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
   const [standardFilter, setStandardFilter] = useState<string>("all");
   const [divisionFilter, setDivisionFilter] = useState<string>("all");
   const [classNames, setClassNames] = useState<string[]>([]);
+  const [academicYears, setAcademicYears] = useState<AcademicYearOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,9 +45,11 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
   );
 
   useEffect(() => {
+    fetchAcademicYears().then(setAcademicYears);
+    
     supabase
       .from("exams")
-      .select("id, name, standard, term")
+      .select("id, name, standard, term, academic_year_id")
       .order("created_at", { ascending: false })
       .then(({ data }) => {
         let list = (data ?? []) as Exam[];
@@ -156,6 +160,9 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
         };
       });
 
+      const examAcYearId = exam.academic_year_id;
+      const acYear = academicYears.find(y => y.id === examAcYearId)?.name;
+
       const pdfBlob = generateReportCardPDF({
         schoolName: school.name,
         schoolAddress: school.address,
@@ -164,6 +171,7 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
         division: student.division ?? undefined,
         rollNumber: student.roll_number,
         studentId: student.gr_number,
+        academicYear: acYear,
         examName: exam.name,
         subjects: reportSubjects,
       });
