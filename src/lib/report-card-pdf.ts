@@ -338,8 +338,15 @@ async function drawSignatures(
 // SINGLE EXAM REPORT CARD
 // ══════════════════════════════════════════════════════════════════════════
 
-export async function generateReportCardPDF(data: ReportCardData): Promise<Blob> {
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
+async function renderSingleExamReportCard(
+  doc: jsPDF,
+  data: ReportCardData,
+  options?: { newPage?: boolean }
+): Promise<void> {
+  if (options?.newPage) {
+    doc.addPage();
+  }
+
   const w = doc.internal.pageSize.getWidth();
   const margin = 14;
   const contentW = w - margin * 2;
@@ -497,7 +504,19 @@ export async function generateReportCardPDF(data: ReportCardData): Promise<Blob>
 
   // ── Footer ──
   drawFooter(doc, data.academicYear);
+}
 
+export async function generateReportCardPDF(data: ReportCardData): Promise<Blob> {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  await renderSingleExamReportCard(doc, data);
+  return doc.output("blob");
+}
+
+export async function generateClassReportCardPDF(students: ReportCardData[]): Promise<Blob> {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  for (let i = 0; i < students.length; i++) {
+    await renderSingleExamReportCard(doc, students[i], { newPage: i > 0 });
+  }
   return doc.output("blob");
 }
 
@@ -505,8 +524,15 @@ export async function generateReportCardPDF(data: ReportCardData): Promise<Blob>
 // MULTI-EXAM REPORT CARD
 // ══════════════════════════════════════════════════════════════════════════
 
-export async function generateMultiExamReportCardPDF(data: MultiExamReportCardData): Promise<Blob> {
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
+async function renderMultiExamReportCard(
+  doc: jsPDF,
+  data: MultiExamReportCardData,
+  options?: { newPage?: boolean }
+): Promise<void> {
+  if (options?.newPage) {
+    doc.addPage();
+  }
+
   const w = doc.internal.pageSize.getWidth();
   const margin = 14;
   const contentW = w - margin * 2;
@@ -699,6 +725,18 @@ export async function generateMultiExamReportCardPDF(data: MultiExamReportCardDa
 
   // ── Footer ──
   drawFooter(doc, data.academicYear);
+}
 
+export async function generateMultiExamReportCardPDF(data: MultiExamReportCardData): Promise<Blob> {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  await renderMultiExamReportCard(doc, data);
+  return doc.output("blob");
+}
+
+export async function generateClassMultiExamReportCardPDF(students: MultiExamReportCardData[]): Promise<Blob> {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  for (let i = 0; i < students.length; i++) {
+    await renderMultiExamReportCard(doc, students[i], { newPage: i > 0 });
+  }
   return doc.output("blob");
 }
