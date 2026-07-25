@@ -10,6 +10,7 @@ import {
   isSundayWeekOff,
   addCalendarDays,
   computePayablePresentDays,
+  listSandwichCharges,
   istCalendarDate,
   DEFAULT_THRESHOLDS,
   type PunchLite,
@@ -153,6 +154,8 @@ export async function GET(request: NextRequest) {
       {
         attendanceDays: number;
         sandwichDeduction: number;
+        sandwichDates: string[];
+        sandwichTriggerDates: string[];
         lateInCount: number;
         lateInDeduction: number;
         presentDays: number;
@@ -285,9 +288,22 @@ export async function GET(request: NextRequest) {
         lastDay,
       });
 
+      const sandwichCharges = listSandwichCharges(
+        statusByDate,
+        holidayDates,
+        start,
+        end
+      );
+      const sandwichDates = sandwichCharges.map((c) => c.saturday);
+      const sandwichTriggerDates = Array.from(
+        new Set(sandwichCharges.flatMap((c) => c.triggers))
+      ).sort();
+
       employeePayable[emp.id] = {
         attendanceDays: payable.attendanceDays,
         sandwichDeduction: payable.sandwichDeduction,
+        sandwichDates,
+        sandwichTriggerDates,
         lateInCount: payable.lateInCount,
         lateInDeduction: payable.lateInDeduction,
         presentDays: payable.payableDays,
@@ -313,6 +329,8 @@ export async function GET(request: NextRequest) {
         presentDays: employeePayable[e.id]?.presentDays ?? 0,
         attendanceDays: employeePayable[e.id]?.attendanceDays ?? 0,
         sandwichDeduction: employeePayable[e.id]?.sandwichDeduction ?? 0,
+        sandwichDates: employeePayable[e.id]?.sandwichDates ?? [],
+        sandwichTriggerDates: employeePayable[e.id]?.sandwichTriggerDates ?? [],
         lateInCount: employeePayable[e.id]?.lateInCount ?? 0,
         lateInDeduction: employeePayable[e.id]?.lateInDeduction ?? 0,
         needsAttention: employeePayable[e.id]?.needsAttention ?? false,

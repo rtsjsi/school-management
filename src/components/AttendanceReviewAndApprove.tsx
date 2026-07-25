@@ -33,8 +33,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  CalendarDays,
-  Users,
   CheckCircle2,
   Lock,
   RefreshCw,
@@ -86,6 +84,8 @@ type EmployeeRow = {
   presentDays: number;
   attendanceDays?: number;
   sandwichDeduction?: number;
+  sandwichDates?: string[];
+  sandwichTriggerDates?: string[];
   lateInCount?: number;
   lateInDeduction?: number;
   needsAttention?: boolean;
@@ -295,9 +295,6 @@ export default function AttendanceReviewAndApprove() {
   }, [data, needsAttentionOnly]);
 
   const attentionCount = data?.employees.filter((e) => e.needsAttention).length ?? 0;
-  const totalPresentDays = data ? data.employees.reduce((acc, emp) => acc + emp.presentDays, 0) : 0;
-  const totalSandwich = data ? data.employees.reduce((acc, emp) => acc + (emp.sandwichDeduction ?? 0), 0) : 0;
-  const totalLateDeduction = data ? data.employees.reduce((acc, emp) => acc + (emp.lateInDeduction ?? 0), 0) : 0;
 
   const firstInIso = dayPunches.find((p) => (p.direction ?? "").toUpperCase() === "IN")?.punched_at
     ?? dayPunches[0]?.punched_at;
@@ -411,62 +408,7 @@ export default function AttendanceReviewAndApprove() {
         )}
 
         {data && !loading && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="bg-muted/40 border-border/50 shadow-none">
-                <CardContent className="p-4 flex items-center gap-4">
-                  <div className="p-2 bg-blue-100 text-blue-700 rounded-md dark:bg-blue-900/30 dark:text-blue-400">
-                    <CalendarDays className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Working Days</p>
-                    <p className="text-2xl font-bold">{data.workingDays}</p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="bg-muted/40 border-border/50 shadow-none">
-                <CardContent className="p-4 flex items-center gap-4">
-                  <div className="p-2 bg-indigo-100 text-indigo-700 rounded-md dark:bg-indigo-900/30 dark:text-indigo-400">
-                    <Users className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      {needsAttentionOnly ? "Showing / Total" : "Total Employees"}
-                    </p>
-                    <p className="text-2xl font-bold">
-                      {needsAttentionOnly
-                        ? `${visibleEmployees.length} / ${data.employees.length}`
-                        : data.employees.length}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="bg-muted/40 border-border/50 shadow-none">
-                <CardContent className="p-4 flex items-center gap-4">
-                  <div className="p-2 bg-emerald-100 text-emerald-700 rounded-md dark:bg-emerald-900/30 dark:text-emerald-400">
-                    <CheckCircle2 className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Payable Present Days</p>
-                    <p className="text-2xl font-bold">{totalPresentDays}</p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="bg-muted/40 border-border/50 shadow-none">
-                <CardContent className="p-4">
-                  <p className="text-sm font-medium text-muted-foreground mb-1">Salary deductions</p>
-                  <p className="text-sm">
-                    Sandwich: <span className="font-semibold">{totalSandwich}</span>
-                    {" · "}
-                    Late IN (÷3): <span className="font-semibold">{totalLateDeduction}</span>
-                  </p>
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    Late after shift start + {data.lateGraceMinutes ?? 15} min grace. Single punch = half day. Click a day for punches.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
+          <div className="space-y-4">
             <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground">
               <span className="inline-flex items-center gap-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> Late IN
@@ -476,6 +418,12 @@ export default function AttendanceReviewAndApprove() {
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-violet-500" /> Single punch
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="h-3 w-3 rounded-sm bg-orange-400/40 ring-1 ring-orange-500" /> Sandwich Saturday
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="h-3 w-3 rounded-sm bg-orange-200/50 ring-1 ring-dashed ring-orange-400" /> Sandwich leave (Fri/Mon)
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <PencilLine className="h-3 w-3" /> Manual
@@ -505,9 +453,27 @@ export default function AttendanceReviewAndApprove() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      visibleEmployees.map((emp) => (
-                        <TableRow key={emp.id} className="hover:bg-muted/30 transition-colors">
-                          <TableCell className="sticky left-0 bg-background z-10 font-medium shadow-[1px_0_0_hsl(var(--border))]">
+                      visibleEmployees.map((emp) => {
+                        const hasSandwich = (emp.sandwichDeduction ?? 0) > 0;
+                        const sandwichDates = new Set(emp.sandwichDates ?? []);
+                        const sandwichTriggers = new Set(emp.sandwichTriggerDates ?? []);
+
+                        return (
+                        <TableRow
+                          key={emp.id}
+                          className={cn(
+                            "hover:bg-muted/30 transition-colors",
+                            hasSandwich && "bg-orange-50/40 dark:bg-orange-950/15"
+                          )}
+                        >
+                          <TableCell
+                            className={cn(
+                              "sticky left-0 z-10 font-medium shadow-[1px_0_0_hsl(var(--border))]",
+                              hasSandwich
+                                ? "bg-orange-50 dark:bg-orange-950/40 border-l-2 border-l-orange-500"
+                                : "bg-background"
+                            )}
+                          >
                             <div className="flex flex-col">
                               <span className="truncate">{emp.full_name}</span>
                               <span className="text-[10px] text-muted-foreground font-normal">
@@ -516,6 +482,14 @@ export default function AttendanceReviewAndApprove() {
                                   ? ` (−${(emp.sandwichDeduction ?? 0) + (emp.lateInDeduction ?? 0)} ded.)`
                                   : ""}
                               </span>
+                              {hasSandwich && (
+                                <span className="text-[10px] text-orange-700 dark:text-orange-400 font-semibold">
+                                  Sandwich −{emp.sandwichDeduction}
+                                  {(emp.sandwichDates?.length ?? 0) > 0
+                                    ? ` (${emp.sandwichDates!.map((d) => d.slice(8)).join(", ")})`
+                                    : ""}
+                                </span>
+                              )}
                               {(emp.lateInCount ?? 0) > 0 && (
                                 <span className="text-[10px] text-amber-700 dark:text-amber-400 font-normal">
                                   {emp.lateInCount} late IN
@@ -541,6 +515,8 @@ export default function AttendanceReviewAndApprove() {
                             const status = getStatus(row);
                             const cellKey = getCellKey(emp.id, dayData.date);
                             const isEdited = edits[cellKey] !== undefined;
+                            const isSandwichSat = sandwichDates.has(dayData.date);
+                            const isSandwichTrigger = sandwichTriggers.has(dayData.date);
 
                             return (
                               <TableCell
@@ -548,10 +524,14 @@ export default function AttendanceReviewAndApprove() {
                                 className={cn(
                                   "text-center p-1 relative h-12 transition-all cursor-pointer",
                                   getStatusColor(status),
-                                  row.needsAttention && "ring-1 ring-inset ring-amber-400/50",
+                                  row.needsAttention && !isSandwichSat && !isSandwichTrigger && "ring-1 ring-inset ring-amber-400/50",
+                                  isSandwichSat && "ring-2 ring-inset ring-orange-500 bg-orange-200/50 dark:bg-orange-900/40",
+                                  isSandwichTrigger && !isSandwichSat && "ring-1 ring-inset ring-dashed ring-orange-400 bg-orange-100/40 dark:bg-orange-950/30",
                                   "hover:brightness-95 hover:shadow-inner"
                                 )}
                                 title={[
+                                  isSandwichSat ? "Sandwich Saturday (salary −1 day)" : null,
+                                  isSandwichTrigger ? "Sandwich leave trigger (Fri/Mon)" : null,
                                   row.in_time ? `In ${row.in_time}` : null,
                                   row.out_time ? `Out ${row.out_time}` : null,
                                   row.singlePunch ? "Single punch" : null,
@@ -578,6 +558,9 @@ export default function AttendanceReviewAndApprove() {
                                   {row.singlePunch && (
                                     <span className="h-1.5 w-1.5 rounded-full bg-violet-500" title="Single punch" />
                                   )}
+                                  {isSandwichSat && (
+                                    <span className="h-1.5 w-1.5 rounded-full bg-orange-600" title="Sandwich Saturday" />
+                                  )}
                                 </div>
 
                                 <div className="flex h-full w-full flex-col items-center justify-center font-medium">
@@ -595,7 +578,8 @@ export default function AttendanceReviewAndApprove() {
                             );
                           })}
                         </TableRow>
-                      ))
+                        );
+                      })
                     )}
                   </TableBody>
                 </Table>

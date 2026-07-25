@@ -336,20 +336,26 @@ export function saturdayQualifiesForSandwichDeduction(
   return true;
 }
 
+export type SandwichCharge = {
+  saturday: string;
+  /** Fri and/or Mon leave days that triggered this sandwich (earliest owns the charge). */
+  triggers: string[];
+};
+
 /**
- * Sandwich salary deduction for month M (does not mutate Saturday statuses):
+ * Sandwich salary charges for month M (does not mutate Saturday statuses):
  * Leave on Fri/Mon in M → deduct 1 payable day in M for the related Saturday.
  * Earliest Fri/Mon leave trigger owns the Saturday so cross-month edges do not double-charge.
  *
  * `statusByDate` should include neighbors a few days before/after the month.
  */
-export function computeSandwichDeduction(
+export function listSandwichCharges(
   statusByDate: Map<string, string>,
   holidayDates: Set<string>,
   monthStart: string,
   monthEnd: string,
-): number {
-  const chargedSaturdays = new Set<string>();
+): SandwichCharge[] {
+  const charged = new Map<string, SandwichCharge>();
   const start = new Date(`${monthStart}T12:00:00`);
   const end = new Date(`${monthEnd}T12:00:00`);
 
@@ -364,7 +370,7 @@ export function computeSandwichDeduction(
     if (!isLeaveTriggerStatus(statusByDate.get(dStr))) continue;
 
     const saturday = sandwichSaturdayForLeaveDay(dStr);
-    if (!saturday || chargedSaturdays.has(saturday)) continue;
+    if (!saturday || charged.has(saturday)) continue;
 
     const friday = addCalendarDays(saturday, -1);
     const monday = addCalendarDays(saturday, 2);
@@ -381,10 +387,22 @@ export function computeSandwichDeduction(
       continue;
     }
 
-    chargedSaturdays.add(saturday);
+    charged.set(saturday, { saturday, triggers });
   }
 
-  return chargedSaturdays.size;
+  return Array.from(charged.values()).sort((a, b) => a.saturday.localeCompare(b.saturday));
+}
+
+/**
+ * Sandwich salary deduction for month M (count of charged Saturdays).
+ */
+export function computeSandwichDeduction(
+  statusByDate: Map<string, string>,
+  holidayDates: Set<string>,
+  monthStart: string,
+  monthEnd: string,
+): number {
+  return listSandwichCharges(statusByDate, holidayDates, monthStart, monthEnd).length;
 }
 
 /**
