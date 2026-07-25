@@ -61,7 +61,7 @@ export type StaffTableEmployee = {
   account_holder_name?: string | null;
   shift_start_time?: string | null;
   shift_end_time?: string | null;
-  biometric_enroll_no?: number | string | null;
+  biometric_enroll_no?: number | null;
 };
 
 function parseEmployeeIdNum(id?: string | null): number {
@@ -170,16 +170,10 @@ export function EmployeesTable({
           av = parseEmployeeIdNum(a.employee_id);
           bv = parseEmployeeIdNum(b.employee_id);
           break;
-        case "bio_enroll_no": {
-          const parseEnroll = (v: number | string | null | undefined) => {
-            if (v == null || v === "") return Number.POSITIVE_INFINITY;
-            const n = typeof v === "number" ? v : Number(v);
-            return Number.isFinite(n) ? n : Number.POSITIVE_INFINITY;
-          };
-          av = parseEnroll(a.biometric_enroll_no);
-          bv = parseEnroll(b.biometric_enroll_no);
+        case "bio_enroll_no":
+          av = a.biometric_enroll_no ?? Number.POSITIVE_INFINITY;
+          bv = b.biometric_enroll_no ?? Number.POSITIVE_INFINITY;
           break;
-        }
         case "full_name":
           av = (a.full_name ?? "").toLowerCase();
           bv = (b.full_name ?? "").toLowerCase();
