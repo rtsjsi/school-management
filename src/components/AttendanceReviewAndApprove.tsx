@@ -44,6 +44,7 @@ import {
   AlertCircle,
   Filter,
 } from "lucide-react";
+import { formatTimeShort } from "@/lib/employee-shift";
 
 const STATUSES = ["present", "absent", "half_day", "casual_leave", "leave_without_pay", "holiday", "week_off"] as const;
 
@@ -313,6 +314,10 @@ export default function AttendanceReviewAndApprove() {
     !data.isApproved &&
     dayDetail.source !== "holiday" &&
     dayDetail.source !== "weekend";
+
+  const dayEmployee = dayDetail
+    ? data?.employees.find((e) => e.id === dayDetail.empId)
+    : undefined;
 
   return (
     <Card className="shadow-sm border-border/60">
@@ -606,14 +611,28 @@ export default function AttendanceReviewAndApprove() {
             <DialogTitle>
               {dayDetail?.empName} · {dayDetail?.date}
             </DialogTitle>
-            <DialogDescription>
-              First IN and last OUT drive late / half-day / present. Late grace is{" "}
-              {data?.lateGraceMinutes ?? 15} minutes after shift start.
+            <DialogDescription className="sr-only">
+              Attendance detail for {dayDetail?.empName} on {dayDetail?.date}
             </DialogDescription>
           </DialogHeader>
 
           {dayDetail && (
             <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded-md border bg-muted/30 p-3">
+                  <p className="text-xs text-muted-foreground">Shift start</p>
+                  <p className="font-mono font-medium">
+                    {formatTimeShort(dayEmployee?.shift_start_time) || "—"}
+                  </p>
+                </div>
+                <div className="rounded-md border bg-muted/30 p-3">
+                  <p className="text-xs text-muted-foreground">Shift end</p>
+                  <p className="font-mono font-medium">
+                    {formatTimeShort(dayEmployee?.shift_end_time) || "—"}
+                  </p>
+                </div>
+              </div>
+
               <div className="flex flex-wrap gap-1.5">
                 <Badge variant="outline">{formatStatusLabel(getStatus(dayDetail))}</Badge>
                 {dayDetail.singlePunch && <Badge variant="secondary">Single punch → half day</Badge>}
