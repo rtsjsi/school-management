@@ -428,12 +428,13 @@ export default function AttendanceReviewAndApprove() {
               </span>
             </div>
 
-            <div className="rounded-md border border-border/60 overflow-hidden shadow-sm">
-              <div className="flex-1 overflow-auto max-h-[500px]">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50 hover:bg-muted/50">
-                      <TableHead className="sticky top-0 left-0 bg-muted/95 backdrop-blur-sm z-30 min-w-[180px] shadow-[1px_1px_0_hsl(var(--border))] font-semibold">
+            <div className="rounded-md border border-border/60 shadow-sm">
+              {/* Single scroll container so sticky date header + employee column work */}
+              <div className="overflow-auto max-h-[min(70vh,560px)]">
+                <table className="w-full caption-bottom text-xs sm:text-sm border-separate border-spacing-0">
+                  <TableHeader className="[&_tr]:border-b-0">
+                    <TableRow className="bg-muted hover:bg-muted">
+                      <TableHead className="sticky top-0 left-0 z-40 min-w-[180px] bg-muted font-semibold shadow-[1px_1px_0_hsl(var(--border))] normal-case tracking-normal">
                         Employee
                       </TableHead>
                       {data.dailyData.slice(0, 31).map((d) => {
@@ -442,7 +443,7 @@ export default function AttendanceReviewAndApprove() {
                         return (
                           <TableHead
                             key={d.date}
-                            className="sticky top-0 bg-muted/95 backdrop-blur-sm z-20 text-center min-w-[70px] text-xs font-semibold shadow-[0_1px_0_hsl(var(--border))] px-1"
+                            className="sticky top-0 z-30 text-center min-w-[70px] text-xs font-semibold bg-muted shadow-[0_1px_0_hsl(var(--border))] px-1 normal-case tracking-normal"
                           >
                             <div className="flex flex-col items-center leading-tight py-0.5">
                               <span>{dayDate.getDate()}</span>
@@ -473,7 +474,7 @@ export default function AttendanceReviewAndApprove() {
                         >
                           <TableCell
                             className={cn(
-                              "sticky left-0 z-10 font-medium shadow-[1px_0_0_hsl(var(--border))] bg-background",
+                              "sticky left-0 z-20 font-medium shadow-[1px_0_0_hsl(var(--border))] bg-background",
                               hasSandwich && "border-l-2 border-l-orange-500"
                             )}
                           >
@@ -598,7 +599,7 @@ export default function AttendanceReviewAndApprove() {
                       })
                     )}
                   </TableBody>
-                </Table>
+                </table>
               </div>
             </div>
           </div>
