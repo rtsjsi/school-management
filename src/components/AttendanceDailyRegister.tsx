@@ -69,7 +69,7 @@ export function AttendanceDailyRegister() {
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
   const [hasFetched, setHasFetched] = useState(false);
-  const [enrollNo, setEnrollNo] = useState<string | null>(null);
+  const [enrollNo, setEnrollNo] = useState<number | null>(null);
 
   // Load employee list on mount (no punch data)
   useEffect(() => {

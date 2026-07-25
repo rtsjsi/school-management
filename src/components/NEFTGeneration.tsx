@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,7 +41,7 @@ export default function NEFTGeneration() {
       net_amount: number;
       bank?: { account_number: string; ifsc_code: string; account_holder_name: string };
     }[];
-    skipped: { full_name: string; net_amount: number }[];
+    skipped: { full_name: string; net_amount: number; reasons: string[] }[];
     settings?: { debitAccount: string; transactionType: string; currency: string; remarksPrefix: string };
   } | null>(null);
   const [loading, setLoading] = useState(false);
@@ -75,11 +75,6 @@ export default function NEFTGeneration() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => {
-    fetchPreview();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [monthYear]);
-
   const downloadNEFT = () => {
     if (!debitAccount.trim()) {
       setError("Enter the Debit Account Number (your IDFC FIRST account) before generating the file.");
@@ -106,7 +101,11 @@ export default function NEFTGeneration() {
               <Input 
                 type="month" 
                 value={monthYear} 
-                onChange={(e) => setMonthYear(e.target.value)} 
+                onChange={(e) => {
+                  setMonthYear(e.target.value);
+                  setData(null);
+                  setError(null);
+                }} 
                 className="h-9 w-[180px] sm:w-[200px] bg-background"
               />
             </div>
@@ -180,6 +179,12 @@ export default function NEFTGeneration() {
         {loading && (
           <div className="flex items-center justify-center py-12 text-muted-foreground animate-pulse">
             Generating NEFT preview...
+          </div>
+        )}
+
+        {!loading && !data && !error && (
+          <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
+            Choose a payroll month and click Preview to load NEFT data.
           </div>
         )}
 
@@ -283,12 +288,35 @@ export default function NEFTGeneration() {
                   <AlertCircle className="h-4 w-4" />
                   Skipped Employees
                 </h4>
-                <div className="flex flex-wrap gap-2">
-                  {data.skipped.map((s) => (
-                    <Badge key={s.full_name} variant="outline" className="bg-muted/30 text-muted-foreground border-border/60">
-                      {s.full_name}
-                    </Badge>
-                  ))}
+                <div className="rounded-md border border-border/60 overflow-hidden shadow-sm">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50 hover:bg-muted/50">
+                        <TableHead className="font-semibold">Employee</TableHead>
+                        <TableHead className="font-semibold">Reason</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {data.skipped.map((s) => (
+                        <TableRow key={s.full_name} className="hover:bg-muted/30">
+                          <TableCell className="font-medium">{s.full_name}</TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1.5">
+                              {(s.reasons?.length ? s.reasons : ["Not eligible for NEFT"]).map((reason) => (
+                                <Badge
+                                  key={`${s.full_name}-${reason}`}
+                                  variant="outline"
+                                  className="bg-muted/30 text-muted-foreground border-border/60 font-normal"
+                                >
+                                  {reason}
+                                </Badge>
+                              ))}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               </div>
             )}

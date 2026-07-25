@@ -24,9 +24,18 @@ export function employeeShiftLite(emp: {
   };
 }
 
-export type AttendanceThresholds = { fullDayHours: number; halfDayHours: number };
+export type AttendanceThresholds = {
+  fullDayHours: number;
+  halfDayHours: number;
+  /** Minutes after shift start before first IN counts as late. */
+  lateGraceMinutes: number;
+};
 
-export const DEFAULT_THRESHOLDS: AttendanceThresholds = { fullDayHours: 6, halfDayHours: 3 };
+export const DEFAULT_THRESHOLDS: AttendanceThresholds = {
+  fullDayHours: 6,
+  halfDayHours: 3,
+  lateGraceMinutes: 15,
+};
 
 export type AttendanceStatus =
   | "present"
@@ -78,6 +87,17 @@ function istTimeString(d: Date): string {
   return `${pad(h)}:${pad(m)}:${pad(s)}`;
 }
 
+/** Calendar date YYYY-MM-DD in Asia/Kolkata for a punch timestamp. */
+export function istCalendarDate(isoOrDate: string | Date): string {
+  const d = typeof isoOrDate === "string" ? new Date(isoOrDate) : isoOrDate;
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: IST_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+}
+
 function hhmmToMinutes(t?: string | null): number | null {
   if (!t) return null;
   const [h, m] = t.split(":");
@@ -93,7 +113,8 @@ function hhmmToMinutes(t?: string | null): number | null {
  * Rules (hours-based):
  *  - No punches -> absent
  *  - First IN + last OUT -> worked hours -> present (>= full-day) / half_day (>= half-day) / absent
- *  - Only one usable punch (cannot compute hours) -> present, flagged single_punch for review
+ *  - Only one usable punch (cannot compute hours) -> half_day, flagged single_punch for review
+ *  - Late = first IN after shift start + lateGraceMinutes (default 15)
  */
 export function deriveDailyStatus(
   punches: PunchLite[],
@@ -102,6 +123,12 @@ export function deriveDailyStatus(
   isHoliday: boolean = false,
   isWeekOff: boolean = false
 ): DerivedDay {
+  const resolved: AttendanceThresholds = {
+    fullDayHours: thresholds?.fullDayHours ?? DEFAULT_THRESHOLDS.fullDayHours,
+    halfDayHours: thresholds?.halfDayHours ?? DEFAULT_THRESHOLDS.halfDayHours,
+    lateGraceMinutes: thresholds?.lateGraceMinutes ?? DEFAULT_THRESHOLDS.lateGraceMinutes,
+  };
+
   const valid = (punches ?? [])
     .map((p) => ({ type: (p.punch_type ?? "").toUpperCase(), date: new Date(p.punch_time) }))
     .filter((p) => !Number.isNaN(p.date.getTime()));
@@ -130,10 +157,10 @@ export function deriveDailyStatus(
 
   let status: DerivedDay["status"];
   if (singlePunch) {
-    status = "present"; // can't compute hours; default present, flagged for review
-  } else if (workedHours >= thresholds.fullDayHours) {
+    status = "half_day"; // cannot compute hours; treat as half day until manually confirmed
+  } else if (workedHours >= resolved.fullDayHours) {
     status = "present";
-  } else if (workedHours >= thresholds.halfDayHours) {
+  } else if (workedHours >= resolved.halfDayHours) {
     status = "half_day";
   } else {
     status = "absent";
@@ -143,7 +170,9 @@ export function deriveDailyStatus(
   let is_early_departure = false;
   if (shift && firstIn) {
     const startMin = hhmmToMinutes(shift.start_time);
-    if (startMin !== null) is_late = istTimeMinutes(firstIn) > startMin;
+    if (startMin !== null) {
+      is_late = istTimeMinutes(firstIn) > startMin + resolved.lateGraceMinutes;
+    }
   }
   if (shift && haveSpan) {
     const endMin = hhmmToMinutes(shift.end_time);
@@ -307,20 +336,26 @@ export function saturdayQualifiesForSandwichDeduction(
   return true;
 }
 
+export type SandwichCharge = {
+  saturday: string;
+  /** Fri and/or Mon leave days that triggered this sandwich (earliest owns the charge). */
+  triggers: string[];
+};
+
 /**
- * Sandwich salary deduction for month M (does not mutate Saturday statuses):
+ * Sandwich salary charges for month M (does not mutate Saturday statuses):
  * Leave on Fri/Mon in M → deduct 1 payable day in M for the related Saturday.
  * Earliest Fri/Mon leave trigger owns the Saturday so cross-month edges do not double-charge.
  *
  * `statusByDate` should include neighbors a few days before/after the month.
  */
-export function computeSandwichDeduction(
+export function listSandwichCharges(
   statusByDate: Map<string, string>,
   holidayDates: Set<string>,
   monthStart: string,
   monthEnd: string,
-): number {
-  const chargedSaturdays = new Set<string>();
+): SandwichCharge[] {
+  const charged = new Map<string, SandwichCharge>();
   const start = new Date(`${monthStart}T12:00:00`);
   const end = new Date(`${monthEnd}T12:00:00`);
 
@@ -335,7 +370,7 @@ export function computeSandwichDeduction(
     if (!isLeaveTriggerStatus(statusByDate.get(dStr))) continue;
 
     const saturday = sandwichSaturdayForLeaveDay(dStr);
-    if (!saturday || chargedSaturdays.has(saturday)) continue;
+    if (!saturday || charged.has(saturday)) continue;
 
     const friday = addCalendarDays(saturday, -1);
     const monday = addCalendarDays(saturday, 2);
@@ -352,10 +387,22 @@ export function computeSandwichDeduction(
       continue;
     }
 
-    chargedSaturdays.add(saturday);
+    charged.set(saturday, { saturday, triggers });
   }
 
-  return chargedSaturdays.size;
+  return Array.from(charged.values()).sort((a, b) => a.saturday.localeCompare(b.saturday));
+}
+
+/**
+ * Sandwich salary deduction for month M (count of charged Saturdays).
+ */
+export function computeSandwichDeduction(
+  statusByDate: Map<string, string>,
+  holidayDates: Set<string>,
+  monthStart: string,
+  monthEnd: string,
+): number {
+  return listSandwichCharges(statusByDate, holidayDates, monthStart, monthEnd).length;
 }
 
 /**

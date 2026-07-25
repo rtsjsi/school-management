@@ -180,7 +180,11 @@ export function EmployeeViewDialog({ employee, open, onOpenChange }: EmployeeVie
                     : "—"
                 }
               />
-              <InfoRow label="Biometric Enroll No" value={employee.biometric_enroll_no ?? "—"} mono />
+              <InfoRow
+                label="Biometric Enroll No"
+                value={employee.biometric_enroll_no != null ? String(employee.biometric_enroll_no) : "—"}
+                mono
+              />
             </div>
           </Section>
 

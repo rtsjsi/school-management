@@ -38,7 +38,7 @@ interface EmployeeEditDialogProps {
     joining_date?: string | null;
     shift_start_time?: string | null;
     shift_end_time?: string | null;
-    biometric_enroll_no?: string | null;
+    biometric_enroll_no?: number | null;
     status?: string | null;
     basic_salary?: number | null;
     other_allowance?: number | null;
@@ -89,7 +89,8 @@ export function EmployeeEditDialog({
       joining_date: employee.joining_date || "",
       shift_start_time: timeForInput(employee.shift_start_time) || "09:00",
       shift_end_time: timeForInput(employee.shift_end_time) || "17:00",
-      biometric_enroll_no: employee.biometric_enroll_no || "",
+      biometric_enroll_no:
+        employee.biometric_enroll_no != null ? String(employee.biometric_enroll_no) : "",
       status: employee.status || "active",
       basic_salary: basic,
       other_allowance: other,
@@ -129,6 +130,18 @@ export function EmployeeEditDialog({
       });
       return;
     }
+    const enrollRaw = form.biometric_enroll_no.trim();
+    let biometricEnrollNo: number | null = null;
+    if (enrollRaw) {
+      const parsed = parseInt(enrollRaw, 10);
+      if (!Number.isFinite(parsed) || parsed < 0 || String(parsed) !== enrollRaw) {
+        const message = "Biometric Enrollment No must be a whole number.";
+        setError(message);
+        toast({ variant: "destructive", title: "Please check the form", description: message });
+        return;
+      }
+      biometricEnrollNo = parsed;
+    }
     setLoading(true);
     try {
       const supabase = createClient();
@@ -151,7 +164,7 @@ export function EmployeeEditDialog({
           joining_date: form.joining_date || null,
           shift_start_time: normalizeTimeForDb(form.shift_start_time),
           shift_end_time: normalizeTimeForDb(form.shift_end_time),
-          biometric_enroll_no: form.biometric_enroll_no.trim() || null,
+          biometric_enroll_no: biometricEnrollNo,
           status: form.status,
           basic_salary: basic,
           other_allowance: other,
@@ -327,6 +340,10 @@ export function EmployeeEditDialog({
                 <div className="space-y-2">
                   <Label>Biometric Enrollment No</Label>
                   <Input
+                    type="number"
+                    min={0}
+                    step={1}
+                    inputMode="numeric"
                     value={form.biometric_enroll_no}
                     onChange={(e) => setForm((p) => ({ ...p, biometric_enroll_no: e.target.value }))}
                     placeholder="EnNo on the device (e.g. 5)"

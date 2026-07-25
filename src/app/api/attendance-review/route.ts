@@ -10,7 +10,11 @@ import {
   isSundayWeekOff,
   addCalendarDays,
   computePayablePresentDays,
+  listSandwichCharges,
+  istCalendarDate,
+  DEFAULT_THRESHOLDS,
   type PunchLite,
+  type AttendanceThresholds,
 } from "@/lib/attendance";
 
 function monthYearOf(dateStr: string): string {
@@ -23,6 +27,34 @@ function monthNeighborRange(start: string, end: string) {
     rangeStart: addCalendarDays(start, -3),
     rangeEnd: addCalendarDays(end, 3),
   };
+}
+
+async function loadAttendanceThresholds(
+  supabase: Awaited<ReturnType<typeof createClient>>
+): Promise<AttendanceThresholds> {
+  const { data } = await supabase
+    .from("payroll_settings")
+    .select("full_day_hours, half_day_hours, late_grace_minutes")
+    .eq("id", 1)
+    .maybeSingle();
+
+  return {
+    fullDayHours: Number(data?.full_day_hours ?? DEFAULT_THRESHOLDS.fullDayHours),
+    halfDayHours: Number(data?.half_day_hours ?? DEFAULT_THRESHOLDS.halfDayHours),
+    lateGraceMinutes: Number(
+      data?.late_grace_minutes ?? DEFAULT_THRESHOLDS.lateGraceMinutes
+    ),
+  };
+}
+
+function dayPunchesForEnroll(
+  punches: { enroll_no: string; punched_at: string; direction: string }[] | null,
+  enrollKey: string,
+  dStr: string
+): PunchLite[] {
+  return (punches ?? [])
+    .filter((p) => p.enroll_no === enrollKey && istCalendarDate(p.punched_at) === dStr)
+    .map((p) => ({ punch_type: p.direction, punch_time: p.punched_at }));
 }
 
 export async function GET(request: NextRequest) {
@@ -42,6 +74,7 @@ export async function GET(request: NextRequest) {
     const { rangeStart, rangeEnd } = monthNeighborRange(start, end);
 
     const supabase = await createClient();
+    const thresholds = await loadAttendanceThresholds(supabase);
 
     const { data: employees } = await supabase
       .from("employees")
@@ -106,6 +139,13 @@ export async function GET(request: NextRequest) {
         source: string;
         isManual: boolean;
         isLate: boolean;
+        isEarlyDeparture: boolean;
+        singlePunch: boolean;
+        in_time?: string;
+        out_time?: string;
+        workedHours: number;
+        needsAttention: boolean;
+        missingBioEnroll: boolean;
       }[]
     > = {};
 
@@ -114,16 +154,22 @@ export async function GET(request: NextRequest) {
       {
         attendanceDays: number;
         sandwichDeduction: number;
+        sandwichDates: string[];
+        sandwichTriggerDates: string[];
         lateInCount: number;
         lateInDeduction: number;
         presentDays: number;
+        needsAttention: boolean;
+        missingBioEnroll: boolean;
       }
     > = {};
 
     for (const emp of employees ?? []) {
       const shift = employeeShiftLite(emp);
+      const missingBioEnroll = emp.biometric_enroll_no == null;
       const statusByDate = new Map<string, string>();
       const lateByDate = new Map<string, boolean>();
+      let empNeedsAttention = missingBioEnroll;
 
       for (
         let cur = new Date(`${rangeStart}T12:00:00`);
@@ -139,6 +185,11 @@ export async function GET(request: NextRequest) {
         let source = "default";
         let isManual = false;
         let isLate = false;
+        let isEarlyDeparture = false;
+        let singlePunch = false;
+        let in_time: string | undefined;
+        let out_time: string | undefined;
+        let workedHours = 0;
 
         // Outside the review month: prefer finalized neighbor status for sandwich calc.
         // Inside review month: if month is approved use finalized; else derive (+ merge manuals).
@@ -146,23 +197,40 @@ export async function GET(request: NextRequest) {
           !!stored &&
           (dStr < start || dStr > end || isApproved || stored.isManual);
 
+        let dayPunches: PunchLite[] = [];
+        if (!missingBioEnroll) {
+          dayPunches = dayPunchesForEnroll(
+            punches,
+            String(emp.biometric_enroll_no),
+            dStr
+          );
+        }
+
+        const derived = deriveDailyStatus(
+          dayPunches,
+          shift,
+          thresholds,
+          isHoliday,
+          isWeekOff
+        );
+        in_time = derived.in_time;
+        out_time = derived.out_time;
+        workedHours = derived.worked_hours;
+        singlePunch = derived.single_punch;
+        isEarlyDeparture = derived.is_early_departure;
+
         if (useStored && stored) {
           status = stored.status;
           isLate = stored.isLate;
           isManual = stored.isManual;
           source = stored.isManual ? "manual" : "finalized";
-        } else if (emp.biometric_enroll_no) {
-          const dayPunches: PunchLite[] = (punches ?? [])
-            .filter((p) => p.enroll_no === emp.biometric_enroll_no && p.punched_at.startsWith(dStr))
-            .map((p) => ({ punch_type: p.direction, punch_time: p.punched_at }));
-
-          const derived = deriveDailyStatus(dayPunches, shift, undefined, isHoliday, isWeekOff);
+        } else if (!missingBioEnroll) {
           status = derived.status;
           isLate = derived.is_late;
           source = dayPunches.length > 0 ? "biometric" : "default";
         } else {
-          const derived = deriveDailyStatus([], shift, undefined, isHoliday, isWeekOff);
           status = derived.status;
+          isLate = false;
         }
 
         if (source !== "biometric" && source !== "manual" && source !== "finalized") {
@@ -181,6 +249,14 @@ export async function GET(request: NextRequest) {
         if (dStr >= start && dStr <= end) lateByDate.set(dStr, isLate);
 
         if (dStr >= start && dStr <= end) {
+          const isOffDay = source === "holiday" || source === "weekend";
+          const needsAttention =
+            (!isOffDay && missingBioEnroll) ||
+            singlePunch ||
+            isLate ||
+            isEarlyDeparture;
+          if (needsAttention) empNeedsAttention = true;
+
           if (!dailyData[dStr]) dailyData[dStr] = [];
           dailyData[dStr].push({
             empId: emp.id,
@@ -190,6 +266,13 @@ export async function GET(request: NextRequest) {
             source,
             isManual,
             isLate,
+            isEarlyDeparture,
+            singlePunch,
+            in_time,
+            out_time,
+            workedHours,
+            needsAttention,
+            missingBioEnroll,
           });
         }
       }
@@ -205,12 +288,27 @@ export async function GET(request: NextRequest) {
         lastDay,
       });
 
+      const sandwichCharges = listSandwichCharges(
+        statusByDate,
+        holidayDates,
+        start,
+        end
+      );
+      const sandwichDates = sandwichCharges.map((c) => c.saturday);
+      const sandwichTriggerDates = Array.from(
+        new Set(sandwichCharges.flatMap((c) => c.triggers))
+      ).sort();
+
       employeePayable[emp.id] = {
         attendanceDays: payable.attendanceDays,
         sandwichDeduction: payable.sandwichDeduction,
+        sandwichDates,
+        sandwichTriggerDates,
         lateInCount: payable.lateInCount,
         lateInDeduction: payable.lateInDeduction,
         presentDays: payable.payableDays,
+        needsAttention: empNeedsAttention,
+        missingBioEnroll,
       };
     }
 
@@ -224,14 +322,22 @@ export async function GET(request: NextRequest) {
       workingDays,
       isApproved,
       currentUserRole: user.role,
+      lateGraceMinutes: thresholds.lateGraceMinutes,
       employees: (employees ?? []).map((e) => ({
         id: e.id,
         full_name: e.full_name,
         presentDays: employeePayable[e.id]?.presentDays ?? 0,
         attendanceDays: employeePayable[e.id]?.attendanceDays ?? 0,
         sandwichDeduction: employeePayable[e.id]?.sandwichDeduction ?? 0,
+        sandwichDates: employeePayable[e.id]?.sandwichDates ?? [],
+        sandwichTriggerDates: employeePayable[e.id]?.sandwichTriggerDates ?? [],
         lateInCount: employeePayable[e.id]?.lateInCount ?? 0,
         lateInDeduction: employeePayable[e.id]?.lateInDeduction ?? 0,
+        needsAttention: employeePayable[e.id]?.needsAttention ?? false,
+        missingBioEnroll: employeePayable[e.id]?.missingBioEnroll ?? false,
+        biometric_enroll_no: e.biometric_enroll_no ?? null,
+        shift_start_time: e.shift_start_time ?? null,
+        shift_end_time: e.shift_end_time ?? null,
       })),
       dailyData: orderedDaily,
     });
@@ -289,6 +395,7 @@ export async function POST(request: NextRequest) {
       const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate();
       const end = `${y}-${m}-${String(lastDay).padStart(2, "0")}`;
       const { rangeStart, rangeEnd } = monthNeighborRange(start, end);
+      const thresholds = await loadAttendanceThresholds(supabase);
 
       const { data: employees } = await supabase
         .from("employees")
@@ -334,16 +441,24 @@ export async function POST(request: NextRequest) {
           let status: string;
           let isLate = false;
 
-          if (emp.biometric_enroll_no) {
-            const dayPunches: PunchLite[] = (punches ?? [])
-              .filter((p) => p.enroll_no === emp.biometric_enroll_no && p.punched_at.startsWith(dStr))
-              .map((p) => ({ punch_type: p.direction, punch_time: p.punched_at }));
+          if (emp.biometric_enroll_no != null) {
+            const dayPunches = dayPunchesForEnroll(
+              punches,
+              String(emp.biometric_enroll_no),
+              dStr
+            );
 
-            const derived = deriveDailyStatus(dayPunches, shift, undefined, isHoliday, isWeekOff);
+            const derived = deriveDailyStatus(
+              dayPunches,
+              shift,
+              thresholds,
+              isHoliday,
+              isWeekOff
+            );
             status = derived.status;
             isLate = derived.is_late;
           } else {
-            const derived = deriveDailyStatus([], shift, undefined, isHoliday, isWeekOff);
+            const derived = deriveDailyStatus([], shift, thresholds, isHoliday, isWeekOff);
             status = derived.status;
           }
 
