@@ -438,11 +438,21 @@ export default function AttendanceReviewAndApprove() {
                       <TableHead className="sticky top-0 left-0 bg-muted/95 backdrop-blur-sm z-30 min-w-[180px] shadow-[1px_1px_0_hsl(var(--border))] font-semibold">
                         Employee
                       </TableHead>
-                      {data.dailyData.slice(0, 31).map((d) => (
-                        <TableHead key={d.date} className="sticky top-0 bg-muted/95 backdrop-blur-sm z-20 text-center min-w-[70px] text-xs font-semibold shadow-[0_1px_0_hsl(var(--border))] px-1">
-                          {new Date(d.date + "T12:00:00").getDate()}
-                        </TableHead>
-                      ))}
+                      {data.dailyData.slice(0, 31).map((d) => {
+                        const dayDate = new Date(d.date + "T12:00:00");
+                        const weekday = dayDate.toLocaleDateString("en-US", { weekday: "short" });
+                        return (
+                          <TableHead
+                            key={d.date}
+                            className="sticky top-0 bg-muted/95 backdrop-blur-sm z-20 text-center min-w-[70px] text-xs font-semibold shadow-[0_1px_0_hsl(var(--border))] px-1"
+                          >
+                            <div className="flex flex-col items-center leading-tight py-0.5">
+                              <span>{dayDate.getDate()}</span>
+                              <span className="text-[10px] font-normal text-muted-foreground">{weekday}</span>
+                            </div>
+                          </TableHead>
+                        );
+                      })}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
