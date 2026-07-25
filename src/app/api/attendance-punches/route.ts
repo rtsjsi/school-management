@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     }
 
     const enrollNo = employee.biometric_enroll_no;
-    if (!enrollNo) {
+    if (enrollNo == null) {
       return NextResponse.json({
         employees: employees ?? [],
         punches: [],
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
     const { data: punches, error: punchError } = await admin
       .from("biometric_attendance_raw")
       .select("id, enroll_no, punched_at, direction, verify_method, machine_no, received_at")
-      .eq("enroll_no", enrollNo)
+      .eq("enroll_no", String(enrollNo))
       .order("punched_at", { ascending: false })
       .limit(500);
 

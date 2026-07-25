@@ -151,9 +151,10 @@ export async function GET(request: NextRequest) {
           isLate = stored.isLate;
           isManual = stored.isManual;
           source = stored.isManual ? "manual" : "finalized";
-        } else if (emp.biometric_enroll_no) {
+        } else if (emp.biometric_enroll_no != null) {
+          const enrollKey = String(emp.biometric_enroll_no);
           const dayPunches: PunchLite[] = (punches ?? [])
-            .filter((p) => p.enroll_no === emp.biometric_enroll_no && p.punched_at.startsWith(dStr))
+            .filter((p) => p.enroll_no === enrollKey && p.punched_at.startsWith(dStr))
             .map((p) => ({ punch_type: p.direction, punch_time: p.punched_at }));
 
           const derived = deriveDailyStatus(dayPunches, shift, undefined, isHoliday, isWeekOff);
@@ -334,9 +335,10 @@ export async function POST(request: NextRequest) {
           let status: string;
           let isLate = false;
 
-          if (emp.biometric_enroll_no) {
+          if (emp.biometric_enroll_no != null) {
+            const enrollKey = String(emp.biometric_enroll_no);
             const dayPunches: PunchLite[] = (punches ?? [])
-              .filter((p) => p.enroll_no === emp.biometric_enroll_no && p.punched_at.startsWith(dStr))
+              .filter((p) => p.enroll_no === enrollKey && p.punched_at.startsWith(dStr))
               .map((p) => ({ punch_type: p.direction, punch_time: p.punched_at }));
 
             const derived = deriveDailyStatus(dayPunches, shift, undefined, isHoliday, isWeekOff);

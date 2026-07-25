@@ -61,7 +61,7 @@ export type StaffTableEmployee = {
   account_holder_name?: string | null;
   shift_start_time?: string | null;
   shift_end_time?: string | null;
-  biometric_enroll_no?: string | null;
+  biometric_enroll_no?: number | null;
 };
 
 function parseEmployeeIdNum(id?: string | null): number {
@@ -171,8 +171,8 @@ export function EmployeesTable({
           bv = parseEmployeeIdNum(b.employee_id);
           break;
         case "bio_enroll_no":
-          av = (a.biometric_enroll_no ?? "").toLowerCase();
-          bv = (b.biometric_enroll_no ?? "").toLowerCase();
+          av = a.biometric_enroll_no ?? Number.POSITIVE_INFINITY;
+          bv = b.biometric_enroll_no ?? Number.POSITIVE_INFINITY;
           break;
         case "full_name":
           av = (a.full_name ?? "").toLowerCase();
