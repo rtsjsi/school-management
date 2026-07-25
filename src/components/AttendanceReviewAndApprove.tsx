@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -24,6 +25,14 @@ import {
 } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   CalendarDays,
   Users,
   CheckCircle2,
@@ -33,6 +42,7 @@ import {
   Unlock,
   PencilLine,
   AlertCircle,
+  Filter,
 } from "lucide-react";
 
 const STATUSES = ["present", "absent", "half_day", "casual_leave", "leave_without_pay", "holiday", "week_off"] as const;
@@ -62,6 +72,11 @@ type DayRow = {
   source: string;
   isManual?: boolean;
   isLate?: boolean;
+  isEarlyDeparture?: boolean;
+  singlePunch?: boolean;
+  workedHours?: number;
+  needsAttention?: boolean;
+  missingBioEnroll?: boolean;
 };
 
 type EmployeeRow = {
@@ -72,7 +87,30 @@ type EmployeeRow = {
   sandwichDeduction?: number;
   lateInCount?: number;
   lateInDeduction?: number;
+  needsAttention?: boolean;
+  missingBioEnroll?: boolean;
+  biometric_enroll_no?: number | null;
+  shift_start_time?: string | null;
+  shift_end_time?: string | null;
 };
+
+type PunchRow = {
+  id: string;
+  punched_at: string;
+  direction: string;
+  verify_method?: string | null;
+  machine_no?: number | null;
+};
+
+function formatPunchTime(iso: string): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Kolkata",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(new Date(iso));
+}
 
 export default function AttendanceReviewAndApprove() {
   const { toast } = useToast();
@@ -83,6 +121,7 @@ export default function AttendanceReviewAndApprove() {
     isApproved: boolean;
     currentUserRole?: string;
     approvedAt?: string;
+    lateGraceMinutes?: number;
     employees: EmployeeRow[];
     dailyData: { date: string; rows: DayRow[] }[];
   } | null>(null);
@@ -90,15 +129,26 @@ export default function AttendanceReviewAndApprove() {
   const [saving, setSaving] = useState(false);
   const [approving, setApproving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [edits, setEdits] = useState<Record<string, { status: string; in_time?: string; out_time?: string }>>({});
-  
-  // Track which cell is currently being edited to avoid rendering 1000s of Select components
-  const [activeCell, setActiveCell] = useState<string | null>(null);
+  const [edits, setEdits] = useState<Record<string, { status: string }>>({});
+  const [needsAttentionOnly, setNeedsAttentionOnly] = useState(false);
+
+  const [dayDetail, setDayDetail] = useState<DayRow | null>(null);
+  const [dayPunches, setDayPunches] = useState<PunchRow[]>([]);
+  const [dayPunchesLoading, setDayPunchesLoading] = useState(false);
+  const [dayPunchesError, setDayPunchesError] = useState<string | null>(null);
+  const [dayStatusDraft, setDayStatusDraft] = useState<string>("present");
+
+  const clearLoaded = () => {
+    setData(null);
+    setEdits({});
+    setError(null);
+    setDayDetail(null);
+  };
 
   const fetchData = () => {
     setLoading(true);
     setError(null);
-    setActiveCell(null);
+    setDayDetail(null);
     fetch(`/api/attendance-review?monthYear=${monthYear}`)
       .then((r) => r.json())
       .then((d) => {
@@ -120,10 +170,40 @@ export default function AttendanceReviewAndApprove() {
     return edits[key]?.status ?? row.status;
   };
 
-  const handleStatusChange = (empId: string, date: string, status: string) => {
-    const key = getCellKey(empId, date);
-    setEdits((p) => ({ ...p, [key]: { ...p[key], status } }));
-    setActiveCell(null); // Close the dropdown after selection
+  const openDayDetail = async (row: DayRow) => {
+    setDayDetail(row);
+    setDayStatusDraft(getStatus(row));
+    setDayPunches([]);
+    setDayPunchesError(null);
+    setDayPunchesLoading(true);
+    try {
+      const res = await fetch(
+        `/api/attendance-punches?employeeId=${encodeURIComponent(row.empId)}&date=${encodeURIComponent(row.date)}`
+      );
+      const json = await res.json();
+      if (json.error) throw new Error(json.error);
+      if (json.warning) setDayPunchesError(json.warning);
+      setDayPunches(json.punches ?? []);
+    } catch (e) {
+      setDayPunchesError((e as Error).message || "Failed to load punches");
+    } finally {
+      setDayPunchesLoading(false);
+    }
+  };
+
+  const applyDayStatus = () => {
+    if (!dayDetail) return;
+    const key = getCellKey(dayDetail.empId, dayDetail.date);
+    if (dayStatusDraft === dayDetail.status) {
+      setEdits((p) => {
+        const next = { ...p };
+        delete next[key];
+        return next;
+      });
+    } else {
+      setEdits((p) => ({ ...p, [key]: { status: dayStatusDraft } }));
+    }
+    setDayDetail(null);
   };
 
   const handleSaveEdits = async () => {
@@ -132,7 +212,7 @@ export default function AttendanceReviewAndApprove() {
     setError(null);
     const updates = Object.entries(edits).map(([key, v]) => {
       const [empId, attendance_date] = key.split("::");
-      return { employee_id: empId, attendance_date, status: v.status, in_time: v.in_time, out_time: v.out_time };
+      return { employee_id: empId, attendance_date, status: v.status };
     });
     try {
       const res = await fetch("/api/attendance-review", {
@@ -145,7 +225,6 @@ export default function AttendanceReviewAndApprove() {
 
       setEdits({});
       toast({ title: "Corrections saved", description: `${updates.length} attendance correction(s) saved successfully.` });
-      // Refetch so Fri/Mon leave and late-IN deductions refresh payable days.
       fetchData();
     } catch (e) {
       setError((e as Error).message);
@@ -207,10 +286,33 @@ export default function AttendanceReviewAndApprove() {
   };
 
   const hasEdits = Object.keys(edits).length > 0;
-  
+
+  const visibleEmployees = useMemo(() => {
+    if (!data) return [];
+    if (!needsAttentionOnly) return data.employees;
+    return data.employees.filter((e) => e.needsAttention);
+  }, [data, needsAttentionOnly]);
+
+  const attentionCount = data?.employees.filter((e) => e.needsAttention).length ?? 0;
   const totalPresentDays = data ? data.employees.reduce((acc, emp) => acc + emp.presentDays, 0) : 0;
   const totalSandwich = data ? data.employees.reduce((acc, emp) => acc + (emp.sandwichDeduction ?? 0), 0) : 0;
   const totalLateDeduction = data ? data.employees.reduce((acc, emp) => acc + (emp.lateInDeduction ?? 0), 0) : 0;
+
+  const firstInIso = dayPunches.find((p) => (p.direction ?? "").toUpperCase() === "IN")?.punched_at
+    ?? dayPunches[0]?.punched_at;
+  const outCandidates = dayPunches.filter((p) => (p.direction ?? "").toUpperCase() === "OUT");
+  const lastOutIso = outCandidates.length
+    ? outCandidates[outCandidates.length - 1].punched_at
+    : dayPunches.length > 1
+      ? dayPunches[dayPunches.length - 1].punched_at
+      : undefined;
+
+  const dayEditable =
+    !!dayDetail &&
+    !!data &&
+    !data.isApproved &&
+    dayDetail.source !== "holiday" &&
+    dayDetail.source !== "weekend";
 
   return (
     <Card className="shadow-sm border-border/60">
@@ -219,10 +321,13 @@ export default function AttendanceReviewAndApprove() {
           <div className="flex flex-wrap items-end gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Review Month</Label>
-              <Input 
-                type="month" 
-                value={monthYear} 
-                onChange={(e) => setMonthYear(e.target.value)} 
+              <Input
+                type="month"
+                value={monthYear}
+                onChange={(e) => {
+                  setMonthYear(e.target.value);
+                  clearLoaded();
+                }}
                 className="h-9 w-[180px] sm:w-[200px] bg-background"
               />
             </div>
@@ -230,8 +335,19 @@ export default function AttendanceReviewAndApprove() {
               <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
               {loading ? "Loading..." : "Load Data"}
             </Button>
+            {data && (
+              <Button
+                variant={needsAttentionOnly ? "default" : "outline"}
+                size="sm"
+                onClick={() => setNeedsAttentionOnly((v) => !v)}
+                className="h-9 px-3 gap-2"
+              >
+                <Filter className="h-4 w-4" />
+                Needs attention{attentionCount > 0 ? ` (${attentionCount})` : ""}
+              </Button>
+            )}
           </div>
-          
+
           <div className="flex items-center gap-2">
             {data && !data.isApproved && hasEdits && (
               <Button onClick={handleSaveEdits} disabled={saving} variant="secondary" size="sm" className="h-9 gap-2">
@@ -254,7 +370,7 @@ export default function AttendanceReviewAndApprove() {
           </div>
         </div>
       </CardHeader>
-      
+
       <CardContent className="pt-6">
         {error && (
           <Alert variant="destructive" className="mb-6">
@@ -269,18 +385,27 @@ export default function AttendanceReviewAndApprove() {
             <Lock className="h-4 w-4 !text-emerald-600 dark:!text-emerald-400" />
             <AlertTitle className="font-semibold text-emerald-800 dark:text-emerald-400">Month Finalized</AlertTitle>
             <AlertDescription className="text-emerald-700/90 dark:text-emerald-400/80">
-              This month's attendance has been locked for payroll processing. Editing is disabled.
+              This month&apos;s attendance has been locked for payroll processing. Editing is disabled.
+              {typeof data.lateGraceMinutes === "number" && (
+                <> Late grace: {data.lateGraceMinutes} min after shift start.</>
+              )}
             </AlertDescription>
           </Alert>
         )}
 
-        {!data && loading && (
+        {loading && (
           <div className="flex items-center justify-center py-12 text-muted-foreground animate-pulse">
             Loading attendance records...
           </div>
         )}
 
-        {data && (
+        {!loading && !data && !error && (
+          <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
+            Choose a review month and click Load Data to open the attendance grid.
+          </div>
+        )}
+
+        {data && !loading && (
           <div className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card className="bg-muted/40 border-border/50 shadow-none">
@@ -300,8 +425,14 @@ export default function AttendanceReviewAndApprove() {
                     <Users className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Total Employees</p>
-                    <p className="text-2xl font-bold">{data.employees.length}</p>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      {needsAttentionOnly ? "Showing / Total" : "Total Employees"}
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {needsAttentionOnly
+                        ? `${visibleEmployees.length} / ${data.employees.length}`
+                        : data.employees.length}
+                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -325,10 +456,25 @@ export default function AttendanceReviewAndApprove() {
                     Late IN (÷3): <span className="font-semibold">{totalLateDeduction}</span>
                   </p>
                   <p className="text-[11px] text-muted-foreground mt-1">
-                    Fri/Mon leave unpaid adjacent Saturday via salary. Each 3 late first-IN punches = 1 day.
+                    Late after shift start + {data.lateGraceMinutes ?? 15} min grace. Single punch = half day. Click a day for punches.
                   </p>
                 </CardContent>
               </Card>
+            </div>
+
+            <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> Late IN
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-sky-500" /> Early OUT
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-violet-500" /> Single punch
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <PencilLine className="h-3 w-3" /> Manual
+              </span>
             </div>
 
             <div className="rounded-md border border-border/60 overflow-hidden shadow-sm">
@@ -341,92 +487,111 @@ export default function AttendanceReviewAndApprove() {
                       </TableHead>
                       {data.dailyData.slice(0, 31).map((d) => (
                         <TableHead key={d.date} className="sticky top-0 bg-muted/95 backdrop-blur-sm z-20 text-center min-w-[70px] text-xs font-semibold shadow-[0_1px_0_hsl(var(--border))] px-1">
-                          {new Date(d.date).getDate()}
+                          {new Date(d.date + "T12:00:00").getDate()}
                         </TableHead>
                       ))}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {data.employees.map((emp) => (
-                      <TableRow key={emp.id} className="hover:bg-muted/30 transition-colors">
-                        <TableCell className="sticky left-0 bg-background z-10 font-medium shadow-[1px_0_0_hsl(var(--border))]">
-                          <div className="flex flex-col">
-                            <span className="truncate">{emp.full_name}</span>
-                            <span className="text-[10px] text-muted-foreground font-normal">
-                              {emp.presentDays} payable
-                              {(emp.sandwichDeduction || emp.lateInDeduction)
-                                ? ` (−${(emp.sandwichDeduction ?? 0) + (emp.lateInDeduction ?? 0)} ded.)`
-                                : ""}
-                            </span>
-                            {(emp.lateInCount ?? 0) > 0 && (
-                              <span className="text-[10px] text-amber-700 dark:text-amber-400 font-normal">
-                                {emp.lateInCount} late IN
-                              </span>
-                            )}
-                          </div>
+                    {visibleEmployees.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={32} className="text-center text-muted-foreground py-10">
+                          No employees match the current filter.
                         </TableCell>
-                        {data.dailyData.slice(0, 31).map((dayData) => {
-                          const row = dayData.rows.find((r) => r.empId === emp.id);
-                          if (!row) return <TableCell key={dayData.date} className="text-center text-muted-foreground/30">—</TableCell>;
-                          
-                          const status = getStatus(row);
-                          const cellKey = getCellKey(emp.id, dayData.date);
-                          const isEditable = !data.isApproved && row.source !== "holiday" && row.source !== "weekend";
-                          const isActive = activeCell === cellKey;
-                          const isEdited = edits[cellKey] !== undefined;
-                          
-                          return (
-                            <TableCell 
-                              key={dayData.date} 
-                              className={cn(
-                                "text-center p-1 relative h-12 transition-all cursor-default", 
-                                getStatusColor(status),
-                                isEditable && !isActive && "hover:brightness-95 hover:shadow-inner cursor-pointer"
-                              )}
-                              onClick={() => {
-                                if (isEditable && !isActive) setActiveCell(cellKey);
-                              }}
-                            >
-                              {(row.isManual || isEdited) && (
-                                <div className="absolute top-0.5 right-0.5 text-foreground/40" title="Manual Override">
-                                  <PencilLine className="h-2.5 w-2.5" />
-                                </div>
-                              )}
-                              {row.isLate && (
-                                <div
-                                  className="absolute bottom-0.5 left-0.5 h-1.5 w-1.5 rounded-full bg-amber-500"
-                                  title="Late first IN (vs shift start)"
-                                />
-                              )}
-
-                              {isActive ? (
-                                <Select
-                                  defaultOpen={true}
-                                  value={status}
-                                  onValueChange={(v) => handleStatusChange(row.empId, row.date, v)}
-                                  onOpenChange={(open) => { if (!open) setActiveCell(null); }}
-                                >
-                                  <SelectTrigger className="h-8 text-[11px] border-0 p-1 bg-background shadow-md font-medium w-full absolute inset-x-1 top-2 z-50">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent className="z-50 min-w-[120px]">
-                                    {STATUSES.map((s) => (
-                                      <SelectItem key={s} value={s} className="text-[11px]">
-                                        {formatStatusLabel(s)}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              ) : (
-                                <div className="flex h-full w-full items-center justify-center font-medium">
-                                  <span className="text-[10px] uppercase tracking-tighter max-w-[60px] truncate">{formatStatusLabel(status)}</span>
-                                </div>
-                              )}
-                            </TableCell>
-                          );
-                        })}
                       </TableRow>
-                    ))}
+                    ) : (
+                      visibleEmployees.map((emp) => (
+                        <TableRow key={emp.id} className="hover:bg-muted/30 transition-colors">
+                          <TableCell className="sticky left-0 bg-background z-10 font-medium shadow-[1px_0_0_hsl(var(--border))]">
+                            <div className="flex flex-col">
+                              <span className="truncate">{emp.full_name}</span>
+                              <span className="text-[10px] text-muted-foreground font-normal">
+                                {emp.presentDays} payable
+                                {(emp.sandwichDeduction || emp.lateInDeduction)
+                                  ? ` (−${(emp.sandwichDeduction ?? 0) + (emp.lateInDeduction ?? 0)} ded.)`
+                                  : ""}
+                              </span>
+                              {(emp.lateInCount ?? 0) > 0 && (
+                                <span className="text-[10px] text-amber-700 dark:text-amber-400 font-normal">
+                                  {emp.lateInCount} late IN
+                                </span>
+                              )}
+                              {emp.missingBioEnroll && (
+                                <span className="text-[10px] text-rose-600 dark:text-rose-400 font-normal">
+                                  Missing bio enroll
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                          {data.dailyData.slice(0, 31).map((dayData) => {
+                            const row = dayData.rows.find((r) => r.empId === emp.id);
+                            if (!row) {
+                              return (
+                                <TableCell key={dayData.date} className="text-center text-muted-foreground/30">
+                                  —
+                                </TableCell>
+                              );
+                            }
+
+                            const status = getStatus(row);
+                            const cellKey = getCellKey(emp.id, dayData.date);
+                            const isEdited = edits[cellKey] !== undefined;
+
+                            return (
+                              <TableCell
+                                key={dayData.date}
+                                className={cn(
+                                  "text-center p-1 relative h-12 transition-all cursor-pointer",
+                                  getStatusColor(status),
+                                  row.needsAttention && "ring-1 ring-inset ring-amber-400/50",
+                                  "hover:brightness-95 hover:shadow-inner"
+                                )}
+                                title={[
+                                  row.in_time ? `In ${row.in_time}` : null,
+                                  row.out_time ? `Out ${row.out_time}` : null,
+                                  row.singlePunch ? "Single punch" : null,
+                                  row.isLate ? "Late IN" : null,
+                                  row.isEarlyDeparture ? "Early OUT" : null,
+                                  "Click for punch detail",
+                                ]
+                                  .filter(Boolean)
+                                  .join(" · ")}
+                                onClick={() => openDayDetail(row)}
+                              >
+                                {(row.isManual || isEdited) && (
+                                  <div className="absolute top-0.5 right-0.5 text-foreground/40" title="Manual Override">
+                                    <PencilLine className="h-2.5 w-2.5" />
+                                  </div>
+                                )}
+                                <div className="absolute bottom-0.5 left-0.5 flex gap-0.5">
+                                  {row.isLate && (
+                                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500" title="Late first IN" />
+                                  )}
+                                  {row.isEarlyDeparture && (
+                                    <span className="h-1.5 w-1.5 rounded-full bg-sky-500" title="Early departure" />
+                                  )}
+                                  {row.singlePunch && (
+                                    <span className="h-1.5 w-1.5 rounded-full bg-violet-500" title="Single punch" />
+                                  )}
+                                </div>
+
+                                <div className="flex h-full w-full flex-col items-center justify-center font-medium">
+                                  <span className="text-[10px] uppercase tracking-tighter max-w-[60px] truncate">
+                                    {formatStatusLabel(status)}
+                                  </span>
+                                  {(row.in_time || row.out_time) && (
+                                    <span className="text-[9px] text-muted-foreground/80 font-normal leading-none mt-0.5">
+                                      {(row.in_time ?? "—").slice(0, 5)}
+                                      {row.out_time ? `–${row.out_time.slice(0, 5)}` : ""}
+                                    </span>
+                                  )}
+                                </div>
+                              </TableCell>
+                            );
+                          })}
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </div>
@@ -434,6 +599,139 @@ export default function AttendanceReviewAndApprove() {
           </div>
         )}
       </CardContent>
+
+      <Dialog open={!!dayDetail} onOpenChange={(open) => { if (!open) setDayDetail(null); }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              {dayDetail?.empName} · {dayDetail?.date}
+            </DialogTitle>
+            <DialogDescription>
+              First IN and last OUT drive late / half-day / present. Late grace is{" "}
+              {data?.lateGraceMinutes ?? 15} minutes after shift start.
+            </DialogDescription>
+          </DialogHeader>
+
+          {dayDetail && (
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-1.5">
+                <Badge variant="outline">{formatStatusLabel(getStatus(dayDetail))}</Badge>
+                {dayDetail.singlePunch && <Badge variant="secondary">Single punch → half day</Badge>}
+                {dayDetail.isLate && <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">Late IN</Badge>}
+                {dayDetail.isEarlyDeparture && (
+                  <Badge className="bg-sky-100 text-sky-800 hover:bg-sky-100">Early OUT</Badge>
+                )}
+                {dayDetail.missingBioEnroll && (
+                  <Badge variant="destructive">Missing bio enroll</Badge>
+                )}
+                {dayDetail.isManual && <Badge variant="outline">Manual</Badge>}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded-md border p-3">
+                  <p className="text-xs text-muted-foreground">In (used)</p>
+                  <p className="font-mono font-medium">{dayDetail.in_time ?? "—"}</p>
+                </div>
+                <div className="rounded-md border p-3">
+                  <p className="text-xs text-muted-foreground">Out (used)</p>
+                  <p className="font-mono font-medium">{dayDetail.out_time ?? "—"}</p>
+                </div>
+                <div className="rounded-md border p-3">
+                  <p className="text-xs text-muted-foreground">Worked hours</p>
+                  <p className="font-medium">{dayDetail.workedHours ?? 0}</p>
+                </div>
+                <div className="rounded-md border p-3">
+                  <p className="text-xs text-muted-foreground">Source</p>
+                  <p className="font-medium capitalize">{dayDetail.source}</p>
+                </div>
+              </div>
+
+              {dayEditable && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Correct status</Label>
+                  <Select value={dayStatusDraft} onValueChange={setDayStatusDraft}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUSES.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {formatStatusLabel(s)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div>
+                <p className="text-sm font-semibold mb-2">Punches this day</p>
+                {dayPunchesLoading && (
+                  <p className="text-sm text-muted-foreground animate-pulse">Loading punches…</p>
+                )}
+                {dayPunchesError && !dayPunchesLoading && (
+                  <p className="text-sm text-amber-700 dark:text-amber-400">{dayPunchesError}</p>
+                )}
+                {!dayPunchesLoading && !dayPunchesError && dayPunches.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No punches recorded for this day.</p>
+                )}
+                {!dayPunchesLoading && dayPunches.length > 0 && (
+                  <div className="rounded-md border overflow-hidden max-h-56 overflow-y-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/40">
+                          <TableHead className="text-xs">Time (IST)</TableHead>
+                          <TableHead className="text-xs">Direction</TableHead>
+                          <TableHead className="text-xs">Role</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {dayPunches.map((p) => {
+                          const isFirstIn = firstInIso === p.punched_at;
+                          const isLastOut = lastOutIso === p.punched_at && !!lastOutIso;
+                          return (
+                            <TableRow
+                              key={p.id}
+                              className={cn(
+                                (isFirstIn || isLastOut) && "bg-amber-50 dark:bg-amber-950/30"
+                              )}
+                            >
+                              <TableCell className="font-mono text-xs">
+                                {formatPunchTime(p.punched_at)}
+                              </TableCell>
+                              <TableCell className="text-xs uppercase">{p.direction}</TableCell>
+                              <TableCell className="text-xs">
+                                {isFirstIn && isLastOut
+                                  ? "First IN / Last OUT"
+                                  : isFirstIn
+                                    ? "First IN"
+                                    : isLastOut
+                                      ? "Last OUT"
+                                      : "—"}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDayDetail(null)}>
+              Close
+            </Button>
+            {dayEditable && (
+              <Button onClick={applyDayStatus}>
+                Apply status
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

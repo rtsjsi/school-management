@@ -67,14 +67,30 @@ export async function GET(request: NextRequest) {
 
     const bankMap = new Map<string, { account_number: string; ifsc_code: string; account_holder_name: string; bank_name: string }>();
     (employees ?? []).forEach((e) => {
-      if (!e.account_number || !e.bank_name) return;
+      if (!e.account_number?.trim() || !e.bank_name?.trim() || !e.ifsc_code?.trim()) return;
       bankMap.set(e.id, {
         account_number: e.account_number,
-        ifsc_code: e.ifsc_code ?? "",
+        ifsc_code: e.ifsc_code,
         account_holder_name: e.account_holder_name ?? e.full_name,
-        bank_name: e.bank_name ?? "",
+        bank_name: e.bank_name,
       });
     });
+
+    function neftSkipReasons(
+      emp: {
+        bank_name?: string | null;
+        account_number?: string | null;
+        ifsc_code?: string | null;
+      },
+      netAmount: number
+    ): string[] {
+      const reasons: string[] = [];
+      if (!emp.bank_name?.trim()) reasons.push("Missing bank name");
+      if (!emp.account_number?.trim()) reasons.push("Missing account number");
+      if (!emp.ifsc_code?.trim()) reasons.push("Missing IFSC code");
+      if (netAmount <= 0) reasons.push("Zero payable amount");
+      return reasons.length > 0 ? reasons : ["Not eligible for NEFT"];
+    }
 
     const rows: {
       employee_id: string;
@@ -92,6 +108,7 @@ export async function GET(request: NextRequest) {
       deductions: number;
       net_amount: number;
       bank?: typeof bankMap extends Map<string, infer V> ? V : never;
+      skip_reasons: string[];
     }[] = [];
 
     for (const emp of employees ?? []) {
@@ -130,6 +147,7 @@ export async function GET(request: NextRequest) {
         Math.round((proratedBasic + proratedOther + proratedChild) * 100) / 100
       );
       const bank = bankMap.get(emp.id);
+      const skip_reasons = neftSkipReasons(emp, netAmount);
 
       rows.push({
         employee_id: emp.id,
@@ -147,10 +165,18 @@ export async function GET(request: NextRequest) {
         deductions: 0,
         net_amount: netAmount,
         bank,
+        skip_reasons,
       });
     }
 
     const payableRows = rows.filter((r) => r.net_amount > 0 && r.bank);
+    const skippedRows = rows
+      .filter((r) => r.net_amount <= 0 || !r.bank)
+      .map((r) => ({
+        full_name: r.full_name,
+        net_amount: r.net_amount,
+        reasons: r.skip_reasons,
+      }));
 
     if (format === "blkpay") {
       const debitAccount = (searchParams.get("debitAccount") ?? settings?.debit_account_number ?? "").trim();
@@ -249,8 +275,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       monthYear,
       workingDays,
-      rows: payableRows,
-      skipped: rows.filter((r) => r.net_amount <= 0 || !r.bank),
+      rows: payableRows.map(({ skip_reasons: _skip, ...r }) => r),
+      skipped: skippedRows,
       settings: {
         debitAccount: settings?.debit_account_number ?? "",
         transactionType: settings?.transaction_type ?? "NEFT",

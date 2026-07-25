@@ -25,7 +25,7 @@ export default async function PayrollPage() {
             <TabsTrigger value="holidays">Holidays</TabsTrigger>
             <TabsTrigger value="attendance">Attendance</TabsTrigger>
             <TabsTrigger value="review">Review</TabsTrigger>
-            <TabsTrigger value="neft">NEFT</TabsTrigger>
+            <TabsTrigger value="neft">Bank File</TabsTrigger>
             <TabsTrigger value="reports">Reports</TabsTrigger>
           </TabsList>
         </div>
