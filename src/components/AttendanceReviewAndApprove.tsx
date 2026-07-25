@@ -46,7 +46,10 @@ import { formatTimeShort } from "@/lib/employee-shift";
 
 const STATUSES = ["present", "absent", "half_day", "casual_leave", "leave_without_pay", "holiday", "week_off"] as const;
 
-const formatStatusLabel = (status: string) => status.replaceAll("_", " ");
+const formatStatusLabel = (status: string) => {
+  if (status === "holiday") return "Paid Holiday";
+  return status.replaceAll("_", " ");
+};
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -305,12 +308,7 @@ export default function AttendanceReviewAndApprove() {
       ? dayPunches[dayPunches.length - 1].punched_at
       : undefined;
 
-  const dayEditable =
-    !!dayDetail &&
-    !!data &&
-    !data.isApproved &&
-    dayDetail.source !== "holiday" &&
-    dayDetail.source !== "weekend";
+  const dayEditable = !!dayDetail && !!data && !data.isApproved;
 
   const dayEmployee = dayDetail
     ? data?.employees.find((e) => e.id === dayDetail.empId)
@@ -471,17 +469,12 @@ export default function AttendanceReviewAndApprove() {
                         return (
                         <TableRow
                           key={emp.id}
-                          className={cn(
-                            "hover:bg-muted/30 transition-colors",
-                            hasSandwich && "bg-orange-50/40 dark:bg-orange-950/15"
-                          )}
+                          className="hover:bg-muted/30 transition-colors"
                         >
                           <TableCell
                             className={cn(
-                              "sticky left-0 z-10 font-medium shadow-[1px_0_0_hsl(var(--border))]",
-                              hasSandwich
-                                ? "bg-orange-50 dark:bg-orange-950/40 border-l-2 border-l-orange-500"
-                                : "bg-background"
+                              "sticky left-0 z-10 font-medium shadow-[1px_0_0_hsl(var(--border))] bg-background",
+                              hasSandwich && "border-l-2 border-l-orange-500"
                             )}
                           >
                             <div className="flex flex-col">
@@ -574,8 +567,21 @@ export default function AttendanceReviewAndApprove() {
                                 </div>
 
                                 <div className="flex h-full w-full flex-col items-center justify-center font-medium">
-                                  <span className="text-[10px] uppercase tracking-tighter max-w-[60px] truncate">
-                                    {formatStatusLabel(status)}
+                                  <span
+                                    className={cn(
+                                      "text-[10px] tracking-tighter max-w-[68px] leading-tight text-center",
+                                      status === "holiday" ? "normal-case" : "uppercase truncate"
+                                    )}
+                                  >
+                                    {status === "holiday" ? (
+                                      <>
+                                        Paid
+                                        <br />
+                                        Holiday
+                                      </>
+                                    ) : (
+                                      formatStatusLabel(status)
+                                    )}
                                   </span>
                                   {(row.in_time || row.out_time) && (
                                     <span className="text-[9px] text-muted-foreground/80 font-normal leading-none mt-0.5">
