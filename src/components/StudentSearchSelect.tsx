@@ -100,7 +100,7 @@ export function StudentSearchSelect({
       allowEmpty && (q === "" || emptyLabel.toLowerCase().includes(q));
 
     const matched = (!q
-      ? students.slice(0, 25)
+      ? students.slice(0, 100)
       : students
           .filter((s) => {
             const blob = [s.full_name, s.gr_number, s.standard, s.division]
@@ -109,7 +109,7 @@ export function StudentSearchSelect({
               .toLowerCase();
             return blob.includes(q);
           })
-          .slice(0, 50)
+          .slice(0, 100)
     );
 
     return { searchingEmptyLabel, matched };

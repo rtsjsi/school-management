@@ -254,7 +254,7 @@ export default function FeeCollectionReport() {
   };
 
   useEffect(() => {
-    fetch("/api/students?limit=500")
+    fetch("/api/students?limit=5000")
       .then((r) => r.json())
       .then((d) => setStudents(d.students ?? []))
       .catch(() => {});
@@ -586,7 +586,9 @@ export default function FeeCollectionReport() {
                       <SelectValue placeholder="Select standard" />
                     </SelectTrigger>
                     <SelectContent>
-                      {preset === "custom" && <SelectItem value="all">All Standards</SelectItem>}
+                      {(preset === "custom" || preset === "student-wise") && (
+                        <SelectItem value="all">All Standards</SelectItem>
+                      )}
                       {standards.map((c) => (
                         <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
                       ))}
