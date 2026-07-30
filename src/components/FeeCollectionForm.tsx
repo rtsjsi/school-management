@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { SubmitButton } from "@/components/ui/SubmitButton";
@@ -21,6 +21,10 @@ import {
 import { cn } from "@/lib/utils";
 import { generateReceiptPDF, amountInWords } from "@/lib/receipt-pdf";
 import { AcademicYearSelect } from "@/components/AcademicYearSelect";
+import {
+  StudentSearchSelect,
+  type StudentSearchOption,
+} from "@/components/StudentSearchSelect";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 import { useToast } from "@/hooks/use-toast";
 import { annualNetFeeLiability, linesWithNetAfterConcession } from "@/lib/fee-concession";
@@ -35,25 +39,10 @@ const DEFAULT_POLICY_NOTES = [
   "(3) Cheque payment subject to realisation.",
 ];
 
-type StudentOption = {
-  id: string;
-  full_name: string;
-  standard?: string;
-  division?: string;
+type StudentOption = StudentSearchOption & {
   roll_number?: number;
-  gr_number?: string;
-  is_rte_quota?: boolean | null;
   fee_concession_amount?: number | null;
 };
-
-function formatStudentDisplay(s: StudentOption): string {
-  const cls = s.standard
-    ? ` (${s.standard}${s.division ? "-" + s.division : ""})`
-    : "";
-  const gr = s.gr_number ? ` · ${s.gr_number}` : "";
-  const rte = s.is_rte_quota ? " · RTE" : "";
-  return `${s.full_name}${cls}${gr}${rte}`;
-}
 
 export default function FeeCollectionForm({
   students,
@@ -106,12 +95,9 @@ export default function FeeCollectionForm({
 
   const [classFilter, setClassFilter] = useState("all");
   const [divisionFilter, setDivisionFilter] = useState("all");
-  const [studentInput, setStudentInput] = useState("");
-  const [studentSuggestionsOpen, setStudentSuggestionsOpen] = useState(false);
   const [paymentMethodSelectKey, setPaymentMethodSelectKey] = useState(0);
   const [rtePopupOpen, setRtePopupOpen] = useState(false);
   const [rtePopupStudentName, setRtePopupStudentName] = useState("");
-  const studentComboRef = useRef<HTMLDivElement>(null);
 
   const showRtePopup = (studentName: string) => {
     setRtePopupStudentName(studentName);
@@ -125,27 +111,6 @@ export default function FeeCollectionForm({
       return true;
     });
   }, [students, classFilter, divisionFilter]);
-
-  const studentSuggestions = useMemo(() => {
-    const q = studentInput.trim().toLowerCase();
-    const base = filteredStudents;
-    if (!q) return base.slice(0, 25);
-    return base
-      .filter((s) => {
-        const blob = [s.full_name, s.gr_number, s.standard, s.division].filter(Boolean).join(" ").toLowerCase();
-        return blob.includes(q);
-      })
-      .slice(0, 50);
-  }, [filteredStudents, studentInput]);
-
-  useEffect(() => {
-    const onDocMouseDown = (e: MouseEvent) => {
-      if (studentComboRef.current?.contains(e.target as Node)) return;
-      setStudentSuggestionsOpen(false);
-    };
-    document.addEventListener("mousedown", onDocMouseDown);
-    return () => document.removeEventListener("mousedown", onDocMouseDown);
-  }, []);
 
   useEffect(() => {
     fetch("/api/receipt-number")
@@ -440,8 +405,8 @@ export default function FeeCollectionForm({
         schoolName: school.name,
         schoolAddress: school.address,
         schoolLogoUrl: school.logoUrl ?? undefined,
-        standard: selectedStudent?.standard,
-        division: selectedStudent?.division,
+        standard: selectedStudent?.standard ?? undefined,
+        division: selectedStudent?.division ?? undefined,
         rollNumber: selectedStudent?.roll_number,
         grNo: selectedStudent?.gr_number ?? selectedStudent?.id?.slice(0, 8),
         totalFees,
@@ -498,7 +463,6 @@ export default function FeeCollectionForm({
         };
       }
 
-      setStudentInput("");
       setForm({
         student_id: "",
         academic_year: form.academic_year,
@@ -613,74 +577,23 @@ export default function FeeCollectionForm({
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1 col-span-2 sm:col-span-4 relative" ref={studentComboRef}>
-            <Label htmlFor="student_search" className="text-xs font-medium text-muted-foreground">
-              Student *
-            </Label>
-            <Input
+          <div className="col-span-2 sm:col-span-4">
+            <StudentSearchSelect
               id="student_search"
-              type="text"
-              autoComplete="off"
-              role="combobox"
-              aria-expanded={studentSuggestionsOpen}
-              aria-controls="student-suggestions-list"
-              aria-autocomplete="list"
-              placeholder="Type name, GR no., class…"
-              value={studentInput}
-              onChange={(e) => {
-                const v = e.target.value;
-                setStudentInput(v);
-                setStudentSuggestionsOpen(true);
-                if (form.student_id) {
-                  const cur = students.find((x) => x.id === form.student_id);
-                  if (cur && formatStudentDisplay(cur) !== v) {
-                    setForm((p) => ({ ...p, student_id: "" }));
-                  }
+              label="Student"
+              required
+              students={filteredStudents}
+              value={form.student_id}
+              onChange={(studentId) => setForm((p) => ({ ...p, student_id: studentId }))}
+              onBeforeSelect={(s) => {
+                if (s.is_rte_quota) {
+                  setError(null);
+                  showRtePopup(s.full_name);
+                  return false;
                 }
               }}
-              onFocus={() => setStudentSuggestionsOpen(true)}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") setStudentSuggestionsOpen(false);
-              }}
-              className="h-9 text-sm"
+              className="space-y-1"
             />
-            {studentSuggestionsOpen && (
-              <ul
-                id="student-suggestions-list"
-                role="listbox"
-                className="absolute left-0 right-0 top-full z-50 mt-0.5 max-h-52 overflow-auto rounded-md border bg-popover text-popover-foreground shadow-md py-1"
-              >
-                {studentSuggestions.length === 0 ? (
-                  <li className="px-2 py-2 text-xs text-muted-foreground text-center">No match.</li>
-                ) : (
-                  studentSuggestions.map((s) => (
-                    <li key={s.id} role="option" aria-selected={form.student_id === s.id}>
-                      <button
-                        type="button"
-                        className={cn(
-                          "w-full text-left px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground",
-                          form.student_id === s.id && "bg-accent/60"
-                        )}
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => {
-                          if (s.is_rte_quota) {
-                            setError(null);
-                            showRtePopup(s.full_name);
-                            setStudentSuggestionsOpen(false);
-                            return;
-                          }
-                          setForm((p) => ({ ...p, student_id: s.id }));
-                          setStudentInput(formatStudentDisplay(s));
-                          setStudentSuggestionsOpen(false);
-                        }}
-                      >
-                        <span className="block truncate">{formatStudentDisplay(s)}</span>
-                      </button>
-                    </li>
-                  ))
-                )}
-              </ul>
-            )}
           </div>
         </div>
 

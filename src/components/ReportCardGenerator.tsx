@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { StudentSearchSelect } from "@/components/StudentSearchSelect";
 import { PdfIcon } from "@/components/ui/export-icons";
 import { Download, FileText, Users, Loader2 } from "lucide-react";
 import JSZip from "jszip";
@@ -536,20 +537,15 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
               </div>
             )}
 
-            <div className="space-y-1.5">
-              <Label className="text-xs">Student</Label>
-              <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
-                <SelectTrigger className="w-[260px] h-9">
-                  <SelectValue placeholder="Select student" />
-                </SelectTrigger>
-                <SelectContent>
-                  {filteredStudents.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.full_name} {s.standard && s.division ? `(${s.standard} ${s.division})` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="min-w-[260px]">
+              <StudentSearchSelect
+                id="report-card-student"
+                label="Student"
+                required
+                students={filteredStudents}
+                value={selectedStudentId}
+                onChange={setSelectedStudentId}
+              />
             </div>
           </div>
         </div>
