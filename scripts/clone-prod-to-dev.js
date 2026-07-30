@@ -23,6 +23,7 @@ const PUBLIC_TABLES = [
   "exams",
   "expense_budgets",
   "expense_heads",
+  "expense_payments",
   "expenses",
   "fee_collections",
   "fee_refunds",
@@ -72,6 +73,7 @@ const INSERT_ORDER = [
   "public.expense_heads",
   "public.expense_budgets",
   "public.expenses",
+  "public.expense_payments",
   "public.biometric_attendance_raw",
   "public.employee_attendance_finalized",
 ];

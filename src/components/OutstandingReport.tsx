@@ -166,7 +166,7 @@ export default function OutstandingReport() {
   };
 
   useEffect(() => {
-    fetch("/api/students?limit=500&exclude_rte=1")
+    fetch("/api/students?limit=5000&exclude_rte=1")
       .then((r) => r.json())
       .then((d) => setStudents(d.students ?? []))
       .catch(() => {});
