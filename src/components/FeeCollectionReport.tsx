@@ -49,7 +49,7 @@ import {
   Undo2,
 } from "lucide-react";
 import { PdfIcon } from "@/components/ui/export-icons";
-import { exportFeeCollectionPdf } from "@/lib/fee-collection-report-export";
+import { exportFeeCollectionPdf, formatFeePaymentDetails } from "@/lib/fee-collection-report-export";
 import { fetchStandards, fetchAcademicYears } from "@/lib/lov";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 import { FeeRefundDialog } from "@/components/FeeRefundDialog";
@@ -751,12 +751,14 @@ export default function FeeCollectionReport() {
                         <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("student_name")}>
                           <span className="inline-flex items-center gap-1">Student <SortIcon col="student_name" /></span>
                         </TableHead>
+                        <TableHead className="hidden md:table-cell">GR</TableHead>
                         <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("student_standard")}>
                           <span className="inline-flex items-center gap-1">Std <SortIcon col="student_standard" /></span>
                         </TableHead>
                         <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("student_division")}>
                           <span className="inline-flex items-center gap-1">Div <SortIcon col="student_division" /></span>
                         </TableHead>
+                        <TableHead className="hidden lg:table-cell">Roll</TableHead>
                         <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("amount")}>
                           <span className="inline-flex items-center gap-1">Amount <SortIcon col="amount" /></span>
                         </TableHead>
@@ -766,9 +768,11 @@ export default function FeeCollectionReport() {
                         <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("quarter")}>
                           <span className="inline-flex items-center gap-1">Qtr <SortIcon col="quarter" /></span>
                         </TableHead>
+                        <TableHead className="hidden lg:table-cell">Year</TableHead>
                         <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("payment_mode")}>
                           <span className="inline-flex items-center gap-1">Mode <SortIcon col="payment_mode" /></span>
                         </TableHead>
+                        <TableHead className="hidden md:table-cell min-w-[140px]">Payment details</TableHead>
                         <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleSort("collection_date")}>
                           <span className="inline-flex items-center gap-1">Date <SortIcon col="collection_date" /></span>
                         </TableHead>
@@ -800,11 +804,17 @@ export default function FeeCollectionReport() {
                               Details
                             </Button>
                           </TableCell>
+                          <TableCell className="font-mono text-xs hidden md:table-cell">
+                            {row.student_gr_no || "—"}
+                          </TableCell>
                           <TableCell className="hidden sm:table-cell">
                             {row.student_standard || "—"}
                           </TableCell>
                           <TableCell className="hidden sm:table-cell">
                             {row.student_division || "—"}
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell">
+                            {row.student_roll_number != null ? row.student_roll_number : "—"}
                           </TableCell>
                           <TableCell>
                             <div>{Number(row.amount).toLocaleString("en-IN")}</div>
@@ -821,7 +831,11 @@ export default function FeeCollectionReport() {
                           </TableCell>
                           <TableCell className="hidden sm:table-cell">{getFeeTypeLabel(row.fee_type)}</TableCell>
                           <TableCell className="hidden sm:table-cell">Q{row.quarter}</TableCell>
+                          <TableCell className="text-xs hidden lg:table-cell">{row.academic_year || "—"}</TableCell>
                           <TableCell className="capitalize hidden sm:table-cell">{row.payment_mode}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground hidden md:table-cell max-w-[200px]">
+                            {formatFeePaymentDetails(row)}
+                          </TableCell>
                           <TableCell className="text-muted-foreground text-sm hidden sm:table-cell">
                             {formatFeeCollectionDisplayDate(row.collection_date)}
                           </TableCell>
@@ -845,10 +859,26 @@ export default function FeeCollectionReport() {
                         expandedRows[row.id] ? (
                           <TableRow key={`${row.id}-details`} className="sm:hidden bg-muted/30">
                             <TableCell colSpan={4} className="text-sm space-y-1">
+                              <div><span className="text-muted-foreground">GR:</span> {row.student_gr_no || "—"}</div>
                               <div><span className="text-muted-foreground">Standard:</span> {[row.student_standard, row.student_division].filter(Boolean).join(" ") || "—"}</div>
+                              <div><span className="text-muted-foreground">Roll:</span> {row.student_roll_number != null ? row.student_roll_number : "—"}</div>
                               <div><span className="text-muted-foreground">Type:</span> {getFeeTypeLabel(row.fee_type)}</div>
                               <div><span className="text-muted-foreground">Quarter:</span> Q{row.quarter}</div>
+                              <div><span className="text-muted-foreground">Year:</span> {row.academic_year || "—"}</div>
                               <div><span className="text-muted-foreground">Mode:</span> {row.payment_mode}</div>
+                              {(row.payment_mode ?? "").toLowerCase() === "cheque" && (
+                                <>
+                                  <div><span className="text-muted-foreground">Bank:</span> {row.cheque_bank || "—"}</div>
+                                  <div><span className="text-muted-foreground">Cheque No:</span> {row.cheque_number || "—"}</div>
+                                  <div><span className="text-muted-foreground">Cheque Date:</span> {row.cheque_date ? formatFeeCollectionDisplayDate(row.cheque_date) : "—"}</div>
+                                </>
+                              )}
+                              {(row.payment_mode ?? "").toLowerCase() === "online" && (
+                                <>
+                                  <div><span className="text-muted-foreground">Txn ID:</span> {row.online_transaction_id || "—"}</div>
+                                  <div><span className="text-muted-foreground">Txn Ref:</span> {row.online_transaction_ref || "—"}</div>
+                                </>
+                              )}
                               <div><span className="text-muted-foreground">Date:</span> {formatFeeCollectionDisplayDate(row.collection_date)}</div>
                               <div><span className="text-muted-foreground">Collected By:</span> {row.collected_by ?? "—"}</div>
                             </TableCell>

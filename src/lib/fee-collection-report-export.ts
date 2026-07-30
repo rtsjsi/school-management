@@ -20,6 +20,11 @@ export type FeeReportExportRow = {
   payment_mode: string;
   collection_date: string;
   collected_by?: string;
+  cheque_number?: string | null;
+  cheque_bank?: string | null;
+  cheque_date?: string | null;
+  online_transaction_id?: string | null;
+  online_transaction_ref?: string | null;
 };
 
 export type FeeReportSummary = {
@@ -34,6 +39,34 @@ export type FeeReportPdfOptions = {
   summary?: FeeReportSummary;
 };
 
+/** Format cheque / online fields for report table & PDF. */
+export function formatFeePaymentDetails(row: {
+  payment_mode?: string | null;
+  cheque_number?: string | null;
+  cheque_bank?: string | null;
+  cheque_date?: string | null;
+  online_transaction_id?: string | null;
+  online_transaction_ref?: string | null;
+}): string {
+  const mode = (row.payment_mode ?? "").toLowerCase();
+  if (mode === "cheque") {
+    const parts = [
+      row.cheque_number ? `Chq ${row.cheque_number}` : null,
+      row.cheque_bank ? row.cheque_bank : null,
+      row.cheque_date ? formatFeeCollectionDisplayDate(row.cheque_date, row.cheque_date) : null,
+    ].filter(Boolean);
+    return parts.length ? parts.join(" · ") : "—";
+  }
+  if (mode === "online") {
+    const parts = [
+      row.online_transaction_id ? `Txn ${row.online_transaction_id}` : null,
+      row.online_transaction_ref ? row.online_transaction_ref : null,
+    ].filter(Boolean);
+    return parts.length ? parts.join(" · ") : "—";
+  }
+  return "—";
+}
+
 export function exportFeeCollectionPdf(
   rows: FeeReportExportRow[],
   fileBase: string,
@@ -41,8 +74,8 @@ export function exportFeeCollectionPdf(
 ): void {
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
-  const marginL = 12;
-  const marginR = 12;
+  const marginL = 8;
+  const marginR = 8;
   const contentW = pageW - marginL - marginR;
   const reportTitle = "Fees Collection Report";
 
@@ -92,15 +125,19 @@ export function exportFeeCollectionPdf(
   const body = rows.map((row, idx) => [
     String(idx + 1),
     row.receipt_number,
-    String(row.student_name ?? "—").slice(0, 30),
+    String(row.student_name ?? "—").slice(0, 24),
+    row.student_gr_no || "—",
     row.student_standard || "—",
     row.student_division || "—",
+    row.student_roll_number != null ? String(row.student_roll_number) : "—",
     fmtINR(Number(row.amount)),
     getFeeTypeLabel(row.fee_type),
     `Q${row.quarter}`,
+    String(row.academic_year ?? "—").slice(0, 9),
     String(row.payment_mode).charAt(0).toUpperCase() + String(row.payment_mode).slice(1),
+    formatFeePaymentDetails(row).slice(0, 42),
     formatFeeCollectionDisplayDate(row.collection_date, ""),
-    String(row.collected_by ?? "—").slice(0, 20),
+    String(row.collected_by ?? "—").slice(0, 16),
   ]);
 
   const sum = rows.reduce((s, r) => s + Number(r.amount), 0);
@@ -108,16 +145,19 @@ export function exportFeeCollectionPdf(
   autoTable(doc, {
     startY: curY,
     margin: { left: marginL, right: marginR },
-    head: [["#", "Receipt", "Student", "Std", "Div", "Amount", "Type", "Qtr", "Mode", "Date", "Collected By"]],
+    head: [[
+      "#", "Receipt", "Student", "GR", "Std", "Div", "Roll", "Amount", "Type", "Qtr",
+      "Year", "Mode", "Payment details", "Date", "Collected By",
+    ]],
     body,
     foot: [[
-      { content: "", colSpan: 5 },
-      { content: `Total: ${fmtINR(sum)}`, colSpan: 6, styles: { halign: "right" as const, fontStyle: "bold" as const, fontSize: 8.5 } },
+      { content: "", colSpan: 7 },
+      { content: `Total: ${fmtINR(sum)}`, colSpan: 8, styles: { halign: "right" as const, fontStyle: "bold" as const, fontSize: 7.5 } },
     ]],
     theme: "grid",
     styles: {
-      fontSize: 7,
-      cellPadding: { top: 2, bottom: 2, left: 1.5, right: 1.5 },
+      fontSize: 6,
+      cellPadding: { top: 1.5, bottom: 1.5, left: 1, right: 1 },
       font: "helvetica",
       textColor: C.foreground,
       lineColor: C.border,
@@ -127,24 +167,23 @@ export function exportFeeCollectionPdf(
       fillColor: C.primary,
       textColor: C.white,
       fontStyle: "bold",
-      fontSize: 7,
-      cellPadding: { top: 2.5, bottom: 2.5, left: 2, right: 2 },
+      fontSize: 6,
+      cellPadding: { top: 2, bottom: 2, left: 1, right: 1 },
     },
     footStyles: {
       fillColor: C.accent,
       textColor: C.primary,
       fontStyle: "bold",
-      fontSize: 7.5,
-      cellPadding: { top: 2.5, bottom: 2.5, left: 2, right: 2 },
+      fontSize: 7,
+      cellPadding: { top: 2, bottom: 2, left: 1.5, right: 1.5 },
       lineColor: C.border,
       lineWidth: 0.3,
     },
     alternateRowStyles: { fillColor: C.background },
     columnStyles: {
-      0: { cellWidth: 8, halign: "center" },
-      3: { cellWidth: 12 },
-      4: { cellWidth: 10 },
-      5: { halign: "right", fontStyle: "bold" },
+      0: { cellWidth: 6, halign: "center" },
+      7: { halign: "right", fontStyle: "bold" },
+      12: { cellWidth: 38 },
     },
     didDrawPage: (data) => {
       const currentPage = (doc as unknown as { internal: { getCurrentPageInfo: () => { pageNumber: number } } }).internal.getCurrentPageInfo().pageNumber;
