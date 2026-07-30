@@ -14,7 +14,10 @@ import {
   Filter,
   Loader2,
   X,
-  Edit2,
+  IndianRupee,
+  MoreVertical,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -44,14 +47,31 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import ExpenseEntryForm from "@/components/ExpenseEntryForm";
+import {
+  ExpensePaymentsDialog,
+  type ExpenseBillSummary,
+} from "@/components/ExpensePaymentsDialog";
 import { createClient } from "@/lib/supabase/client";
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 import { exportExpensePdf } from "@/lib/expense-report-export";
 import { formatExpenseDisplayDate } from "@/lib/utils";
+import {
+  expensePaymentStatusLabel,
+  type ExpensePaymentStatus,
+} from "@/lib/expense-payments";
+import { useToast } from "@/hooks/use-toast";
 
 const PAYMENT_MODES = ["cash", "cheque", "online"] as const;
+const PAYMENT_STATUSES = ["unpaid", "partial", "paid"] as const;
 
 type ReportType = "list" | "summary";
 type FilterPreset = "daywise" | "monthwise" | "yearwise" | "custom";
@@ -62,14 +82,26 @@ type ListRow = {
   expense_date?: string;
   voucher?: string;
   amount?: number;
+  paid?: number;
+  balance?: number;
+  status?: ExpensePaymentStatus;
+  payment_count?: number;
   description?: string;
   expense_by?: string;
-  account?: string;
   expense_head?: string;
   party?: string;
 };
 type SummaryRow = { payment_mode: string; count: number; total: number };
-type ListSortKey = "expense_date" | "voucher" | "expense_head" | "party" | "amount" | "account" | "expense_by";
+type ListSortKey =
+  | "expense_date"
+  | "voucher"
+  | "expense_head"
+  | "party"
+  | "amount"
+  | "paid"
+  | "balance"
+  | "status"
+  | "expense_by";
 type SummarySortKey = "payment_mode" | "count" | "total";
 type SortDir = "asc" | "desc";
 
@@ -85,27 +117,6 @@ const PRESET_CONFIG: {
   { value: "custom", label: "Custom", description: "Choose range", icon: Filter },
 ];
 
-function getPresetRange(preset: FilterPreset): { from: string; to: string } {
-  const now = new Date();
-  const toISO = (d: Date) => d.toISOString().slice(0, 10);
-
-  if (preset === "monthwise") {
-    const from = new Date(now.getFullYear(), now.getMonth(), 1);
-    const to = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    return { from: toISO(from), to: toISO(to) };
-  }
-  if (preset === "yearwise") {
-    // financial year (Apr-Mar)
-    const fyStartYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
-    const from = new Date(fyStartYear, 3, 1);
-    const to = new Date(fyStartYear + 1, 2, 31);
-    return { from: toISO(from), to: toISO(to) };
-  }
-  
-  // custom
-  return { from: "", to: "" };
-}
-
 export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean }) {
   const school = useSchoolSettings();
   const [reportType] = useState<ReportType>("list");
@@ -117,6 +128,7 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [expenseHeadId, setExpenseHeadId] = useState("all");
   const [paymentMode, setPaymentMode] = useState("all");
+  const [paymentStatus, setPaymentStatus] = useState("all");
   const [search, setSearch] = useState("");
   const [expenseHeads, setExpenseHeads] = useState<ExpenseHead[]>([]);
   const [data, setData] = useState<(ListRow | SummaryRow)[] | null>(null);
@@ -127,15 +139,19 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
   const [listSortDir, setListSortDir] = useState<SortDir>("asc");
   const [summarySortDir, setSummarySortDir] = useState<SortDir>("asc");
 
-  // Editing state
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingData, setEditingData] = useState<any>(null);
+  const [editingData, setEditingData] = useState<Record<string, unknown> | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loadingEdit, setLoadingEdit] = useState(false);
+  const [paymentsExpense, setPaymentsExpense] = useState<ExpenseBillSummary | null>(null);
+  const [paymentsOpen, setPaymentsOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<ListRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     const toISO = (d: Date) => d.toISOString().slice(0, 10);
-    
+
     if (preset === "daywise") {
       setFromDate(singleDate);
       setToDate(singleDate);
@@ -145,7 +161,6 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
       setFromDate(toISO(from));
       setToDate(toISO(to));
     } else if (preset === "yearwise") {
-      // financial year (Apr-Mar)
       const from = new Date(selectedYear, 3, 1);
       const to = new Date(selectedYear + 1, 2, 31);
       setFromDate(toISO(from));
@@ -169,6 +184,7 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
     if (toDate) params.set("toDate", toDate);
     if (expenseHeadId && expenseHeadId !== "all") params.set("expenseHeadId", expenseHeadId);
     if (paymentMode && paymentMode !== "all") params.set("paymentMode", paymentMode);
+    if (paymentStatus && paymentStatus !== "all") params.set("paymentStatus", paymentStatus);
     if (search.trim()) params.set("search", search.trim());
     fetch(`/api/expense-reports?${params}`)
       .then((r) => r.json())
@@ -183,11 +199,7 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
     setIsDialogOpen(true);
     try {
       const supabase = createClient();
-      const { data: row } = await supabase
-        .from("expenses")
-        .select("*")
-        .eq("id", id)
-        .single();
+      const { data: row } = await supabase.from("expenses").select("*").eq("id", id).single();
       setEditingData(row);
     } catch {
       setIsDialogOpen(false);
@@ -204,13 +216,46 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
     }
   };
 
+  const openPayments = (row: ListRow) => {
+    setPaymentsExpense({
+      id: String(row.id),
+      expense_date: String(row.expense_date ?? ""),
+      voucher: row.voucher ?? null,
+      party: row.party ?? null,
+      amount: Number(row.amount ?? 0),
+      expense_heads: row.expense_head ? { name: row.expense_head } : null,
+    });
+    setPaymentsOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget?.id) return;
+    setDeleting(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.from("expenses").delete().eq("id", deleteTarget.id);
+      if (error) throw error;
+      toast({ title: "Expense bill deleted" });
+      setDeleteTarget(null);
+      fetchReport();
+    } catch (err) {
+      toast({
+        title: "Failed to delete bill",
+        description: err instanceof Error ? err.message : undefined,
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const listRows = useMemo(
     () => (Array.isArray(data) && reportType === "list" ? (data as ListRow[]) : []),
-    [data, reportType],
+    [data, reportType]
   );
   const summaryRows = useMemo(
     () => (Array.isArray(data) && reportType === "summary" ? (data as SummaryRow[]) : []),
-    [data, reportType],
+    [data, reportType]
   );
   const sortedListRows = useMemo(() => {
     if (!listSortKey) return listRows;
@@ -238,9 +283,17 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
           av = Number(a.amount ?? 0);
           bv = Number(b.amount ?? 0);
           break;
-        case "account":
-          av = (a.account ?? "").toLowerCase();
-          bv = (b.account ?? "").toLowerCase();
+        case "paid":
+          av = Number(a.paid ?? 0);
+          bv = Number(b.paid ?? 0);
+          break;
+        case "balance":
+          av = Number(a.balance ?? 0);
+          bv = Number(b.balance ?? 0);
+          break;
+        case "status":
+          av = (a.status ?? "").toLowerCase();
+          bv = (b.status ?? "").toLowerCase();
           break;
         case "expense_by":
           av = (a.expense_by ?? "").toLowerCase();
@@ -277,13 +330,22 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
     });
   }, [summaryRows, summarySortDir, summarySortKey]);
   const listRowsForExport = useMemo(
-    () => sortedListRows.map((r) => ({ ...r, amount: Number(r.amount ?? 0) })),
-    [sortedListRows],
+    () =>
+      sortedListRows.map((r) => ({
+        ...r,
+        amount: Number(r.amount ?? 0),
+        paid: Number(r.paid ?? 0),
+        balance: Number(r.balance ?? 0),
+        status: r.status,
+      })),
+    [sortedListRows]
   );
 
   const totalAmount = Array.isArray(data)
     ? data.reduce((s, r) => s + Number((r as ListRow).amount ?? (r as SummaryRow).total ?? 0), 0)
     : 0;
+  const totalPaid = listRows.reduce((s, r) => s + Number(r.paid ?? 0), 0);
+  const totalBalance = listRows.reduce((s, r) => s + Number(r.balance ?? 0), 0);
 
   const canGenerate = useMemo(() => {
     if (preset === "custom") return !!fromDate && !!toDate;
@@ -299,6 +361,7 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
       if (h) parts.push(`Head: ${h.name}`);
     }
     if (paymentMode !== "all") parts.push(`Mode: ${paymentMode}`);
+    if (paymentStatus !== "all") parts.push(`Status: ${paymentStatus}`);
     if (search.trim()) parts.push(`Search: ${search.trim()}`);
     return parts.join("  ·  ");
   };
@@ -343,6 +406,8 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
     return summarySortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />;
   };
 
+  const actionColSpan = canEdit ? 5 : 4;
+
   return (
     <Card>
       <CardContent className="pt-6">
@@ -368,9 +433,17 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
                         : "border-border bg-background hover:border-primary/40 hover:bg-accent/50"
                     }`}
                   >
-                    <Icon className={`h-5 w-5 ${active ? "text-primary" : "text-muted-foreground group-hover:text-primary/70"}`} />
-                    <span className={`text-sm font-medium leading-tight ${active ? "text-primary" : "text-foreground"}`}>{label}</span>
-                    <span className="text-[11px] leading-tight text-muted-foreground hidden sm:block">{description}</span>
+                    <Icon
+                      className={`h-5 w-5 ${active ? "text-primary" : "text-muted-foreground group-hover:text-primary/70"}`}
+                    />
+                    <span
+                      className={`text-sm font-medium leading-tight ${active ? "text-primary" : "text-foreground"}`}
+                    >
+                      {label}
+                    </span>
+                    <span className="text-[11px] leading-tight text-muted-foreground hidden sm:block">
+                      {description}
+                    </span>
                   </button>
                 );
               })}
@@ -387,8 +460,13 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
                 <>
                   <div className="space-y-1.5">
                     <Label className="text-xs">Month</Label>
-                    <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
-                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                    <Select
+                      value={String(selectedMonth)}
+                      onValueChange={(v) => setSelectedMonth(Number(v))}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
                       <SelectContent>
                         {Array.from({ length: 12 }, (_, i) => (
                           <SelectItem key={i} value={String(i)}>
@@ -400,8 +478,13 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">Year</Label>
-                    <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
-                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                    <Select
+                      value={String(selectedYear)}
+                      onValueChange={(v) => setSelectedYear(Number(v))}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
                       <SelectContent>
                         {Array.from({ length: 5 }, (_, i) => (
                           <SelectItem key={i} value={String(new Date().getFullYear() - 2 + i)}>
@@ -417,8 +500,13 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
               {preset === "yearwise" && (
                 <div className="space-y-1.5">
                   <Label className="text-xs">Financial Year Starting</Label>
-                  <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
-                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                  <Select
+                    value={String(selectedYear)}
+                    onValueChange={(v) => setSelectedYear(Number(v))}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       {Array.from({ length: 5 }, (_, i) => (
                         <SelectItem key={i} value={String(new Date().getFullYear() - 2 + i)}>
@@ -453,10 +541,16 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
               <div className="space-y-1.5">
                 <Label className="text-xs">Expense Head</Label>
                 <Select value={expenseHeadId} onValueChange={setExpenseHeadId}>
-                  <SelectTrigger className="h-9"><SelectValue placeholder="All" /></SelectTrigger>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="All" />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All</SelectItem>
-                    {expenseHeads.map((h) => <SelectItem key={h.id} value={h.id}>{h.name}</SelectItem>)}
+                    {expenseHeads.map((h) => (
+                      <SelectItem key={h.id} value={h.id}>
+                        {h.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -464,27 +558,70 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
               <div className="space-y-1.5">
                 <Label className="text-xs">Payment Mode</Label>
                 <Select value={paymentMode} onValueChange={setPaymentMode}>
-                  <SelectTrigger className="h-9"><SelectValue placeholder="All" /></SelectTrigger>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="All" />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All</SelectItem>
-                    {PAYMENT_MODES.map((m) => <SelectItem key={m} value={m} className="capitalize">{m}</SelectItem>)}
+                    {PAYMENT_MODES.map((m) => (
+                      <SelectItem key={m} value={m} className="capitalize">
+                        {m}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">Payment Status</Label>
+                <Select value={paymentStatus} onValueChange={setPaymentStatus}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="All" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    {PAYMENT_STATUSES.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {expensePaymentStatusLabel(s)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-1.5">
                 <Label className="text-xs">Search</Label>
-                <Input placeholder="Party, voucher, description…" value={search} onChange={(e) => setSearch(e.target.value)} className="h-9" />
+                <Input
+                  placeholder="Party, voucher, description…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="h-9"
+                />
               </div>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
             <Button className="h-10 px-6 gap-2" onClick={fetchReport} disabled={loading || !canGenerate}>
-              {loading ? (<><Loader2 className="h-4 w-4 animate-spin" />Generating…</>) : "Generate Report"}
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Generating…
+                </>
+              ) : (
+                "Generate Report"
+              )}
             </Button>
             {data !== null && !loading && (
-              <Button type="button" variant="ghost" size="sm" className="gap-1 text-muted-foreground" onClick={() => { setData(null); }}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="gap-1 text-muted-foreground"
+                onClick={() => {
+                  setData(null);
+                }}
+              >
                 <X className="h-3.5 w-3.5" />
                 Clear Results
               </Button>
@@ -494,11 +631,30 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
           {data !== null && !loading && (
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs text-muted-foreground">Filters:</span>
-              <Badge variant="secondary" className="text-xs">{PRESET_CONFIG.find((p) => p.value === preset)?.label}</Badge>
-              <Badge variant="outline" className="text-xs">{reportType === "list" ? "Detailed List" : "By Payment Mode"}</Badge>
-              <Badge variant="outline" className="text-xs">{formatExpenseDisplayDate(fromDate)} to {formatExpenseDisplayDate(toDate)}</Badge>
-              {expenseHeadId !== "all" && <Badge variant="outline" className="text-xs">{expenseHeads.find((h) => h.id === expenseHeadId)?.name ?? "Head"}</Badge>}
-              {paymentMode !== "all" && <Badge variant="outline" className="text-xs capitalize">{paymentMode}</Badge>}
+              <Badge variant="secondary" className="text-xs">
+                {PRESET_CONFIG.find((p) => p.value === preset)?.label}
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                {reportType === "list" ? "Detailed List" : "By Payment Mode"}
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                {formatExpenseDisplayDate(fromDate)} to {formatExpenseDisplayDate(toDate)}
+              </Badge>
+              {expenseHeadId !== "all" && (
+                <Badge variant="outline" className="text-xs">
+                  {expenseHeads.find((h) => h.id === expenseHeadId)?.name ?? "Head"}
+                </Badge>
+              )}
+              {paymentMode !== "all" && (
+                <Badge variant="outline" className="text-xs capitalize">
+                  {paymentMode}
+                </Badge>
+              )}
+              {paymentStatus !== "all" && (
+                <Badge variant="outline" className="text-xs">
+                  {expensePaymentStatusLabel(paymentStatus as ExpensePaymentStatus)}
+                </Badge>
+              )}
             </div>
           )}
 
@@ -506,144 +662,298 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
             <div className="space-y-3">
               {Array.isArray(data) && data.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  <Button type="button" size="sm" className="gap-1.5 bg-red-600 hover:bg-red-700 text-white shadow-sm" onClick={handleExportPdf}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="gap-1.5 bg-red-600 hover:bg-red-700 text-white shadow-sm"
+                    onClick={handleExportPdf}
+                  >
                     <PdfIcon className="h-4 w-4" aria-hidden />
                     PDF
                   </Button>
                 </div>
               )}
               <div className="border rounded-lg overflow-x-auto">
-              {reportType === "summary" && Array.isArray(data) && data.length > 0 && (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleSummarySort("payment_mode")}>
-                        <span className="inline-flex items-center gap-1">Payment Mode <SummarySortIcon col="payment_mode" /></span>
-                      </TableHead>
-                      <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleSummarySort("count")}>
-                        <span className="inline-flex items-center gap-1">Count <SummarySortIcon col="count" /></span>
-                      </TableHead>
-                      <TableHead className="text-right cursor-pointer select-none hover:text-foreground" onClick={() => handleSummarySort("total")}>
-                        <span className="inline-flex items-center gap-1">Total Amount <SummarySortIcon col="total" /></span>
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {sortedSummaryRows.map((row: SummaryRow, i) => (
-                      <TableRow key={i}>
-                        <TableCell className="capitalize">{row.payment_mode ?? "—"}</TableCell>
-                        <TableCell>{Number(row.count ?? 0)}</TableCell>
-                        <TableCell className="text-right font-medium">
-                          {Number(row.total ?? 0).toLocaleString()}
-                        </TableCell>
+                {reportType === "summary" && Array.isArray(data) && data.length > 0 && (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead
+                          className="cursor-pointer select-none hover:text-foreground"
+                          onClick={() => handleSummarySort("payment_mode")}
+                        >
+                          <span className="inline-flex items-center gap-1">
+                            Payment Mode <SummarySortIcon col="payment_mode" />
+                          </span>
+                        </TableHead>
+                        <TableHead
+                          className="cursor-pointer select-none hover:text-foreground"
+                          onClick={() => handleSummarySort("count")}
+                        >
+                          <span className="inline-flex items-center gap-1">
+                            Count <SummarySortIcon col="count" />
+                          </span>
+                        </TableHead>
+                        <TableHead
+                          className="text-right cursor-pointer select-none hover:text-foreground"
+                          onClick={() => handleSummarySort("total")}
+                        >
+                          <span className="inline-flex items-center gap-1">
+                            Total Amount <SummarySortIcon col="total" />
+                          </span>
+                        </TableHead>
                       </TableRow>
-                    ))}
-                    <TableRow className="font-medium bg-muted/50">
-                      <TableCell colSpan={2}>Total</TableCell>
-                      <TableCell className="text-right">
-                        {summaryRows.reduce((s, r) => s + Number(r.total ?? 0), 0).toLocaleString()}
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              )}
-              {reportType === "list" && Array.isArray(data) && data.length > 0 && (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleListSort("expense_date")}>
-                        <span className="inline-flex items-center gap-1">Date <ListSortIcon col="expense_date" /></span>
-                      </TableHead>
-                      <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleListSort("voucher")}>
-                        <span className="inline-flex items-center gap-1">Voucher <ListSortIcon col="voucher" /></span>
-                      </TableHead>
-                      <TableHead className="cursor-pointer select-none hover:text-foreground" onClick={() => handleListSort("expense_head")}>
-                        <span className="inline-flex items-center gap-1">Head <ListSortIcon col="expense_head" /></span>
-                      </TableHead>
-                      <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleListSort("party")}>
-                        <span className="inline-flex items-center gap-1">Party <ListSortIcon col="party" /></span>
-                      </TableHead>
-                      <TableHead className="text-right cursor-pointer select-none hover:text-foreground" onClick={() => handleListSort("amount")}>
-                        <span className="inline-flex items-center gap-1">Amount <ListSortIcon col="amount" /></span>
-                      </TableHead>
-                      <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleListSort("account")}>
-                        <span className="inline-flex items-center gap-1">Mode <ListSortIcon col="account" /></span>
-                      </TableHead>
-                      <TableHead className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground" onClick={() => handleListSort("expense_by")}>
-                        <span className="inline-flex items-center gap-1">Expense By <ListSortIcon col="expense_by" /></span>
-                      </TableHead>
-                      <TableHead className="max-w-[160px] hidden sm:table-cell">Description</TableHead>
-                      {canEdit && <TableHead className="w-[80px] text-center">Actions</TableHead>}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {sortedListRows.flatMap((row: ListRow) => [
-                      <TableRow key={String(row.id ?? "")}>
-                        <TableCell className="text-sm">
-                          {formatExpenseDisplayDate(row.expense_date)}
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="ml-1 h-8 px-2 sm:hidden"
-                            onClick={() =>
-                              setExpandedRows((prev) => ({
-                                ...prev,
-                                [String(row.id ?? "")]: !prev[String(row.id ?? "")],
-                              }))
-                            }
-                          >
-                            {expandedRows[String(row.id ?? "")] ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                            Details
-                          </Button>
-                        </TableCell>
-                        <TableCell className="font-mono text-xs hidden sm:table-cell">{String(row.voucher ?? "—")}</TableCell>
-                        <TableCell>{String(row.expense_head ?? "—")}</TableCell>
-                        <TableCell className="hidden sm:table-cell">{String(row.party ?? "—")}</TableCell>
-                        <TableCell className="text-right font-medium">
-                          {Number(row.amount ?? 0).toLocaleString()}
-                        </TableCell>
-                        <TableCell className="capitalize hidden sm:table-cell">{String(row.account ?? "—")}</TableCell>
-                        <TableCell className="text-sm hidden sm:table-cell">{String(row.expense_by ?? "—")}</TableCell>
-                        <TableCell className="text-muted-foreground text-sm truncate max-w-[160px] hidden sm:table-cell">
-                          {String(row.description ?? "—")}
-                        </TableCell>
-                        {canEdit && (
-                          <TableCell className="text-center">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-primary"
-                              onClick={() => handleEditClick(String(row.id))}
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        )}
-                      </TableRow>,
-                      expandedRows[String(row.id ?? "")] ? (
-                        <TableRow key={`${String(row.id ?? "")}-details`} className="sm:hidden bg-muted/30">
-                          <TableCell colSpan={canEdit ? 4 : 3} className="text-sm space-y-1">
-                            <div><span className="text-muted-foreground">Voucher:</span> {String(row.voucher ?? "—")}</div>
-                            <div><span className="text-muted-foreground">Party:</span> {String(row.party ?? "—")}</div>
-                            <div><span className="text-muted-foreground">Mode:</span> {String(row.account ?? "—")}</div>
-                            <div><span className="text-muted-foreground">Expense By:</span> {String(row.expense_by ?? "—")}</div>
-                            <div><span className="text-muted-foreground">Description:</span> {String(row.description ?? "—")}</div>
+                    </TableHeader>
+                    <TableBody>
+                      {sortedSummaryRows.map((row: SummaryRow, i) => (
+                        <TableRow key={i}>
+                          <TableCell className="capitalize">{row.payment_mode ?? "—"}</TableCell>
+                          <TableCell>{Number(row.count ?? 0)}</TableCell>
+                          <TableCell className="text-right font-medium">
+                            {Number(row.total ?? 0).toLocaleString()}
                           </TableCell>
                         </TableRow>
-                      ) : null,
-                    ])}
-                    <TableRow className="font-medium bg-muted/50">
-                      <TableCell colSpan={2}>Total</TableCell>
-                      <TableCell className="text-right">{totalAmount.toLocaleString()}</TableCell>
-                      <TableCell colSpan={canEdit ? 6 : 5} className="hidden sm:table-cell" />
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              )}
-              {Array.isArray(data) && data.length === 0 && (
-                <p className="p-6 text-sm text-muted-foreground text-center">No data for this report.</p>
-              )}
+                      ))}
+                      <TableRow className="font-medium bg-muted/50">
+                        <TableCell colSpan={2}>Total</TableCell>
+                        <TableCell className="text-right">
+                          {summaryRows.reduce((s, r) => s + Number(r.total ?? 0), 0).toLocaleString()}
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                )}
+                {reportType === "list" && Array.isArray(data) && data.length > 0 && (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead
+                          className="cursor-pointer select-none hover:text-foreground"
+                          onClick={() => handleListSort("expense_date")}
+                        >
+                          <span className="inline-flex items-center gap-1">
+                            Date <ListSortIcon col="expense_date" />
+                          </span>
+                        </TableHead>
+                        <TableHead
+                          className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground"
+                          onClick={() => handleListSort("voucher")}
+                        >
+                          <span className="inline-flex items-center gap-1">
+                            Voucher <ListSortIcon col="voucher" />
+                          </span>
+                        </TableHead>
+                        <TableHead
+                          className="cursor-pointer select-none hover:text-foreground"
+                          onClick={() => handleListSort("expense_head")}
+                        >
+                          <span className="inline-flex items-center gap-1">
+                            Head <ListSortIcon col="expense_head" />
+                          </span>
+                        </TableHead>
+                        <TableHead
+                          className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground"
+                          onClick={() => handleListSort("party")}
+                        >
+                          <span className="inline-flex items-center gap-1">
+                            Party <ListSortIcon col="party" />
+                          </span>
+                        </TableHead>
+                        <TableHead
+                          className="text-right cursor-pointer select-none hover:text-foreground"
+                          onClick={() => handleListSort("amount")}
+                        >
+                          <span className="inline-flex items-center gap-1">
+                            Bill <ListSortIcon col="amount" />
+                          </span>
+                        </TableHead>
+                        <TableHead
+                          className="text-right hidden sm:table-cell cursor-pointer select-none hover:text-foreground"
+                          onClick={() => handleListSort("paid")}
+                        >
+                          <span className="inline-flex items-center gap-1">
+                            Paid <ListSortIcon col="paid" />
+                          </span>
+                        </TableHead>
+                        <TableHead
+                          className="text-right hidden md:table-cell cursor-pointer select-none hover:text-foreground"
+                          onClick={() => handleListSort("balance")}
+                        >
+                          <span className="inline-flex items-center gap-1">
+                            Balance <ListSortIcon col="balance" />
+                          </span>
+                        </TableHead>
+                        <TableHead
+                          className="hidden sm:table-cell cursor-pointer select-none hover:text-foreground"
+                          onClick={() => handleListSort("status")}
+                        >
+                          <span className="inline-flex items-center gap-1">
+                            Status <ListSortIcon col="status" />
+                          </span>
+                        </TableHead>
+                        <TableHead
+                          className="hidden lg:table-cell cursor-pointer select-none hover:text-foreground"
+                          onClick={() => handleListSort("expense_by")}
+                        >
+                          <span className="inline-flex items-center gap-1">
+                            Expense By <ListSortIcon col="expense_by" />
+                          </span>
+                        </TableHead>
+                        <TableHead className="max-w-[140px] hidden lg:table-cell">Description</TableHead>
+                        {canEdit && <TableHead className="w-[60px] text-right">Actions</TableHead>}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {sortedListRows.flatMap((row: ListRow) => [
+                        <TableRow key={String(row.id ?? "")}>
+                          <TableCell className="text-sm">
+                            {formatExpenseDisplayDate(row.expense_date)}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="ml-1 h-8 px-2 sm:hidden"
+                              onClick={() =>
+                                setExpandedRows((prev) => ({
+                                  ...prev,
+                                  [String(row.id ?? "")]: !prev[String(row.id ?? "")],
+                                }))
+                              }
+                            >
+                              {expandedRows[String(row.id ?? "")] ? (
+                                <ChevronUp className="h-4 w-4" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4" />
+                              )}
+                              Details
+                            </Button>
+                          </TableCell>
+                          <TableCell className="font-mono text-xs hidden sm:table-cell">
+                            {String(row.voucher ?? "—")}
+                          </TableCell>
+                          <TableCell>{String(row.expense_head ?? "—")}</TableCell>
+                          <TableCell className="hidden sm:table-cell">{String(row.party ?? "—")}</TableCell>
+                          <TableCell className="text-right font-medium">
+                            {Number(row.amount ?? 0).toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-right hidden sm:table-cell">
+                            {Number(row.paid ?? 0).toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-right hidden md:table-cell">
+                            {Number(row.balance ?? 0).toLocaleString()}
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell">
+                            <Badge
+                              variant={
+                                row.status === "paid"
+                                  ? "default"
+                                  : row.status === "partial"
+                                    ? "secondary"
+                                    : "outline"
+                              }
+                              className="text-[10px]"
+                            >
+                              {expensePaymentStatusLabel(row.status ?? "unpaid")}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm hidden lg:table-cell">
+                            {String(row.expense_by ?? "—")}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-sm truncate max-w-[140px] hidden lg:table-cell">
+                            {String(row.description ?? "—")}
+                          </TableCell>
+                          {canEdit && (
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-muted">
+                                    <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-48">
+                                  <DropdownMenuItem
+                                    className="gap-2"
+                                    onClick={() => openPayments(row)}
+                                  >
+                                    <IndianRupee className="h-3.5 w-3.5 text-muted-foreground" />
+                                    <span>Record payment</span>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    className="gap-2"
+                                    onClick={() => handleEditClick(String(row.id))}
+                                  >
+                                    <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                                    <span>Edit</span>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    className="gap-2 text-destructive focus:text-destructive focus:bg-destructive/5"
+                                    onClick={() => setDeleteTarget(row)}
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                    <span>Delete</span>
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          )}
+                        </TableRow>,
+                        expandedRows[String(row.id ?? "")] ? (
+                          <TableRow
+                            key={`${String(row.id ?? "")}-details`}
+                            className="sm:hidden bg-muted/30"
+                          >
+                            <TableCell colSpan={actionColSpan} className="text-sm space-y-1">
+                              <div>
+                                <span className="text-muted-foreground">Voucher:</span>{" "}
+                                {String(row.voucher ?? "—")}
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Party:</span>{" "}
+                                {String(row.party ?? "—")}
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Paid / Balance:</span>{" "}
+                                {Number(row.paid ?? 0).toLocaleString()} /{" "}
+                                {Number(row.balance ?? 0).toLocaleString()}
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Status:</span>{" "}
+                                {expensePaymentStatusLabel(row.status ?? "unpaid")}
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Expense By:</span>{" "}
+                                {String(row.expense_by ?? "—")}
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Description:</span>{" "}
+                                {String(row.description ?? "—")}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ) : null,
+                      ])}
+                      <TableRow className="font-medium bg-muted/50">
+                        <TableCell colSpan={2}>Total</TableCell>
+                        <TableCell className="text-right">{totalAmount.toLocaleString()}</TableCell>
+                        <TableCell className="text-right hidden sm:table-cell">
+                          {totalPaid.toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-right hidden md:table-cell">
+                          {totalBalance.toLocaleString()}
+                        </TableCell>
+                        <TableCell
+                          colSpan={canEdit ? 4 : 3}
+                          className="hidden sm:table-cell"
+                        />
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                )}
+                {Array.isArray(data) && data.length === 0 && (
+                  <p className="p-6 text-sm text-muted-foreground text-center">
+                    No data for this report.
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -653,9 +963,9 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
       <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Expense</DialogTitle>
+            <DialogTitle>Edit Expense Bill</DialogTitle>
             <DialogDescription>
-              Modify the details of the selected expense record.
+              Modify bill details. Payments are managed separately.
             </DialogDescription>
           </DialogHeader>
           <div className="pt-4">
@@ -664,8 +974,8 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : editingData ? (
-              <ExpenseEntryForm 
-                expenseHeads={expenseHeads} 
+              <ExpenseEntryForm
+                expenseHeads={expenseHeads}
                 editingId={editingId}
                 onEdit={(id) => {
                   if (id === null) handleDialogClose(false);
@@ -675,24 +985,81 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
                   fetchReport();
                 }}
                 initialValues={{
-                  voucher: editingData.voucher ?? "",
-                  expense_head_id: editingData.expense_head_id ?? "",
-                  party: editingData.party ?? "",
-                  amount: editingData.amount,
-                  expense_by: editingData.expense_by ?? "",
-                  account: editingData.account,
-                  description: editingData.description ?? "",
-                  expense_date: editingData.expense_date,
-                  cheque_number: editingData.cheque_number ?? "",
-                  cheque_bank: editingData.cheque_bank ?? "",
-                  cheque_date: editingData.cheque_date ?? "",
-                  transaction_reference_id: editingData.transaction_reference_id ?? "",
+                  voucher: String(editingData.voucher ?? ""),
+                  expense_head_id: String(editingData.expense_head_id ?? ""),
+                  party: String(editingData.party ?? ""),
+                  amount: Number(editingData.amount ?? 0),
+                  expense_by: String(editingData.expense_by ?? ""),
+                  description: String(editingData.description ?? ""),
+                  expense_date: String(editingData.expense_date ?? ""),
                 }}
               />
             ) : (
-              <p className="text-center text-muted-foreground py-8">Failed to load record details.</p>
+              <p className="text-center text-muted-foreground py-8">
+                Failed to load record details.
+              </p>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <ExpensePaymentsDialog
+        open={paymentsOpen}
+        onOpenChange={setPaymentsOpen}
+        expense={paymentsExpense}
+        canEdit={canEdit}
+        onChanged={fetchReport}
+      />
+
+      <Dialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete expense bill?</DialogTitle>
+            <DialogDescription>
+              This permanently deletes the bill and all its payments.
+            </DialogDescription>
+          </DialogHeader>
+          {deleteTarget && (
+            <div className="text-sm space-y-1 rounded-md border bg-muted/20 p-3">
+              <p>
+                <span className="text-muted-foreground">Voucher:</span>{" "}
+                {deleteTarget.voucher ?? "—"}
+              </p>
+              <p>
+                <span className="text-muted-foreground">Amount:</span> ₹
+                {Number(deleteTarget.amount ?? 0).toLocaleString()}
+              </p>
+              <p>
+                <span className="text-muted-foreground">Payments:</span>{" "}
+                {deleteTarget.payment_count ?? 0} · paid ₹
+                {Number(deleteTarget.paid ?? 0).toLocaleString()}
+              </p>
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteTarget(null)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={deleting}
+            >
+              {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </Card>

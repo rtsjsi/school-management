@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { normalizeExpenseText } from "@/lib/expense-payments";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -21,22 +22,20 @@ function RemainingBudget({ expenseHeadId }: { expenseHeadId: string }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-      const supabase = createClient();
-      (async () => {
-        // Find active academic year
-        const { data: year } = await supabase
-          .from("academic_years")
-          .select("id, start_date, end_date")
-          .eq("status", "active")
-          .limit(1)
-          .maybeSingle();
+    const supabase = createClient();
+    (async () => {
+      const { data: year } = await supabase
+        .from("academic_years")
+        .select("id, start_date, end_date")
+        .eq("status", "active")
+        .limit(1)
+        .maybeSingle();
       if (!year?.id) {
         setRemaining(null);
         setLoading(false);
         return;
       }
 
-      // Get budget for this head in the active academic year
       const { data: budgetRow } = await supabase
         .from("expense_budgets")
         .select("amount")
@@ -50,18 +49,22 @@ function RemainingBudget({ expenseHeadId }: { expenseHeadId: string }) {
         return;
       }
 
-      // Sum expenses for this head within the academic year date range (if dates present)
       let query = supabase
         .from("expenses")
         .select("amount")
         .eq("expense_head_id", expenseHeadId);
 
       if (year.start_date && year.end_date) {
-        query = query.gte("expense_date", year.start_date as string).lte("expense_date", year.end_date as string);
+        query = query
+          .gte("expense_date", year.start_date as string)
+          .lte("expense_date", year.end_date as string);
       }
 
       const { data: rows } = await query;
-      const spent = (rows ?? []).reduce((s, r) => s + Number((r as { amount?: number }).amount ?? 0), 0);
+      const spent = (rows ?? []).reduce(
+        (s, r) => s + Number((r as { amount?: number }).amount ?? 0),
+        0
+      );
       setRemaining(Math.max(0, budget - spent));
       setLoading(false);
     })();
@@ -71,12 +74,11 @@ function RemainingBudget({ expenseHeadId }: { expenseHeadId: string }) {
   if (remaining === null) return null;
   return (
     <p className="text-xs text-muted-foreground">
-      Remaining budget: <span className="font-medium text-foreground">{remaining.toLocaleString()}</span>
+      Remaining budget:{" "}
+      <span className="font-medium text-foreground">{remaining.toLocaleString()}</span>
     </p>
   );
 }
-
-const PAYMENT_MODES = ["cash", "cheque", "online"] as const;
 
 type ExpenseHead = { id: string; name: string; budget?: number | null };
 
@@ -98,31 +100,22 @@ export default function ExpenseEntryForm({
     party?: string;
     amount?: number;
     expense_by?: string;
-    account?: string; // payment_mode: cash, cheque, online
     description?: string;
     expense_date?: string;
-    cheque_number?: string;
-    cheque_bank?: string;
-    cheque_date?: string;
-    transaction_reference_id?: string;
   };
   onSuccess?: () => void;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);  const [form, setForm] = useState({
+  const [error, setError] = useState<string | null>(null);
+  const [form, setForm] = useState({
     voucher: initialValues?.voucher ?? "",
     expense_head_id: initialValues?.expense_head_id ?? "",
     party: initialValues?.party ?? "",
     amount: initialValues?.amount?.toString() ?? "",
     expense_by: initialValues?.expense_by ?? "",
-    account: (initialValues?.account as string) ?? "",
     description: initialValues?.description ?? "",
     expense_date: initialValues?.expense_date ?? new Date().toISOString().slice(0, 10),
-    cheque_number: initialValues?.cheque_number ?? "",
-    cheque_bank: initialValues?.cheque_bank ?? "",
-    cheque_date: initialValues?.cheque_date ?? "",
-    transaction_reference_id: initialValues?.transaction_reference_id ?? "",
   });
 
   useEffect(() => {
@@ -133,13 +126,8 @@ export default function ExpenseEntryForm({
         party: initialValues.party ?? "",
         amount: initialValues.amount?.toString() ?? "",
         expense_by: initialValues.expense_by ?? "",
-        account: initialValues.account ?? "",
         description: initialValues.description ?? "",
         expense_date: initialValues.expense_date ?? new Date().toISOString().slice(0, 10),
-        cheque_number: initialValues.cheque_number ?? "",
-        cheque_bank: initialValues.cheque_bank ?? "",
-        cheque_date: initialValues.cheque_date ?? "",
-        transaction_reference_id: initialValues.transaction_reference_id ?? "",
       });
     } else {
       setForm({
@@ -148,16 +136,43 @@ export default function ExpenseEntryForm({
         party: "",
         amount: "",
         expense_by: "",
-        account: "",
         description: "",
         expense_date: new Date().toISOString().slice(0, 10),
-        cheque_number: "",
-        cheque_bank: "",
-        cheque_date: "",
-        transaction_reference_id: "",
       });
     }
   }, [initialValues, editingId]);
+
+  async function findDuplicateBill(opts: {
+    voucher: string;
+    expenseDate: string;
+    party: string;
+    amount: number;
+    excludeId?: string | null;
+  }) {
+    const supabase = createClient();
+    const voucherNorm = normalizeExpenseText(opts.voucher);
+    const partyNorm = normalizeExpenseText(opts.party);
+
+    let query = supabase
+      .from("expenses")
+      .select("id, voucher, party, amount, expense_date")
+      .eq("expense_date", opts.expenseDate)
+      .eq("amount", opts.amount);
+
+    if (opts.excludeId) {
+      query = query.neq("id", opts.excludeId);
+    }
+
+    const { data, error: qErr } = await query;
+    if (qErr) throw qErr;
+
+    return (data ?? []).find((row) => {
+      return (
+        normalizeExpenseText(row.voucher) === voucherNorm &&
+        normalizeExpenseText(row.party) === partyNorm
+      );
+    });
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -183,21 +198,23 @@ export default function ExpenseEntryForm({
       setError("Enter a valid amount greater than 0.");
       return;
     }
-    if (!form.account) {
-      setError("Please select a payment method.");
-      return;
-    }
-    if (form.account === "cheque" && !form.cheque_number?.trim()) {
-      setError("Cheque number is required for cheque payment.");
-      return;
-    }
-    if (form.account === "online" && !form.transaction_reference_id?.trim()) {
-      setError("Transaction ID is required for online payment.");
-      return;
-    }
 
     setLoading(true);
     try {
+      const duplicate = await findDuplicateBill({
+        voucher: form.voucher,
+        expenseDate: form.expense_date,
+        party: form.party,
+        amount,
+        excludeId: editingId ?? null,
+      });
+      if (duplicate) {
+        setError(
+          "A bill with the same voucher, date, party, and amount already exists."
+        );
+        return;
+      }
+
       const supabase = createClient();
       const payload = {
         voucher: form.voucher.trim() || null,
@@ -205,21 +222,27 @@ export default function ExpenseEntryForm({
         party: form.party.trim() || null,
         amount,
         expense_by: form.expense_by.trim() || null,
-        account: form.account,
         description: form.description.trim() || null,
         expense_date: form.expense_date,
         category: "other",
-        cheque_number: form.account === "cheque" ? form.cheque_number.trim() || null : null,
-        cheque_bank: form.account === "cheque" ? form.cheque_bank.trim() || null : null,
-        cheque_date: form.account === "cheque" && form.cheque_date ? form.cheque_date : null,
-        transaction_reference_id: form.account === "online" ? form.transaction_reference_id.trim() || null : null,
+        // Bill-only: do not write legacy payment columns
+        account: null,
+        cheque_number: null,
+        cheque_bank: null,
+        cheque_date: null,
+        transaction_reference_id: null,
       };
 
       if (editingId) {
-        await supabase.from("expenses").update(payload).eq("id", editingId);
+        const { error: updErr } = await supabase
+          .from("expenses")
+          .update(payload)
+          .eq("id", editingId);
+        if (updErr) throw updErr;
         onEdit?.(null);
       } else {
-        await supabase.from("expenses").insert(payload);
+        const { error: insErr } = await supabase.from("expenses").insert(payload);
+        if (insErr) throw insErr;
       }
 
       setForm({
@@ -228,18 +251,13 @@ export default function ExpenseEntryForm({
         party: "",
         amount: "",
         expense_by: "",
-        account: "",
         description: "",
         expense_date: new Date().toISOString().slice(0, 10),
-        cheque_number: "",
-        cheque_bank: "",
-        cheque_date: "",
-        transaction_reference_id: "",
       });
       router.refresh();
       onSuccess?.();
-    } catch {
-      setError("Something went wrong.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
       setLoading(false);
     }
@@ -253,26 +271,24 @@ export default function ExpenseEntryForm({
       party: "",
       amount: "",
       expense_by: "",
-      account: "",
       description: "",
       expense_date: new Date().toISOString().slice(0, 10),
-      cheque_number: "",
-      cheque_bank: "",
-      cheque_date: "",
-      transaction_reference_id: "",
     });
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <p className="text-xs text-destructive bg-destructive/10 px-2 py-1.5 rounded-md">{error}</p>
+        <p className="text-xs text-destructive bg-destructive/10 px-2 py-1.5 rounded-md">
+          {error}
+        </p>
       )}
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Row 1: The "When" and "ID" */}
         <div className="space-y-1.5">
-          <Label htmlFor="expense-date" className="text-xs font-medium text-muted-foreground">Date *</Label>
+          <Label htmlFor="expense-date" className="text-xs font-medium text-muted-foreground">
+            Date *
+          </Label>
           <DatePicker
             value={form.expense_date}
             onChange={(isoDate) => setForm((p) => ({ ...p, expense_date: isoDate }))}
@@ -280,7 +296,9 @@ export default function ExpenseEntryForm({
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="expense-voucher" className="text-xs font-medium text-muted-foreground">Voucher No *</Label>
+          <Label htmlFor="expense-voucher" className="text-xs font-medium text-muted-foreground">
+            Voucher No *
+          </Label>
           <Input
             id="expense-voucher"
             value={form.voucher}
@@ -291,7 +309,6 @@ export default function ExpenseEntryForm({
           />
         </div>
 
-        {/* Row 2: The "What" and "Who" */}
         <div className="space-y-1.5">
           <Label className="text-xs font-medium text-muted-foreground">Expense Head *</Label>
           <Select
@@ -303,16 +320,18 @@ export default function ExpenseEntryForm({
             </SelectTrigger>
             <SelectContent>
               {expenseHeads.map((h) => (
-                <SelectItem key={h.id} value={h.id}>{h.name}</SelectItem>
+                <SelectItem key={h.id} value={h.id}>
+                  {h.name}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          {form.expense_head_id && (
-            <RemainingBudget expenseHeadId={form.expense_head_id} />
-          )}
+          {form.expense_head_id && <RemainingBudget expenseHeadId={form.expense_head_id} />}
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="expense-party" className="text-xs font-medium text-muted-foreground">Party Name *</Label>
+          <Label htmlFor="expense-party" className="text-xs font-medium text-muted-foreground">
+            Party Name *
+          </Label>
           <Input
             id="expense-party"
             value={form.party}
@@ -323,9 +342,10 @@ export default function ExpenseEntryForm({
           />
         </div>
 
-        {/* Row 3: The "How much" and "Who requester" */}
         <div className="space-y-1.5">
-          <Label htmlFor="expense-amount" className="text-xs font-medium text-muted-foreground">Total Amount *</Label>
+          <Label htmlFor="expense-amount" className="text-xs font-medium text-muted-foreground">
+            Bill Amount *
+          </Label>
           <Input
             id="expense-amount"
             type="number"
@@ -339,7 +359,9 @@ export default function ExpenseEntryForm({
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="expense-by" className="text-xs font-medium text-muted-foreground">Expense By</Label>
+          <Label htmlFor="expense-by" className="text-xs font-medium text-muted-foreground">
+            Expense By
+          </Label>
           <div className="flex gap-2">
             <Input
               id="expense-by"
@@ -350,8 +372,14 @@ export default function ExpenseEntryForm({
             />
             {employees && employees.length > 0 && (
               <Select
-                value={form.expense_by && employees.some((e) => e.full_name === form.expense_by) ? form.expense_by : "none"}
-                onValueChange={(v) => v !== "none" && setForm((p) => ({ ...p, expense_by: v }))}
+                value={
+                  form.expense_by && employees.some((e) => e.full_name === form.expense_by)
+                    ? form.expense_by
+                    : "none"
+                }
+                onValueChange={(v) =>
+                  v !== "none" && setForm((p) => ({ ...p, expense_by: v }))
+                }
               >
                 <SelectTrigger className="w-36 h-9 text-sm">
                   <SelectValue placeholder="From list" />
@@ -359,7 +387,9 @@ export default function ExpenseEntryForm({
                 <SelectContent>
                   <SelectItem value="none">—</SelectItem>
                   {employees.map((emp) => (
-                    <SelectItem key={emp.id} value={emp.full_name}>{emp.full_name}</SelectItem>
+                    <SelectItem key={emp.id} value={emp.full_name}>
+                      {emp.full_name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -367,9 +397,10 @@ export default function ExpenseEntryForm({
           </div>
         </div>
 
-        {/* Row 4: Additional Info */}
         <div className="space-y-1.5 md:col-span-2">
-          <Label htmlFor="expense-desc" className="text-xs font-medium text-muted-foreground">Description</Label>
+          <Label htmlFor="expense-desc" className="text-xs font-medium text-muted-foreground">
+            Description
+          </Label>
           <Input
             id="expense-desc"
             value={form.description}
@@ -380,76 +411,9 @@ export default function ExpenseEntryForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2 border-t border-border/50">
-        <div className="space-y-1.5">
-          <Label htmlFor="expense-payment-method" className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-            Payment Method *
-          </Label>
-          <Select
-            value={form.account || undefined}
-            onValueChange={(v) => setForm((p) => ({ ...p, account: v }))}
-          >
-            <SelectTrigger id="expense-payment-method" className="h-9 text-sm">
-              <SelectValue placeholder="Select payment" />
-            </SelectTrigger>
-            <SelectContent>
-              {PAYMENT_MODES.map((m) => (
-                <SelectItem key={m} value={m}>
-                  {m.charAt(0).toUpperCase() + m.slice(1)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {form.account === "cheque" && (
-          <>
-            <div className="space-y-1.5">
-              <Label htmlFor="expense-cheque-bank" className="text-xs font-medium text-muted-foreground">Bank</Label>
-              <Input
-                id="expense-cheque-bank"
-                value={form.cheque_bank}
-                onChange={(e) => setForm((p) => ({ ...p, cheque_bank: e.target.value }))}
-                placeholder="Bank"
-                className="h-9 text-sm"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="expense-cheque-number" className="text-xs font-medium text-muted-foreground">Chq # *</Label>
-              <Input
-                id="expense-cheque-number"
-                value={form.cheque_number}
-                onChange={(e) => setForm((p) => ({ ...p, cheque_number: e.target.value }))}
-                placeholder="No."
-                className="h-9 text-sm"
-                required
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="expense-cheque-date" className="text-xs font-medium text-muted-foreground">Chq date *</Label>
-              <DatePicker
-                value={form.cheque_date}
-                onChange={(isoDate) => setForm((p) => ({ ...p, cheque_date: isoDate }))}
-                className="h-9 text-sm"
-              />
-            </div>
-          </>
-        )}
-
-        {form.account === "online" && (
-          <div className="space-y-1.5">
-            <Label htmlFor="expense-txn-ref" className="text-xs font-medium text-muted-foreground">Txn ID *</Label>
-            <Input
-              id="expense-txn-ref"
-              value={form.transaction_reference_id}
-              onChange={(e) => setForm((p) => ({ ...p, transaction_reference_id: e.target.value }))}
-              placeholder="ID"
-              className="h-9 text-sm"
-              required
-            />
-          </div>
-        )}
-      </div>
+      <p className="text-xs text-muted-foreground">
+        Payments are recorded separately after saving the bill.
+      </p>
 
       <div className="flex flex-wrap gap-2 justify-start pt-2">
         {editingId && (
@@ -457,8 +421,12 @@ export default function ExpenseEntryForm({
             Cancel
           </Button>
         )}
-        <SubmitButton loading={loading} loadingLabel="Saving…" className="h-9 px-6 text-sm font-semibold shadow-none">
-          {editingId ? "Update" : "Add"} Expense
+        <SubmitButton
+          loading={loading}
+          loadingLabel="Saving…"
+          className="h-9 px-6 text-sm font-semibold shadow-none"
+        >
+          {editingId ? "Update" : "Save"} Bill
         </SubmitButton>
       </div>
     </form>

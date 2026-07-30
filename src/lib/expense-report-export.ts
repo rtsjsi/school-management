@@ -2,6 +2,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { C, drawFilterStrip, drawPageFooter, drawPdfHeader, drawSummaryCard, fmtINR } from "@/lib/pdf-theme";
 import { formatExpenseDisplayDate } from "@/lib/utils";
+import { expensePaymentStatusLabel, type ExpensePaymentStatus } from "@/lib/expense-payments";
 
 export type ExpenseListRow = {
   expense_date?: string;
@@ -9,9 +10,12 @@ export type ExpenseListRow = {
   expense_head?: string;
   party?: string;
   amount: number;
-  account?: string;
+  paid?: number;
+  balance?: number;
+  status?: ExpensePaymentStatus | string;
   expense_by?: string;
   description?: string;
+  account?: string;
 };
 
 export type ExpenseSummaryRow = {
@@ -48,39 +52,45 @@ export function exportExpensePdf(
   const totalAmount = opts.reportType === "summary"
     ? summaryRows.reduce((s, r) => s + Number(r.total), 0)
     : listRows.reduce((s, r) => s + Number(r.amount), 0);
+  const totalPaid = listRows.reduce((s, r) => s + Number(r.paid ?? 0), 0);
+  const totalBalance = listRows.reduce((s, r) => s + Number(r.balance ?? 0), 0);
+
   const byMode = summaryRows.length
     ? summaryRows
-    : listRows.reduce<Record<string, { count: number; total: number }>>((acc, row) => {
-      const mode = (row.account ?? "unknown").toLowerCase();
-      if (!acc[mode]) acc[mode] = { count: 0, total: 0 };
-      acc[mode].count += 1;
-      acc[mode].total += Number(row.amount ?? 0);
-      return acc;
-    }, {});
+    : [];
 
   const modeEntries = Array.isArray(byMode)
     ? byMode.map((r) => ({ mode: r.payment_mode, count: r.count, total: r.total }))
-    : Object.entries(byMode).map(([mode, v]) => ({ mode, count: v.count, total: v.total }));
+    : [];
 
   const cardGap = 3;
-  const cardCount = Math.min(4, 2 + modeEntries.length);
+  const cardCount = opts.reportType === "list"
+    ? 3
+    : Math.min(4, 2 + modeEntries.length);
   const cardW = (contentW - cardGap * (cardCount - 1)) / cardCount;
   const cardH = 20;
-  drawSummaryCard(doc, marginL, curY, cardW, cardH, "Total Expenses", String(totalCount), `${totalCount === 1 ? "entry" : "entries"}`, C.foreground);
-  drawSummaryCard(doc, marginL + cardW + cardGap, curY, cardW, cardH, "Total Amount", fmtINR(totalAmount), null, C.destructive);
-  modeEntries.slice(0, Math.max(0, cardCount - 2)).forEach((m, idx) => {
-    drawSummaryCard(
-      doc,
-      marginL + (cardW + cardGap) * (idx + 2),
-      curY,
-      cardW,
-      cardH,
-      m.mode.charAt(0).toUpperCase() + m.mode.slice(1),
-      fmtINR(m.total),
-      `${m.count} ${m.count === 1 ? "entry" : "entries"}`,
-      C.foreground,
-    );
-  });
+
+  if (opts.reportType === "list") {
+    drawSummaryCard(doc, marginL, curY, cardW, cardH, "Total Bills", String(totalCount), `${totalCount === 1 ? "bill" : "bills"}`, C.foreground);
+    drawSummaryCard(doc, marginL + cardW + cardGap, curY, cardW, cardH, "Bill Amount", fmtINR(totalAmount), null, C.destructive);
+    drawSummaryCard(doc, marginL + (cardW + cardGap) * 2, curY, cardW, cardH, "Paid / Balance", fmtINR(totalPaid), `Bal ${fmtINR(totalBalance)}`, C.foreground);
+  } else {
+    drawSummaryCard(doc, marginL, curY, cardW, cardH, "Total Payments", String(totalCount), `${totalCount === 1 ? "entry" : "entries"}`, C.foreground);
+    drawSummaryCard(doc, marginL + cardW + cardGap, curY, cardW, cardH, "Total Amount", fmtINR(totalAmount), null, C.destructive);
+    modeEntries.slice(0, Math.max(0, cardCount - 2)).forEach((m, idx) => {
+      drawSummaryCard(
+        doc,
+        marginL + (cardW + cardGap) * (idx + 2),
+        curY,
+        cardW,
+        cardH,
+        m.mode.charAt(0).toUpperCase() + m.mode.slice(1),
+        fmtINR(m.total),
+        `${m.count} ${m.count === 1 ? "entry" : "entries"}`,
+        C.foreground,
+      );
+    });
+  }
   curY += cardH + 5;
 
   if (opts.reportType === "summary") {
@@ -119,26 +129,35 @@ export function exportExpensePdf(
       r.expense_head ?? "—",
       r.party ?? "—",
       fmtINR(Number(r.amount ?? 0)),
-      r.account ? r.account.charAt(0).toUpperCase() + r.account.slice(1) : "—",
+      fmtINR(Number(r.paid ?? 0)),
+      fmtINR(Number(r.balance ?? 0)),
+      expensePaymentStatusLabel((r.status as ExpensePaymentStatus) || "unpaid"),
       r.expense_by ?? "—",
       r.description ?? "—",
     ]);
     autoTable(doc, {
       startY: curY,
       margin: { left: marginL, right: marginR },
-      head: [["#", "Date", "Voucher", "Head", "Party", "Amount", "Mode", "Expense By", "Description"]],
+      head: [["#", "Date", "Voucher", "Head", "Party", "Bill", "Paid", "Balance", "Status", "Expense By", "Description"]],
       body,
       foot: [[
         { content: "Total", colSpan: 5 },
         { content: fmtINR(totalAmount), styles: { halign: "right" as const, fontStyle: "bold" as const } },
+        { content: fmtINR(totalPaid), styles: { halign: "right" as const, fontStyle: "bold" as const } },
+        { content: fmtINR(totalBalance), styles: { halign: "right" as const, fontStyle: "bold" as const } },
         { content: "", colSpan: 3 },
       ]],
       theme: "grid",
-      styles: { fontSize: 7.5, cellPadding: 2, textColor: C.foreground, lineColor: C.border, lineWidth: 0.2 },
+      styles: { fontSize: 7, cellPadding: 1.8, textColor: C.foreground, lineColor: C.border, lineWidth: 0.2 },
       headStyles: { fillColor: C.primary, textColor: C.white, fontStyle: "bold" },
       footStyles: { fillColor: C.accent, textColor: C.primary, fontStyle: "bold" },
       alternateRowStyles: { fillColor: C.background },
-      columnStyles: { 0: { cellWidth: 8, halign: "center" }, 5: { halign: "right", fontStyle: "bold" } },
+      columnStyles: {
+        0: { cellWidth: 8, halign: "center" },
+        5: { halign: "right", fontStyle: "bold" },
+        6: { halign: "right" },
+        7: { halign: "right" },
+      },
       didDrawPage: (data) => {
         const currentPage = (doc as unknown as { internal: { getCurrentPageInfo: () => { pageNumber: number } } }).internal.getCurrentPageInfo().pageNumber;
         drawPageFooter(doc, { schoolName: opts.schoolName, reportTitle }, marginL, marginR, contentW, currentPage > 0 ? currentPage : data.pageNumber);
