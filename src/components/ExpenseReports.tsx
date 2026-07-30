@@ -14,8 +14,9 @@ import {
   Filter,
   Loader2,
   X,
-  Edit2,
   IndianRupee,
+  MoreVertical,
+  Pencil,
   Trash2,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -48,6 +49,12 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import ExpenseEntryForm from "@/components/ExpenseEntryForm";
 import {
   ExpensePaymentsDialog,
@@ -793,7 +800,7 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
                           </span>
                         </TableHead>
                         <TableHead className="max-w-[140px] hidden lg:table-cell">Description</TableHead>
-                        {canEdit && <TableHead className="w-[120px] text-center">Actions</TableHead>}
+                        {canEdit && <TableHead className="w-[60px] text-right">Actions</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -856,36 +863,37 @@ export default function ExpenseReports({ canEdit = false }: { canEdit?: boolean 
                             {String(row.description ?? "—")}
                           </TableCell>
                           {canEdit && (
-                            <TableCell>
-                              <div className="flex items-center justify-center gap-0.5">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-primary"
-                                  title="Payments"
-                                  onClick={() => openPayments(row)}
-                                >
-                                  <IndianRupee className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-primary"
-                                  title="Edit bill"
-                                  onClick={() => handleEditClick(String(row.id))}
-                                >
-                                  <Edit2 className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-destructive"
-                                  title="Delete bill"
-                                  onClick={() => setDeleteTarget(row)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-muted">
+                                    <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-48">
+                                  <DropdownMenuItem
+                                    className="gap-2"
+                                    onClick={() => openPayments(row)}
+                                  >
+                                    <IndianRupee className="h-3.5 w-3.5 text-muted-foreground" />
+                                    <span>Record payment</span>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    className="gap-2"
+                                    onClick={() => handleEditClick(String(row.id))}
+                                  >
+                                    <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                                    <span>Edit</span>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    className="gap-2 text-destructive focus:text-destructive focus:bg-destructive/5"
+                                    onClick={() => setDeleteTarget(row)}
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                    <span>Delete</span>
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </TableCell>
                           )}
                         </TableRow>,

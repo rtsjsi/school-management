@@ -23,7 +23,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Edit2, IndianRupee, Loader2, Trash2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { IndianRupee, Loader2, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { formatExpenseDisplayDate } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
@@ -163,7 +169,7 @@ export default function ExpensesManager({ canEdit = true }: { canEdit?: boolean 
                       <TableHead className="text-right">Paid</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="max-w-[160px]">Description</TableHead>
-                      <TableHead className="w-[140px] text-center">Actions</TableHead>
+                      <TableHead className="w-[60px] text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -224,36 +230,37 @@ export default function ExpensesManager({ canEdit = true }: { canEdit?: boolean 
                             >
                               {expense.description ?? "—"}
                             </TableCell>
-                            <TableCell>
-                              <div className="flex items-center justify-center gap-0.5">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-primary"
-                                  title="Payments"
-                                  onClick={() => openPayments(expense)}
-                                >
-                                  <IndianRupee className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-primary"
-                                  title="Edit bill"
-                                  onClick={() => handleEditClick(expense.id)}
-                                >
-                                  <Edit2 className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-destructive"
-                                  title="Delete bill"
-                                  onClick={() => setDeleteTarget(expense)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-muted">
+                                    <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-48">
+                                  <DropdownMenuItem
+                                    className="gap-2"
+                                    onClick={() => openPayments(expense)}
+                                  >
+                                    <IndianRupee className="h-3.5 w-3.5 text-muted-foreground" />
+                                    <span>Record payment</span>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    className="gap-2"
+                                    onClick={() => handleEditClick(expense.id)}
+                                  >
+                                    <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                                    <span>Edit</span>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    className="gap-2 text-destructive focus:text-destructive focus:bg-destructive/5"
+                                    onClick={() => setDeleteTarget(expense)}
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                    <span>Delete</span>
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </TableCell>
                           </TableRow>
                         );
