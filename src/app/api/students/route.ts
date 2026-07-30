@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient();
     let query = supabase
       .from("students")
-      .select("id, full_name, standard, division")
+      .select("id, full_name, standard, division, gr_number")
       .order("full_name")
       .limit(Math.min(limit, 500));
     if (excludeRte) {

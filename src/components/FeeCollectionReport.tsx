@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { StudentSearchSelect } from "@/components/StudentSearchSelect";
 import {
   Table,
   TableBody,
@@ -182,7 +183,9 @@ export default function FeeCollectionReport() {
   const [dateFrom, setDateFrom] = useState(today);
   const [dateTo, setDateTo] = useState(today);
 
-  const [students, setStudents] = useState<{ id: string; full_name: string; standard?: string }[]>([]);
+  const [students, setStudents] = useState<
+    { id: string; full_name: string; standard?: string; division?: string; gr_number?: string }[]
+  >([]);
   const [standards, setStandards] = useState<import("@/lib/lov").StandardOption[]>([]);
   const [years, setYears] = useState<{ id: string; name: string }[]>([]);
 
@@ -594,25 +597,16 @@ export default function FeeCollectionReport() {
 
               {/* Student picker — for student-wise and custom */}
               {(preset === "student-wise" || preset === "custom") && (
-                <div className="space-y-1.5">
-                  <Label className="text-xs">
-                    Student
-                    {preset === "student-wise" && <span className="text-destructive ml-1">*</span>}
-                  </Label>
-                  <Select value={studentId || "all"} onValueChange={(v) => setStudentId(v === "all" ? "" : v)}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder="Select student" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {preset === "custom" && <SelectItem value="all">All Students</SelectItem>}
-                      {filteredStudents.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.full_name} {s.standard ? `(${s.standard})` : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <StudentSearchSelect
+                  id="fee-collection-report-student"
+                  label="Student"
+                  required={preset === "student-wise"}
+                  students={filteredStudents}
+                  value={studentId}
+                  onChange={setStudentId}
+                  allowEmpty={preset === "custom"}
+                  emptyLabel="All Students"
+                />
               )}
 
               {/* Custom date range */}
