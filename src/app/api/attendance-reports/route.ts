@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
     const { data: employees } = await supabase
       .from("employees")
-      .select("id, full_name")
+      .select("id, full_name, enable_sandwich_policy")
       .eq("status", "active")
       .eq("enable_payroll", true);
 
@@ -78,6 +78,7 @@ export async function GET(request: NextRequest) {
           year: y,
           month: m,
           lastDay,
+          applySandwichPolicy: emp.enable_sandwich_policy !== false,
         });
 
         const present = payable.payableDays;
