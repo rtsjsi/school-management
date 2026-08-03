@@ -202,18 +202,7 @@ export function EmployeesTable({
     });
   }, [filteredEmployees, sortDir, sortKey]);
 
-  const exportRows = useMemo(
-    () =>
-      sortedEmployees.map((e) => ({
-        employee_id: e.employee_id ?? "—",
-        biometric_enroll_no: e.biometric_enroll_no ?? "—",
-        full_name: e.full_name ?? "—",
-        email: e.email ?? "—",
-        shift: shiftTimesLabel(e),
-        status: String(e.status ?? "active"),
-      })),
-    [sortedEmployees],
-  );
+  const exportRows = useMemo(() => sortedEmployees, [sortedEmployees]);
 
   const SortIcon = ({ col }: { col: SortKey }) => {
     if (sortKey !== col) return <ArrowUpDown className="h-3 w-3 opacity-40" />;
