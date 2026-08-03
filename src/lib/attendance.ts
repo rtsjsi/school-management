@@ -55,8 +55,10 @@ export function shiftDurationHours(shift: ShiftLite): number | null {
 
 /**
  * Present / half-day cutoffs for an employee:
- * - With shift times: full day = shift length, half day = half of shift length
+ * - With shift times: half-day threshold = half of shift length
  * - Without: payroll-settings / DEFAULT_THRESHOLDS fallbacks
+ * Present when worked hours >= half-day threshold; below that with IN+OUT is absent.
+ * Half day is only for single punch.
  */
 export function resolveDayHourThresholds(
   shift: ShiftLite,
@@ -154,12 +156,11 @@ function hhmmToMinutes(t?: string | null): number | null {
  *
  * Rules (hours-based):
  *  - No punches -> absent
- *  - First IN + last OUT -> worked hours vs employee shift length:
- *      present  >= shift duration
- *      half_day >= half of shift duration
- *      absent   below that
- *    (falls back to payroll full/half day hours when shift times are missing)
- *  - Only one usable punch (cannot compute hours) -> half_day, flagged single_punch for review
+ *  - Single usable punch (no IN–OUT span) -> half_day
+ *  - First IN + last OUT -> worked hours vs half of shift length:
+ *      present  if worked >= half of shift
+ *      absent   if worked < half of shift
+ *    (falls back to payroll half_day_hours when shift times are missing)
  *  - Late = first IN after shift start + lateGraceMinutes (default 15)
  */
 export function deriveDailyStatus(
@@ -199,13 +200,11 @@ export function deriveDailyStatus(
 
   let status: DerivedDay["status"];
   if (singlePunch) {
-    status = "half_day"; // cannot compute hours; treat as half day until manually confirmed
-  } else if (workedHours >= resolved.fullDayHours) {
-    status = "present";
-  } else if (workedHours >= resolved.halfDayHours) {
     status = "half_day";
-  } else {
+  } else if (workedHours < resolved.halfDayHours) {
     status = "absent";
+  } else {
+    status = "present";
   }
 
   let is_late = false;
