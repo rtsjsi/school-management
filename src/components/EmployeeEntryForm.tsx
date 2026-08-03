@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { EMPLOYEE_TYPES, EMPLOYEE_ROLES } from "@/lib/lov";
@@ -61,6 +62,7 @@ const INITIAL_FORM_STATE = {
   child_allowance: "",
   casual_leave_balance: "5",
   monthly_salary: "",
+  enable_payroll: true,
 };
 
 export default function EmployeeEntryForm() {
@@ -155,6 +157,7 @@ export default function EmployeeEntryForm() {
             ? parseFloat(form.casual_leave_balance)
             : 5,
           monthly_salary: monthly || null,
+          enable_payroll: form.enable_payroll,
           degree: form.degree.trim() || null,
           institution: form.institution?.trim() || null,
           year_passed: form.year_passed ? parseInt(form.year_passed) : null,
@@ -384,6 +387,16 @@ export default function EmployeeEntryForm() {
             </TabsContent>
 
             <TabsContent value="salary" className="space-y-4 mt-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="enable_payroll"
+                  checked={form.enable_payroll}
+                  onCheckedChange={(c) => setForm((p) => ({ ...p, enable_payroll: !!c }))}
+                />
+                <Label htmlFor="enable_payroll" className="font-normal">
+                  Enable payroll
+                </Label>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Basic Salary (₹)</Label>

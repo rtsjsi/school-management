@@ -23,7 +23,8 @@ export async function GET(request: NextRequest) {
     const { data: employees } = await supabase
       .from("employees")
       .select("id, full_name")
-      .eq("status", "active");
+      .eq("status", "active")
+      .eq("enable_payroll", true);
 
     const empList = employees ?? [];
 

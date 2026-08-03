@@ -80,6 +80,7 @@ export async function GET(request: NextRequest) {
       .from("employees")
       .select("id, full_name, shift_start_time, shift_end_time, biometric_enroll_no")
       .eq("status", "active")
+      .eq("enable_payroll", true)
       .order("full_name");
 
     const { data: holidays } = await supabase
@@ -400,7 +401,8 @@ export async function POST(request: NextRequest) {
       const { data: employees } = await supabase
         .from("employees")
         .select("id, shift_start_time, shift_end_time, biometric_enroll_no")
-        .eq("status", "active");
+        .eq("status", "active")
+        .eq("enable_payroll", true);
       const { data: holidays } = await supabase
         .from("holidays")
         .select("date")
