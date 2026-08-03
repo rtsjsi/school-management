@@ -46,7 +46,8 @@ export async function GET(request: NextRequest) {
     const { data: employees } = await supabase
       .from("employees")
       .select("id, full_name, basic_salary, other_allowance, child_allowance, monthly_salary, bank_name, account_number, ifsc_code, account_holder_name")
-      .eq("status", "active");
+      .eq("status", "active")
+      .eq("enable_payroll", true);
 
     const { data: settings } = await supabase
       .from("payroll_settings")

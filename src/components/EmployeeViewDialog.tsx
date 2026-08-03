@@ -154,6 +154,10 @@ export function EmployeeViewDialog({ employee, open, onOpenChange }: EmployeeVie
               <InfoRow label="Role" value={roleLabel} />
               <InfoRow label="Employee Type" value={typeLabel} />
               <InfoRow label="Joining Date" value={fmtDate(employee.joining_date)} />
+              <InfoRow
+                label="Enable Payroll"
+                value={employee.enable_payroll === false ? "No" : "Yes"}
+              />
               <InfoRow label="Shift Start Time" value={formatTimeShort(employee.shift_start_time) || "—"} />
               <InfoRow label="Shift End Time" value={formatTimeShort(employee.shift_end_time) || "—"} />
               <InfoRow

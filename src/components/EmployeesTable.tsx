@@ -47,6 +47,7 @@ export type StaffTableEmployee = {
   employee_type?: string | null;
   joining_date?: string | null;
   status?: string | null;
+  enable_payroll?: boolean | null;
   basic_salary?: number | null;
   other_allowance?: number | null;
   child_allowance?: number | null;
@@ -381,6 +382,7 @@ export function EmployeesTable({
                   Status <SortIcon col="status" />
                 </span>
               </TableHead>
+              <TableHead className="w-[90px]">Payroll</TableHead>
               <TableHead
                 className="cursor-pointer select-none hover:text-foreground text-center w-[100px]"
                 onClick={() => handleSort("data_pct")}
@@ -405,6 +407,11 @@ export function EmployeesTable({
                   <TableCell>
                     <Badge variant={(e.status as string) === "active" ? "default" : "secondary"}>
                       {e.status ?? "active"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={e.enable_payroll === false ? "secondary" : "default"}>
+                      {e.enable_payroll === false ? "No" : "Yes"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-center">

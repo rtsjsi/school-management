@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { EMPLOYEE_TYPES, EMPLOYEE_ROLES } from "@/lib/lov";
@@ -40,6 +41,7 @@ interface EmployeeEditDialogProps {
     shift_end_time?: string | null;
     biometric_enroll_no?: number | null;
     status?: string | null;
+    enable_payroll?: boolean | null;
     basic_salary?: number | null;
     other_allowance?: number | null;
     child_allowance?: number | null;
@@ -92,6 +94,7 @@ export function EmployeeEditDialog({
       biometric_enroll_no:
         employee.biometric_enroll_no != null ? String(employee.biometric_enroll_no) : "",
       status: employee.status || "active",
+      enable_payroll: employee.enable_payroll !== false,
       basic_salary: basic,
       other_allowance: other,
       child_allowance: child,
@@ -166,6 +169,7 @@ export function EmployeeEditDialog({
           shift_end_time: normalizeTimeForDb(form.shift_end_time),
           biometric_enroll_no: biometricEnrollNo,
           status: form.status,
+          enable_payroll: form.enable_payroll,
           basic_salary: basic,
           other_allowance: other,
           child_allowance: child,
@@ -386,6 +390,16 @@ export function EmployeeEditDialog({
             </TabsContent>
 
             <TabsContent value="salary" className="space-y-4 mt-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="edit_enable_payroll"
+                  checked={form.enable_payroll}
+                  onCheckedChange={(c) => setForm((p) => ({ ...p, enable_payroll: !!c }))}
+                />
+                <Label htmlFor="edit_enable_payroll" className="font-normal">
+                  Enable payroll
+                </Label>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Basic Salary (₹)</Label>
