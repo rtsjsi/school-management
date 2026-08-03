@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import HolidayForm from "@/components/HolidayForm";
 import { HolidayList } from "@/components/HolidayList";
 import { AttendanceDailyRegister } from "@/components/AttendanceDailyRegister";
-import AttendanceReports from "@/components/AttendanceReports";
+import PayrollReports from "@/components/PayrollReports";
 import AttendanceReviewAndApprove from "@/components/AttendanceReviewAndApprove";
 import NEFTGeneration from "@/components/NEFTGeneration";
 import { EmployeesList } from "@/components/async/EmployeesList";
@@ -58,7 +58,7 @@ export default async function PayrollPage() {
 
 
         <TabsContent value="reports" className="space-y-6">
-          <AttendanceReports />
+          <PayrollReports />
         </TabsContent>
       </Tabs>
     </div>

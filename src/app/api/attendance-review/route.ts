@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
 
     const { data: employees } = await supabase
       .from("employees")
-      .select("id, full_name, shift_start_time, shift_end_time, biometric_enroll_no, enable_sandwich_policy")
+      .select("id, full_name, shift_start_time, shift_end_time, biometric_enroll_no, enable_sandwich_policy, casual_leave_balance")
       .eq("status", "active")
       .eq("enable_payroll", true)
       .order("full_name");
@@ -137,6 +137,15 @@ export async function GET(request: NextRequest) {
       .from("employee_attendance_finalized")
       .select("employee_id, attendance_date, status, is_manual_override, is_late, month_year")
       .in("month_year", adjacentMonths);
+
+    const { data: clUsageRows } = await supabase
+      .from("employee_month_casual_leave_usage")
+      .select("employee_id, days_used")
+      .eq("month_year", monthYear);
+    const clUsedByEmp = new Map<string, number>();
+    (clUsageRows ?? []).forEach((r) => {
+      clUsedByEmp.set(r.employee_id, Number(r.days_used) || 0);
+    });
 
     const isApproved = (finalizedData ?? [])
       .filter((f) => f.month_year === monthYear)
@@ -187,6 +196,8 @@ export async function GET(request: NextRequest) {
         sandwichTriggerDates: string[];
         lateInCount: number;
         lateInDeduction: number;
+        casualLeaveUsed: number;
+        salaryDeductionDays: number;
         presentDays: number;
         needsAttention: boolean;
         missingBioEnroll: boolean;
@@ -307,6 +318,8 @@ export async function GET(request: NextRequest) {
       }
 
       const applySandwich = emp.enable_sandwich_policy !== false;
+      const monthClUsed = clUsedByEmp.get(emp.id) ?? 0;
+      const effectiveClBalance = Number(emp.casual_leave_balance ?? 0) + monthClUsed;
       const payable = computePayablePresentDays({
         statusByDate,
         lateByDate,
@@ -317,6 +330,7 @@ export async function GET(request: NextRequest) {
         month: m,
         lastDay,
         applySandwichPolicy: applySandwich,
+        casualLeaveBalance: effectiveClBalance,
       });
 
       const sandwichCharges = applySandwich
@@ -334,6 +348,8 @@ export async function GET(request: NextRequest) {
         sandwichTriggerDates,
         lateInCount: payable.lateInCount,
         lateInDeduction: payable.lateInDeduction,
+        casualLeaveUsed: payable.casualLeaveUsed,
+        salaryDeductionDays: payable.salaryDeductionDays,
         presentDays: payable.payableDays,
         needsAttention: empNeedsAttention,
         missingBioEnroll,
@@ -361,6 +377,8 @@ export async function GET(request: NextRequest) {
         sandwichTriggerDates: employeePayable[e.id]?.sandwichTriggerDates ?? [],
         lateInCount: employeePayable[e.id]?.lateInCount ?? 0,
         lateInDeduction: employeePayable[e.id]?.lateInDeduction ?? 0,
+        casualLeaveUsed: employeePayable[e.id]?.casualLeaveUsed ?? 0,
+        salaryDeductionDays: employeePayable[e.id]?.salaryDeductionDays ?? 0,
         needsAttention: employeePayable[e.id]?.needsAttention ?? false,
         missingBioEnroll: employeePayable[e.id]?.missingBioEnroll ?? false,
         biometric_enroll_no: e.biometric_enroll_no ?? null,
@@ -427,7 +445,7 @@ export async function POST(request: NextRequest) {
 
       const { data: employees } = await supabase
         .from("employees")
-        .select("id, shift_start_time, shift_end_time, biometric_enroll_no")
+        .select("id, shift_start_time, shift_end_time, biometric_enroll_no, enable_sandwich_policy, casual_leave_balance")
         .eq("status", "active")
         .eq("enable_payroll", true);
       const { data: holidays } = await supabase
@@ -514,6 +532,89 @@ export async function POST(request: NextRequest) {
       if (error) {
         console.error("Upsert error:", error);
         return NextResponse.json({ error: error.message }, { status: 400 });
+      }
+
+      // Apply sandwich/late deductions against casual leave first; persist CL usage for the month.
+      const { data: neighborFinalized } = await supabase
+        .from("employee_attendance_finalized")
+        .select("employee_id, attendance_date, status, is_late, month_year")
+        .in("month_year", adjacentMonths);
+
+      const { data: prevClUsage } = await supabase
+        .from("employee_month_casual_leave_usage")
+        .select("employee_id, days_used")
+        .eq("month_year", monthYear);
+      const prevClByEmp = new Map<string, number>();
+      (prevClUsage ?? []).forEach((r) => {
+        prevClByEmp.set(r.employee_id, Number(r.days_used) || 0);
+      });
+
+      const clUsageUpserts: {
+        employee_id: string;
+        month_year: string;
+        days_used: number;
+        updated_at: string;
+      }[] = [];
+
+      for (const emp of employees ?? []) {
+        const statusByDate = new Map<string, string>();
+        const lateByDate = new Map<string, boolean>();
+        for (const f of neighborFinalized ?? []) {
+          if (f.employee_id !== emp.id) continue;
+          statusByDate.set(f.attendance_date, f.status);
+          if (f.attendance_date >= start && f.attendance_date <= end) {
+            lateByDate.set(f.attendance_date, !!f.is_late);
+          }
+        }
+        // Prefer freshly finalized current-month rows (already included above via upsert read).
+        for (const row of rowsToInsert) {
+          if (row.employee_id !== emp.id) continue;
+          statusByDate.set(row.attendance_date, row.status);
+          lateByDate.set(row.attendance_date, !!row.is_late);
+        }
+
+        const prevUsed = prevClByEmp.get(emp.id) ?? 0;
+        const effectiveCl = Number(emp.casual_leave_balance ?? 0) + prevUsed;
+        const payable = computePayablePresentDays({
+          statusByDate,
+          lateByDate,
+          holidayDates,
+          monthStart: start,
+          monthEnd: end,
+          year: y,
+          month: m,
+          lastDay,
+          applySandwichPolicy: emp.enable_sandwich_policy !== false,
+          casualLeaveBalance: effectiveCl,
+        });
+
+        const newUsed = payable.casualLeaveUsed;
+        const newBalance = Math.max(0, Math.round((effectiveCl - newUsed) * 100) / 100);
+        const { error: balErr } = await supabase
+          .from("employees")
+          .update({ casual_leave_balance: newBalance })
+          .eq("id", emp.id);
+        if (balErr) {
+          console.error("CL balance update error:", balErr);
+          return NextResponse.json({ error: balErr.message }, { status: 400 });
+        }
+
+        clUsageUpserts.push({
+          employee_id: emp.id,
+          month_year: monthYear,
+          days_used: newUsed,
+          updated_at: new Date().toISOString(),
+        });
+      }
+
+      if (clUsageUpserts.length > 0) {
+        const { error: usageErr } = await supabase
+          .from("employee_month_casual_leave_usage")
+          .upsert(clUsageUpserts, { onConflict: "employee_id,month_year" });
+        if (usageErr) {
+          console.error("CL usage upsert error:", usageErr);
+          return NextResponse.json({ error: usageErr.message }, { status: 400 });
+        }
       }
 
       return NextResponse.json({ success: true });

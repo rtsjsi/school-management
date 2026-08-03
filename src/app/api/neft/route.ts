@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
 
     const { data: employees } = await supabase
       .from("employees")
-      .select("id, full_name, basic_salary, other_allowance, child_allowance, monthly_salary, bank_name, account_number, ifsc_code, account_holder_name, enable_sandwich_policy")
+      .select("id, employee_id, full_name, basic_salary, other_allowance, child_allowance, monthly_salary, bank_name, account_number, ifsc_code, account_holder_name, enable_sandwich_policy, casual_leave_balance")
       .eq("status", "active")
       .eq("enable_payroll", true);
 
@@ -65,6 +65,15 @@ export async function GET(request: NextRequest) {
     const holidayDates = new Set((holidays ?? []).map((h) => h.date));
 
     const workingDays = computeWorkingDays(y, m, lastDay, holidayDates);
+
+    const { data: clUsageRows } = await supabase
+      .from("employee_month_casual_leave_usage")
+      .select("employee_id, days_used")
+      .eq("month_year", monthYear);
+    const clUsedByEmp = new Map<string, number>();
+    (clUsageRows ?? []).forEach((r) => {
+      clUsedByEmp.set(r.employee_id, Number(r.days_used) || 0);
+    });
 
     const bankMap = new Map<string, { account_number: string; ifsc_code: string; account_holder_name: string; bank_name: string }>();
     (employees ?? []).forEach((e) => {
@@ -95,12 +104,15 @@ export async function GET(request: NextRequest) {
 
     const rows: {
       employee_id: string;
+      employee_code: string;
       full_name: string;
       present_days: number;
       attendance_days: number;
       sandwich_deduction: number;
       late_in_count: number;
       late_in_deduction: number;
+      casual_leave_used: number;
+      salary_deduction_days: number;
       salary: number;
       basic_salary: number;
       other_allowance: number;
@@ -133,6 +145,8 @@ export async function GET(request: NextRequest) {
         month: m,
         lastDay,
         applySandwichPolicy: emp.enable_sandwich_policy !== false,
+        casualLeaveBalance:
+          Number(emp.casual_leave_balance ?? 0) + (clUsedByEmp.get(emp.id) ?? 0),
       });
 
       const presentDays = payable.payableDays;
@@ -154,12 +168,15 @@ export async function GET(request: NextRequest) {
 
       rows.push({
         employee_id: emp.id,
+        employee_code: emp.employee_id ?? "—",
         full_name: emp.full_name,
         present_days: presentDays,
         attendance_days: payable.attendanceDays,
         sandwich_deduction: payable.sandwichDeduction,
         late_in_count: payable.lateInCount,
         late_in_deduction: payable.lateInDeduction,
+        casual_leave_used: payable.casualLeaveUsed,
+        salary_deduction_days: payable.salaryDeductionDays,
         salary: basicSalary + otherAllowance + childAllowance,
         basic_salary: basicSalary,
         other_allowance: otherAllowance,
@@ -280,6 +297,8 @@ export async function GET(request: NextRequest) {
       workingDays,
       rows: payableRows.map(({ skip_reasons: _skip, ...r }) => r),
       skipped: skippedRows,
+      /** All payroll-enabled staff for salary summary reports (includes skipped). */
+      summaryRows: rows.map(({ skip_reasons: _skip, bank: _bank, ...r }) => r),
       settings: {
         debitAccount: settings?.debit_account_number ?? "",
         transactionType: settings?.transaction_type ?? "NEFT",

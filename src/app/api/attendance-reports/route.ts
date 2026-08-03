@@ -18,13 +18,22 @@ export async function GET(request: NextRequest) {
     const month = searchParams.get("month");
     const date = searchParams.get("date");
 
+    const employeeId = searchParams.get("employeeId");
+
     const supabase = await createClient();
 
-    const { data: employees } = await supabase
+    let empQuery = supabase
       .from("employees")
-      .select("id, full_name, enable_sandwich_policy")
+      .select("id, employee_id, full_name, enable_sandwich_policy, casual_leave_balance")
       .eq("status", "active")
-      .eq("enable_payroll", true);
+      .eq("enable_payroll", true)
+      .order("full_name");
+
+    if (employeeId) {
+      empQuery = empQuery.eq("id", employeeId);
+    }
+
+    const { data: employees } = await empQuery;
 
     const empList = employees ?? [];
 
@@ -58,6 +67,15 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: "Attendance for this month must be Finalized on the Review screen before viewing reports." }, { status: 400 });
       }
 
+      const { data: clUsageRows } = await supabase
+        .from("employee_month_casual_leave_usage")
+        .select("employee_id, days_used")
+        .eq("month_year", month);
+      const clUsedByEmp = new Map<string, number>();
+      (clUsageRows ?? []).forEach((r) => {
+        clUsedByEmp.set(r.employee_id, Number(r.days_used) || 0);
+      });
+
       const result = empList.map((emp) => {
         const statusByDate = new Map<string, string>();
         const lateByDate = new Map<string, boolean>();
@@ -79,20 +97,26 @@ export async function GET(request: NextRequest) {
           month: m,
           lastDay,
           applySandwichPolicy: emp.enable_sandwich_policy !== false,
+          casualLeaveBalance:
+            Number(emp.casual_leave_balance ?? 0) + (clUsedByEmp.get(emp.id) ?? 0),
         });
 
         const present = payable.payableDays;
         const absent = Math.max(0, workingDays - present);
         const pct = workingDays > 0 ? (present / workingDays) * 100 : 0;
         return {
+          employee_uuid: emp.id,
+          employee_id: emp.employee_id ?? "—",
           employee_name: emp.full_name,
           present,
           absent,
-          percentage: pct,
+          percentage: Math.round(pct * 10) / 10,
           attendance_days: payable.attendanceDays,
           sandwich_deduction: payable.sandwichDeduction,
           late_in_count: payable.lateInCount,
           late_in_deduction: payable.lateInDeduction,
+          casual_leave_used: payable.casualLeaveUsed,
+          salary_deduction_days: payable.salaryDeductionDays,
         };
       });
       return NextResponse.json({ data: result });
@@ -114,6 +138,8 @@ export async function GET(request: NextRequest) {
       const result = absentIds.map((id) => {
         const emp = empList.find((e) => e.id === id);
         return {
+          employee_uuid: id,
+          employee_id: emp?.employee_id ?? "—",
           employee_name: emp?.full_name ?? "—",
           present: 0,
           absent: 1,
