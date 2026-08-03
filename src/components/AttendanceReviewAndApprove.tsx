@@ -91,6 +91,8 @@ type EmployeeRow = {
   sandwichTriggerDates?: string[];
   lateInCount?: number;
   lateInDeduction?: number;
+  casualLeaveUsed?: number;
+  salaryDeductionDays?: number;
   needsAttention?: boolean;
   missingBioEnroll?: boolean;
   biometric_enroll_no?: number | null;
@@ -482,8 +484,8 @@ export default function AttendanceReviewAndApprove() {
                               <span className="truncate">{emp.full_name}</span>
                               <span className="text-[10px] text-muted-foreground font-normal">
                                 {emp.presentDays} payable
-                                {(emp.sandwichDeduction || emp.lateInDeduction)
-                                  ? ` (−${(emp.sandwichDeduction ?? 0) + (emp.lateInDeduction ?? 0)} ded.)`
+                                {(emp.salaryDeductionDays ?? 0) > 0
+                                  ? ` (−${emp.salaryDeductionDays} salary ded.)`
                                   : ""}
                               </span>
                               {hasSandwich && (
@@ -497,6 +499,12 @@ export default function AttendanceReviewAndApprove() {
                               {(emp.lateInCount ?? 0) > 0 && (
                                 <span className="text-[10px] text-amber-700 dark:text-amber-400 font-normal">
                                   {emp.lateInCount} late IN
+                                  {(emp.lateInDeduction ?? 0) > 0 ? ` (−${emp.lateInDeduction}d)` : ""}
+                                </span>
+                              )}
+                              {(emp.casualLeaveUsed ?? 0) > 0 && (
+                                <span className="text-[10px] text-sky-700 dark:text-sky-400 font-normal">
+                                  CL used {emp.casualLeaveUsed}
                                 </span>
                               )}
                               {emp.missingBioEnroll && (

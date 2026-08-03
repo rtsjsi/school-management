@@ -37,6 +37,8 @@ export default function NEFTGeneration() {
       sandwich_deduction?: number;
       late_in_count?: number;
       late_in_deduction?: number;
+      casual_leave_used?: number;
+      salary_deduction_days?: number;
       salary: number;
       net_amount: number;
       bank?: { account_number: string; ifsc_code: string; account_holder_name: string };
@@ -253,11 +255,15 @@ export default function NEFTGeneration() {
                             </div>
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground">
-                            {(r.sandwich_deduction || r.late_in_deduction)
+                            {(r.sandwich_deduction || r.late_in_deduction || r.casual_leave_used || r.salary_deduction_days)
                               ? [
                                   r.sandwich_deduction ? `Sandwich −${r.sandwich_deduction}` : null,
                                   r.late_in_deduction
                                     ? `Late IN −${r.late_in_deduction} (${r.late_in_count ?? 0}×)`
+                                    : null,
+                                  r.casual_leave_used ? `CL used ${r.casual_leave_used}` : null,
+                                  r.salary_deduction_days
+                                    ? `Salary −${r.salary_deduction_days}`
                                     : null,
                                 ]
                                   .filter(Boolean)

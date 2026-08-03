@@ -495,15 +495,39 @@ export function countLateInPunches(
 
 export type PayablePresentBreakdown = {
   attendanceDays: number;
+  /** Gross sandwich Saturday charges before casual leave offset. */
   sandwichDeduction: number;
   lateInCount: number;
+  /** Gross late-IN day charges before casual leave offset. */
   lateInDeduction: number;
+  /** sandwich + late before CL offset. */
+  policyDeductionDays: number;
+  /** Days covered by casual leave balance. */
+  casualLeaveUsed: number;
+  /** Days still deducted from payable salary after CL. */
+  salaryDeductionDays: number;
   payableDays: number;
 };
 
 /**
+ * Cover policy deduction days with casual leave first; remainder hits salary.
+ */
+export function applyCasualLeaveToDeductions(
+  policyDeductionDays: number,
+  casualLeaveBalance: number
+): { casualLeaveUsed: number; salaryDeductionDays: number } {
+  const needed = Math.max(0, Number(policyDeductionDays) || 0);
+  const available = Math.max(0, Number(casualLeaveBalance) || 0);
+  const casualLeaveUsed = Math.min(available, needed);
+  return {
+    casualLeaveUsed,
+    salaryDeductionDays: needed - casualLeaveUsed,
+  };
+}
+
+/**
  * Salary payable present days for a month:
- * attendance weights − sandwich (Fri/Mon leave) − floor(late first-INs / 3).
+ * attendance weights − (sandwich + late deductions not covered by casual leave).
  * Does not rewrite Saturday attendance statuses.
  */
 export function computePayablePresentDays(args: {
@@ -518,6 +542,8 @@ export function computePayablePresentDays(args: {
   lateInsPerAbsent?: number;
   /** When false, skip Fri/Mon sandwich Saturday deductions. Default true. */
   applySandwichPolicy?: boolean;
+  /** Available casual leave days (include any already-used amount for this month). */
+  casualLeaveBalance?: number;
 }): PayablePresentBreakdown {
   const {
     statusByDate,
@@ -530,6 +556,7 @@ export function computePayablePresentDays(args: {
     lastDay,
     lateInsPerAbsent = LATE_INS_PER_ABSENT,
     applySandwichPolicy = true,
+    casualLeaveBalance = 0,
   } = args;
 
   let attendanceDays = 0;
@@ -545,13 +572,21 @@ export function computePayablePresentDays(args: {
   const lateInCount = countLateInPunches(statusByDate, lateByDate, monthStart, monthEnd);
   const lateInDeduction =
     lateInsPerAbsent > 0 ? Math.floor(lateInCount / lateInsPerAbsent) : 0;
-  const payableDays = Math.max(0, attendanceDays - sandwichDeduction - lateInDeduction);
+  const policyDeductionDays = sandwichDeduction + lateInDeduction;
+  const { casualLeaveUsed, salaryDeductionDays } = applyCasualLeaveToDeductions(
+    policyDeductionDays,
+    casualLeaveBalance
+  );
+  const payableDays = Math.max(0, attendanceDays - salaryDeductionDays);
 
   return {
     attendanceDays,
     sandwichDeduction,
     lateInCount,
     lateInDeduction,
+    policyDeductionDays,
+    casualLeaveUsed,
+    salaryDeductionDays,
     payableDays,
   };
 }
