@@ -48,6 +48,7 @@ export type StaffTableEmployee = {
   joining_date?: string | null;
   status?: string | null;
   enable_payroll?: boolean | null;
+  enable_sandwich_policy?: boolean | null;
   basic_salary?: number | null;
   other_allowance?: number | null;
   child_allowance?: number | null;
@@ -372,6 +373,7 @@ export function EmployeesTable({
                 </span>
               </TableHead>
               <TableHead className="w-[90px]">Payroll</TableHead>
+              <TableHead className="w-[100px]">Sandwich</TableHead>
               <TableHead
                 className="cursor-pointer select-none hover:text-foreground text-center w-[100px]"
                 onClick={() => handleSort("data_pct")}
@@ -401,6 +403,11 @@ export function EmployeesTable({
                   <TableCell>
                     <Badge variant={e.enable_payroll === false ? "secondary" : "default"}>
                       {e.enable_payroll === false ? "No" : "Yes"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={e.enable_sandwich_policy === false ? "secondary" : "default"}>
+                      {e.enable_sandwich_policy === false ? "No" : "Yes"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-center">

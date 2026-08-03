@@ -19,6 +19,7 @@ export type EmployeeMasterExportRow = {
   joining_date?: string | null;
   status?: string | null;
   enable_payroll?: boolean | null;
+  enable_sandwich_policy?: boolean | null;
   basic_salary?: number | null;
   other_allowance?: number | null;
   child_allowance?: number | null;
@@ -74,6 +75,7 @@ const EXPORT_COLUMNS: { key: string; header: string; width: number }[] = [
   { key: "joining_date", header: "Joining Date", width: 12 },
   { key: "status", header: "Status", width: 10 },
   { key: "enable_payroll", header: "Enable Payroll", width: 12 },
+  { key: "enable_sandwich_policy", header: "Enable Sandwich Policy", width: 16 },
   { key: "shift_start", header: "Shift Start", width: 11 },
   { key: "shift_end", header: "Shift End", width: 11 },
   { key: "shift_times", header: "Shift Times", width: 14 },
@@ -106,6 +108,7 @@ function toExportRecord(e: EmployeeMasterExportRow): Record<string, string> {
     joining_date: dash(e.joining_date),
     status: dash(e.status ?? "active"),
     enable_payroll: e.enable_payroll === false ? "No" : "Yes",
+    enable_sandwich_policy: e.enable_sandwich_policy === false ? "No" : "Yes",
     shift_start: formatTimeShort(e.shift_start_time) || "—",
     shift_end: formatTimeShort(e.shift_end_time) || "—",
     shift_times: shiftTimesLabel(e),

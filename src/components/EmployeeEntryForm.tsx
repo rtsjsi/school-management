@@ -63,6 +63,7 @@ const INITIAL_FORM_STATE = {
   casual_leave_balance: "5",
   monthly_salary: "",
   enable_payroll: true,
+  enable_sandwich_policy: true,
 };
 
 export default function EmployeeEntryForm() {
@@ -158,6 +159,7 @@ export default function EmployeeEntryForm() {
             : 5,
           monthly_salary: monthly || null,
           enable_payroll: form.enable_payroll,
+          enable_sandwich_policy: form.enable_sandwich_policy,
           degree: form.degree.trim() || null,
           institution: form.institution?.trim() || null,
           year_passed: form.year_passed ? parseInt(form.year_passed) : null,
@@ -387,15 +389,27 @@ export default function EmployeeEntryForm() {
             </TabsContent>
 
             <TabsContent value="salary" className="space-y-4 mt-4">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="enable_payroll"
-                  checked={form.enable_payroll}
-                  onCheckedChange={(c) => setForm((p) => ({ ...p, enable_payroll: !!c }))}
-                />
-                <Label htmlFor="enable_payroll" className="font-normal">
-                  Enable payroll
-                </Label>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="enable_payroll"
+                    checked={form.enable_payroll}
+                    onCheckedChange={(c) => setForm((p) => ({ ...p, enable_payroll: !!c }))}
+                  />
+                  <Label htmlFor="enable_payroll" className="font-normal">
+                    Enable payroll
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="enable_sandwich_policy"
+                    checked={form.enable_sandwich_policy}
+                    onCheckedChange={(c) => setForm((p) => ({ ...p, enable_sandwich_policy: !!c }))}
+                  />
+                  <Label htmlFor="enable_sandwich_policy" className="font-normal">
+                    Enable sandwich policy
+                  </Label>
+                </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">

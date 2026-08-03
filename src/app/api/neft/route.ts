@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
 
     const { data: employees } = await supabase
       .from("employees")
-      .select("id, full_name, basic_salary, other_allowance, child_allowance, monthly_salary, bank_name, account_number, ifsc_code, account_holder_name")
+      .select("id, full_name, basic_salary, other_allowance, child_allowance, monthly_salary, bank_name, account_number, ifsc_code, account_holder_name, enable_sandwich_policy")
       .eq("status", "active")
       .eq("enable_payroll", true);
 
@@ -132,6 +132,7 @@ export async function GET(request: NextRequest) {
         year: y,
         month: m,
         lastDay,
+        applySandwichPolicy: emp.enable_sandwich_policy !== false,
       });
 
       const presentDays = payable.payableDays;
@@ -145,7 +146,7 @@ export async function GET(request: NextRequest) {
 
       const netAmount = Math.max(
         0,
-        Math.round((proratedBasic + proratedOther + proratedChild) * 100) / 100
+        Math.round(proratedBasic + proratedOther + proratedChild)
       );
       const bank = bankMap.get(emp.id);
       const skip_reasons = neftSkipReasons(emp, netAmount);
@@ -216,7 +217,7 @@ export async function GET(request: NextRequest) {
           transactionType,
           debitAccount,
           txnDate,
-          Number(r.net_amount.toFixed(2)),
+          Math.round(r.net_amount),
           currency,
           "",
           `${remarksPrefix} ${monthLabel}`,
@@ -263,7 +264,7 @@ export async function GET(request: NextRequest) {
       lines.push("Account Number|IFSC|Account Holder|Amount|Remarks");
       payableRows.forEach((r) => {
         const b = r.bank!;
-        lines.push(`${b.account_number}|${b.ifsc_code}|${b.account_holder_name}|${r.net_amount.toFixed(2)}|Salary ${monthYear} - ${r.full_name}`);
+        lines.push(`${b.account_number}|${b.ifsc_code}|${b.account_holder_name}|${Math.round(r.net_amount)}|Salary ${monthYear} - ${r.full_name}`);
       });
       return new NextResponse(lines.join("\n"), {
         headers: {

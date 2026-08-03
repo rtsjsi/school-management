@@ -264,8 +264,8 @@ export default function NEFTGeneration() {
                                   .join(" · ")
                               : "—"}
                           </TableCell>
-                          <TableCell className="font-mono text-muted-foreground">₹{r.salary.toLocaleString()}</TableCell>
-                          <TableCell className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">₹{r.net_amount.toLocaleString()}</TableCell>
+                          <TableCell className="font-mono text-muted-foreground">₹{r.salary.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</TableCell>
+                          <TableCell className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">₹{Math.round(r.net_amount).toLocaleString("en-IN", { maximumFractionDigits: 0 })}</TableCell>
                           <TableCell className="font-mono text-xs">
                             {r.bank ? (
                               <div className="flex flex-col">

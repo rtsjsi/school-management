@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
 
     const { data: employees } = await supabase
       .from("employees")
-      .select("id, full_name, shift_start_time, shift_end_time, biometric_enroll_no")
+      .select("id, full_name, shift_start_time, shift_end_time, biometric_enroll_no, enable_sandwich_policy")
       .eq("status", "active")
       .eq("enable_payroll", true)
       .order("full_name");
@@ -306,6 +306,7 @@ export async function GET(request: NextRequest) {
         }
       }
 
+      const applySandwich = emp.enable_sandwich_policy !== false;
       const payable = computePayablePresentDays({
         statusByDate,
         lateByDate,
@@ -315,14 +316,12 @@ export async function GET(request: NextRequest) {
         year: y,
         month: m,
         lastDay,
+        applySandwichPolicy: applySandwich,
       });
 
-      const sandwichCharges = listSandwichCharges(
-        statusByDate,
-        holidayDates,
-        start,
-        end
-      );
+      const sandwichCharges = applySandwich
+        ? listSandwichCharges(statusByDate, holidayDates, start, end)
+        : [];
       const sandwichDates = sandwichCharges.map((c) => c.saturday);
       const sandwichTriggerDates = Array.from(
         new Set(sandwichCharges.flatMap((c) => c.triggers))

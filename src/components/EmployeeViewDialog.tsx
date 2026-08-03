@@ -158,6 +158,10 @@ export function EmployeeViewDialog({ employee, open, onOpenChange }: EmployeeVie
                 label="Enable Payroll"
                 value={employee.enable_payroll === false ? "No" : "Yes"}
               />
+              <InfoRow
+                label="Enable Sandwich Policy"
+                value={employee.enable_sandwich_policy === false ? "No" : "Yes"}
+              />
               <InfoRow label="Shift Start Time" value={formatTimeShort(employee.shift_start_time) || "—"} />
               <InfoRow label="Shift End Time" value={formatTimeShort(employee.shift_end_time) || "—"} />
               <InfoRow
