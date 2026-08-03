@@ -142,11 +142,12 @@ export async function GET(request: NextRequest) {
 
       const proratedBasic = workingDays > 0 ? (basicSalary / workingDays) * presentDays : 0;
       const proratedOther = workingDays > 0 ? (otherAllowance / workingDays) * presentDays : 0;
-      const proratedChild = workingDays > 0 ? (childAllowance / workingDays) * presentDays : 0;
+      // Child allowance is paid in full regardless of payable / working days.
+      const payableChild = childAllowance;
 
       const netAmount = Math.max(
         0,
-        Math.round(proratedBasic + proratedOther + proratedChild)
+        Math.round(proratedBasic + proratedOther + payableChild)
       );
       const bank = bankMap.get(emp.id);
       const skip_reasons = neftSkipReasons(emp, netAmount);
