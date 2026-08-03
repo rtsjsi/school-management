@@ -47,14 +47,46 @@ async function loadAttendanceThresholds(
   };
 }
 
+type RawPunchRow = { enroll_no: string; punched_at: string; direction: string };
+
 function dayPunchesForEnroll(
-  punches: { enroll_no: string; punched_at: string; direction: string }[] | null,
+  punches: RawPunchRow[] | null,
   enrollKey: string,
   dStr: string
 ): PunchLite[] {
   return (punches ?? [])
     .filter((p) => p.enroll_no === enrollKey && istCalendarDate(p.punched_at) === dStr)
     .map((p) => ({ punch_type: p.direction, punch_time: p.punched_at }));
+}
+
+/**
+ * Supabase/PostgREST caps a single select at 1000 rows by default.
+ * A payroll month + sandwich neighbors easily exceeds that, which silently
+ * drops later dates (e.g. Jul 27+) and marks everyone absent despite punches.
+ */
+async function fetchAllRawPunches(
+  admin: NonNullable<ReturnType<typeof createAdminClient>>,
+  rangeStart: string,
+  rangeEnd: string
+): Promise<RawPunchRow[]> {
+  const pageSize = 1000;
+  const all: RawPunchRow[] = [];
+  let from = 0;
+  for (;;) {
+    const { data, error } = await admin
+      .from("biometric_attendance_raw")
+      .select("enroll_no, punched_at, direction")
+      .gte("punched_at", `${rangeStart}T00:00:00Z`)
+      .lte("punched_at", `${rangeEnd}T23:59:59Z`)
+      .order("punched_at", { ascending: true })
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+    const batch = (data ?? []) as RawPunchRow[];
+    all.push(...batch);
+    if (batch.length < pageSize) break;
+    from += pageSize;
+  }
+  return all;
 }
 
 export async function GET(request: NextRequest) {
@@ -95,11 +127,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
     }
 
-    const { data: punches } = await admin
-      .from("biometric_attendance_raw")
-      .select("enroll_no, punched_at, direction")
-      .gte("punched_at", `${rangeStart}T00:00:00Z`)
-      .lte("punched_at", `${rangeEnd}T23:59:59Z`);
+    const punches = await fetchAllRawPunches(admin, rangeStart, rangeEnd);
 
     const adjacentMonths = Array.from(
       new Set([monthYearOf(rangeStart), monthYear, monthYearOf(rangeEnd)])
@@ -411,11 +439,10 @@ export async function POST(request: NextRequest) {
       const holidayDates = new Set((holidays ?? []).map((h) => h.date));
 
       const admin = createAdminClient();
-      const { data: punches } = await admin!
-        .from("biometric_attendance_raw")
-        .select("enroll_no, punched_at, direction")
-        .gte("punched_at", `${rangeStart}T00:00:00Z`)
-        .lte("punched_at", `${rangeEnd}T23:59:59Z`);
+      if (!admin) {
+        return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
+      }
+      const punches = await fetchAllRawPunches(admin, rangeStart, rangeEnd);
 
       const adjacentMonths = Array.from(
         new Set([monthYearOf(rangeStart), monthYear, monthYearOf(rangeEnd)])
