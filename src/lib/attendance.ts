@@ -25,7 +25,9 @@ export function employeeShiftLite(emp: {
 }
 
 export type AttendanceThresholds = {
+  /** Fallback full-day hours when employee has no usable shift times. */
   fullDayHours: number;
+  /** Fallback half-day hours when employee has no usable shift times. */
   halfDayHours: number;
   /** Minutes after shift start before first IN counts as late. */
   lateGraceMinutes: number;
@@ -36,6 +38,46 @@ export const DEFAULT_THRESHOLDS: AttendanceThresholds = {
   halfDayHours: 3,
   lateGraceMinutes: 15,
 };
+
+/**
+ * Scheduled shift length in hours from start/end (supports overnight shifts).
+ * Returns null when times are missing or invalid.
+ */
+export function shiftDurationHours(shift: ShiftLite): number | null {
+  if (!shift?.start_time || !shift?.end_time) return null;
+  const startMin = hhmmToMinutes(shift.start_time);
+  const endMin = hhmmToMinutes(shift.end_time);
+  if (startMin === null || endMin === null) return null;
+  let minutes = endMin - startMin;
+  if (minutes <= 0) minutes += 24 * 60; // overnight
+  return minutes / 60;
+}
+
+/**
+ * Present / half-day cutoffs for an employee:
+ * - With shift times: full day = shift length, half day = half of shift length
+ * - Without: payroll-settings / DEFAULT_THRESHOLDS fallbacks
+ */
+export function resolveDayHourThresholds(
+  shift: ShiftLite,
+  thresholds: AttendanceThresholds = DEFAULT_THRESHOLDS
+): { fullDayHours: number; halfDayHours: number; lateGraceMinutes: number } {
+  const lateGraceMinutes =
+    thresholds?.lateGraceMinutes ?? DEFAULT_THRESHOLDS.lateGraceMinutes;
+  const shiftHours = shiftDurationHours(shift);
+  if (shiftHours != null && shiftHours > 0) {
+    return {
+      fullDayHours: shiftHours,
+      halfDayHours: shiftHours / 2,
+      lateGraceMinutes,
+    };
+  }
+  return {
+    fullDayHours: thresholds?.fullDayHours ?? DEFAULT_THRESHOLDS.fullDayHours,
+    halfDayHours: thresholds?.halfDayHours ?? DEFAULT_THRESHOLDS.halfDayHours,
+    lateGraceMinutes,
+  };
+}
 
 export type AttendanceStatus =
   | "present"
@@ -112,7 +154,11 @@ function hhmmToMinutes(t?: string | null): number | null {
  *
  * Rules (hours-based):
  *  - No punches -> absent
- *  - First IN + last OUT -> worked hours -> present (>= full-day) / half_day (>= half-day) / absent
+ *  - First IN + last OUT -> worked hours vs employee shift length:
+ *      present  >= shift duration
+ *      half_day >= half of shift duration
+ *      absent   below that
+ *    (falls back to payroll full/half day hours when shift times are missing)
  *  - Only one usable punch (cannot compute hours) -> half_day, flagged single_punch for review
  *  - Late = first IN after shift start + lateGraceMinutes (default 15)
  */
@@ -123,11 +169,7 @@ export function deriveDailyStatus(
   isHoliday: boolean = false,
   isWeekOff: boolean = false
 ): DerivedDay {
-  const resolved: AttendanceThresholds = {
-    fullDayHours: thresholds?.fullDayHours ?? DEFAULT_THRESHOLDS.fullDayHours,
-    halfDayHours: thresholds?.halfDayHours ?? DEFAULT_THRESHOLDS.halfDayHours,
-    lateGraceMinutes: thresholds?.lateGraceMinutes ?? DEFAULT_THRESHOLDS.lateGraceMinutes,
-  };
+  const resolved = resolveDayHourThresholds(shift, thresholds);
 
   const valid = (punches ?? [])
     .map((p) => ({ type: (p.punch_type ?? "").toUpperCase(), date: new Date(p.punch_time) }))
