@@ -155,7 +155,8 @@ function hhmmToMinutes(t?: string | null): number | null {
  * Derive a single employee/day status from that day's raw punches.
  *
  * Rules (hours-based):
- *  - No punches -> absent
+ *  - Paid holiday or week off -> present (punches ignored; empty day stays holiday/week_off)
+ *  - No punches -> absent (or holiday / week_off when calendar says so)
  *  - Single usable punch (no IN–OUT span) -> half_day
  *  - First IN + last OUT -> worked hours vs half of shift length:
  *      present  if worked >= half of shift
@@ -181,6 +182,26 @@ export function deriveDailyStatus(
     if (isHoliday) defaultStatus = "holiday";
     else if (isWeekOff) defaultStatus = "week_off";
     return { status: defaultStatus, worked_hours: 0, is_late: false, is_early_departure: false, single_punch: false };
+  }
+
+  // Came in on a paid holiday / week off: ignore punch hours and mark present.
+  if (isHoliday || isWeekOff) {
+    const all = valid.map((p) => p.date).sort((a, b) => a.getTime() - b.getTime());
+    const ins = valid.filter((p) => p.type === "IN").map((p) => p.date).sort((a, b) => a.getTime() - b.getTime());
+    const outs = valid.filter((p) => p.type === "OUT").map((p) => p.date).sort((a, b) => a.getTime() - b.getTime());
+    const firstIn = ins[0] ?? all[0];
+    const lastOut = outs[outs.length - 1] ?? (all.length > 1 ? all[all.length - 1] : undefined);
+    const haveSpan = !!firstIn && !!lastOut && lastOut.getTime() > firstIn.getTime();
+    const workedHours = haveSpan ? (lastOut!.getTime() - firstIn.getTime()) / 3_600_000 : 0;
+    return {
+      status: "present",
+      in_time: firstIn ? istTimeString(firstIn) : undefined,
+      out_time: haveSpan ? istTimeString(lastOut as Date) : undefined,
+      worked_hours: Math.round(workedHours * 100) / 100,
+      is_late: false,
+      is_early_departure: false,
+      single_punch: false,
+    };
   }
 
   const ins = valid.filter((p) => p.type === "IN").map((p) => p.date).sort((a, b) => a.getTime() - b.getTime());
@@ -301,8 +322,9 @@ export function isPayableWorkingDay(dateStr: string, holidayDates: Set<string>):
 }
 
 /**
- * Flags for `deriveDailyStatus` empty-punch defaults.
- * Saturday is passed as holiday so no punches → paid holiday, not absent.
+ * Flags for `deriveDailyStatus`.
+ * Saturday is passed as holiday so no punches → paid holiday, not absent;
+ * if staff punch that day they are marked present (punches ignored for hours).
  */
 export function deriveCalendarFlags(
   dateStr: string,
