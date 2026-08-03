@@ -42,6 +42,7 @@ interface EmployeeEditDialogProps {
     biometric_enroll_no?: number | null;
     status?: string | null;
     enable_payroll?: boolean | null;
+    enable_sandwich_policy?: boolean | null;
     basic_salary?: number | null;
     other_allowance?: number | null;
     child_allowance?: number | null;
@@ -95,6 +96,7 @@ export function EmployeeEditDialog({
         employee.biometric_enroll_no != null ? String(employee.biometric_enroll_no) : "",
       status: employee.status || "active",
       enable_payroll: employee.enable_payroll !== false,
+      enable_sandwich_policy: employee.enable_sandwich_policy !== false,
       basic_salary: basic,
       other_allowance: other,
       child_allowance: child,
@@ -170,6 +172,7 @@ export function EmployeeEditDialog({
           biometric_enroll_no: biometricEnrollNo,
           status: form.status,
           enable_payroll: form.enable_payroll,
+          enable_sandwich_policy: form.enable_sandwich_policy,
           basic_salary: basic,
           other_allowance: other,
           child_allowance: child,
@@ -390,15 +393,27 @@ export function EmployeeEditDialog({
             </TabsContent>
 
             <TabsContent value="salary" className="space-y-4 mt-4">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="edit_enable_payroll"
-                  checked={form.enable_payroll}
-                  onCheckedChange={(c) => setForm((p) => ({ ...p, enable_payroll: !!c }))}
-                />
-                <Label htmlFor="edit_enable_payroll" className="font-normal">
-                  Enable payroll
-                </Label>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="edit_enable_payroll"
+                    checked={form.enable_payroll}
+                    onCheckedChange={(c) => setForm((p) => ({ ...p, enable_payroll: !!c }))}
+                  />
+                  <Label htmlFor="edit_enable_payroll" className="font-normal">
+                    Enable payroll
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="edit_enable_sandwich_policy"
+                    checked={form.enable_sandwich_policy}
+                    onCheckedChange={(c) => setForm((p) => ({ ...p, enable_sandwich_policy: !!c }))}
+                  />
+                  <Label htmlFor="edit_enable_sandwich_policy" className="font-normal">
+                    Enable sandwich policy
+                  </Label>
+                </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">

@@ -516,6 +516,8 @@ export function computePayablePresentDays(args: {
   month: string;
   lastDay: number;
   lateInsPerAbsent?: number;
+  /** When false, skip Fri/Mon sandwich Saturday deductions. Default true. */
+  applySandwichPolicy?: boolean;
 }): PayablePresentBreakdown {
   const {
     statusByDate,
@@ -527,6 +529,7 @@ export function computePayablePresentDays(args: {
     month,
     lastDay,
     lateInsPerAbsent = LATE_INS_PER_ABSENT,
+    applySandwichPolicy = true,
   } = args;
 
   let attendanceDays = 0;
@@ -536,12 +539,9 @@ export function computePayablePresentDays(args: {
     attendanceDays += dayWeight(statusByDate.get(dStr));
   }
 
-  const sandwichDeduction = computeSandwichDeduction(
-    statusByDate,
-    holidayDates,
-    monthStart,
-    monthEnd,
-  );
+  const sandwichDeduction = applySandwichPolicy
+    ? computeSandwichDeduction(statusByDate, holidayDates, monthStart, monthEnd)
+    : 0;
   const lateInCount = countLateInPunches(statusByDate, lateByDate, monthStart, monthEnd);
   const lateInDeduction =
     lateInsPerAbsent > 0 ? Math.floor(lateInCount / lateInsPerAbsent) : 0;
