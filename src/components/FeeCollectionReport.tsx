@@ -103,7 +103,6 @@ type ReportRow = {
   cheque_bank?: string;
   cheque_date?: string;
   online_transaction_id?: string;
-  online_transaction_ref?: string;
 };
 
 const DEFAULT_POLICY_NOTES = [
@@ -414,7 +413,6 @@ export default function FeeCollectionReport() {
       chequeBank: row.cheque_bank,
       chequeDate: row.cheque_date,
       onlineTransactionId: row.online_transaction_id,
-      onlineTransactionRef: row.online_transaction_ref,
       standard: row.student_standard,
       division: row.student_division,
       rollNumber: row.student_roll_number,
@@ -438,7 +436,6 @@ export default function FeeCollectionReport() {
       chequeBank: r.chequeBank,
       chequeDate: r.chequeDate,
       onlineTransactionId: r.onlineTransactionId,
-      onlineTransactionRef: r.onlineTransactionRef,
       schoolName: school.name,
       schoolAddress: school.address,
       schoolLogoUrl: school.logoUrl ?? undefined,
@@ -876,10 +873,7 @@ export default function FeeCollectionReport() {
                                 </>
                               )}
                               {(row.payment_mode ?? "").toLowerCase() === "online" && (
-                                <>
-                                  <div><span className="text-muted-foreground">Txn ID:</span> {row.online_transaction_id || "—"}</div>
-                                  <div><span className="text-muted-foreground">Txn Ref:</span> {row.online_transaction_ref || "—"}</div>
-                                </>
+                                <div><span className="text-muted-foreground">Txn ID:</span> {row.online_transaction_id || "—"}</div>
                               )}
                               <div><span className="text-muted-foreground">Date:</span> {formatFeeCollectionDisplayDate(row.collection_date)}</div>
                               <div><span className="text-muted-foreground">Collected By:</span> {row.collected_by ?? "—"}</div>

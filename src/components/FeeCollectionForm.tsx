@@ -28,6 +28,10 @@ import {
 import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 import { useToast } from "@/hooks/use-toast";
 import { annualNetFeeLiability, linesWithNetAfterConcession } from "@/lib/fee-concession";
+import {
+  findExistingOnlineTransactionId,
+  formatDuplicateOnlineTransactionMessage,
+} from "@/lib/fee-transaction-id";
 
 const PAYMENT_MODES = ["cash", "cheque", "online"] as const;
 /** Stored on `fee_collections` / receipt label; amount field sums all fee types for the quarter. */
@@ -78,7 +82,6 @@ export default function FeeCollectionForm({
     cheque_bank: "",
     cheque_date: "",
     online_transaction_id: "",
-    online_transaction_ref: "",
     collection_date: todayIso,
   });
 
@@ -309,6 +312,24 @@ export default function FeeCollectionForm({
         return;
       }
 
+      if (form.payment_mode === "online") {
+        const existingTxn = await findExistingOnlineTransactionId(
+          supabase,
+          form.online_transaction_id
+        );
+        if (existingTxn) {
+          const message = formatDuplicateOnlineTransactionMessage(existingTxn);
+          setError(message);
+          toast({
+            variant: "destructive",
+            title: "Duplicate transaction ID",
+            description: message,
+          });
+          setLoading(false);
+          return;
+        }
+      }
+
       const { data: collection, error: err } = await supabase
         .from("fee_collections")
         .insert({
@@ -326,7 +347,6 @@ export default function FeeCollectionForm({
               : null,
           online_transaction_id:
             form.payment_mode === "online" ? form.online_transaction_id.trim() : null,
-          online_transaction_ref: form.payment_mode === "online" ? form.online_transaction_ref.trim() || null : null,
           receipt_number: receiptNumber,
           collection_date: collectionDateIso,
           collected_by: collectorProfileId,
@@ -401,7 +421,6 @@ export default function FeeCollectionForm({
         chequeBank: form.payment_mode === "cheque" ? form.cheque_bank : undefined,
         chequeDate: form.payment_mode === "cheque" && form.cheque_date ? form.cheque_date : undefined,
         onlineTransactionId: form.payment_mode === "online" ? form.online_transaction_id : undefined,
-        onlineTransactionRef: form.payment_mode === "online" ? form.online_transaction_ref : undefined,
         schoolName: school.name,
         schoolAddress: school.address,
         schoolLogoUrl: school.logoUrl ?? undefined,
@@ -471,7 +490,6 @@ export default function FeeCollectionForm({
         cheque_bank: "",
         cheque_date: "",
         online_transaction_id: "",
-        online_transaction_ref: "",
         collection_date: todayIso,
       });
       setPaymentMethodSelectKey((k) => k + 1);
@@ -763,20 +781,6 @@ export default function FeeCollectionForm({
                   className="h-9 text-sm"
                   placeholder="ID"
                   required
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="online_txn_ref" className="text-xs font-medium text-muted-foreground">
-                  Ref
-                </Label>
-                <Input
-                  id="online_txn_ref"
-                  value={form.online_transaction_ref}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, online_transaction_ref: e.target.value }))
-                  }
-                  className="h-9 text-sm"
-                  placeholder="Ref"
                 />
               </div>
             </>

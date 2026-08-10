@@ -54,7 +54,6 @@ type CollectionRow = {
   cheque_bank?: string;
   cheque_date?: string;
   online_transaction_id?: string;
-  online_transaction_ref?: string;
 };
 
 const DEFAULT_POLICY_NOTES = [
@@ -71,7 +70,6 @@ type EditFormState = {
   cheque_bank: string;
   cheque_date: string;
   online_transaction_id: string;
-  online_transaction_ref: string;
   modification_remarks: string;
 };
 
@@ -103,7 +101,6 @@ async function printReceipt(row: CollectionRow, school: SchoolInfo) {
       chequeBank: data.chequeBank,
       chequeDate: data.chequeDate,
       onlineTransactionId: data.onlineTransactionId,
-      onlineTransactionRef: data.onlineTransactionRef,
       schoolName: school.name,
       schoolAddress: school.address,
       schoolLogoUrl: school.logoUrl ?? undefined,
@@ -138,7 +135,6 @@ async function generateAndPrintFallback(row: CollectionRow, school: SchoolInfo) 
     chequeBank: row.cheque_bank,
     chequeDate: row.cheque_date,
     onlineTransactionId: row.online_transaction_id,
-    onlineTransactionRef: row.online_transaction_ref,
     schoolName: school.name,
     schoolAddress: school.address,
     schoolLogoUrl: school.logoUrl ?? undefined,
@@ -175,7 +171,6 @@ async function downloadReceipt(row: CollectionRow, school: SchoolInfo) {
       chequeBank: data.chequeBank,
       chequeDate: data.chequeDate,
       onlineTransactionId: data.onlineTransactionId,
-      onlineTransactionRef: data.onlineTransactionRef,
       schoolName: school.name,
       schoolAddress: school.address,
       schoolLogoUrl: school.logoUrl ?? undefined,
@@ -212,7 +207,6 @@ async function downloadFallback(row: CollectionRow, school: SchoolInfo) {
     chequeBank: row.cheque_bank,
     chequeDate: row.cheque_date,
     onlineTransactionId: row.online_transaction_id,
-    onlineTransactionRef: row.online_transaction_ref,
     schoolName: school.name,
     schoolAddress: school.address,
     schoolLogoUrl: school.logoUrl ?? undefined,
@@ -244,7 +238,6 @@ export default function FeeCollectionList() {
     cheque_bank: "",
     cheque_date: "",
     online_transaction_id: "",
-    online_transaction_ref: "",
     modification_remarks: "",
   });
 
@@ -274,7 +267,6 @@ export default function FeeCollectionList() {
       cheque_bank: row.cheque_bank ?? "",
       cheque_date: row.cheque_date ?? "",
       online_transaction_id: row.online_transaction_id ?? "",
-      online_transaction_ref: row.online_transaction_ref ?? "",
       modification_remarks: "",
     });
     setEditOpen(true);
@@ -289,7 +281,6 @@ export default function FeeCollectionList() {
       chequeBank: editForm.cheque_bank,
       chequeDate: editForm.cheque_date,
       onlineTransactionId: editForm.online_transaction_id,
-      onlineTransactionRef: editForm.online_transaction_ref,
       modificationRemarks: editForm.modification_remarks,
     });
     setSaving(false);
@@ -542,19 +533,6 @@ export default function FeeCollectionList() {
                       setEditForm((prev) => ({
                         ...prev,
                         online_transaction_id: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Transaction Ref</Label>
-                  <Input
-                    className="h-9"
-                    value={editForm.online_transaction_ref}
-                    onChange={(e) =>
-                      setEditForm((prev) => ({
-                        ...prev,
-                        online_transaction_ref: e.target.value,
                       }))
                     }
                   />

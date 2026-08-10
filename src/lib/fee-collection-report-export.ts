@@ -24,7 +24,6 @@ export type FeeReportExportRow = {
   cheque_bank?: string | null;
   cheque_date?: string | null;
   online_transaction_id?: string | null;
-  online_transaction_ref?: string | null;
 };
 
 export type FeeReportSummary = {
@@ -46,7 +45,6 @@ export function formatFeePaymentDetails(row: {
   cheque_bank?: string | null;
   cheque_date?: string | null;
   online_transaction_id?: string | null;
-  online_transaction_ref?: string | null;
 }): string {
   const mode = (row.payment_mode ?? "").toLowerCase();
   if (mode === "cheque") {
@@ -58,11 +56,7 @@ export function formatFeePaymentDetails(row: {
     return parts.length ? parts.join(" · ") : "—";
   }
   if (mode === "online") {
-    const parts = [
-      row.online_transaction_id ? `Txn ${row.online_transaction_id}` : null,
-      row.online_transaction_ref ? row.online_transaction_ref : null,
-    ].filter(Boolean);
-    return parts.length ? parts.join(" · ") : "—";
+    return row.online_transaction_id ? `Txn ${row.online_transaction_id}` : "—";
   }
   return "—";
 }
