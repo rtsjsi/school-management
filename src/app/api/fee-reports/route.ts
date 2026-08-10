@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from("fee_collections")
       .select(
-        "id, receipt_number, amount, fee_type, quarter, academic_year, payment_mode, collection_date, collected_by, modified_by, cheque_number, cheque_bank, cheque_date, online_transaction_id, online_transaction_ref, students(full_name, standard, division, roll_number, gr_number), collector:profiles!collected_by(full_name), fee_refunds(amount, status)"
+        "id, receipt_number, amount, fee_type, quarter, academic_year, payment_mode, collection_date, collected_by, modified_by, cheque_number, cheque_bank, cheque_date, online_transaction_id, students(full_name, standard, division, roll_number, gr_number), collector:profiles!collected_by(full_name), fee_refunds(amount, status)"
       );
 
     // Date range
@@ -98,7 +98,6 @@ export async function GET(request: NextRequest) {
         cheque_bank: row.cheque_bank,
         cheque_date: row.cheque_date,
         online_transaction_id: row.online_transaction_id,
-        online_transaction_ref: row.online_transaction_ref,
       };
     });
 

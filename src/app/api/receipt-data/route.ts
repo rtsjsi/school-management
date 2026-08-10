@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       .select(`
         id, student_id, receipt_number, amount, fee_type, quarter, academic_year, payment_mode,
         collection_date, collected_by, cheque_number, cheque_bank, cheque_date,
-        online_transaction_id, online_transaction_ref,
+        online_transaction_id,
         students(full_name, standard, division, roll_number, gr_number, fee_concession_amount),
         collector:profiles!collected_by(full_name)
       `)
@@ -89,7 +89,6 @@ export async function GET(request: NextRequest) {
       chequeBank: c.cheque_bank,
       chequeDate: c.cheque_date,
       onlineTransactionId: c.online_transaction_id,
-      onlineTransactionRef: c.online_transaction_ref,
       standard: student?.standard,
       division: student?.division,
       rollNumber: student?.roll_number,

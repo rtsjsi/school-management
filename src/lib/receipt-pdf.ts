@@ -60,7 +60,6 @@ export interface ReceiptData {
   chequeBank?: string;
   chequeDate?: string;
   onlineTransactionId?: string;
-  onlineTransactionRef?: string;
   concessionAmount?: number;
   periodLabel?: string;
   amountInWords?: string;
