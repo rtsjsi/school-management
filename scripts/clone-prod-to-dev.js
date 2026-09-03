@@ -3,8 +3,6 @@
 
 const fs = require("fs");
 const path = require("path");
-const crypto = require("crypto");
-const { spawnSync } = require("child_process");
 const { createClient } = require("@supabase/supabase-js");
 
 const repoRoot = process.cwd();
@@ -108,11 +106,24 @@ function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 
-function runSupabase(args) {
-  const cmd = `npx supabase ${args.map((a) => (/\s/.test(a) ? `"${a}"` : a)).join(" ")}`;
-  const env = { ...process.env, SUPABASE_ACCESS_TOKEN: process.env.SUPABASE_ACCESS_TOKEN || parseEnvFile(path.join(repoRoot, ".env.development")).SUPABASE_ACCESS_TOKEN };
-  const result = spawnSync(cmd, { cwd: repoRoot, env, stdio: "inherit", shell: true, encoding: "utf8" });
-  if (result.status !== 0) throw new Error(`Supabase CLI failed: ${cmd}`);
+async function runDevSql(sql) {
+  const envDev = parseEnvFile(path.join(repoRoot, ".env.development"));
+  const projectId = envDev.SUPABASE_PROJECT_ID;
+  const token = process.env.SUPABASE_ACCESS_TOKEN || envDev.SUPABASE_ACCESS_TOKEN;
+  if (!projectId || !token) {
+    throw new Error("Missing SUPABASE_PROJECT_ID or SUPABASE_ACCESS_TOKEN for Management API SQL");
+  }
+  const res = await fetch(`https://api.supabase.com/v1/projects/${projectId}/database/query`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ query: sql }),
+  });
+  const text = await res.text();
+  if (!res.ok) throw new Error(`Management API SQL failed (${res.status}): ${text}`);
+  return text;
 }
 
 async function fetchAllRows(client, table) {
@@ -191,12 +202,12 @@ async function main() {
   const devUrl = envDev.NEXT_PUBLIC_SUPABASE_URL;
   const devKey = envDev.SUPABASE_SERVICE_ROLE_KEY;
   const devRef = envDev.SUPABASE_PROJECT_ID;
-  const devDbPassword = process.env.SUPABASE_DB_PASSWORD_DEVELOPMENT || envDev.SUPABASE_DB_PASSWORD;
+  const devAccessToken = process.env.SUPABASE_ACCESS_TOKEN || envDev.SUPABASE_ACCESS_TOKEN;
 
   if (!prodUrl || !prodKey) throw new Error("Missing prod API URL / service role key in .env.main");
   if (!devUrl || !devKey) throw new Error("Missing dev API URL / service role key in .env.development");
   if (!devRef) throw new Error("Missing SUPABASE_PROJECT_ID in .env.development");
-  if (!devDbPassword) throw new Error("Missing SUPABASE_DB_PASSWORD_DEVELOPMENT env var or SUPABASE_DB_PASSWORD in .env.development");
+  if (!devAccessToken) throw new Error("Missing SUPABASE_ACCESS_TOKEN in .env.development");
 
   const prod = createClient(prodUrl, prodKey, { auth: { persistSession: false } });
   const dev = createClient(devUrl, devKey, { auth: { persistSession: false } });
@@ -261,19 +272,16 @@ async function main() {
   const deletedCount = await deleteAllAuthUsers(dev);
   console.log(`  Deleted ${deletedCount} auth users`);
 
-  console.log("Linking dev project for SQL flush...");
-  runSupabase(["link", "--project-ref", devRef, "--password", devDbPassword]);
-
   console.log("Flushing auth tables...");
-  runSupabase(["db", "query", "--linked", "TRUNCATE TABLE auth.users CASCADE; DELETE FROM auth.flow_state;"]);
+  await runDevSql("TRUNCATE TABLE auth.users CASCADE; DELETE FROM auth.flow_state;");
 
   console.log("Flushing public tables...");
   const truncateSql = `TRUNCATE TABLE ${PUBLIC_TABLES.map((t) => `public.${t}`).join(", ")} RESTART IDENTITY CASCADE;`;
-  runSupabase(["db", "query", "--linked", truncateSql]);
-  
+  await runDevSql(truncateSql);
+
   console.log("Disabling triggers for clean import...");
   const disableSql = PUBLIC_TABLES.map((t) => `ALTER TABLE public.${t} DISABLE TRIGGER USER;`).join(" ");
-  runSupabase(["db", "query", "--linked", disableSql]);
+  await runDevSql(disableSql);
   console.log("  Dev flushed and triggers disabled.");
 
   // ── STEP 3: Import into dev ───────────────────────────────────────────
@@ -381,10 +389,7 @@ async function main() {
   } finally {
     console.log("\nRe-enabling triggers...");
     const enableSql = PUBLIC_TABLES.map((t) => `ALTER TABLE public.${t} ENABLE TRIGGER USER;`).join(" ");
-    try { runSupabase(["db", "query", "--linked", enableSql]); } catch(e) { console.error("Failed to enable triggers", e.message); }
-
-    console.log("Unlinking to maintain stateless environment boundary...");
-    try { runSupabase(["unlink"]); } catch(e) { console.error("Failed to unlink", e.message); }
+    try { await runDevSql(enableSql); } catch (e) { console.error("Failed to enable triggers", e.message); }
   }
 }
 
