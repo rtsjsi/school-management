@@ -219,15 +219,6 @@ export function deriveDailyStatus(
 
   const workedHours = haveSpan ? (lastOut!.getTime() - firstIn.getTime()) / 3_600_000 : 0;
 
-  let status: DerivedDay["status"];
-  if (singlePunch) {
-    status = "half_day";
-  } else if (workedHours < resolved.halfDayHours) {
-    status = "absent";
-  } else {
-    status = "present";
-  }
-
   let is_late = false;
   let is_early_departure = false;
   if (shift && firstIn) {
@@ -239,6 +230,21 @@ export function deriveDailyStatus(
   if (shift && haveSpan) {
     const endMin = hhmmToMinutes(shift.end_time);
     if (endMin !== null) is_early_departure = istTimeMinutes(lastOut as Date) < endMin;
+  }
+
+  let status: DerivedDay["status"];
+  if (singlePunch) {
+    status = "half_day";
+  } else if (is_early_departure) {
+    const outMin = istTimeMinutes(lastOut as Date);
+    const THRESHOLD_12_40 = 12 * 60 + 40; // 760
+    if (outMin >= THRESHOLD_12_40) {
+      status = "half_day";
+    } else {
+      status = "absent";
+    }
+  } else {
+    status = "present";
   }
 
   return {
