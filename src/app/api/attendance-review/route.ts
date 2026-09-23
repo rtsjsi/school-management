@@ -34,16 +34,13 @@ async function loadAttendanceThresholds(
 ): Promise<AttendanceThresholds> {
   const { data } = await supabase
     .from("payroll_settings")
-    .select("full_day_hours, half_day_hours, late_grace_minutes")
+    .select("full_day_hours, half_day_hours")
     .eq("id", 1)
     .maybeSingle();
 
   return {
     fullDayHours: Number(data?.full_day_hours ?? DEFAULT_THRESHOLDS.fullDayHours),
     halfDayHours: Number(data?.half_day_hours ?? DEFAULT_THRESHOLDS.halfDayHours),
-    lateGraceMinutes: Number(
-      data?.late_grace_minutes ?? DEFAULT_THRESHOLDS.lateGraceMinutes
-    ),
   };
 }
 
@@ -366,7 +363,6 @@ export async function GET(request: NextRequest) {
       workingDays,
       isApproved,
       currentUserRole: user.role,
-      lateGraceMinutes: thresholds.lateGraceMinutes,
       employees: (employees ?? []).map((e) => ({
         id: e.id,
         full_name: e.full_name,
