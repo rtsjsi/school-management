@@ -18,10 +18,13 @@ export function calculatePercentage(marks: SubjectMarkInfo[]): PercentageCalcula
   for (const mark of marks) {
     // Grade based subjects are excluded from percentage
     if (mark.isGradeBased) continue;
-    
-    // Absent subjects have no impact on percentage
-    if (mark.isAbsent) continue;
-    
+
+    // Absent subjects count as zero obtained, but their maximum still counts
+    if (mark.isAbsent) {
+      totalMax += Number(mark.maxScore) || 0;
+      continue;
+    }
+
     // If no score was entered, it has no impact on percentage
     if (mark.score == null) continue;
 
