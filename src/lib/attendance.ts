@@ -29,14 +29,11 @@ export type AttendanceThresholds = {
   fullDayHours: number;
   /** Fallback half-day hours when employee has no usable shift times. */
   halfDayHours: number;
-  /** Minutes after shift start before first IN counts as late. */
-  lateGraceMinutes: number;
 };
 
 export const DEFAULT_THRESHOLDS: AttendanceThresholds = {
   fullDayHours: 6,
   halfDayHours: 3,
-  lateGraceMinutes: 15,
 };
 
 /**
@@ -63,21 +60,17 @@ export function shiftDurationHours(shift: ShiftLite): number | null {
 export function resolveDayHourThresholds(
   shift: ShiftLite,
   thresholds: AttendanceThresholds = DEFAULT_THRESHOLDS
-): { fullDayHours: number; halfDayHours: number; lateGraceMinutes: number } {
-  const lateGraceMinutes =
-    thresholds?.lateGraceMinutes ?? DEFAULT_THRESHOLDS.lateGraceMinutes;
+): { fullDayHours: number; halfDayHours: number } {
   const shiftHours = shiftDurationHours(shift);
   if (shiftHours != null && shiftHours > 0) {
     return {
       fullDayHours: shiftHours,
       halfDayHours: shiftHours / 2,
-      lateGraceMinutes,
     };
   }
   return {
     fullDayHours: thresholds?.fullDayHours ?? DEFAULT_THRESHOLDS.fullDayHours,
     halfDayHours: thresholds?.halfDayHours ?? DEFAULT_THRESHOLDS.halfDayHours,
-    lateGraceMinutes,
   };
 }
 
@@ -162,16 +155,15 @@ function hhmmToMinutes(t?: string | null): number | null {
  *      present  if worked >= half of shift
  *      absent   if worked < half of shift
  *    (falls back to payroll half_day_hours when shift times are missing)
- *  - Late = first IN after shift start + lateGraceMinutes (default 15)
+ *  - Late = first IN after shift start (no grace period)
  */
 export function deriveDailyStatus(
   punches: PunchLite[],
   shift: ShiftLite,
-  thresholds: AttendanceThresholds = DEFAULT_THRESHOLDS,
+  _thresholds: AttendanceThresholds = DEFAULT_THRESHOLDS,
   isHoliday: boolean = false,
   isWeekOff: boolean = false
 ): DerivedDay {
-  const resolved = resolveDayHourThresholds(shift, thresholds);
 
   const valid = (punches ?? [])
     .map((p) => ({ type: (p.punch_type ?? "").toUpperCase(), date: new Date(p.punch_time) }))
@@ -224,7 +216,7 @@ export function deriveDailyStatus(
   if (shift && firstIn) {
     const startMin = hhmmToMinutes(shift.start_time);
     if (startMin !== null) {
-      is_late = istTimeMinutes(firstIn) > startMin + resolved.lateGraceMinutes;
+      is_late = istTimeMinutes(firstIn) > startMin;
     }
   }
   if (shift && haveSpan) {

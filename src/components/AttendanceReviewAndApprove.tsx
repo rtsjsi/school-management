@@ -127,7 +127,6 @@ export default function AttendanceReviewAndApprove() {
     isApproved: boolean;
     currentUserRole?: string;
     approvedAt?: string;
-    lateGraceMinutes?: number;
     employees: EmployeeRow[];
     dailyData: { date: string; rows: DayRow[] }[];
   } | null>(null);
@@ -388,9 +387,6 @@ export default function AttendanceReviewAndApprove() {
             <AlertTitle className="font-semibold text-emerald-800 dark:text-emerald-400">Month Finalized</AlertTitle>
             <AlertDescription className="text-emerald-700/90 dark:text-emerald-400/80">
               This month&apos;s attendance has been locked for payroll processing. Editing is disabled.
-              {typeof data.lateGraceMinutes === "number" && (
-                <> Late grace: {data.lateGraceMinutes} min after shift start.</>
-              )}
             </AlertDescription>
           </Alert>
         )}
