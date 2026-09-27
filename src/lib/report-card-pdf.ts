@@ -554,13 +554,18 @@ async function renderMultiExamReportCard(
   });
 
   // ── Table Setup ──
-  const examCount = data.exams.length;
-  const totalColW = 22;
-  const minExamColW = 18;
-  const subjectColW = Math.max(contentW - minExamColW * examCount - totalColW, 40);
+  const examCount = Math.max(data.exams.length, 1);
+  const totalColW = 28;
+  const subjectColW = Math.max(contentW * 0.34, 42);
   const examColW = (contentW - subjectColW - totalColW) / examCount;
 
-  const headerH = 10;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  const examHeaderLines = data.exams.map((ex) =>
+    doc.splitTextToSize(ex.name, Math.max(examColW - 4, 8)) as string[]
+  );
+  const maxHeaderLines = Math.max(1, ...examHeaderLines.map((lines) => lines.length));
+  const headerH = Math.max(10, maxHeaderLines * 3.6 + 3);
   const rowH = 7;
 
   // ── Table Header ──
@@ -579,11 +584,13 @@ async function renderMultiExamReportCard(
   doc.setDrawColor(...COLORS.navyLight);
   doc.setLineWidth(0.2);
 
-  data.exams.forEach((ex) => {
+  data.exams.forEach((ex, examIndex) => {
     doc.line(hx, y, hx, y + headerH);
-    const exLines = doc.splitTextToSize(ex.name, examColW - 3);
+    const exLines = examHeaderLines[examIndex] ?? [ex.name];
+    const blockH = exLines.length * 3.6;
+    const startY = y + (headerH - blockH) / 2 + 2.6;
     exLines.forEach((line: string, i: number) => {
-      doc.text(line, hx + examColW / 2, y + 3 + i * 3.5, { align: "center" });
+      doc.text(line, hx + examColW / 2, startY + i * 3.6, { align: "center" });
     });
     hx += examColW;
   });
@@ -621,9 +628,13 @@ async function renderMultiExamReportCard(
 
     // Subject name
     doc.setTextColor(...COLORS.darkText);
+    const subjectBlockH = subLines.length * 4.5;
+    const subjectStartY = y + (thisRowH - subjectBlockH) / 2 + 3.2;
     subLines.forEach((line: string, li: number) => {
-      doc.text(line, margin + 4, y + 4 + li * 4.5);
+      doc.text(line, margin + 4, subjectStartY + li * 4.5);
     });
+
+    const cellY = y + thisRowH / 2 + 1.2;
 
     // Exam scores
     let rx = margin + subjectColW;
@@ -647,7 +658,7 @@ async function renderMultiExamReportCard(
           doc.setTextColor(...COLORS.darkText);
         }
       }
-      doc.text(display, rx + examColW / 2, y + 4, { align: "center" });
+      doc.text(display, rx + examColW / 2, cellY, { align: "center" });
       doc.setTextColor(...COLORS.darkText);
       rx += examColW;
     });
@@ -656,19 +667,19 @@ async function renderMultiExamReportCard(
     doc.setDrawColor(...COLORS.midGray);
     doc.line(rx, y, rx, y + thisRowH);
 
-    // Total
+    // Total — only papers that actually have a mark
     let totalDisplay = "—";
     if (sub.totalMax === 0 && sub.finalGrade) {
       totalDisplay = sub.finalGrade;
       doc.setTextColor(...COLORS.navyLight);
-    } else if (sub.totalMax > 0) {
-      totalDisplay = `${sub.totalScore ?? 0}/${sub.totalMax}`;
-      grandTotalObtained += sub.totalScore ?? 0;
+    } else if (sub.totalMax > 0 && sub.totalScore != null) {
+      totalDisplay = `${sub.totalScore}/${sub.totalMax}`;
+      grandTotalObtained += sub.totalScore;
       grandTotalMax += sub.totalMax;
       doc.setTextColor(...COLORS.darkText);
     }
     doc.setFont("helvetica", "bold");
-    doc.text(totalDisplay, rx + totalColW / 2, y + 4, { align: "center" });
+    doc.text(totalDisplay, rx + totalColW / 2, cellY, { align: "center" });
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...COLORS.darkText);
 
@@ -685,8 +696,9 @@ async function renderMultiExamReportCard(
   doc.text("GRAND TOTAL", margin + 4, y + totalRowH / 2 + 1.2);
 
   // Total in last column
-  const totalX = margin + subjectColW + examCount * examColW;
-  doc.text(`${grandTotalObtained}/${grandTotalMax}`, totalX + totalColW / 2, y + totalRowH / 2 + 1.2, { align: "center" });
+  const totalX = margin + subjectColW + data.exams.length * examColW;
+  const grandLabel = grandTotalMax > 0 ? `${grandTotalObtained}/${grandTotalMax}` : "—";
+  doc.text(grandLabel, totalX + totalColW / 2, y + totalRowH / 2 + 1.2, { align: "center" });
   y += totalRowH + 6;
 
   // ── Percentage / Result box ──
