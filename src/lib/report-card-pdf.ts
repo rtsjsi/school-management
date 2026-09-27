@@ -524,6 +524,174 @@ export async function generateClassReportCardPDF(students: ReportCardData[]): Pr
 // MULTI-EXAM REPORT CARD
 // ══════════════════════════════════════════════════════════════════════════
 
+function isGradeSubject(subject: MultiExamReportCardSubject): boolean {
+  return subject.exams.some((exam) => exam.isGradeBased);
+}
+
+function continueReportPage(doc: jsPDF, y: number, needed: number): number {
+  const pageH = doc.internal.pageSize.getHeight();
+  if (y + needed <= pageH - 18) return y;
+  doc.addPage();
+  drawPageBorder(doc);
+  return 16;
+}
+
+function drawMultiExamSubjectTable(
+  doc: jsPDF,
+  startY: number,
+  exams: MultiExamReportCardData["exams"],
+  subjects: MultiExamReportCardSubject[],
+  mode: "marks" | "grades"
+): { y: number; grandTotalObtained: number; grandTotalMax: number } {
+  const w = doc.internal.pageSize.getWidth();
+  const margin = 14;
+  const contentW = w - margin * 2;
+  const examCount = Math.max(exams.length, 1);
+  const totalColW = mode === "marks" ? 28 : 0;
+  const subjectColW = Math.max(contentW * 0.34, 42);
+  const examColW = (contentW - subjectColW - totalColW) / examCount;
+  const rowH = 7;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  const examHeaderLines = exams.map((ex) =>
+    doc.splitTextToSize(ex.name, Math.max(examColW - 4, 8)) as string[]
+  );
+  const maxHeaderLines = Math.max(1, ...examHeaderLines.map((lines) => lines.length));
+  const headerH = Math.max(10, maxHeaderLines * 3.6 + 3);
+
+  const drawHeader = (y: number) => {
+    doc.setFillColor(...COLORS.navy);
+    doc.rect(margin, y, contentW, headerH, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(...COLORS.white);
+
+    let hx = margin;
+    doc.text("Subject", hx + 4, y + headerH / 2 + 1);
+    hx += subjectColW;
+
+    doc.setDrawColor(...COLORS.navyLight);
+    doc.setLineWidth(0.2);
+    exams.forEach((ex, examIndex) => {
+      doc.line(hx, y, hx, y + headerH);
+      const exLines = examHeaderLines[examIndex] ?? [ex.name];
+      const blockH = exLines.length * 3.6;
+      const lineY = y + (headerH - blockH) / 2 + 2.6;
+      exLines.forEach((line: string, i: number) => {
+        doc.text(line, hx + examColW / 2, lineY + i * 3.6, { align: "center" });
+      });
+      hx += examColW;
+    });
+
+    if (mode === "marks") {
+      doc.line(hx, y, hx, y + headerH);
+      doc.text("Total", hx + totalColW / 2, y + headerH / 2 + 1, { align: "center" });
+    }
+    return y + headerH;
+  };
+
+  let y = continueReportPage(doc, startY, headerH + rowH);
+  y = drawHeader(y);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+
+  let grandTotalObtained = 0;
+  let grandTotalMax = 0;
+
+  for (let i = 0; i < subjects.length; i++) {
+    const sub = subjects[i];
+    const subLines = doc.splitTextToSize(sub.subjectName, subjectColW - 6) as string[];
+    const thisRowH = Math.max(rowH, subLines.length * 4.5 + 2);
+
+    if (y + thisRowH > doc.internal.pageSize.getHeight() - 18) {
+      doc.addPage();
+      drawPageBorder(doc);
+      y = drawHeader(16);
+    }
+
+    if (i % 2 === 0) {
+      doc.setFillColor(...COLORS.offWhite);
+      doc.rect(margin, y, contentW, thisRowH, "F");
+    }
+
+    doc.setDrawColor(...COLORS.midGray);
+    doc.setLineWidth(0.1);
+    doc.line(margin, y + thisRowH, w - margin, y + thisRowH);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.5);
+    doc.setTextColor(...COLORS.darkText);
+    const subjectBlockH = subLines.length * 4.5;
+    const subjectStartY = y + (thisRowH - subjectBlockH) / 2 + 3.2;
+    subLines.forEach((line, li) => {
+      doc.text(line, margin + 4, subjectStartY + li * 4.5);
+    });
+
+    const cellY = y + thisRowH / 2 + 1.2;
+    let rx = margin + subjectColW;
+    exams.forEach((ex) => {
+      doc.setDrawColor(...COLORS.midGray);
+      doc.setLineWidth(0.1);
+      doc.line(rx, y, rx, y + thisRowH);
+
+      const examData = sub.exams.find((entry) => entry.examId === ex.id);
+      let display = "—";
+      if (examData?.isAbsent) {
+        display = "AB";
+        doc.setTextColor(220, 53, 69);
+      } else if (mode === "grades") {
+        display = examData?.grade || "—";
+        doc.setTextColor(...COLORS.navyLight);
+      } else if (examData && examData.score !== null) {
+        display = `${examData.score}/${examData.maxScore}`;
+        doc.setTextColor(...COLORS.darkText);
+      } else {
+        doc.setTextColor(...COLORS.darkText);
+      }
+      doc.text(display, rx + examColW / 2, cellY, { align: "center" });
+      doc.setTextColor(...COLORS.darkText);
+      rx += examColW;
+    });
+
+    if (mode === "marks") {
+      doc.setDrawColor(...COLORS.midGray);
+      doc.line(rx, y, rx, y + thisRowH);
+
+      let totalDisplay = "—";
+      if (sub.totalMax > 0 && sub.totalScore != null) {
+        totalDisplay = `${sub.totalScore}/${sub.totalMax}`;
+        grandTotalObtained += sub.totalScore;
+        grandTotalMax += sub.totalMax;
+      }
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...COLORS.darkText);
+      doc.text(totalDisplay, rx + totalColW / 2, cellY, { align: "center" });
+      doc.setFont("helvetica", "normal");
+    }
+
+    y += thisRowH;
+  }
+
+  if (mode === "marks") {
+    const totalRowH = 8;
+    y = continueReportPage(doc, y, totalRowH);
+    doc.setFillColor(...COLORS.navy);
+    doc.rect(margin, y, contentW, totalRowH, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(...COLORS.white);
+    doc.text("GRAND TOTAL", margin + 4, y + totalRowH / 2 + 1.2);
+    const totalX = margin + subjectColW + exams.length * examColW;
+    const grandLabel = grandTotalMax > 0 ? `${grandTotalObtained}/${grandTotalMax}` : "—";
+    doc.text(grandLabel, totalX + totalColW / 2, y + totalRowH / 2 + 1.2, { align: "center" });
+    y += totalRowH;
+  }
+
+  return { y, grandTotalObtained, grandTotalMax };
+}
+
 async function renderMultiExamReportCard(
   doc: jsPDF,
   data: MultiExamReportCardData,
@@ -553,172 +721,55 @@ async function renderMultiExamReportCard(
     academicYear: data.academicYear,
   });
 
-  // ── Table Setup ──
-  const examCount = data.exams.length;
-  const totalColW = 22;
-  const minExamColW = 18;
-  const subjectColW = Math.max(contentW - minExamColW * examCount - totalColW, 40);
-  const examColW = (contentW - subjectColW - totalColW) / examCount;
-
-  const headerH = 10;
-  const rowH = 7;
-
-  // ── Table Header ──
-  doc.setFillColor(...COLORS.navy);
-  doc.rect(margin, y, contentW, headerH, "F");
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(...COLORS.white);
-
-  let hx = margin;
-  doc.text("Subject", hx + 4, y + headerH / 2 + 1);
-  hx += subjectColW;
-
-  // Vertical divider lines in header
-  doc.setDrawColor(...COLORS.navyLight);
-  doc.setLineWidth(0.2);
-
-  data.exams.forEach((ex) => {
-    doc.line(hx, y, hx, y + headerH);
-    const exLines = doc.splitTextToSize(ex.name, examColW - 3);
-    exLines.forEach((line: string, i: number) => {
-      doc.text(line, hx + examColW / 2, y + 3 + i * 3.5, { align: "center" });
-    });
-    hx += examColW;
-  });
-
-  doc.line(hx, y, hx, y + headerH);
-  doc.text("Total", hx + totalColW / 2, y + headerH / 2 + 1, { align: "center" });
-
-  y += headerH;
-
-  // ── Table Rows ──
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
+  const markSubjects = data.subjects.filter((subject) => !isGradeSubject(subject));
+  const gradeSubjects = data.subjects.filter((subject) => isGradeSubject(subject));
 
   let grandTotalObtained = 0;
   let grandTotalMax = 0;
 
-  for (let i = 0; i < data.subjects.length; i++) {
-    const sub = data.subjects[i];
-    const isAlt = i % 2 === 0;
+  if (markSubjects.length > 0) {
+    const marksTable = drawMultiExamSubjectTable(doc, y, data.exams, markSubjects, "marks");
+    y = marksTable.y + 6;
+    grandTotalObtained = marksTable.grandTotalObtained;
+    grandTotalMax = marksTable.grandTotalMax;
+  }
 
-    // Multi-line subject
-    const subLines = doc.splitTextToSize(sub.subjectName, subjectColW - 6);
-    const thisRowH = Math.max(rowH, subLines.length * 4.5 + 2);
-
-    // Row background
-    if (isAlt) {
-      doc.setFillColor(...COLORS.offWhite);
-      doc.rect(margin, y, contentW, thisRowH, "F");
-    }
-
-    // Row border
+  if (markSubjects.length > 0) {
+    const percentage = grandTotalMax > 0 ? ((grandTotalObtained / grandTotalMax) * 100).toFixed(2) : "—";
+    const resultH = 10;
+    y = continueReportPage(doc, y, resultH);
+    doc.setFillColor(...COLORS.lightGray);
     doc.setDrawColor(...COLORS.midGray);
-    doc.setLineWidth(0.1);
-    doc.line(margin, y + thisRowH, w - margin, y + thisRowH);
+    doc.setLineWidth(0.2);
+    doc.roundedRect(margin, y, contentW, resultH, 2, 2, "FD");
 
-    // Subject name
-    doc.setTextColor(...COLORS.darkText);
-    subLines.forEach((line: string, li: number) => {
-      doc.text(line, margin + 4, y + 4 + li * 4.5);
-    });
-
-    // Exam scores
-    let rx = margin + subjectColW;
-    data.exams.forEach((ex) => {
-      // Column divider
-      doc.setDrawColor(...COLORS.midGray);
-      doc.setLineWidth(0.1);
-      doc.line(rx, y, rx, y + thisRowH);
-
-      const examData = sub.exams.find((e) => e.examId === ex.id);
-      let display = "—";
-      if (examData) {
-        if (examData.isAbsent) {
-          display = "AB";
-          doc.setTextColor(220, 53, 69);
-        } else if (examData.isGradeBased) {
-          display = examData.grade || "—";
-          doc.setTextColor(...COLORS.navyLight);
-        } else {
-          display = examData.score !== null ? `${examData.score}/${examData.maxScore}` : "—";
-          doc.setTextColor(...COLORS.darkText);
-        }
-      }
-      doc.text(display, rx + examColW / 2, y + 4, { align: "center" });
-      doc.setTextColor(...COLORS.darkText);
-      rx += examColW;
-    });
-
-    // Column divider before total
-    doc.setDrawColor(...COLORS.midGray);
-    doc.line(rx, y, rx, y + thisRowH);
-
-    // Total
-    let totalDisplay = "—";
-    if (sub.totalMax === 0 && sub.finalGrade) {
-      totalDisplay = sub.finalGrade;
-      doc.setTextColor(...COLORS.navyLight);
-    } else if (sub.totalMax > 0) {
-      totalDisplay = `${sub.totalScore ?? 0}/${sub.totalMax}`;
-      grandTotalObtained += sub.totalScore ?? 0;
-      grandTotalMax += sub.totalMax;
-      doc.setTextColor(...COLORS.darkText);
-    }
+    doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
-    doc.text(totalDisplay, rx + totalColW / 2, y + 4, { align: "center" });
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...COLORS.darkText);
+    doc.setTextColor(...COLORS.navy);
+    const pctText = percentage !== "—" ? `${percentage}%` : "—";
+    doc.text(`Percentage: ${pctText}`, margin + 6, y + resultH / 2 + 1.5);
 
-    y += thisRowH;
+    if (percentage !== "—") {
+      const pctNum = parseFloat(percentage);
+      let perfLabel = "";
+      let perfColor: [number, number, number] = COLORS.darkText;
+      if (pctNum >= 90) { perfLabel = "Outstanding"; perfColor = [25, 135, 84]; }
+      else if (pctNum >= 75) { perfLabel = "Excellent"; perfColor = [13, 110, 253]; }
+      else if (pctNum >= 60) { perfLabel = "Very Good"; perfColor = [13, 110, 253]; }
+      else if (pctNum >= 45) { perfLabel = "Good"; perfColor = [255, 153, 0]; }
+      else if (pctNum >= 33) { perfLabel = "Pass"; perfColor = [255, 153, 0]; }
+      else { perfLabel = "Needs Improvement"; perfColor = [220, 53, 69]; }
+
+      doc.setTextColor(...perfColor);
+      doc.text(perfLabel, w - margin - 6, y + resultH / 2 + 1.5, { align: "right" });
+    }
+    y += resultH + 6;
   }
 
-  // ── Grand Total Row ──
-  const totalRowH = 8;
-  doc.setFillColor(...COLORS.navy);
-  doc.rect(margin, y, contentW, totalRowH, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.setTextColor(...COLORS.white);
-  doc.text("GRAND TOTAL", margin + 4, y + totalRowH / 2 + 1.2);
-
-  // Total in last column
-  const totalX = margin + subjectColW + examCount * examColW;
-  doc.text(`${grandTotalObtained}/${grandTotalMax}`, totalX + totalColW / 2, y + totalRowH / 2 + 1.2, { align: "center" });
-  y += totalRowH + 6;
-
-  // ── Percentage / Result box ──
-  const percentage = grandTotalMax > 0 ? ((grandTotalObtained / grandTotalMax) * 100).toFixed(2) : "—";
-
-  const resultH = 10;
-  doc.setFillColor(...COLORS.lightGray);
-  doc.setDrawColor(...COLORS.midGray);
-  doc.setLineWidth(0.2);
-  doc.roundedRect(margin, y, contentW, resultH, 2, 2, "FD");
-
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...COLORS.navy);
-  const pctText = percentage !== "—" ? `${percentage}%` : "—";
-  doc.text(`Percentage: ${pctText}`, margin + 6, y + resultH / 2 + 1.5);
-
-  if (percentage !== "—") {
-    const pctNum = parseFloat(percentage);
-    let perfLabel = "";
-    let perfColor: [number, number, number] = COLORS.darkText;
-    if (pctNum >= 90) { perfLabel = "Outstanding"; perfColor = [25, 135, 84]; }
-    else if (pctNum >= 75) { perfLabel = "Excellent"; perfColor = [13, 110, 253]; }
-    else if (pctNum >= 60) { perfLabel = "Very Good"; perfColor = [13, 110, 253]; }
-    else if (pctNum >= 45) { perfLabel = "Good"; perfColor = [255, 153, 0]; }
-    else if (pctNum >= 33) { perfLabel = "Pass"; perfColor = [255, 153, 0]; }
-    else { perfLabel = "Needs Improvement"; perfColor = [220, 53, 69]; }
-
-    doc.setTextColor(...perfColor);
-    doc.text(perfLabel, w - margin - 6, y + resultH / 2 + 1.5, { align: "right" });
+  if (gradeSubjects.length > 0) {
+    const gradesTable = drawMultiExamSubjectTable(doc, y, data.exams, gradeSubjects, "grades");
+    y = gradesTable.y + 4;
   }
-  y += resultH + 4;
 
   // ── Signatures ──
   await drawSignatures(doc, y, data.principalSignatureUrl);

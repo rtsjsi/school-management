@@ -116,15 +116,32 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
     }
   }, [standardFilter, divisionFilter, exams, students, selectedExamId, selectedStudentId, reportType]);
 
-  const getTargetExams = () => {
+  const getTargetExams = (standard?: string | null) => {
     if (reportType === "single") {
       const exam = exams.find((e) => e.id === selectedExamId);
       return exam ? [exam] : [];
     }
-    const filtered = exams.filter((e) => standardFilter === "all" || e.standard === standardFilter || !e.standard);
-    if (reportType === "term-1") return filtered.filter(e => e.term === "Term-1");
-    if (reportType === "term-2") return filtered.filter(e => e.term === "Term-2");
-    return filtered; // annual
+    const classStandard =
+      standard && standard !== "all" ? standard : standardFilter !== "all" ? standardFilter : null;
+    if (!classStandard) return [];
+
+    const activeYearId = academicYears.find((y) => y.status === "active")?.id;
+    const filtered = exams.filter((e) => {
+      if (e.standard !== classStandard) return false;
+      if (activeYearId && e.academic_year_id && e.academic_year_id !== activeYearId) return false;
+      if (reportType === "term-1") return e.term === "Term-1";
+      if (reportType === "term-2") return e.term === "Term-2";
+      return true;
+    });
+
+    const seen = new Set<string>();
+    const unique: Exam[] = [];
+    for (const exam of filtered) {
+      if (seen.has(exam.name)) continue;
+      seen.add(exam.name);
+      unique.push(exam);
+    }
+    return unique;
   };
 
   const getReportTitle = () => {
@@ -248,12 +265,16 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
       if (!isGradeBased) {
         totalScore = 0;
         examsData.forEach((ed) => {
-          if (examMaxMap.has(`${ed.examId}_${sub.id}`)) {
+          if (!examMaxMap.has(`${ed.examId}_${sub.id}`)) return;
+          if (ed.isAbsent) {
             totalMax += ed.maxScore;
-            if (!ed.isAbsent && ed.score != null) {
-              totalScore = (totalScore ?? 0) + ed.score;
-              anyMarksFound = true;
-            }
+            anyMarksFound = true;
+            return;
+          }
+          if (ed.score != null) {
+            totalScore = (totalScore ?? 0) + ed.score;
+            totalMax += ed.maxScore;
+            anyMarksFound = true;
           }
         });
         if (!anyMarksFound) totalScore = null;
@@ -301,21 +322,24 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
   };
 
   const handleGenerate = async () => {
-    const targetExams = getTargetExams();
-    if (targetExams.length === 0) {
-      setError(reportType === "single" ? "Select an exam." : "No exams found for this class.");
-      return;
-    }
     if (!selectedStudentId) {
       setError("Select student.");
+      return;
+    }
+    const student = students.find((s) => s.id === selectedStudentId);
+    if (!student) {
+      setError("Student not found.");
+      return;
+    }
+    const targetExams = getTargetExams(student.standard);
+    if (targetExams.length === 0) {
+      setError(reportType === "single" ? "Select an exam." : "No exams found for this student's class.");
       return;
     }
     setLoading(true);
     setLoadingAction("single");
     setError(null);
     try {
-      const student = students.find((s) => s.id === selectedStudentId);
-      if (!student) throw new Error("Student not found.");
 
       const { subjectList, examMaxMap, rows } = await fetchMultiExamData(targetExams, [student]);
       const acYear = academicYears.find((y) => y.id === targetExams[0]?.academic_year_id)?.name;
@@ -337,7 +361,7 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
   };
 
   const handleGenerateZip = async () => {
-    const targetExams = getTargetExams();
+    const targetExams = getTargetExams(standardFilter);
     if (targetExams.length === 0) {
       setError(reportType === "single" ? "Select an exam." : "No exams found for this class.");
       return;
@@ -383,7 +407,7 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
   };
 
   const handleGenerateClassPdf = async () => {
-    const targetExams = getTargetExams();
+    const targetExams = getTargetExams(standardFilter);
     if (targetExams.length === 0) {
       setError(reportType === "single" ? "Select an exam." : "No exams found for this class.");
       return;
