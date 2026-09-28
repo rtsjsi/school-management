@@ -5,6 +5,7 @@ import { guardAcademicAndStudentModules } from "@/lib/dashboard-guards";
 import { shouldApplyClassFilter, getAllowedClassNames } from "@/lib/class-access";
 import { ExamsList } from "@/components/async/ExamsList";
 import MarksEntry from "@/components/MarksEntry";
+import StudentTermAttendance from "@/components/StudentTermAttendance";
 import ReportCardGenerator from "@/components/ReportCardGenerator";
 import GradeSheet from "@/components/GradeSheet";
 import { TableSkeleton } from "@/components/skeletons/TableSkeleton";
@@ -22,12 +23,16 @@ export default async function ExamsPage() {
       <Tabs defaultValue="marks" className="space-y-4 sm:space-y-6">
         <TabsList className="flex flex-nowrap gap-1 w-full">
           <TabsTrigger value="marks">Record Marks</TabsTrigger>
+          <TabsTrigger value="attendance">Attendance</TabsTrigger>
           <TabsTrigger value="gradesheet">Grade Sheet</TabsTrigger>
           <TabsTrigger value="reportcard">Report Card</TabsTrigger>
           <TabsTrigger value="exams">Exam Setup</TabsTrigger>
         </TabsList>
         <TabsContent value="marks" className="space-y-6">
           <MarksEntry allowedClassNames={allowedClassNames ?? undefined} />
+        </TabsContent>
+        <TabsContent value="attendance" className="space-y-6">
+          <StudentTermAttendance allowedClassNames={allowedClassNames ?? undefined} />
         </TabsContent>
         <TabsContent value="gradesheet" className="space-y-6">
           <GradeSheet allowedClassNames={allowedClassNames ?? undefined} />
