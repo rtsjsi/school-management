@@ -29,14 +29,14 @@ type Student = {
   division: string | null;
   roll_number?: number;
   gr_number?: string;
-  height?: string | null;
-  weight?: string | null;
 };
 type AttendanceRow = {
   student_id: string;
   term: string;
   working_days: number | null;
   present_days: number | null;
+  height_cm: number | string | null;
+  weight_kg: number | string | null;
 };
 type Subject = { id: string; name: string; evaluation_type?: string; sort_order?: number; max_marks?: number | null };
 type ExamResultSubject = { student_id: string; subject_id: string; score: number | null; max_score: number | null; grade: string | null; is_absent: boolean };
@@ -90,7 +90,7 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
   useEffect(() => {
     supabase
       .from("students")
-      .select("id, full_name, standard, division, roll_number, gr_number, height, weight")
+      .select("id, full_name, standard, division, roll_number, gr_number")
       .eq("status", "active")
       .order("full_name")
       .then(({ data }) => {
@@ -238,16 +238,32 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
     }),
   });
 
+  const formatMeasurement = (value: number | string | null | undefined) => {
+    if (value == null || value === "") return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? String(n) : null;
+  };
+
   const attendanceForReport = (attendanceRows: AttendanceRow[], studentId: string) => {
     const terms = reportType === "annual" ? ["Term-1", "Term-2"] : reportType === "term-1" ? ["Term-1"] : ["Term-2"];
     const selected = attendanceRows.filter((row) => row.student_id === studentId && terms.includes(row.term));
     const sum = (pick: (row: AttendanceRow) => number | null) => {
       if (!selected.some((row) => pick(row) != null)) return null;
-      return selected.reduce((total, row) => total + (pick(row) ?? 0), 0);
+      return selected.reduce((total, row) => total + (Number(pick(row)) || 0), 0);
     };
+    const term2 = selected.find((row) => row.term === "Term-2");
+    const term1 = selected.find((row) => row.term === "Term-1");
+    const measurement =
+      reportType === "annual"
+        ? term2?.height_cm != null || term2?.weight_kg != null
+          ? term2
+          : term1
+        : selected[0];
     return {
       workingDays: sum((row) => row.working_days),
       presentDays: sum((row) => row.present_days),
+      height: formatMeasurement(measurement?.height_cm),
+      weight: formatMeasurement(measurement?.weight_kg),
     };
   };
 
@@ -255,7 +271,7 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
     if (!yearId || studentIds.length === 0) return [] as AttendanceRow[];
     const { data } = await supabase
       .from("student_term_attendance")
-      .select("student_id, term, working_days, present_days")
+      .select("student_id, term, working_days, present_days, height_cm, weight_kg")
       .eq("academic_year_id", yearId)
       .in("student_id", studentIds);
     return (data ?? []) as AttendanceRow[];
@@ -282,8 +298,6 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
     academicYear: acYear,
     reportTitle: getReportTitle(),
     reportKind: reportType === "term-2" ? "term-2" : reportType === "annual" ? "annual" : "term-1",
-    height: student.height,
-    weight: student.weight,
     ...attendanceForReport(attendanceRows, student.id),
     exams: targetExams.map((e) => ({ id: e.id, name: e.name, term: e.term })),
     subjects: subjectList.map((sub) => {

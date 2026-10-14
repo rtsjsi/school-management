@@ -45,6 +45,19 @@ function parseDayCount(value: string): number | null {
   return Number(trimmed);
 }
 
+function parseMeasurement(value: string): number | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (!/^\d+(\.\d{1,2})?$/.test(trimmed)) return Number.NaN;
+  return Number(trimmed);
+}
+
+function formatMeasurement(value: number | string | null | undefined): string {
+  if (value == null || value === "") return "";
+  const n = Number(value);
+  return Number.isFinite(n) ? String(n) : "";
+}
+
 export default function StudentTermAttendance({
   allowedClassNames,
 }: {
@@ -66,6 +79,8 @@ export default function StudentTermAttendance({
   const [students, setStudents] = useState<Student[]>([]);
   const [workingDays, setWorkingDays] = useState("");
   const [presentByStudent, setPresentByStudent] = useState<Record<string, string>>({});
+  const [heightByStudent, setHeightByStudent] = useState<Record<string, string>>({});
+  const [weightByStudent, setWeightByStudent] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -145,12 +160,18 @@ export default function StudentTermAttendance({
       setStudents(studentList);
 
       const present: Record<string, string> = {};
+      const heights: Record<string, string> = {};
+      const weights: Record<string, string> = {};
       studentList.forEach((s) => {
         present[s.id] = "";
+        heights[s.id] = "";
+        weights[s.id] = "";
       });
 
       if (studentList.length === 0) {
         setPresentByStudent(present);
+        setHeightByStudent(heights);
+        setWeightByStudent(weights);
         setWorkingDays("");
         setIsDirty(false);
         setIsEditMode(true);
@@ -159,7 +180,7 @@ export default function StudentTermAttendance({
 
       const { data: rows, error: attendanceError } = await supabase
         .from("student_term_attendance")
-        .select("student_id, working_days, present_days")
+        .select("student_id, working_days, present_days, height_cm, weight_kg")
         .eq("academic_year_id", academicYear.id)
         .eq("term", termFilter)
         .in(
@@ -176,9 +197,13 @@ export default function StudentTermAttendance({
       saved.forEach((r) => {
         if (present[r.student_id] !== undefined) {
           present[r.student_id] = r.present_days != null ? String(r.present_days) : "";
+          heights[r.student_id] = formatMeasurement(r.height_cm);
+          weights[r.student_id] = formatMeasurement(r.weight_kg);
         }
       });
       setPresentByStudent(present);
+      setHeightByStudent(heights);
+      setWeightByStudent(weights);
       setIsDirty(false);
       setIsEditMode(saved.length === 0);
     })()
@@ -193,6 +218,8 @@ export default function StudentTermAttendance({
     if (!filtersReady) {
       setStudents([]);
       setPresentByStudent({});
+      setHeightByStudent({});
+      setWeightByStudent({});
       setWorkingDays("");
       setIsDirty(false);
       setIsEditMode(false);
@@ -222,14 +249,14 @@ export default function StudentTermAttendance({
           if (!["Enter", " ", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(key)) return;
         }
         if (button.getAttribute("data-state") !== "active") {
-          if (!window.confirm("You have unsaved attendance. Are you sure you want to switch tabs and lose your changes?")) {
+          if (!window.confirm("You have unsaved term details. Are you sure you want to switch tabs and lose your changes?")) {
             e.preventDefault();
             e.stopPropagation();
           }
         }
       } else if (a && e.type === "click" && a.href && a.target !== "_blank") {
         if (a.href.startsWith(window.location.origin) && a.pathname !== window.location.pathname) {
-          if (!window.confirm("You have unsaved attendance. Are you sure you want to leave this page and lose your changes?")) {
+          if (!window.confirm("You have unsaved term details. Are you sure you want to leave this page and lose your changes?")) {
             e.preventDefault();
             e.stopPropagation();
           }
@@ -255,13 +282,13 @@ export default function StudentTermAttendance({
   };
 
   const handleClassFilterChange = (val: string) => {
-    if (!confirmDiscard("You have unsaved attendance. Are you sure you want to change class and lose it?")) return;
+    if (!confirmDiscard("You have unsaved term details. Are you sure you want to change class and lose them?")) return;
     setIsDirty(false);
     setClassFilter(val);
   };
 
   const handleTermFilterChange = (val: string) => {
-    if (!confirmDiscard("You have unsaved attendance. Are you sure you want to change term and lose it?")) return;
+    if (!confirmDiscard("You have unsaved term details. Are you sure you want to change term and lose them?")) return;
     setIsDirty(false);
     setTermFilter(val);
   };
@@ -283,11 +310,15 @@ export default function StudentTermAttendance({
       term: string;
       working_days: number;
       present_days: number | null;
+      height_cm: number | null;
+      weight_kg: number | null;
       updated_at: string;
     }[] = [];
 
     for (const student of students) {
       const present = parseDayCount(presentByStudent[student.id] ?? "");
+      const height = parseMeasurement(heightByStudent[student.id] ?? "");
+      const weight = parseMeasurement(weightByStudent[student.id] ?? "");
       if (Number.isNaN(present)) {
         setError(`Days present for ${student.full_name} must be a whole number.`);
         return;
@@ -296,12 +327,22 @@ export default function StudentTermAttendance({
         setError(`Days present for ${student.full_name} cannot be more than working days (${workingDaysNumber}).`);
         return;
       }
+      if (Number.isNaN(height)) {
+        setError(`Height for ${student.full_name} must be a number in centimetres.`);
+        return;
+      }
+      if (Number.isNaN(weight)) {
+        setError(`Weight for ${student.full_name} must be a number in kilograms.`);
+        return;
+      }
       rows.push({
         student_id: student.id,
         academic_year_id: academicYear.id,
         term: termFilter,
         working_days: workingDaysNumber,
         present_days: present,
+        height_cm: height,
+        weight_kg: weight,
         updated_at: new Date().toISOString(),
       });
     }
@@ -318,8 +359,8 @@ export default function StudentTermAttendance({
       setIsDirty(false);
       setIsEditMode(false);
       toast({
-        title: "Attendance saved",
-        description: `${termFilter} attendance for ${effectiveStandard} / ${effectiveDivision} has been recorded.`,
+        title: "Term details saved",
+        description: `${termFilter} details for ${effectiveStandard} / ${effectiveDivision} have been recorded.`,
       });
       router.refresh();
     } catch (err) {
@@ -404,24 +445,24 @@ export default function StudentTermAttendance({
                 onClick={() => setIsEditMode(true)}
                 className="shadow-sm font-semibold text-sm h-10"
               >
-                Edit Attendance
+                Edit Details
               </Button>
             )}
           </div>
 
           {yearChecked && !academicYear && (
             <p className="text-sm text-muted-foreground">
-              Set an academic year to active before recording term attendance.
+              Set an academic year to active before recording term details.
             </p>
           )}
 
-          {loading && <p className="text-sm text-muted-foreground">Loading students and saved attendance…</p>}
+          {loading && <p className="text-sm text-muted-foreground">Loading students and saved term details…</p>}
 
           {filtersReady && students.length > 0 && !loading && (
             <>
               <p className="text-sm text-muted-foreground">
-                Working days apply to the whole class for this term. Enter days present for each student. Days absent
-                are working days minus days present.
+                Working days apply to the whole class for this term. Enter days present, height, and weight for each
+                student. Days absent are working days minus days present.
               </p>
               <div className="overflow-x-auto border rounded-md" style={{ maxHeight: 440 }}>
                 <Table>
@@ -431,6 +472,8 @@ export default function StudentTermAttendance({
                       <TableHead className="min-w-[180px] bg-muted/80">Student</TableHead>
                       <TableHead className="text-center min-w-[120px] bg-muted/50">Days present</TableHead>
                       <TableHead className="text-center min-w-[120px] bg-muted/50">Days absent</TableHead>
+                      <TableHead className="text-center min-w-[110px] bg-muted/50">Height (cm)</TableHead>
+                      <TableHead className="text-center min-w-[110px] bg-muted/50">Weight (kg)</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -483,6 +526,38 @@ export default function StudentTermAttendance({
                           <TableCell className="text-center text-sm text-muted-foreground">
                             {absent == null ? "—" : absent}
                           </TableCell>
+                          <TableCell className="p-1 text-center">
+                            <Input
+                              type="number"
+                              min={0}
+                              step={0.1}
+                              className="w-20 h-8 mx-auto text-center text-sm disabled:opacity-100 disabled:bg-muted/50"
+                              value={heightByStudent[s.id] ?? ""}
+                              onChange={(e) => {
+                                setIsDirty(true);
+                                setHeightByStudent((prev) => ({ ...prev, [s.id]: e.target.value }));
+                              }}
+                              placeholder="—"
+                              disabled={!isEditMode}
+                              aria-label={`Height in centimetres for ${s.full_name}`}
+                            />
+                          </TableCell>
+                          <TableCell className="p-1 text-center">
+                            <Input
+                              type="number"
+                              min={0}
+                              step={0.1}
+                              className="w-20 h-8 mx-auto text-center text-sm disabled:opacity-100 disabled:bg-muted/50"
+                              value={weightByStudent[s.id] ?? ""}
+                              onChange={(e) => {
+                                setIsDirty(true);
+                                setWeightByStudent((prev) => ({ ...prev, [s.id]: e.target.value }));
+                              }}
+                              placeholder="—"
+                              disabled={!isEditMode}
+                              aria-label={`Weight in kilograms for ${s.full_name}`}
+                            />
+                          </TableCell>
                         </TableRow>
                       );
                     })}
@@ -496,7 +571,7 @@ export default function StudentTermAttendance({
                   className="min-w-[160px] shadow-sm font-semibold text-sm h-10"
                   disabled={!isEditMode}
                 >
-                  Save Attendance
+                  Save Details
                 </SubmitButton>
               </div>
             </>
@@ -509,7 +584,7 @@ export default function StudentTermAttendance({
           )}
 
           {academicYear && !filtersReady && (
-            <p className="text-sm text-muted-foreground">Select a class and term to enter attendance.</p>
+            <p className="text-sm text-muted-foreground">Select a class and term to enter details.</p>
           )}
         </form>
       </CardContent>
@@ -518,7 +593,7 @@ export default function StudentTermAttendance({
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="flex flex-col items-center gap-4 bg-card p-8 rounded-xl shadow-2xl border">
             <div className="h-12 w-12 rounded-full border-4 border-primary border-t-transparent animate-spin" />
-            <h3 className="text-lg font-semibold text-foreground">Saving attendance...</h3>
+            <h3 className="text-lg font-semibold text-foreground">Saving term details...</h3>
             <p className="text-sm text-muted-foreground">Please wait, do not close the application.</p>
           </div>
         </div>

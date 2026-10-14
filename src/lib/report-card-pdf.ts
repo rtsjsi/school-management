@@ -684,16 +684,28 @@ function drawMultiExamSubjectTable(
 
   if (mode === "marks") {
     const totalRowH = 8;
-    y = continueReportPage(doc, y, totalRowH);
+    y = continueReportPage(doc, y, totalRowH * 2);
+    const totalX = margin + subjectColW + exams.length * examColW;
+    const labelY = (rowY: number) => rowY + totalRowH / 2 + 1.2;
+
     doc.setFillColor(...COLORS.navy);
     doc.rect(margin, y, contentW, totalRowH, "F");
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
     doc.setTextColor(...COLORS.white);
-    doc.text("GRAND TOTAL", margin + 4, y + totalRowH / 2 + 1.2);
-    const totalX = margin + subjectColW + exams.length * examColW;
+    doc.text("GRAND TOTAL", margin + 4, labelY(y));
     const grandLabel = grandTotalMax > 0 ? `${grandTotalObtained}/${grandTotalMax}` : "—";
-    doc.text(grandLabel, totalX + totalColW / 2, y + totalRowH / 2 + 1.2, { align: "center" });
+    doc.text(grandLabel, totalX + totalColW / 2, labelY(y), { align: "center" });
+    y += totalRowH;
+
+    const percentage = grandTotalMax > 0 ? `${((grandTotalObtained / grandTotalMax) * 100).toFixed(2)}%` : "—";
+    doc.setFillColor(...COLORS.navyLight);
+    doc.rect(margin, y, contentW, totalRowH, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(...COLORS.white);
+    doc.text("PERCENTAGE", margin + 4, labelY(y));
+    doc.text(percentage, totalX + totalColW / 2, labelY(y), { align: "center" });
     y += totalRowH;
   }
 
@@ -788,10 +800,6 @@ async function renderMultiExamReportCard(
     doc.addPage();
   }
 
-  const w = doc.internal.pageSize.getWidth();
-  const margin = 14;
-  const contentW = w - margin * 2;
-
   drawPageBorder(doc);
 
   const schoolName = data.schoolName ?? "SCHOOL NAME";
@@ -811,32 +819,10 @@ async function renderMultiExamReportCard(
   const markSubjects = data.subjects.filter((subject) => !isGradeSubject(subject));
   const gradeSubjects = data.subjects.filter((subject) => isGradeSubject(subject));
 
-  let grandTotalObtained = 0;
-  let grandTotalMax = 0;
-
   if (markSubjects.length > 0) {
     y = drawSectionHeading(doc, y, "Scholastic Performance");
     const marksTable = drawMultiExamSubjectTable(doc, y, data.exams, markSubjects, "marks");
     y = marksTable.y + 6;
-    grandTotalObtained = marksTable.grandTotalObtained;
-    grandTotalMax = marksTable.grandTotalMax;
-  }
-
-  if (markSubjects.length > 0) {
-    const percentage = grandTotalMax > 0 ? ((grandTotalObtained / grandTotalMax) * 100).toFixed(2) : "—";
-    const resultH = 10;
-    y = continueReportPage(doc, y, resultH);
-    doc.setFillColor(...COLORS.lightGray);
-    doc.setDrawColor(...COLORS.midGray);
-    doc.setLineWidth(0.2);
-    doc.roundedRect(margin, y, contentW, resultH, 2, 2, "FD");
-
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...COLORS.navy);
-    const pctText = percentage !== "—" ? `${percentage}%` : "—";
-    doc.text(`Percentage: ${pctText}`, margin + 6, y + resultH / 2 + 1.5);
-    y += resultH + 6;
   }
 
   if (gradeSubjects.length > 0) {
