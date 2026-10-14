@@ -23,7 +23,7 @@ export default async function ExamsPage() {
       <Tabs defaultValue="marks" className="space-y-4 sm:space-y-6">
         <TabsList className="flex flex-nowrap gap-1 w-full">
           <TabsTrigger value="marks">Record Marks</TabsTrigger>
-          <TabsTrigger value="attendance">Attendance</TabsTrigger>
+          <TabsTrigger value="attendance">Term Details</TabsTrigger>
           <TabsTrigger value="gradesheet">Grade Sheet</TabsTrigger>
           <TabsTrigger value="reportcard">Report Card</TabsTrigger>
           <TabsTrigger value="exams">Exam Setup</TabsTrigger>
