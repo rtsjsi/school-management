@@ -61,6 +61,13 @@ export interface MultiExamReportCardSubject {
 
 export type MultiExamReportKind = "term-1" | "term-2" | "annual";
 
+export interface TermReportMetrics {
+  height: string | null;
+  weight: string | null;
+  workingDays: number | null;
+  presentDays: number | null;
+}
+
 export interface MultiExamReportCardData {
   schoolName?: string;
   schoolAddress?: string;
@@ -74,10 +81,10 @@ export interface MultiExamReportCardData {
   academicYear?: string;
   reportTitle: string;
   reportKind: MultiExamReportKind;
-  height?: string | null;
-  weight?: string | null;
-  workingDays?: number | null;
-  presentDays?: number | null;
+  termMetrics: {
+    "Term-1": TermReportMetrics;
+    "Term-2": TermReportMetrics;
+  };
   exams: {
     id: string;
     name: string;
@@ -759,36 +766,61 @@ function drawGradeScale(doc: jsPDF, y: number): number {
   return y + 6;
 }
 
-function displayOrBlank(value: string | number | null | undefined): string {
-  if (value == null) return "—";
-  const text = String(value).trim();
-  return text || "—";
-}
-
-function drawStudentDetails(doc: jsPDF, y: number, data: MultiExamReportCardData): number {
+function drawRemarks(doc: jsPDF, y: number): number {
   const w = doc.internal.pageSize.getWidth();
   const margin = 14;
   const contentW = w - margin * 2;
-  const rowH = 7;
-  y = continueReportPage(doc, y, rowH * 3 + 4);
-
+  y = continueReportPage(doc, y, 16);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(...COLORS.darkText);
-
-  const mid = margin + contentW / 2;
-  doc.text(`Height (cm):  ${displayOrBlank(data.height)}`, margin, y + 4);
-  doc.text(`Weight:  ${displayOrBlank(data.weight)}`, mid, y + 4);
-  y += rowH;
-  doc.text(`Total working days:  ${displayOrBlank(data.workingDays)}`, margin, y + 4);
-  doc.text(`Present Days:  ${displayOrBlank(data.presentDays)}`, mid, y + 4);
-  y += rowH + 1;
   doc.text("Remarks:", margin, y + 4);
-  y += 6;
+  y += 8;
   doc.setDrawColor(...COLORS.midGray);
   doc.setLineWidth(0.2);
   doc.line(margin, y, margin + contentW, y);
   return y + 4;
+}
+
+function metricCell(
+  metrics: MultiExamReportCardData["termMetrics"],
+  columnId: string,
+  pick: (term: TermReportMetrics) => string | number | null,
+  final: "blank" | "sum"
+): string | null {
+  if (columnId === "Final") {
+    if (final === "blank") return null;
+    const first = pick(metrics["Term-1"]);
+    const second = pick(metrics["Term-2"]);
+    if (first == null && second == null) return null;
+    return String((Number(first) || 0) + (Number(second) || 0));
+  }
+  if (columnId !== "Term-1" && columnId !== "Term-2") return null;
+  const value = pick(metrics[columnId]);
+  return value == null || value === "" ? null : String(value);
+}
+
+function coScholasticMetricRows(data: MultiExamReportCardData): MultiExamReportCardSubject[] {
+  const columns = coScholasticColumns(data.reportKind);
+  const rows: { name: string; pick: (term: TermReportMetrics) => string | number | null; final: "blank" | "sum" }[] = [
+    { name: "Height (cm)", pick: (term) => term.height, final: "blank" },
+    { name: "Weight (kg)", pick: (term) => term.weight, final: "blank" },
+    { name: "Total working days", pick: (term) => term.workingDays, final: "sum" },
+    { name: "Present Days", pick: (term) => term.presentDays, final: "sum" },
+  ];
+  return rows.map((row) => ({
+    subjectName: row.name,
+    totalScore: null,
+    totalMax: 0,
+    exams: columns.map((column) => ({
+      examId: column.id,
+      score: null,
+      maxScore: 0,
+      grade: metricCell(data.termMetrics, column.id, row.pick, row.final),
+      isAbsent: false,
+      isGradeBased: true,
+    })),
+  }));
 }
 
 async function renderMultiExamReportCard(
@@ -825,12 +857,12 @@ async function renderMultiExamReportCard(
     y = marksTable.y + 6;
   }
 
-  if (gradeSubjects.length > 0) {
-    y = drawSectionHeading(doc, y, "Co-Scholastic Performance");
-    y = drawGradeScale(doc, y);
-    const columns = coScholasticColumns(data.reportKind);
-    const gradeExams = columns.map((column) => ({ id: column.id, name: column.label }));
-    const gradeRows = gradeSubjects.map((subject) => ({
+  y = drawSectionHeading(doc, y, "Co-Scholastic Performance");
+  y = drawGradeScale(doc, y);
+  const columns = coScholasticColumns(data.reportKind);
+  const gradeExams = columns.map((column) => ({ id: column.id, name: column.label }));
+  const gradeRows = [
+    ...gradeSubjects.map((subject) => ({
       ...subject,
       exams: columns.map((column) => ({
         examId: column.id,
@@ -840,12 +872,13 @@ async function renderMultiExamReportCard(
         isAbsent: false,
         isGradeBased: true,
       })),
-    }));
-    const gradesTable = drawMultiExamSubjectTable(doc, y, gradeExams, gradeRows, "grades");
-    y = gradesTable.y + 4;
-  }
+    })),
+    ...coScholasticMetricRows(data),
+  ];
+  const gradesTable = drawMultiExamSubjectTable(doc, y, gradeExams, gradeRows, "grades");
+  y = gradesTable.y + 4;
 
-  y = drawStudentDetails(doc, y, data);
+  y = drawRemarks(doc, y);
 
   // ── Signatures ──
   await drawSignatures(doc, y, data.principalSignatureUrl);

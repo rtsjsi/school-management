@@ -244,28 +244,22 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
     return Number.isFinite(n) ? String(n) : null;
   };
 
-  const attendanceForReport = (attendanceRows: AttendanceRow[], studentId: string) => {
-    const terms = reportType === "annual" ? ["Term-1", "Term-2"] : reportType === "term-1" ? ["Term-1"] : ["Term-2"];
-    const selected = attendanceRows.filter((row) => row.student_id === studentId && terms.includes(row.term));
-    const sum = (pick: (row: AttendanceRow) => number | null) => {
-      if (!selected.some((row) => pick(row) != null)) return null;
-      return selected.reduce((total, row) => total + (Number(pick(row)) || 0), 0);
-    };
-    const term2 = selected.find((row) => row.term === "Term-2");
-    const term1 = selected.find((row) => row.term === "Term-1");
-    const measurement =
-      reportType === "annual"
-        ? term2?.height_cm != null || term2?.weight_kg != null
-          ? term2
-          : term1
-        : selected[0];
+  const metricsForTerm = (attendanceRows: AttendanceRow[], studentId: string, term: "Term-1" | "Term-2") => {
+    const row = attendanceRows.find((entry) => entry.student_id === studentId && entry.term === term);
     return {
-      workingDays: sum((row) => row.working_days),
-      presentDays: sum((row) => row.present_days),
-      height: formatMeasurement(measurement?.height_cm),
-      weight: formatMeasurement(measurement?.weight_kg),
+      height: formatMeasurement(row?.height_cm),
+      weight: formatMeasurement(row?.weight_kg),
+      workingDays: row?.working_days ?? null,
+      presentDays: row?.present_days ?? null,
     };
   };
+
+  const attendanceForReport = (attendanceRows: AttendanceRow[], studentId: string) => ({
+    termMetrics: {
+      "Term-1": metricsForTerm(attendanceRows, studentId, "Term-1"),
+      "Term-2": metricsForTerm(attendanceRows, studentId, "Term-2"),
+    },
+  });
 
   const fetchAttendance = async (studentIds: string[], yearId: string | null) => {
     if (!yearId || studentIds.length === 0) return [] as AttendanceRow[];
