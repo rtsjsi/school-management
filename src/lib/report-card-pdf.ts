@@ -614,6 +614,7 @@ function drawMultiExamSubjectTable(
 
   let grandTotalObtained = 0;
   let grandTotalMax = 0;
+  const examTotals = exams.map(() => ({ obtained: 0, max: 0 }));
 
   for (let i = 0; i < subjects.length; i++) {
     const sub = subjects[i];
@@ -646,12 +647,20 @@ function drawMultiExamSubjectTable(
 
     const cellY = y + thisRowH / 2 + 1.2;
     let rx = margin + subjectColW;
-    exams.forEach((ex) => {
+    exams.forEach((ex, examIndex) => {
       doc.setDrawColor(...COLORS.midGray);
       doc.setLineWidth(0.1);
       doc.line(rx, y, rx, y + thisRowH);
 
       const examData = sub.exams.find((entry) => entry.examId === ex.id);
+      if (mode === "marks" && examData) {
+        if (examData.isAbsent) {
+          examTotals[examIndex].max += Number(examData.maxScore) || 0;
+        } else if (examData.score !== null) {
+          examTotals[examIndex].obtained += Number(examData.score) || 0;
+          examTotals[examIndex].max += Number(examData.maxScore) || 0;
+        }
+      }
       let display = "—";
       if (examData?.isAbsent) {
         display = "AB";
@@ -692,27 +701,41 @@ function drawMultiExamSubjectTable(
   if (mode === "marks") {
     const totalRowH = 8;
     y = continueReportPage(doc, y, totalRowH * 2);
-    const totalX = margin + subjectColW + exams.length * examColW;
     const labelY = (rowY: number) => rowY + totalRowH / 2 + 1.2;
+    const marksLabel = (obtained: number, max: number) => (max > 0 ? `${obtained}/${max}` : "—");
+    const percentLabel = (obtained: number, max: number) =>
+      max > 0 ? `${((obtained / max) * 100).toFixed(2)}%` : "—";
+    const cellFont = examColW < 22 ? 6.5 : 8;
 
-    doc.setFillColor(...COLORS.navy);
-    doc.rect(margin, y, contentW, totalRowH, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(...COLORS.white);
-    doc.text("GRAND TOTAL", margin + 4, labelY(y));
-    const grandLabel = grandTotalMax > 0 ? `${grandTotalObtained}/${grandTotalMax}` : "—";
-    doc.text(grandLabel, totalX + totalColW / 2, labelY(y), { align: "center" });
+    const drawSummaryRow = (
+      rowY: number,
+      label: string,
+      fill: [number, number, number],
+      valueFor: (obtained: number, max: number) => string
+    ) => {
+      doc.setFillColor(...fill);
+      doc.rect(margin, rowY, contentW, totalRowH, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.setTextColor(...COLORS.white);
+      doc.text(label, margin + 3, labelY(rowY));
+      doc.setDrawColor(255, 255, 255);
+      doc.setLineWidth(0.15);
+      let x = margin + subjectColW;
+      examTotals.forEach((total) => {
+        doc.line(x, rowY, x, rowY + totalRowH);
+        doc.setFontSize(cellFont);
+        doc.text(valueFor(total.obtained, total.max), x + examColW / 2, labelY(rowY), { align: "center" });
+        x += examColW;
+      });
+      doc.line(x, rowY, x, rowY + totalRowH);
+      doc.setFontSize(cellFont);
+      doc.text(valueFor(grandTotalObtained, grandTotalMax), x + totalColW / 2, labelY(rowY), { align: "center" });
+    };
+
+    drawSummaryRow(y, "TOTAL", COLORS.navy, marksLabel);
     y += totalRowH;
-
-    const percentage = grandTotalMax > 0 ? `${((grandTotalObtained / grandTotalMax) * 100).toFixed(2)}%` : "—";
-    doc.setFillColor(...COLORS.navyLight);
-    doc.rect(margin, y, contentW, totalRowH, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(...COLORS.white);
-    doc.text("PERCENTAGE", margin + 4, labelY(y));
-    doc.text(percentage, totalX + totalColW / 2, labelY(y), { align: "center" });
+    drawSummaryRow(y, "PERCENTAGE", COLORS.navyLight, percentLabel);
     y += totalRowH;
   }
 
