@@ -22,7 +22,22 @@ import { useSchoolSettings } from "@/hooks/useSchoolSettings";
 import { fetchAcademicYears, AcademicYearOption } from "@/lib/lov";
 
 type Exam = { id: string; name: string; standard: string | null; term: string | null; academic_year_id: string | null };
-type Student = { id: string; full_name: string; standard: string | null; division: string | null; roll_number?: number; gr_number?: string };
+type Student = {
+  id: string;
+  full_name: string;
+  standard: string | null;
+  division: string | null;
+  roll_number?: number;
+  gr_number?: string;
+  height?: string | null;
+  weight?: string | null;
+};
+type AttendanceRow = {
+  student_id: string;
+  term: string;
+  working_days: number | null;
+  present_days: number | null;
+};
 type Subject = { id: string; name: string; evaluation_type?: string; sort_order?: number; max_marks?: number | null };
 type ExamResultSubject = { student_id: string; subject_id: string; score: number | null; max_score: number | null; grade: string | null; is_absent: boolean };
 
@@ -75,7 +90,7 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
   useEffect(() => {
     supabase
       .from("students")
-      .select("id, full_name, standard, division, roll_number, gr_number")
+      .select("id, full_name, standard, division, roll_number, gr_number, height, weight")
       .eq("status", "active")
       .order("full_name")
       .then(({ data }) => {
@@ -223,13 +238,37 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
     }),
   });
 
+  const attendanceForReport = (attendanceRows: AttendanceRow[], studentId: string) => {
+    const terms = reportType === "annual" ? ["Term-1", "Term-2"] : reportType === "term-1" ? ["Term-1"] : ["Term-2"];
+    const selected = attendanceRows.filter((row) => row.student_id === studentId && terms.includes(row.term));
+    const sum = (pick: (row: AttendanceRow) => number | null) => {
+      if (!selected.some((row) => pick(row) != null)) return null;
+      return selected.reduce((total, row) => total + (pick(row) ?? 0), 0);
+    };
+    return {
+      workingDays: sum((row) => row.working_days),
+      presentDays: sum((row) => row.present_days),
+    };
+  };
+
+  const fetchAttendance = async (studentIds: string[], yearId: string | null) => {
+    if (!yearId || studentIds.length === 0) return [] as AttendanceRow[];
+    const { data } = await supabase
+      .from("student_term_attendance")
+      .select("student_id, term, working_days, present_days")
+      .eq("academic_year_id", yearId)
+      .in("student_id", studentIds);
+    return (data ?? []) as AttendanceRow[];
+  };
+
   const buildMultiExamPdfData = (
     student: Student,
     targetExams: Exam[],
     subjectList: Subject[],
     examMaxMap: Map<string, number>,
     rows: (ExamResultSubject & { exam_id: string })[],
-    acYear?: string
+    acYear: string | undefined,
+    attendanceRows: AttendanceRow[]
   ): MultiExamReportCardData => ({
     schoolName: school.name,
     schoolAddress: school.address,
@@ -242,7 +281,11 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
     studentId: student.gr_number,
     academicYear: acYear,
     reportTitle: getReportTitle(),
-    exams: targetExams.map((e) => ({ id: e.id, name: e.name })),
+    reportKind: reportType === "term-2" ? "term-2" : reportType === "annual" ? "annual" : "term-1",
+    height: student.height,
+    weight: student.weight,
+    ...attendanceForReport(attendanceRows, student.id),
+    exams: targetExams.map((e) => ({ id: e.id, name: e.name, term: e.term })),
     subjects: subjectList.map((sub) => {
       const isGradeBased = sub.evaluation_type === "grade";
       const examsData = targetExams.map((ex) => {
@@ -296,12 +339,15 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
     subjectList: Subject[],
     examMaxMap: Map<string, number>,
     rows: (ExamResultSubject & { exam_id: string })[],
-    acYear?: string
+    acYear: string | undefined,
+    attendanceRows: AttendanceRow[]
   ) => {
     if (reportType === "single") {
       return generateReportCardPDF(buildSingleExamPdfData(student, targetExams[0], subjectList, examMaxMap, rows, acYear));
     }
-    return generateMultiExamReportCardPDF(buildMultiExamPdfData(student, targetExams, subjectList, examMaxMap, rows, acYear));
+    return generateMultiExamReportCardPDF(
+      buildMultiExamPdfData(student, targetExams, subjectList, examMaxMap, rows, acYear, attendanceRows)
+    );
   };
 
   const getClassStudents = () =>
@@ -342,8 +388,10 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
     try {
 
       const { subjectList, examMaxMap, rows } = await fetchMultiExamData(targetExams, [student]);
-      const acYear = academicYears.find((y) => y.id === targetExams[0]?.academic_year_id)?.name;
-      const pdfBlob = await generateStudentPdfBlob(student, targetExams, subjectList, examMaxMap, rows, acYear);
+      const yearId = targetExams[0]?.academic_year_id ?? null;
+      const acYear = academicYears.find((y) => y.id === yearId)?.name;
+      const attendanceRows = await fetchAttendance([student.id], yearId);
+      const pdfBlob = await generateStudentPdfBlob(student, targetExams, subjectList, examMaxMap, rows, acYear, attendanceRows);
 
       const url = URL.createObjectURL(pdfBlob);
       const a = document.createElement("a");
@@ -381,12 +429,14 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
       }
 
       const { subjectList, examMaxMap, rows } = await fetchMultiExamData(targetExams, classStudents);
-      const acYear = academicYears.find((y) => y.id === targetExams[0]?.academic_year_id)?.name;
+      const yearId = targetExams[0]?.academic_year_id ?? null;
+      const acYear = academicYears.find((y) => y.id === yearId)?.name;
+      const attendanceRows = await fetchAttendance(classStudents.map((student) => student.id), yearId);
 
       const zip = new JSZip();
 
       for (const student of classStudents) {
-        const pdfBlob = await generateStudentPdfBlob(student, targetExams, subjectList, examMaxMap, rows, acYear);
+        const pdfBlob = await generateStudentPdfBlob(student, targetExams, subjectList, examMaxMap, rows, acYear, attendanceRows);
         const fileName = `${student.roll_number ?? "00"}_${student.full_name.replace(/\s+/g, "_")}.pdf`;
         zip.file(fileName, pdfBlob);
       }
@@ -427,7 +477,9 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
       }
 
       const { subjectList, examMaxMap, rows } = await fetchMultiExamData(targetExams, classStudents);
-      const acYear = academicYears.find((y) => y.id === targetExams[0]?.academic_year_id)?.name;
+      const yearId = targetExams[0]?.academic_year_id ?? null;
+      const acYear = academicYears.find((y) => y.id === yearId)?.name;
+      const attendanceRows = await fetchAttendance(classStudents.map((student) => student.id), yearId);
 
       let pdfBlob: Blob;
       if (reportType === "single") {
@@ -438,7 +490,7 @@ export default function ReportCardGenerator({ allowedClassNames }: { allowedClas
         pdfBlob = await generateClassReportCardPDF(studentsData);
       } else {
         const studentsData = classStudents.map((student) =>
-          buildMultiExamPdfData(student, targetExams, subjectList, examMaxMap, rows, acYear)
+          buildMultiExamPdfData(student, targetExams, subjectList, examMaxMap, rows, acYear, attendanceRows)
         );
         pdfBlob = await generateClassMultiExamReportCardPDF(studentsData);
       }
