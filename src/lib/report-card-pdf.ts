@@ -59,6 +59,8 @@ export interface MultiExamReportCardSubject {
   finalGrade?: string | null;
 }
 
+export type MultiExamReportKind = "term-1" | "term-2" | "annual";
+
 export interface MultiExamReportCardData {
   schoolName?: string;
   schoolAddress?: string;
@@ -71,9 +73,15 @@ export interface MultiExamReportCardData {
   studentId?: string;
   academicYear?: string;
   reportTitle: string;
+  reportKind: MultiExamReportKind;
+  height?: string | null;
+  weight?: string | null;
+  workingDays?: number | null;
+  presentDays?: number | null;
   exams: {
     id: string;
     name: string;
+    term?: string | null;
   }[];
   subjects: MultiExamReportCardSubject[];
 }
@@ -692,6 +700,85 @@ function drawMultiExamSubjectTable(
   return { y, grandTotalObtained, grandTotalMax };
 }
 
+function drawSectionHeading(doc: jsPDF, y: number, title: string): number {
+  const margin = 14;
+  y = continueReportPage(doc, y, 8);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(...COLORS.navy);
+  doc.text(title, margin, y + 4);
+  return y + 8;
+}
+
+function isTermPaper(name: string): boolean {
+  return /term/i.test(name) && !/class\s*test/i.test(name);
+}
+
+function gradeForTerm(
+  data: MultiExamReportCardData,
+  subject: MultiExamReportCardSubject,
+  term: string
+): string | null {
+  const termExams = data.exams.filter((exam) => exam.term === term);
+  const termPaper = termExams.find((exam) => isTermPaper(exam.name)) ?? termExams[termExams.length - 1];
+  if (!termPaper) return null;
+  const entry = subject.exams.find((exam) => exam.examId === termPaper.id);
+  if (!entry || entry.isAbsent) return null;
+  return entry.grade?.trim() || null;
+}
+
+function coScholasticColumns(kind: MultiExamReportKind): { id: string; label: string }[] {
+  if (kind === "term-1") return [{ id: "Term-1", label: "Term-1" }];
+  if (kind === "term-2") return [{ id: "Term-2", label: "Term-2" }];
+  return [
+    { id: "Term-1", label: "Term-1" },
+    { id: "Term-2", label: "Term-2" },
+    { id: "Final", label: "Final" },
+  ];
+}
+
+function drawGradeScale(doc: jsPDF, y: number): number {
+  const margin = 14;
+  y = continueReportPage(doc, y, 6);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(...COLORS.mutedText);
+  doc.text("Grade:  A (80-100)    B (60-79)    C (40-59)    D (below 40)", margin, y + 3.5);
+  return y + 6;
+}
+
+function displayOrBlank(value: string | number | null | undefined): string {
+  if (value == null) return "—";
+  const text = String(value).trim();
+  return text || "—";
+}
+
+function drawStudentDetails(doc: jsPDF, y: number, data: MultiExamReportCardData): number {
+  const w = doc.internal.pageSize.getWidth();
+  const margin = 14;
+  const contentW = w - margin * 2;
+  const rowH = 7;
+  y = continueReportPage(doc, y, rowH * 3 + 4);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(...COLORS.darkText);
+
+  const mid = margin + contentW / 2;
+  doc.text(`Height (cm):  ${displayOrBlank(data.height)}`, margin, y + 4);
+  doc.text(`Weight:  ${displayOrBlank(data.weight)}`, mid, y + 4);
+  y += rowH;
+  doc.text(`Total working days:  ${displayOrBlank(data.workingDays)}`, margin, y + 4);
+  doc.text(`Present Days:  ${displayOrBlank(data.presentDays)}`, mid, y + 4);
+  y += rowH + 1;
+  doc.text("Remarks:", margin, y + 4);
+  y += 6;
+  doc.setDrawColor(...COLORS.midGray);
+  doc.setLineWidth(0.2);
+  doc.line(margin, y, margin + contentW, y);
+  return y + 4;
+}
+
 async function renderMultiExamReportCard(
   doc: jsPDF,
   data: MultiExamReportCardData,
@@ -728,6 +815,7 @@ async function renderMultiExamReportCard(
   let grandTotalMax = 0;
 
   if (markSubjects.length > 0) {
+    y = drawSectionHeading(doc, y, "Scholastic Performance");
     const marksTable = drawMultiExamSubjectTable(doc, y, data.exams, markSubjects, "marks");
     y = marksTable.y + 6;
     grandTotalObtained = marksTable.grandTotalObtained;
@@ -748,28 +836,30 @@ async function renderMultiExamReportCard(
     doc.setTextColor(...COLORS.navy);
     const pctText = percentage !== "—" ? `${percentage}%` : "—";
     doc.text(`Percentage: ${pctText}`, margin + 6, y + resultH / 2 + 1.5);
-
-    if (percentage !== "—") {
-      const pctNum = parseFloat(percentage);
-      let perfLabel = "";
-      let perfColor: [number, number, number] = COLORS.darkText;
-      if (pctNum >= 90) { perfLabel = "Outstanding"; perfColor = [25, 135, 84]; }
-      else if (pctNum >= 75) { perfLabel = "Excellent"; perfColor = [13, 110, 253]; }
-      else if (pctNum >= 60) { perfLabel = "Very Good"; perfColor = [13, 110, 253]; }
-      else if (pctNum >= 45) { perfLabel = "Good"; perfColor = [255, 153, 0]; }
-      else if (pctNum >= 33) { perfLabel = "Pass"; perfColor = [255, 153, 0]; }
-      else { perfLabel = "Needs Improvement"; perfColor = [220, 53, 69]; }
-
-      doc.setTextColor(...perfColor);
-      doc.text(perfLabel, w - margin - 6, y + resultH / 2 + 1.5, { align: "right" });
-    }
     y += resultH + 6;
   }
 
   if (gradeSubjects.length > 0) {
-    const gradesTable = drawMultiExamSubjectTable(doc, y, data.exams, gradeSubjects, "grades");
+    y = drawSectionHeading(doc, y, "Co-Scholastic Performance");
+    y = drawGradeScale(doc, y);
+    const columns = coScholasticColumns(data.reportKind);
+    const gradeExams = columns.map((column) => ({ id: column.id, name: column.label }));
+    const gradeRows = gradeSubjects.map((subject) => ({
+      ...subject,
+      exams: columns.map((column) => ({
+        examId: column.id,
+        score: null,
+        maxScore: 0,
+        grade: column.id === "Final" ? gradeForTerm(data, subject, "Term-2") : gradeForTerm(data, subject, column.id),
+        isAbsent: false,
+        isGradeBased: true,
+      })),
+    }));
+    const gradesTable = drawMultiExamSubjectTable(doc, y, gradeExams, gradeRows, "grades");
     y = gradesTable.y + 4;
   }
+
+  y = drawStudentDetails(doc, y, data);
 
   // ── Signatures ──
   await drawSignatures(doc, y, data.principalSignatureUrl);
