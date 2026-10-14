@@ -61,6 +61,13 @@ export interface MultiExamReportCardSubject {
 
 export type MultiExamReportKind = "term-1" | "term-2" | "annual";
 
+export interface TermReportMetrics {
+  height: string | null;
+  weight: string | null;
+  workingDays: number | null;
+  presentDays: number | null;
+}
+
 export interface MultiExamReportCardData {
   schoolName?: string;
   schoolAddress?: string;
@@ -74,10 +81,10 @@ export interface MultiExamReportCardData {
   academicYear?: string;
   reportTitle: string;
   reportKind: MultiExamReportKind;
-  height?: string | null;
-  weight?: string | null;
-  workingDays?: number | null;
-  presentDays?: number | null;
+  termMetrics: {
+    "Term-1": TermReportMetrics;
+    "Term-2": TermReportMetrics;
+  };
   exams: {
     id: string;
     name: string;
@@ -320,7 +327,27 @@ async function drawSignatures(
 
   if (sigDataUrl) {
     try {
-      doc.addImage(sigDataUrl, "PNG", w - margin - 45, y - 10, 30, 10);
+      const img = await new Promise<HTMLImageElement | null>((resolve) => {
+        const el = new Image();
+        el.onload = () => resolve(el);
+        el.onerror = () => resolve(null);
+        el.src = sigDataUrl;
+      });
+      const maxW = 38;
+      const maxH = 16;
+      let drawW = 30;
+      let drawH = 12;
+      if (img && img.naturalWidth > 0 && img.naturalHeight > 0) {
+        const aspect = img.naturalWidth / img.naturalHeight;
+        drawW = maxH * aspect;
+        drawH = maxH;
+        if (drawW > maxW) {
+          drawW = maxW;
+          drawH = maxW / aspect;
+        }
+      }
+      const format = sigDataUrl.includes("image/jpeg") ? "JPEG" : "PNG";
+      doc.addImage(sigDataUrl, format, w - margin - drawW - 8, y - drawH - 1, drawW, drawH);
     } catch {
       // Graceful degradation
     }
@@ -607,6 +634,7 @@ function drawMultiExamSubjectTable(
 
   let grandTotalObtained = 0;
   let grandTotalMax = 0;
+  const examTotals = exams.map(() => ({ obtained: 0, max: 0 }));
 
   for (let i = 0; i < subjects.length; i++) {
     const sub = subjects[i];
@@ -639,12 +667,20 @@ function drawMultiExamSubjectTable(
 
     const cellY = y + thisRowH / 2 + 1.2;
     let rx = margin + subjectColW;
-    exams.forEach((ex) => {
+    exams.forEach((ex, examIndex) => {
       doc.setDrawColor(...COLORS.midGray);
       doc.setLineWidth(0.1);
       doc.line(rx, y, rx, y + thisRowH);
 
       const examData = sub.exams.find((entry) => entry.examId === ex.id);
+      if (mode === "marks" && examData) {
+        if (examData.isAbsent) {
+          examTotals[examIndex].max += Number(examData.maxScore) || 0;
+        } else if (examData.score !== null) {
+          examTotals[examIndex].obtained += Number(examData.score) || 0;
+          examTotals[examIndex].max += Number(examData.maxScore) || 0;
+        }
+      }
       let display = "—";
       if (examData?.isAbsent) {
         display = "AB";
@@ -685,27 +721,41 @@ function drawMultiExamSubjectTable(
   if (mode === "marks") {
     const totalRowH = 8;
     y = continueReportPage(doc, y, totalRowH * 2);
-    const totalX = margin + subjectColW + exams.length * examColW;
     const labelY = (rowY: number) => rowY + totalRowH / 2 + 1.2;
+    const marksLabel = (obtained: number, max: number) => (max > 0 ? `${obtained}/${max}` : "—");
+    const percentLabel = (obtained: number, max: number) =>
+      max > 0 ? `${((obtained / max) * 100).toFixed(2)}%` : "—";
+    const cellFont = examColW < 22 ? 6.5 : 8;
 
-    doc.setFillColor(...COLORS.navy);
-    doc.rect(margin, y, contentW, totalRowH, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(...COLORS.white);
-    doc.text("GRAND TOTAL", margin + 4, labelY(y));
-    const grandLabel = grandTotalMax > 0 ? `${grandTotalObtained}/${grandTotalMax}` : "—";
-    doc.text(grandLabel, totalX + totalColW / 2, labelY(y), { align: "center" });
+    const drawSummaryRow = (
+      rowY: number,
+      label: string,
+      fill: [number, number, number],
+      valueFor: (obtained: number, max: number) => string
+    ) => {
+      doc.setFillColor(...fill);
+      doc.rect(margin, rowY, contentW, totalRowH, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.setTextColor(...COLORS.white);
+      doc.text(label, margin + 3, labelY(rowY));
+      doc.setDrawColor(255, 255, 255);
+      doc.setLineWidth(0.15);
+      let x = margin + subjectColW;
+      examTotals.forEach((total) => {
+        doc.line(x, rowY, x, rowY + totalRowH);
+        doc.setFontSize(cellFont);
+        doc.text(valueFor(total.obtained, total.max), x + examColW / 2, labelY(rowY), { align: "center" });
+        x += examColW;
+      });
+      doc.line(x, rowY, x, rowY + totalRowH);
+      doc.setFontSize(cellFont);
+      doc.text(valueFor(grandTotalObtained, grandTotalMax), x + totalColW / 2, labelY(rowY), { align: "center" });
+    };
+
+    drawSummaryRow(y, "TOTAL", COLORS.navy, marksLabel);
     y += totalRowH;
-
-    const percentage = grandTotalMax > 0 ? `${((grandTotalObtained / grandTotalMax) * 100).toFixed(2)}%` : "—";
-    doc.setFillColor(...COLORS.navyLight);
-    doc.rect(margin, y, contentW, totalRowH, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(...COLORS.white);
-    doc.text("PERCENTAGE", margin + 4, labelY(y));
-    doc.text(percentage, totalX + totalColW / 2, labelY(y), { align: "center" });
+    drawSummaryRow(y, "PERCENTAGE", COLORS.navyLight, percentLabel);
     y += totalRowH;
   }
 
@@ -759,36 +809,61 @@ function drawGradeScale(doc: jsPDF, y: number): number {
   return y + 6;
 }
 
-function displayOrBlank(value: string | number | null | undefined): string {
-  if (value == null) return "—";
-  const text = String(value).trim();
-  return text || "—";
-}
-
-function drawStudentDetails(doc: jsPDF, y: number, data: MultiExamReportCardData): number {
+function drawRemarks(doc: jsPDF, y: number): number {
   const w = doc.internal.pageSize.getWidth();
   const margin = 14;
   const contentW = w - margin * 2;
-  const rowH = 7;
-  y = continueReportPage(doc, y, rowH * 3 + 4);
-
+  y = continueReportPage(doc, y, 16);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(...COLORS.darkText);
-
-  const mid = margin + contentW / 2;
-  doc.text(`Height (cm):  ${displayOrBlank(data.height)}`, margin, y + 4);
-  doc.text(`Weight:  ${displayOrBlank(data.weight)}`, mid, y + 4);
-  y += rowH;
-  doc.text(`Total working days:  ${displayOrBlank(data.workingDays)}`, margin, y + 4);
-  doc.text(`Present Days:  ${displayOrBlank(data.presentDays)}`, mid, y + 4);
-  y += rowH + 1;
   doc.text("Remarks:", margin, y + 4);
-  y += 6;
+  y += 8;
   doc.setDrawColor(...COLORS.midGray);
   doc.setLineWidth(0.2);
   doc.line(margin, y, margin + contentW, y);
   return y + 4;
+}
+
+function metricCell(
+  metrics: MultiExamReportCardData["termMetrics"],
+  columnId: string,
+  pick: (term: TermReportMetrics) => string | number | null,
+  final: "blank" | "sum"
+): string | null {
+  if (columnId === "Final") {
+    if (final === "blank") return null;
+    const first = pick(metrics["Term-1"]);
+    const second = pick(metrics["Term-2"]);
+    if (first == null && second == null) return null;
+    return String((Number(first) || 0) + (Number(second) || 0));
+  }
+  if (columnId !== "Term-1" && columnId !== "Term-2") return null;
+  const value = pick(metrics[columnId]);
+  return value == null || value === "" ? null : String(value);
+}
+
+function coScholasticMetricRows(data: MultiExamReportCardData): MultiExamReportCardSubject[] {
+  const columns = coScholasticColumns(data.reportKind);
+  const rows: { name: string; pick: (term: TermReportMetrics) => string | number | null; final: "blank" | "sum" }[] = [
+    { name: "Height (cm)", pick: (term) => term.height, final: "blank" },
+    { name: "Weight (kg)", pick: (term) => term.weight, final: "blank" },
+    { name: "Total working days", pick: (term) => term.workingDays, final: "sum" },
+    { name: "Present Days", pick: (term) => term.presentDays, final: "sum" },
+  ];
+  return rows.map((row) => ({
+    subjectName: row.name,
+    totalScore: null,
+    totalMax: 0,
+    exams: columns.map((column) => ({
+      examId: column.id,
+      score: null,
+      maxScore: 0,
+      grade: metricCell(data.termMetrics, column.id, row.pick, row.final),
+      isAbsent: false,
+      isGradeBased: true,
+    })),
+  }));
 }
 
 async function renderMultiExamReportCard(
@@ -825,12 +900,12 @@ async function renderMultiExamReportCard(
     y = marksTable.y + 6;
   }
 
-  if (gradeSubjects.length > 0) {
-    y = drawSectionHeading(doc, y, "Co-Scholastic Performance");
-    y = drawGradeScale(doc, y);
-    const columns = coScholasticColumns(data.reportKind);
-    const gradeExams = columns.map((column) => ({ id: column.id, name: column.label }));
-    const gradeRows = gradeSubjects.map((subject) => ({
+  y = drawSectionHeading(doc, y, "Co-Scholastic Performance");
+  y = drawGradeScale(doc, y);
+  const columns = coScholasticColumns(data.reportKind);
+  const gradeExams = columns.map((column) => ({ id: column.id, name: column.label }));
+  const gradeRows = [
+    ...gradeSubjects.map((subject) => ({
       ...subject,
       exams: columns.map((column) => ({
         examId: column.id,
@@ -840,12 +915,13 @@ async function renderMultiExamReportCard(
         isAbsent: false,
         isGradeBased: true,
       })),
-    }));
-    const gradesTable = drawMultiExamSubjectTable(doc, y, gradeExams, gradeRows, "grades");
-    y = gradesTable.y + 4;
-  }
+    })),
+    ...coScholasticMetricRows(data),
+  ];
+  const gradesTable = drawMultiExamSubjectTable(doc, y, gradeExams, gradeRows, "grades");
+  y = gradesTable.y + 4;
 
-  y = drawStudentDetails(doc, y, data);
+  y = drawRemarks(doc, y);
 
   // ── Signatures ──
   await drawSignatures(doc, y, data.principalSignatureUrl);
