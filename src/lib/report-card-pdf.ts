@@ -327,7 +327,27 @@ async function drawSignatures(
 
   if (sigDataUrl) {
     try {
-      doc.addImage(sigDataUrl, "PNG", w - margin - 45, y - 10, 30, 10);
+      const img = await new Promise<HTMLImageElement | null>((resolve) => {
+        const el = new Image();
+        el.onload = () => resolve(el);
+        el.onerror = () => resolve(null);
+        el.src = sigDataUrl;
+      });
+      const maxW = 38;
+      const maxH = 16;
+      let drawW = 30;
+      let drawH = 12;
+      if (img && img.naturalWidth > 0 && img.naturalHeight > 0) {
+        const aspect = img.naturalWidth / img.naturalHeight;
+        drawW = maxH * aspect;
+        drawH = maxH;
+        if (drawW > maxW) {
+          drawW = maxW;
+          drawH = maxW / aspect;
+        }
+      }
+      const format = sigDataUrl.includes("image/jpeg") ? "JPEG" : "PNG";
+      doc.addImage(sigDataUrl, format, w - margin - drawW - 8, y - drawH - 1, drawW, drawH);
     } catch {
       // Graceful degradation
     }
