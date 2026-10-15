@@ -362,7 +362,15 @@ async function drawSignatures(
         }
       }
       const format = sigDataUrl.includes("image/jpeg") ? "JPEG" : "PNG";
-      doc.addImage(sigDataUrl, format, w - margin - drawW - 8, y - drawH - 1, drawW, drawH);
+      const principalLineCenter = w - margin - 35;
+      doc.addImage(
+        sigDataUrl,
+        format,
+        principalLineCenter - drawW / 2,
+        y - drawH - 1,
+        drawW,
+        drawH
+      );
     } catch {
       // Graceful degradation
     }
@@ -901,6 +909,10 @@ function drawMultiExamSubjectTable(
     drawSummaryRow(y, "PERCENTAGE", percentLabel);
     y += totalRowH;
   }
+
+  doc.setDrawColor(...COLORS.navy);
+  doc.setLineWidth(0.35);
+  doc.rect(margin, startY, contentW, y - startY);
 
   return { y, grandTotalObtained, grandTotalMax };
 }
