@@ -996,7 +996,6 @@ function coScholasticColumns(kind: MultiExamReportKind): { id: string; label: st
   return [
     { id: "Term-1", label: "Term-1" },
     { id: "Term-2", label: "Term-2" },
-    { id: "Final", label: "Final" },
   ];
 }
 
