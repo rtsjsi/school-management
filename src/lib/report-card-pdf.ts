@@ -13,6 +13,9 @@ const COLORS = {
   midGray: [206, 212, 218] as [number, number, number],   // #ced4da – borders
   darkText: [33, 37, 41] as [number, number, number],     // #212529
   mutedText: [108, 117, 125] as [number, number, number], // #6c757d
+  // Term / annual cards: match the red letterhead on the pre-printed sheet
+  brand: [156, 33, 43] as [number, number, number],       // #9c212b
+  brandLight: [200, 120, 126] as [number, number, number], // lighter red for header dividers
 };
 
 const LOGO_SIZE = 16; // mm
@@ -217,6 +220,7 @@ function drawStudentInfo(
     academicYear?: string;
     examInfo?: string;
     examLabel?: string;
+    plainBox?: boolean;
   }
 ): number {
   const w = doc.internal.pageSize.getWidth();
@@ -237,11 +241,15 @@ function drawStudentInfo(
   const rows = nameRows + 2 + (data.examInfo ? 1 : 0);
   const boxH = padY * 2 + rows * lh + 2;
 
-  // Background box
-  doc.setFillColor(...COLORS.lightGray);
-  doc.setDrawColor(...COLORS.midGray);
-  doc.setLineWidth(0.2);
-  doc.roundedRect(margin, y, contentW, boxH, 2, 2, "FD");
+  // Box: filled on plain cards, outline only on pre-printed paper (keeps the watermark visible)
+  doc.setDrawColor(...(data.plainBox ? COLORS.brand : COLORS.midGray));
+  doc.setLineWidth(data.plainBox ? 0.35 : 0.2);
+  if (data.plainBox) {
+    doc.roundedRect(margin, y, contentW, boxH, 2, 2, "S");
+  } else {
+    doc.setFillColor(...COLORS.lightGray);
+    doc.roundedRect(margin, y, contentW, boxH, 2, 2, "FD");
+  }
 
   let iy = y + padY + lh;
   const colLeftUsed = colLeft;
@@ -780,7 +788,7 @@ function drawMultiExamSubjectTable(
   const headerH = header.headerH;
 
   const drawHeader = (y: number) => {
-    doc.setFillColor(...COLORS.navy);
+    doc.setFillColor(...COLORS.brand);
     doc.rect(margin, y, contentW, headerH, "F");
     doc.setFont("helvetica", "bold");
     doc.setFontSize(header.font);
@@ -790,7 +798,7 @@ function drawMultiExamSubjectTable(
     doc.text("Subject", hx + 3, y + headerH / 2 + 0.8);
     hx += subjectColW;
 
-    doc.setDrawColor(...COLORS.navyLight);
+    doc.setDrawColor(...COLORS.brandLight);
     doc.setLineWidth(0.2);
     exams.forEach((_ex, examIndex) => {
       doc.line(hx, y, hx, y + headerH);
@@ -825,11 +833,7 @@ function drawMultiExamSubjectTable(
     const lineStep = rhythm.rowFont * 0.42;
     const thisRowH = subjectRowHeight(doc, sub.subjectName, subjectColW, rhythm);
 
-    if (i % 2 === 0) {
-      doc.setFillColor(...COLORS.offWhite);
-      doc.rect(margin, y, contentW, thisRowH, "F");
-    }
-
+    // No row shading: the sheet has a watermark that should show through.
     doc.setDrawColor(...COLORS.midGray);
     doc.setLineWidth(0.1);
     doc.line(margin, y + thisRowH, margin + contentW, y + thisRowH);
@@ -865,7 +869,7 @@ function drawMultiExamSubjectTable(
         doc.setTextColor(220, 53, 69);
       } else if (mode === "grades") {
         display = examData?.grade || "—";
-        doc.setTextColor(...COLORS.navyLight);
+        doc.setTextColor(...COLORS.darkText);
       } else if (examData && examData.score !== null) {
         display = `${examData.score}/${examData.maxScore}`;
         doc.setTextColor(...COLORS.darkText);
@@ -932,7 +936,7 @@ function drawMultiExamSubjectTable(
     y += totalRowH;
   }
 
-  doc.setDrawColor(...COLORS.navy);
+  doc.setDrawColor(...COLORS.brand);
   doc.setLineWidth(0.35);
   doc.rect(margin, startY, contentW, y - startY);
 
@@ -942,7 +946,7 @@ function drawMultiExamSubjectTable(
 function drawSectionHeading(doc: jsPDF, y: number, title: string, rhythm: ReportRhythm): number {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(rhythm.headingFont);
-  doc.setTextColor(...COLORS.navy);
+  doc.setTextColor(...COLORS.brand);
   doc.text(title, rhythm.margin, y + HEADING_TOP_GAP + rhythm.headingH - 1.4);
   return y + HEADING_TOP_GAP + rhythm.headingH + HEADING_BOTTOM_GAP;
 }
@@ -1152,6 +1156,7 @@ async function renderMultiExamReportCard(
     academicYear: data.academicYear,
     examInfo: data.reportTitle,
     examLabel: "Report",
+    plainBox: true,
   });
 
   const markSubjects = data.subjects.filter((subject) => !isGradeSubject(subject));
