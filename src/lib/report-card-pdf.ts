@@ -591,7 +591,6 @@ type ReportRhythm = {
   rowFont: number;
   headerFont: number;
   headerLine: number;
-  summaryH: number;
   blockGap: number;
   remarksH: number;
   remarksFont: number;
@@ -612,7 +611,6 @@ function baseRhythm(): ReportRhythm {
     rowFont: 7.5,
     headerFont: 7,
     headerLine: 3.1,
-    summaryH: 5.3,
     blockGap: 2.6,
     remarksH: 9,
     remarksFont: 8.5,
@@ -634,7 +632,6 @@ function scaleRhythm(base: ReportRhythm, factor: number): ReportRhythm {
     rowFont: font(base.rowFont, 6),
     headerFont: font(base.headerFont, 5.5),
     headerLine: Math.max(2.4, s(base.headerLine)),
-    summaryH: Math.max(3.6, s(base.summaryH)),
     blockGap: Math.max(1.2, s(base.blockGap)),
     remarksH: Math.max(7, s(base.remarksH)),
     remarksFont: font(base.remarksFont, 7),
@@ -690,7 +687,7 @@ function tableBlockHeight(
   const cols = tableColumns(doc, examNames.length, mode, rhythm);
   const header = examHeaderLayout(doc, examNames, cols.examColW, rhythm);
   const rows = subjectNames.reduce((sum, name) => sum + subjectRowHeight(doc, name, cols.subjectColW, rhythm), 0);
-  const summary = mode === "marks" ? rhythm.summaryH * 2 : 0;
+  const summary = mode === "marks" ? rhythm.rowH * 2 : 0;
   return header.headerH + rows + summary;
 }
 
@@ -825,31 +822,27 @@ function drawMultiExamSubjectTable(
   }
 
   if (mode === "marks") {
-    const totalRowH = rhythm.summaryH;
+    const totalRowH = rhythm.rowH;
     const labelY = (rowY: number) => rowY + totalRowH / 2 + 0.7;
     const marksLabel = (obtained: number, max: number) => (max > 0 ? `${obtained}/${max}` : "—");
     const percentLabel = (obtained: number, max: number) =>
       max > 0 ? `${((obtained / max) * 100).toFixed(2)}%` : "—";
     const cellFont = examColW < 18 ? 5.5 : rhythm.rowFont;
 
-    const drawSummaryRow = (
-      rowY: number,
-      label: string,
-      fill: [number, number, number],
-      valueFor: (obtained: number, max: number) => string
-    ) => {
-      doc.setFillColor(...fill);
-      doc.rect(margin, rowY, contentW, totalRowH, "F");
+    const drawSummaryRow = (rowY: number, label: string, valueFor: (obtained: number, max: number) => string) => {
+      doc.setDrawColor(...COLORS.midGray);
+      doc.setLineWidth(0.1);
+      doc.line(margin, rowY + totalRowH, w - margin, rowY + totalRowH);
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(8);
-      doc.setTextColor(...COLORS.white);
+      doc.setFontSize(rhythm.rowFont);
+      doc.setTextColor(...COLORS.darkText);
       doc.text(label, margin + 3, labelY(rowY));
-      doc.setDrawColor(255, 255, 255);
-      doc.setLineWidth(0.15);
       let x = margin + subjectColW;
       examTotals.forEach((total) => {
         doc.line(x, rowY, x, rowY + totalRowH);
+        doc.setFont("helvetica", "bold");
         doc.setFontSize(cellFont);
+        doc.setTextColor(...COLORS.darkText);
         doc.text(valueFor(total.obtained, total.max), x + examColW / 2, labelY(rowY), { align: "center" });
         x += examColW;
       });
@@ -858,9 +851,9 @@ function drawMultiExamSubjectTable(
       doc.text(valueFor(grandTotalObtained, grandTotalMax), x + totalColW / 2, labelY(rowY), { align: "center" });
     };
 
-    drawSummaryRow(y, "TOTAL", COLORS.navy, marksLabel);
+    drawSummaryRow(y, "TOTAL", marksLabel);
     y += totalRowH;
-    drawSummaryRow(y, "PERCENTAGE", COLORS.navyLight, percentLabel);
+    drawSummaryRow(y, "PERCENTAGE", percentLabel);
     y += totalRowH;
   }
 
