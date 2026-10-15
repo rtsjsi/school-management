@@ -20,8 +20,10 @@ const LOGO_SIZE = 16; // mm
 /**
  * Term 1, Term 2, and annual cards print on pre-printed A4 stock.
  * The letterhead occupies the top 5 cm, so student content starts at 50 mm.
+ * Everything below that must finish on the same sheet.
  */
 const PREPRINTED_CONTENT_TOP = 50;
+const PAGE_CONTENT_BOTTOM = 291;
 
 // ── Interfaces ──────────────────────────────────────────────────────────────
 
@@ -216,9 +218,16 @@ function drawStudentInfo(
   const lh = 6;
   const padX = 5;
   const padY = 4;
+  const colLeft = margin + padX;
+  const colRight = w / 2 + 12;
+  const labelW = 32;
+  const nameMaxW = Math.max(20, colRight - colLeft - labelW - 5);
 
-  // Compute height needed
-  const rows = 3 + (data.examInfo ? 1 : 0);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  const nameLines = doc.splitTextToSize(data.studentName || "—", nameMaxW) as string[];
+  const nameRows = Math.max(1, nameLines.length);
+  const rows = nameRows + 2 + (data.examInfo ? 1 : 0);
   const boxH = padY * 2 + rows * lh + 2;
 
   // Background box
@@ -228,23 +237,20 @@ function drawStudentInfo(
   doc.roundedRect(margin, y, contentW, boxH, 2, 2, "FD");
 
   let iy = y + padY + lh;
-  const colLeft = margin + padX;
-  const colRight = w / 2 + 12;
-  const labelW = 32;
+  const colLeftUsed = colLeft;
+  const colRightUsed = colRight;
 
   doc.setFontSize(9);
 
   // Row 1: Name / Standard
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...COLORS.mutedText);
-  doc.text("Name", colLeft, iy);
-  doc.text(":", colLeft + 20, iy);
+  doc.text("Name", colLeftUsed, iy);
+  doc.text(":", colLeftUsed + 20, iy);
   doc.setTextColor(...COLORS.darkText);
   doc.setFont("helvetica", "normal");
-  const nameVal = data.studentName || "—";
-  const nameLines = doc.splitTextToSize(nameVal, colRight - colLeft - labelW - 5);
   nameLines.forEach((line: string, i: number) => {
-    doc.text(line, colLeft + labelW, iy + i * lh);
+    doc.text(line, colLeftUsed + labelW, iy + i * lh);
   });
 
   doc.setFont("helvetica", "bold");
@@ -321,12 +327,16 @@ function drawFooter(doc: jsPDF, academicYear?: string) {
 async function drawSignatures(
   doc: jsPDF,
   y: number,
-  principalSigUrl?: string
+  principalSigUrl?: string,
+  layout?: { margin: number; before: number; after: number; maxH: number }
 ): Promise<number> {
   const w = doc.internal.pageSize.getWidth();
-  const margin = 14;
+  const margin = layout?.margin ?? 14;
+  const before = layout?.before ?? 8;
+  const maxH = layout?.maxH ?? 16;
+  const tail = layout?.after ?? 10;
 
-  y += 8;
+  y += before;
 
   // Try to load principal signature
   const sigDataUrl = principalSigUrl ? await urlToDataUrl(principalSigUrl) : null;
@@ -340,9 +350,8 @@ async function drawSignatures(
         el.src = sigDataUrl;
       });
       const maxW = 38;
-      const maxH = 16;
       let drawW = 30;
-      let drawH = 12;
+      let drawH = Math.min(12, maxH);
       if (img && img.naturalWidth > 0 && img.naturalHeight > 0) {
         const aspect = img.naturalWidth / img.naturalHeight;
         drawW = maxH * aspect;
@@ -364,7 +373,8 @@ async function drawSignatures(
   doc.setLineWidth(0.3);
   doc.line(margin + 10, y, margin + 60, y);
   doc.line(w - margin - 60, y, w - margin - 10, y);
-  y += 4;
+  const labelGap = Math.min(4, tail);
+  y += labelGap;
 
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
@@ -372,7 +382,7 @@ async function drawSignatures(
   doc.text("Class Teacher", margin + 35, y, { align: "center" });
   doc.text("Principal", w - margin - 35, y, { align: "center" });
 
-  return y + 6;
+  return y + (tail - labelGap);
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -569,73 +579,169 @@ function isGradeSubject(subject: MultiExamReportCardSubject): boolean {
   return subject.exams.some((exam) => exam.isGradeBased);
 }
 
-function continueReportPage(doc: jsPDF, y: number, needed: number): number {
-  const pageH = doc.internal.pageSize.getHeight();
-  if (y + needed <= pageH - 18) return y;
-  doc.addPage();
-  return PREPRINTED_CONTENT_TOP;
+type ReportRhythm = {
+  margin: number;
+  headingH: number;
+  headingFont: number;
+  scaleH: number;
+  scaleFont: number;
+  subjectColW: number;
+  totalColW: number;
+  rowH: number;
+  rowFont: number;
+  headerFont: number;
+  headerLine: number;
+  summaryH: number;
+  blockGap: number;
+  remarksH: number;
+  remarksFont: number;
+  signatureBefore: number;
+  signatureAfter: number;
+};
+
+function baseRhythm(): ReportRhythm {
+  return {
+    margin: 14,
+    headingH: 5.2,
+    headingFont: 9.5,
+    scaleH: 4,
+    scaleFont: 7,
+    subjectColW: 40,
+    totalColW: 18,
+    rowH: 5.2,
+    rowFont: 7.5,
+    headerFont: 7,
+    headerLine: 3.1,
+    summaryH: 5.3,
+    blockGap: 2.6,
+    remarksH: 9,
+    remarksFont: 8.5,
+    signatureBefore: 12,
+    signatureAfter: 7,
+  };
+}
+
+function scaleRhythm(base: ReportRhythm, factor: number): ReportRhythm {
+  const s = (n: number) => Math.round(n * factor * 10) / 10;
+  const font = (n: number, min: number) => Math.max(min, s(n));
+  return {
+    ...base,
+    headingH: Math.max(4, s(base.headingH)),
+    headingFont: font(base.headingFont, 8),
+    scaleH: Math.max(3.2, s(base.scaleH)),
+    scaleFont: font(base.scaleFont, 6),
+    rowH: Math.max(3.6, s(base.rowH)),
+    rowFont: font(base.rowFont, 6),
+    headerFont: font(base.headerFont, 5.5),
+    headerLine: Math.max(2.4, s(base.headerLine)),
+    summaryH: Math.max(3.6, s(base.summaryH)),
+    blockGap: Math.max(1.2, s(base.blockGap)),
+    remarksH: Math.max(7, s(base.remarksH)),
+    remarksFont: font(base.remarksFont, 7),
+    signatureBefore: Math.max(9, s(base.signatureBefore)),
+    signatureAfter: Math.max(5, s(base.signatureAfter)),
+  };
+}
+
+function tableColumns(doc: jsPDF, examCount: number, mode: "marks" | "grades", rhythm: ReportRhythm) {
+  const w = doc.internal.pageSize.getWidth();
+  const contentW = w - rhythm.margin * 2;
+  const totalColW = mode === "marks" ? rhythm.totalColW : 0;
+  const subjectColW = Math.min(rhythm.subjectColW, Math.max(32, contentW - totalColW - examCount * 14));
+  const examColW = (contentW - subjectColW - totalColW) / Math.max(examCount, 1);
+  return { w, contentW, subjectColW, examColW, totalColW };
+}
+
+function examHeaderLayout(doc: jsPDF, names: string[], examColW: number, rhythm: ReportRhythm) {
+  const width = Math.max(examColW - 1.8, 6);
+  let font = rhythm.headerFont;
+  const wrap = (size: number) => {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(size);
+    return names.map((name) => doc.splitTextToSize(name, width) as string[]);
+  };
+  let lines = wrap(font);
+  let maxLines = Math.max(1, ...lines.map((entry) => entry.length));
+  while (maxLines > 1 && font > 6) {
+    font = Math.round((font - 0.5) * 10) / 10;
+    lines = wrap(font);
+    maxLines = Math.max(1, ...lines.map((entry) => entry.length));
+  }
+  const lineH = Math.max(2.4, rhythm.headerLine * (font / rhythm.headerFont));
+  const headerH = Math.max(rhythm.rowH, maxLines * lineH + 1.4);
+  return { font, lineH, headerH, lines };
+}
+
+function subjectRowHeight(doc: jsPDF, name: string, subjectColW: number, rhythm: ReportRhythm) {
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(rhythm.rowFont);
+  const lines = doc.splitTextToSize(name, Math.max(subjectColW - 4, 8)) as string[];
+  if (lines.length <= 1) return rhythm.rowH;
+  return Math.max(rhythm.rowH, lines.length * (rhythm.rowFont * 0.42) + 1.2);
+}
+
+function tableBlockHeight(
+  doc: jsPDF,
+  examNames: string[],
+  subjectNames: string[],
+  mode: "marks" | "grades",
+  rhythm: ReportRhythm
+) {
+  const cols = tableColumns(doc, examNames.length, mode, rhythm);
+  const header = examHeaderLayout(doc, examNames, cols.examColW, rhythm);
+  const rows = subjectNames.reduce((sum, name) => sum + subjectRowHeight(doc, name, cols.subjectColW, rhythm), 0);
+  const summary = mode === "marks" ? rhythm.summaryH * 2 : 0;
+  return header.headerH + rows + summary;
 }
 
 function drawMultiExamSubjectTable(
   doc: jsPDF,
   startY: number,
-  exams: MultiExamReportCardData["exams"],
+  exams: { id: string; name: string }[],
   subjects: MultiExamReportCardSubject[],
-  mode: "marks" | "grades"
+  mode: "marks" | "grades",
+  rhythm: ReportRhythm
 ): { y: number; grandTotalObtained: number; grandTotalMax: number } {
-  const w = doc.internal.pageSize.getWidth();
-  const margin = 14;
-  const contentW = w - margin * 2;
-  const examCount = Math.max(exams.length, 1);
-  const totalColW = mode === "marks" ? 28 : 0;
-  const subjectColW = Math.max(contentW * 0.34, 42);
-  const examColW = (contentW - subjectColW - totalColW) / examCount;
-  const rowH = 7;
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  const examHeaderLines = exams.map((ex) =>
-    doc.splitTextToSize(ex.name, Math.max(examColW - 4, 8)) as string[]
-  );
-  const maxHeaderLines = Math.max(1, ...examHeaderLines.map((lines) => lines.length));
-  const headerH = Math.max(10, maxHeaderLines * 3.6 + 3);
+  const { w, contentW, subjectColW, examColW, totalColW } = tableColumns(doc, exams.length, mode, rhythm);
+  const margin = rhythm.margin;
+  const header = examHeaderLayout(doc, exams.map((exam) => exam.name), examColW, rhythm);
+  const headerH = header.headerH;
 
   const drawHeader = (y: number) => {
     doc.setFillColor(...COLORS.navy);
     doc.rect(margin, y, contentW, headerH, "F");
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(8);
+    doc.setFontSize(header.font);
     doc.setTextColor(...COLORS.white);
 
     let hx = margin;
-    doc.text("Subject", hx + 4, y + headerH / 2 + 1);
+    doc.text("Subject", hx + 3, y + headerH / 2 + 0.8);
     hx += subjectColW;
 
     doc.setDrawColor(...COLORS.navyLight);
     doc.setLineWidth(0.2);
-    exams.forEach((ex, examIndex) => {
+    exams.forEach((_ex, examIndex) => {
       doc.line(hx, y, hx, y + headerH);
-      const exLines = examHeaderLines[examIndex] ?? [ex.name];
-      const blockH = exLines.length * 3.6;
-      const lineY = y + (headerH - blockH) / 2 + 2.6;
+      const exLines = header.lines[examIndex] ?? [""];
+      const blockH = exLines.length * header.lineH;
+      const lineY = y + (headerH - blockH) / 2 + header.lineH * 0.75;
       exLines.forEach((line: string, i: number) => {
-        doc.text(line, hx + examColW / 2, lineY + i * 3.6, { align: "center" });
+        doc.text(line, hx + examColW / 2, lineY + i * header.lineH, { align: "center" });
       });
       hx += examColW;
     });
 
     if (mode === "marks") {
       doc.line(hx, y, hx, y + headerH);
-      doc.text("Total", hx + totalColW / 2, y + headerH / 2 + 1, { align: "center" });
+      doc.text("Total", hx + totalColW / 2, y + headerH / 2 + 0.8, { align: "center" });
     }
     return y + headerH;
   };
 
-  let y = continueReportPage(doc, startY, headerH + rowH);
-  y = drawHeader(y);
+  let y = drawHeader(startY);
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
+  doc.setFontSize(rhythm.rowFont);
 
   let grandTotalObtained = 0;
   let grandTotalMax = 0;
@@ -643,13 +749,9 @@ function drawMultiExamSubjectTable(
 
   for (let i = 0; i < subjects.length; i++) {
     const sub = subjects[i];
-    const subLines = doc.splitTextToSize(sub.subjectName, subjectColW - 6) as string[];
-    const thisRowH = Math.max(rowH, subLines.length * 4.5 + 2);
-
-    if (y + thisRowH > doc.internal.pageSize.getHeight() - 18) {
-      doc.addPage();
-      y = drawHeader(PREPRINTED_CONTENT_TOP);
-    }
+    const subLines = doc.splitTextToSize(sub.subjectName, Math.max(subjectColW - 4, 8)) as string[];
+    const lineStep = rhythm.rowFont * 0.42;
+    const thisRowH = subjectRowHeight(doc, sub.subjectName, subjectColW, rhythm);
 
     if (i % 2 === 0) {
       doc.setFillColor(...COLORS.offWhite);
@@ -661,15 +763,15 @@ function drawMultiExamSubjectTable(
     doc.line(margin, y + thisRowH, w - margin, y + thisRowH);
 
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(8.5);
+    doc.setFontSize(rhythm.rowFont);
     doc.setTextColor(...COLORS.darkText);
-    const subjectBlockH = subLines.length * 4.5;
-    const subjectStartY = y + (thisRowH - subjectBlockH) / 2 + 3.2;
+    const subjectBlockH = subLines.length * lineStep;
+    const subjectStartY = y + (thisRowH - subjectBlockH) / 2 + lineStep * 0.72;
     subLines.forEach((line, li) => {
-      doc.text(line, margin + 4, subjectStartY + li * 4.5);
+      doc.text(line, margin + 3, subjectStartY + li * lineStep);
     });
 
-    const cellY = y + thisRowH / 2 + 1.2;
+    const cellY = y + thisRowH / 2 + 0.7;
     let rx = margin + subjectColW;
     exams.forEach((ex, examIndex) => {
       doc.setDrawColor(...COLORS.midGray);
@@ -723,13 +825,12 @@ function drawMultiExamSubjectTable(
   }
 
   if (mode === "marks") {
-    const totalRowH = 8;
-    y = continueReportPage(doc, y, totalRowH * 2);
-    const labelY = (rowY: number) => rowY + totalRowH / 2 + 1.2;
+    const totalRowH = rhythm.summaryH;
+    const labelY = (rowY: number) => rowY + totalRowH / 2 + 0.7;
     const marksLabel = (obtained: number, max: number) => (max > 0 ? `${obtained}/${max}` : "—");
     const percentLabel = (obtained: number, max: number) =>
       max > 0 ? `${((obtained / max) * 100).toFixed(2)}%` : "—";
-    const cellFont = examColW < 22 ? 6.5 : 8;
+    const cellFont = examColW < 18 ? 5.5 : rhythm.rowFont;
 
     const drawSummaryRow = (
       rowY: number,
@@ -766,14 +867,12 @@ function drawMultiExamSubjectTable(
   return { y, grandTotalObtained, grandTotalMax };
 }
 
-function drawSectionHeading(doc: jsPDF, y: number, title: string): number {
-  const margin = 14;
-  y = continueReportPage(doc, y, 8);
+function drawSectionHeading(doc: jsPDF, y: number, title: string, rhythm: ReportRhythm): number {
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
+  doc.setFontSize(rhythm.headingFont);
   doc.setTextColor(...COLORS.navy);
-  doc.text(title, margin, y + 4);
-  return y + 8;
+  doc.text(title, rhythm.margin, y + rhythm.headingH - 1.4);
+  return y + rhythm.headingH;
 }
 
 function isTermPaper(name: string): boolean {
@@ -803,30 +902,27 @@ function coScholasticColumns(kind: MultiExamReportKind): { id: string; label: st
   ];
 }
 
-function drawGradeScale(doc: jsPDF, y: number): number {
-  const margin = 14;
-  y = continueReportPage(doc, y, 6);
+function drawGradeScale(doc: jsPDF, y: number, rhythm: ReportRhythm): number {
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
+  doc.setFontSize(rhythm.scaleFont);
   doc.setTextColor(...COLORS.mutedText);
-  doc.text("Grade:  A (80-100)    B (60-79)    C (40-59)    D (below 40)", margin, y + 3.5);
-  return y + 6;
+  doc.text("Grade:  A (80-100)    B (60-79)    C (40-59)    D (below 40)", rhythm.margin, y + rhythm.scaleH - 1.1);
+  return y + rhythm.scaleH;
 }
 
-function drawRemarks(doc: jsPDF, y: number): number {
+function drawRemarks(doc: jsPDF, y: number, rhythm: ReportRhythm): number {
   const w = doc.internal.pageSize.getWidth();
-  const margin = 14;
+  const margin = rhythm.margin;
   const contentW = w - margin * 2;
-  y = continueReportPage(doc, y, 16);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
+  doc.setFontSize(rhythm.remarksFont);
   doc.setTextColor(...COLORS.darkText);
-  doc.text("Remarks:", margin, y + 4);
-  y += 8;
+  doc.text("Remarks:", margin, y + 3.2);
+  const lineY = y + rhythm.remarksH - 1.6;
   doc.setDrawColor(...COLORS.midGray);
   doc.setLineWidth(0.2);
-  doc.line(margin, y, margin + contentW, y);
-  return y + 4;
+  doc.line(margin, lineY, margin + contentW, lineY);
+  return y + rhythm.remarksH;
 }
 
 function metricCell(
@@ -870,6 +966,72 @@ function coScholasticMetricRows(data: MultiExamReportCardData): MultiExamReportC
   }));
 }
 
+function studentInfoBlockHeight(doc: jsPDF, studentName: string): number {
+  const margin = 14;
+  const lh = 6;
+  const padY = 4;
+  const w = doc.internal.pageSize.getWidth();
+  const colLeft = margin + 5;
+  const colRight = w / 2 + 12;
+  const labelW = 32;
+  const nameMaxW = Math.max(20, colRight - colLeft - labelW - 5);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  const nameLines = Math.max(1, (doc.splitTextToSize(studentName || "—", nameMaxW) as string[]).length);
+  const rows = nameLines + 2;
+  return padY * 2 + rows * lh + 2 + 5;
+}
+
+function measureReportCard(doc: jsPDF, data: MultiExamReportCardData, rhythm: ReportRhythm): number {
+  const markSubjects = data.subjects.filter((subject) => !isGradeSubject(subject));
+  const gradeSubjects = data.subjects.filter((subject) => isGradeSubject(subject));
+  let height = studentInfoBlockHeight(doc, data.studentName);
+  if (markSubjects.length > 0) {
+    height += rhythm.headingH;
+    height += tableBlockHeight(
+      doc,
+      data.exams.map((exam) => exam.name),
+      markSubjects.map((subject) => subject.subjectName),
+      "marks",
+      rhythm
+    );
+    height += rhythm.blockGap;
+  }
+  height += rhythm.headingH + rhythm.scaleH;
+  const gradeExamNames = coScholasticColumns(data.reportKind).map((column) => column.label);
+  const gradeNames = [
+    ...gradeSubjects.map((subject) => subject.subjectName),
+    "Height (cm)",
+    "Weight (kg)",
+    "Total working days",
+    "Present Days",
+  ];
+  height += tableBlockHeight(doc, gradeExamNames, gradeNames, "grades", rhythm);
+  height += rhythm.blockGap + rhythm.remarksH + rhythm.signatureBefore + rhythm.signatureAfter;
+  return height;
+}
+
+function chooseReportRhythm(doc: jsPDF, data: MultiExamReportCardData): ReportRhythm {
+  const available = PAGE_CONTENT_BOTTOM - PREPRINTED_CONTENT_TOP;
+  const base = baseRhythm();
+  if (measureReportCard(doc, data, base) <= available) return base;
+
+  let best = scaleRhythm(base, 0.62);
+  let low = 0.62;
+  let high = 1;
+  for (let attempt = 0; attempt < 12; attempt++) {
+    const mid = (low + high) / 2;
+    const rhythm = scaleRhythm(base, mid);
+    if (measureReportCard(doc, data, rhythm) <= available) {
+      best = rhythm;
+      low = mid;
+    } else {
+      high = mid;
+    }
+  }
+  return best;
+}
+
 async function renderMultiExamReportCard(
   doc: jsPDF,
   data: MultiExamReportCardData,
@@ -878,6 +1040,9 @@ async function renderMultiExamReportCard(
   if (options?.newPage) {
     doc.addPage();
   }
+  const pagesAtStart = doc.getNumberOfPages();
+
+  const rhythm = chooseReportRhythm(doc, data);
 
   // Letterhead is already printed in the top 5 cm of the sheet.
   let y = PREPRINTED_CONTENT_TOP;
@@ -895,13 +1060,13 @@ async function renderMultiExamReportCard(
   const gradeSubjects = data.subjects.filter((subject) => isGradeSubject(subject));
 
   if (markSubjects.length > 0) {
-    y = drawSectionHeading(doc, y, "Scholastic Performance");
-    const marksTable = drawMultiExamSubjectTable(doc, y, data.exams, markSubjects, "marks");
-    y = marksTable.y + 6;
+    y = drawSectionHeading(doc, y, "Scholastic Performance", rhythm);
+    const marksTable = drawMultiExamSubjectTable(doc, y, data.exams, markSubjects, "marks", rhythm);
+    y = marksTable.y + rhythm.blockGap;
   }
 
-  y = drawSectionHeading(doc, y, "Co-Scholastic Performance");
-  y = drawGradeScale(doc, y);
+  y = drawSectionHeading(doc, y, "Co-Scholastic Performance", rhythm);
+  y = drawGradeScale(doc, y, rhythm);
   const columns = coScholasticColumns(data.reportKind);
   const gradeExams = columns.map((column) => ({ id: column.id, name: column.label }));
   const gradeRows = [
@@ -918,16 +1083,23 @@ async function renderMultiExamReportCard(
     })),
     ...coScholasticMetricRows(data),
   ];
-  const gradesTable = drawMultiExamSubjectTable(doc, y, gradeExams, gradeRows, "grades");
-  y = gradesTable.y + 4;
+  const gradesTable = drawMultiExamSubjectTable(doc, y, gradeExams, gradeRows, "grades", rhythm);
+  y = gradesTable.y + rhythm.blockGap;
 
-  y = drawRemarks(doc, y);
+  y = drawRemarks(doc, y, rhythm);
 
-  // ── Signatures ──
-  await drawSignatures(doc, y, data.principalSignatureUrl);
+  y = await drawSignatures(doc, y, data.principalSignatureUrl, {
+    margin: rhythm.margin,
+    before: rhythm.signatureBefore,
+    after: rhythm.signatureAfter,
+    maxH: Math.max(8, rhythm.signatureBefore - 1),
+  });
 
-  // ── Footer ──
   drawFooter(doc, data.academicYear);
+
+  if (doc.getNumberOfPages() !== pagesAtStart || y > PAGE_CONTENT_BOTTOM + 0.6) {
+    throw new Error("Report card must stay on one page");
+  }
 }
 
 export async function generateMultiExamReportCardPDF(data: MultiExamReportCardData): Promise<Blob> {
