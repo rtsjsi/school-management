@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { SignOutOverlay } from "@/components/SignOutOverlay";
 import { signOutAndGoToLogin, waitForSignOutOverlayPaint } from "@/lib/sign-out-smooth";
 
-const INACTIVITY_MS = 600_000; // 600 seconds (10 minutes)
+const INACTIVITY_MS = 1_200_000; // 1200 seconds (20 minutes)
 
 const ACTIVITY_EVENTS = ["mousedown", "mousemove", "keydown", "scroll", "touchstart", "click"] as const;
 
