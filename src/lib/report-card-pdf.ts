@@ -24,6 +24,8 @@ const LOGO_SIZE = 16; // mm
  */
 const PREPRINTED_CONTENT_TOP = 50;
 const PAGE_CONTENT_BOTTOM = 291;
+/** Breathing room above each section heading (mm). */
+const HEADING_TOP_GAP = 3;
 
 // ── Interfaces ──────────────────────────────────────────────────────────────
 
@@ -936,8 +938,8 @@ function drawSectionHeading(doc: jsPDF, y: number, title: string, rhythm: Report
   doc.setFont("helvetica", "bold");
   doc.setFontSize(rhythm.headingFont);
   doc.setTextColor(...COLORS.navy);
-  doc.text(title, rhythm.margin, y + rhythm.headingH - 1.4);
-  return y + rhythm.headingH;
+  doc.text(title, rhythm.margin, y + HEADING_TOP_GAP + rhythm.headingH - 1.4);
+  return y + HEADING_TOP_GAP + rhythm.headingH;
 }
 
 function isTermPaper(name: string): boolean {
@@ -982,11 +984,14 @@ function drawRemarks(doc: jsPDF, y: number, rhythm: ReportRhythm): number {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(rhythm.remarksFont);
   doc.setTextColor(...COLORS.darkText);
-  doc.text("Remarks:", margin, y + 3.2);
-  const lineY = y + rhythm.remarksH - 1.6;
-  doc.setDrawColor(...COLORS.midGray);
+  // Label and underline share one baseline.
+  const baseline = y + rhythm.remarksH - 2.4;
+  const label = "Remarks:";
+  doc.text(label, margin, baseline);
+  const lineStart = margin + doc.getTextWidth(label) + 2;
+  doc.setDrawColor(...COLORS.darkText);
   doc.setLineWidth(0.2);
-  doc.line(margin, lineY, margin + contentW, lineY);
+  doc.line(lineStart, baseline + 0.6, margin + contentW, baseline + 0.6);
   return y + rhythm.remarksH;
 }
 
@@ -1064,7 +1069,7 @@ function measureReportCard(doc: jsPDF, data: MultiExamReportCardData, rhythm: Re
   const gradeSubjects = data.subjects.filter((subject) => isGradeSubject(subject));
   let height = studentInfoBlockHeight(doc, data.studentName);
   if (markSubjects.length > 0) {
-    height += rhythm.headingH;
+    height += HEADING_TOP_GAP + rhythm.headingH;
     height += tableBlockHeight(
       doc,
       data.exams.map((exam) => exam.name),
@@ -1074,7 +1079,7 @@ function measureReportCard(doc: jsPDF, data: MultiExamReportCardData, rhythm: Re
     );
     height += rhythm.blockGap;
   }
-  height += rhythm.headingH + rhythm.scaleH;
+  height += HEADING_TOP_GAP + rhythm.headingH + rhythm.scaleH;
   const gradeExamNames = coScholasticColumns(data.reportKind).map((column) => column.label);
   const gradeNames = [
     ...gradeSubjects.map((subject) => subject.subjectName),
