@@ -718,7 +718,7 @@ function tableColumns(
   }
 
   const totalColW = rhythm.totalColW;
-  const subjectColW = Math.min(rhythm.subjectColW, Math.max(32, pageContentW - totalColW - examCount * 14));
+  const subjectColW = Math.min(rhythm.subjectColW, Math.max(32, pageContentW - totalColW - examCount * 12));
   const examColW = (pageContentW - subjectColW - totalColW) / examCount;
   return { w, contentW: pageContentW, subjectColW, examColW, totalColW };
 }
@@ -784,6 +784,23 @@ function drawMultiExamSubjectTable(
     box?.width
   );
   const margin = box?.x ?? rhythm.margin;
+  const showTotal = mode === "marks" && totalColW > 0;
+
+  // Marks text size: shrink only when the widest "score/max" would not fit its column.
+  let cellFont = rhythm.rowFont;
+  if (mode === "marks") {
+    let widest = 0;
+    for (const sub of subjects) {
+      for (const entry of sub.exams) {
+        if (entry.score === null) continue;
+        widest = Math.max(widest, textWidth(doc, `${entry.score}/${entry.maxScore}`, "bold", rhythm.rowFont));
+      }
+    }
+    const room = examColW - 2;
+    if (widest > room && widest > 0) {
+      cellFont = Math.max(5.5, Math.round(((rhythm.rowFont * room) / widest) * 4) / 4);
+    }
+  }
   const header = examHeaderLayout(doc, exams.map((exam) => exam.name), examColW, rhythm);
   const headerH = header.headerH;
 
@@ -811,7 +828,7 @@ function drawMultiExamSubjectTable(
       hx += examColW;
     });
 
-    if (mode === "marks") {
+    if (showTotal) {
       doc.line(hx, y, hx, y + headerH);
       doc.text("Total", hx + totalColW / 2, y + headerH / 2 + 0.8, { align: "center" });
     }
@@ -876,12 +893,13 @@ function drawMultiExamSubjectTable(
       } else {
         doc.setTextColor(...COLORS.darkText);
       }
+      doc.setFontSize(mode === "marks" ? cellFont : rhythm.rowFont);
       doc.text(display, rx + examColW / 2, cellY, { align: "center" });
       doc.setTextColor(...COLORS.darkText);
       rx += examColW;
     });
 
-    if (mode === "marks") {
+    if (showTotal) {
       doc.setDrawColor(...COLORS.midGray);
       doc.line(rx, y, rx, y + thisRowH);
 
@@ -906,7 +924,6 @@ function drawMultiExamSubjectTable(
     const marksLabel = (obtained: number, max: number) => (max > 0 ? `${obtained}/${max}` : "—");
     const percentLabel = (obtained: number, max: number) =>
       max > 0 ? `${((obtained / max) * 100).toFixed(2)}%` : "—";
-    const cellFont = examColW < 18 ? 5.5 : rhythm.rowFont;
 
     const drawSummaryRow = (rowY: number, label: string, valueFor: (obtained: number, max: number) => string) => {
       doc.setDrawColor(...COLORS.midGray);
@@ -920,14 +937,19 @@ function drawMultiExamSubjectTable(
       examTotals.forEach((total) => {
         doc.line(x, rowY, x, rowY + totalRowH);
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(cellFont);
         doc.setTextColor(...COLORS.darkText);
-        doc.text(valueFor(total.obtained, total.max), x + examColW / 2, labelY(rowY), { align: "center" });
+        const text = valueFor(total.obtained, total.max);
+        const natural = textWidth(doc, text, "bold", cellFont);
+        const fitted = natural > examColW - 2 ? Math.max(5, (cellFont * (examColW - 2)) / natural) : cellFont;
+        doc.setFontSize(fitted);
+        doc.text(text, x + examColW / 2, labelY(rowY), { align: "center" });
         x += examColW;
       });
-      doc.line(x, rowY, x, rowY + totalRowH);
-      doc.setFontSize(cellFont);
-      doc.text(valueFor(grandTotalObtained, grandTotalMax), x + totalColW / 2, labelY(rowY), { align: "center" });
+      if (showTotal) {
+        doc.line(x, rowY, x, rowY + totalRowH);
+        doc.setFontSize(cellFont);
+        doc.text(valueFor(grandTotalObtained, grandTotalMax), x + totalColW / 2, labelY(rowY), { align: "center" });
+      }
     };
 
     drawSummaryRow(y, "TOTAL", marksLabel);
@@ -1061,6 +1083,87 @@ function studentInfoBlockHeight(doc: jsPDF, studentName: string, hasReportRow = 
   return padY * 2 + rows * lh + 2 + 5;
 }
 
+const TERM1_HALF_ID = "__term1_half";
+const TERM2_HALF_ID = "__term2_half";
+const FINAL_RESULT_ID = "__final_result";
+
+/**
+ * Scholastic table content. Annual cards add Term-1 50%, Term-2 50% and
+ * Final Result columns (marks and out-of both halved / summed) and drop the plain Total column.
+ */
+function buildScholasticTable(
+  data: MultiExamReportCardData,
+  markSubjects: MultiExamReportCardSubject[],
+  rhythm: ReportRhythm
+) {
+  if (data.reportKind !== "annual") {
+    return {
+      exams: data.exams.map((exam) => ({ id: exam.id, name: exam.name })),
+      subjects: markSubjects,
+      rhythm,
+    };
+  }
+
+  const termSums = (subject: MultiExamReportCardSubject, term: string) => {
+    let score = 0;
+    let max = 0;
+    let found = false;
+    for (const exam of data.exams.filter((entry) => entry.term === term)) {
+      const entry = subject.exams.find((item) => item.examId === exam.id);
+      if (!entry) continue;
+      if (entry.isAbsent) {
+        max += Number(entry.maxScore) || 0;
+        found = true;
+      } else if (entry.score !== null) {
+        score += Number(entry.score) || 0;
+        max += Number(entry.maxScore) || 0;
+        found = true;
+      }
+    }
+    return found ? { score: score / 2, max: max / 2 } : null;
+  };
+
+  const subjects = markSubjects.map((subject) => {
+    const first = termSums(subject, "Term-1");
+    const second = termSums(subject, "Term-2");
+    const final =
+      first || second
+        ? {
+            score: (first?.score ?? 0) + (second?.score ?? 0),
+            max: (first?.max ?? 0) + (second?.max ?? 0),
+          }
+        : null;
+    const cell = (examId: string, value: { score: number; max: number } | null) => ({
+      examId,
+      score: value ? value.score : null,
+      maxScore: value ? value.max : 0,
+      isAbsent: false,
+      isGradeBased: false,
+    });
+    return {
+      ...subject,
+      exams: [
+        ...subject.exams,
+        cell(TERM1_HALF_ID, first),
+        cell(TERM2_HALF_ID, second),
+        cell(FINAL_RESULT_ID, final),
+      ],
+    };
+  });
+
+  return {
+    exams: [
+      ...data.exams.map((exam) => ({ id: exam.id, name: exam.name })),
+      { id: TERM1_HALF_ID, name: "Term-1 50%" },
+      { id: TERM2_HALF_ID, name: "Term-2 50%" },
+      { id: FINAL_RESULT_ID, name: "Final Result" },
+    ],
+    subjects,
+    // No plain Total column; slimmer subject column leaves room for 9 result columns
+    rhythm: { ...rhythm, totalColW: 0, subjectColW: 34 },
+  };
+}
+
 const CO_SCHOLASTIC_GAP = 4; // mm between the two side-by-side tables
 
 function splitInHalf<T>(items: T[]): [T[], T[]] {
@@ -1079,12 +1182,13 @@ function measureReportCard(doc: jsPDF, data: MultiExamReportCardData, rhythm: Re
   let height = studentInfoBlockHeight(doc, data.studentName, Boolean(data.reportTitle));
   if (markSubjects.length > 0) {
     height += HEADING_TOP_GAP + rhythm.headingH + HEADING_BOTTOM_GAP;
+    const scholastic = buildScholasticTable(data, markSubjects, rhythm);
     height += tableBlockHeight(
       doc,
-      data.exams.map((exam) => exam.name),
-      markSubjects.map((subject) => subject.subjectName),
+      scholastic.exams.map((exam) => exam.name),
+      scholastic.subjects.map((subject) => subject.subjectName),
       "marks",
-      rhythm
+      scholastic.rhythm
     );
     height += rhythm.blockGap;
   }
@@ -1164,7 +1268,15 @@ async function renderMultiExamReportCard(
 
   if (markSubjects.length > 0) {
     y = drawSectionHeading(doc, y, "Scholastic Performance", rhythm);
-    const marksTable = drawMultiExamSubjectTable(doc, y, data.exams, markSubjects, "marks", rhythm);
+    const scholastic = buildScholasticTable(data, markSubjects, rhythm);
+    const marksTable = drawMultiExamSubjectTable(
+      doc,
+      y,
+      scholastic.exams,
+      scholastic.subjects,
+      "marks",
+      scholastic.rhythm
+    );
     y = marksTable.y + rhythm.blockGap;
   }
 
