@@ -24,8 +24,12 @@ const LOGO_SIZE = 16; // mm
  */
 const PREPRINTED_CONTENT_TOP = 50;
 const PAGE_CONTENT_BOTTOM = 291;
-/** Breathing room above each section heading (mm). */
-const HEADING_TOP_GAP = 3;
+/** Space above each section heading (mm) — kept small. */
+const HEADING_TOP_GAP = 0;
+/** Space between a section heading and the content under it (mm). */
+const HEADING_BOTTOM_GAP = 2;
+/** Space between the grade scale line and the co-scholastic table (mm). */
+const SCALE_BOTTOM_GAP = 1.5;
 
 // ── Interfaces ──────────────────────────────────────────────────────────────
 
@@ -940,7 +944,7 @@ function drawSectionHeading(doc: jsPDF, y: number, title: string, rhythm: Report
   doc.setFontSize(rhythm.headingFont);
   doc.setTextColor(...COLORS.navy);
   doc.text(title, rhythm.margin, y + HEADING_TOP_GAP + rhythm.headingH - 1.4);
-  return y + HEADING_TOP_GAP + rhythm.headingH;
+  return y + HEADING_TOP_GAP + rhythm.headingH + HEADING_BOTTOM_GAP;
 }
 
 function isTermPaper(name: string): boolean {
@@ -975,7 +979,7 @@ function drawGradeScale(doc: jsPDF, y: number, rhythm: ReportRhythm): number {
   doc.setFontSize(rhythm.scaleFont);
   doc.setTextColor(...COLORS.mutedText);
   doc.text("Grade:  A (80-100)    B (60-79)    C (40-59)    D (below 40)", rhythm.margin, y + rhythm.scaleH - 1.1);
-  return y + rhythm.scaleH;
+  return y + rhythm.scaleH + SCALE_BOTTOM_GAP;
 }
 
 function drawRemarks(doc: jsPDF, y: number, rhythm: ReportRhythm): number {
@@ -1070,7 +1074,7 @@ function measureReportCard(doc: jsPDF, data: MultiExamReportCardData, rhythm: Re
   const gradeSubjects = data.subjects.filter((subject) => isGradeSubject(subject));
   let height = studentInfoBlockHeight(doc, data.studentName, Boolean(data.reportTitle));
   if (markSubjects.length > 0) {
-    height += HEADING_TOP_GAP + rhythm.headingH;
+    height += HEADING_TOP_GAP + rhythm.headingH + HEADING_BOTTOM_GAP;
     height += tableBlockHeight(
       doc,
       data.exams.map((exam) => exam.name),
@@ -1080,7 +1084,7 @@ function measureReportCard(doc: jsPDF, data: MultiExamReportCardData, rhythm: Re
     );
     height += rhythm.blockGap;
   }
-  height += HEADING_TOP_GAP + rhythm.headingH + rhythm.scaleH;
+  height += HEADING_TOP_GAP + rhythm.headingH + HEADING_BOTTOM_GAP + rhythm.scaleH + SCALE_BOTTOM_GAP;
   const gradeExamNames = coScholasticColumns(data.reportKind).map((column) => column.label);
   const gradeNames = [
     ...gradeSubjects.map((subject) => subject.subjectName),
