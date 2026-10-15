@@ -212,6 +212,7 @@ function drawStudentInfo(
     studentId?: string;
     academicYear?: string;
     examInfo?: string;
+    examLabel?: string;
   }
 ): number {
   const w = doc.internal.pageSize.getWidth();
@@ -304,7 +305,7 @@ function drawStudentInfo(
   if (data.examInfo) {
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...COLORS.mutedText);
-    doc.text("Exam", colLeft, iy);
+    doc.text(data.examLabel ?? "Exam", colLeft, iy);
     doc.text(":", colLeft + 20, iy);
     doc.setTextColor(...COLORS.darkText);
     doc.setFont("helvetica", "normal");
@@ -1036,7 +1037,7 @@ function coScholasticMetricRows(data: MultiExamReportCardData): MultiExamReportC
   }));
 }
 
-function studentInfoBlockHeight(doc: jsPDF, studentName: string): number {
+function studentInfoBlockHeight(doc: jsPDF, studentName: string, hasReportRow = false): number {
   const margin = 14;
   const lh = 6;
   const padY = 4;
@@ -1048,7 +1049,7 @@ function studentInfoBlockHeight(doc: jsPDF, studentName: string): number {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   const nameLines = Math.max(1, (doc.splitTextToSize(studentName || "—", nameMaxW) as string[]).length);
-  const rows = nameLines + 2;
+  const rows = nameLines + 2 + (hasReportRow ? 1 : 0);
   return padY * 2 + rows * lh + 2 + 5;
 }
 
@@ -1067,7 +1068,7 @@ function coScholasticHalfWidth(doc: jsPDF, rhythm: ReportRhythm) {
 function measureReportCard(doc: jsPDF, data: MultiExamReportCardData, rhythm: ReportRhythm): number {
   const markSubjects = data.subjects.filter((subject) => !isGradeSubject(subject));
   const gradeSubjects = data.subjects.filter((subject) => isGradeSubject(subject));
-  let height = studentInfoBlockHeight(doc, data.studentName);
+  let height = studentInfoBlockHeight(doc, data.studentName, Boolean(data.reportTitle));
   if (markSubjects.length > 0) {
     height += HEADING_TOP_GAP + rhythm.headingH;
     height += tableBlockHeight(
@@ -1145,6 +1146,8 @@ async function renderMultiExamReportCard(
     rollNumber: data.rollNumber,
     studentId: data.studentId,
     academicYear: data.academicYear,
+    examInfo: data.reportTitle,
+    examLabel: "Report",
   });
 
   const markSubjects = data.subjects.filter((subject) => !isGradeSubject(subject));
