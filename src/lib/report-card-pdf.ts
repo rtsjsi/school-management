@@ -22,10 +22,11 @@ const LOGO_SIZE = 16; // mm
 
 /**
  * Term 1, Term 2, and annual cards print on pre-printed A4 stock.
- * The letterhead occupies the top 5 cm, so student content starts at 50 mm.
+ * The letterhead and "PROGRESS REPORT" wording occupy the top of the sheet,
+ * so student content starts at 54 mm (50 mm overlapped the wording slightly when printed).
  * Everything below that must finish on the same sheet.
  */
-const PREPRINTED_CONTENT_TOP = 50;
+const PREPRINTED_CONTENT_TOP = 54;
 const PAGE_CONTENT_BOTTOM = 291;
 /** Space above each section heading (mm) — kept small. */
 const HEADING_TOP_GAP = 0;
