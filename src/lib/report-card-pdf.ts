@@ -659,11 +659,23 @@ function tableColumns(
   examNames: string[],
   subjectNames: string[],
   mode: "marks" | "grades",
-  rhythm: ReportRhythm
+  rhythm: ReportRhythm,
+  boxW?: number
 ) {
   const w = doc.internal.pageSize.getWidth();
   const pageContentW = w - rhythm.margin * 2;
   const examCount = Math.max(examNames.length, 1);
+
+  if (mode === "grades" && boxW) {
+    const widestExam = Math.max(
+      ...examNames.map((name) => textWidth(doc, name, "bold", rhythm.headerFont)),
+      textWidth(doc, "100", "bold", rhythm.rowFont),
+      0
+    );
+    const examColW = Math.max(widestExam + 6, examCount === 1 ? 24 : 18);
+    const subjectColW = Math.max(24, boxW - examColW * examCount);
+    return { w, contentW: boxW, subjectColW, examColW: (boxW - subjectColW) / examCount, totalColW: 0 };
+  }
 
   if (mode === "grades") {
     const widestSubject = Math.max(
@@ -729,9 +741,10 @@ function tableBlockHeight(
   examNames: string[],
   subjectNames: string[],
   mode: "marks" | "grades",
-  rhythm: ReportRhythm
+  rhythm: ReportRhythm,
+  boxW?: number
 ) {
-  const cols = tableColumns(doc, examNames, subjectNames, mode, rhythm);
+  const cols = tableColumns(doc, examNames, subjectNames, mode, rhythm, boxW);
   const header = examHeaderLayout(doc, examNames, cols.examColW, rhythm);
   const rows = subjectNames.reduce((sum, name) => sum + subjectRowHeight(doc, name, cols.subjectColW, rhythm), 0);
   const summary = mode === "marks" ? rhythm.rowH * 2 : 0;
@@ -744,16 +757,18 @@ function drawMultiExamSubjectTable(
   exams: { id: string; name: string }[],
   subjects: MultiExamReportCardSubject[],
   mode: "marks" | "grades",
-  rhythm: ReportRhythm
+  rhythm: ReportRhythm,
+  box?: { x: number; width: number }
 ): { y: number; grandTotalObtained: number; grandTotalMax: number } {
   const { contentW, subjectColW, examColW, totalColW } = tableColumns(
     doc,
     exams.map((exam) => exam.name),
     subjects.map((subject) => subject.subjectName),
     mode,
-    rhythm
+    rhythm,
+    box?.width
   );
-  const margin = rhythm.margin;
+  const margin = box?.x ?? rhythm.margin;
   const header = examHeaderLayout(doc, exams.map((exam) => exam.name), examColW, rhythm);
   const headerH = header.headerH;
 
@@ -1032,6 +1047,18 @@ function studentInfoBlockHeight(doc: jsPDF, studentName: string): number {
   return padY * 2 + rows * lh + 2 + 5;
 }
 
+const CO_SCHOLASTIC_GAP = 4; // mm between the two side-by-side tables
+
+function splitInHalf<T>(items: T[]): [T[], T[]] {
+  const mid = Math.ceil(items.length / 2);
+  return [items.slice(0, mid), items.slice(mid)];
+}
+
+function coScholasticHalfWidth(doc: jsPDF, rhythm: ReportRhythm) {
+  const pageContentW = doc.internal.pageSize.getWidth() - rhythm.margin * 2;
+  return (pageContentW - CO_SCHOLASTIC_GAP) / 2;
+}
+
 function measureReportCard(doc: jsPDF, data: MultiExamReportCardData, rhythm: ReportRhythm): number {
   const markSubjects = data.subjects.filter((subject) => !isGradeSubject(subject));
   const gradeSubjects = data.subjects.filter((subject) => isGradeSubject(subject));
@@ -1056,7 +1083,12 @@ function measureReportCard(doc: jsPDF, data: MultiExamReportCardData, rhythm: Re
     "Total working days",
     "Present Days",
   ];
-  height += tableBlockHeight(doc, gradeExamNames, gradeNames, "grades", rhythm);
+  const [leftNames, rightNames] = splitInHalf(gradeNames);
+  const halfW = coScholasticHalfWidth(doc, rhythm);
+  height += Math.max(
+    tableBlockHeight(doc, gradeExamNames, leftNames, "grades", rhythm, halfW),
+    tableBlockHeight(doc, gradeExamNames, rightNames, "grades", rhythm, halfW)
+  );
   height += rhythm.blockGap + rhythm.remarksH + rhythm.signatureBefore + rhythm.signatureAfter;
   return height;
 }
@@ -1064,11 +1096,15 @@ function measureReportCard(doc: jsPDF, data: MultiExamReportCardData, rhythm: Re
 function chooseReportRhythm(doc: jsPDF, data: MultiExamReportCardData): ReportRhythm {
   const available = PAGE_CONTENT_BOTTOM - PREPRINTED_CONTENT_TOP;
   const base = baseRhythm();
-  if (measureReportCard(doc, data, base) <= available) return base;
+  const maxFactor = 1.3;
+
+  // Grow into spare space (capped), otherwise shrink until everything fits.
+  const grown = scaleRhythm(base, maxFactor);
+  if (measureReportCard(doc, data, grown) <= available) return grown;
 
   let best = scaleRhythm(base, 0.62);
   let low = 0.62;
-  let high = 1;
+  let high = maxFactor;
   for (let attempt = 0; attempt < 12; attempt++) {
     const mid = (low + high) / 2;
     const rhythm = scaleRhythm(base, mid);
@@ -1133,8 +1169,20 @@ async function renderMultiExamReportCard(
     })),
     ...coScholasticMetricRows(data),
   ];
-  const gradesTable = drawMultiExamSubjectTable(doc, y, gradeExams, gradeRows, "grades", rhythm);
-  y = gradesTable.y + rhythm.blockGap;
+  const [leftRows, rightRows] = splitInHalf(gradeRows);
+  const halfW = coScholasticHalfWidth(doc, rhythm);
+  const leftTable = drawMultiExamSubjectTable(doc, y, gradeExams, leftRows, "grades", rhythm, {
+    x: rhythm.margin,
+    width: halfW,
+  });
+  const rightTable =
+    rightRows.length > 0
+      ? drawMultiExamSubjectTable(doc, y, gradeExams, rightRows, "grades", rhythm, {
+          x: rhythm.margin + halfW + CO_SCHOLASTIC_GAP,
+          width: halfW,
+        })
+      : leftTable;
+  y = Math.max(leftTable.y, rightTable.y) + rhythm.blockGap;
 
   y = drawRemarks(doc, y, rhythm);
 
