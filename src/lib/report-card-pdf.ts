@@ -640,13 +640,52 @@ function scaleRhythm(base: ReportRhythm, factor: number): ReportRhythm {
   };
 }
 
-function tableColumns(doc: jsPDF, examCount: number, mode: "marks" | "grades", rhythm: ReportRhythm) {
+function textWidth(doc: jsPDF, text: string, font: "bold" | "normal", size: number) {
+  doc.setFont("helvetica", font);
+  doc.setFontSize(size);
+  return doc.getTextWidth(text);
+}
+
+function tableColumns(
+  doc: jsPDF,
+  examNames: string[],
+  subjectNames: string[],
+  mode: "marks" | "grades",
+  rhythm: ReportRhythm
+) {
   const w = doc.internal.pageSize.getWidth();
-  const contentW = w - rhythm.margin * 2;
-  const totalColW = mode === "marks" ? rhythm.totalColW : 0;
-  const subjectColW = Math.min(rhythm.subjectColW, Math.max(32, contentW - totalColW - examCount * 14));
-  const examColW = (contentW - subjectColW - totalColW) / Math.max(examCount, 1);
-  return { w, contentW, subjectColW, examColW, totalColW };
+  const pageContentW = w - rhythm.margin * 2;
+  const examCount = Math.max(examNames.length, 1);
+
+  if (mode === "grades") {
+    const widestSubject = Math.max(
+      textWidth(doc, "Subject", "bold", rhythm.headerFont),
+      ...subjectNames.map((name) => textWidth(doc, name, "normal", rhythm.rowFont)),
+      0
+    );
+    const widestExam = Math.max(
+      ...examNames.map((name) => textWidth(doc, name, "bold", rhythm.headerFont)),
+      textWidth(doc, "100", "bold", rhythm.rowFont),
+      0
+    );
+    let subjectColW = widestSubject + 6;
+    let examColW = widestExam + 6;
+    let contentW = subjectColW + examColW * examCount;
+    if (contentW > pageContentW) {
+      subjectColW = Math.max(28, subjectColW - (contentW - pageContentW));
+      contentW = subjectColW + examColW * examCount;
+      if (contentW > pageContentW) {
+        examColW = (pageContentW - subjectColW) / examCount;
+        contentW = pageContentW;
+      }
+    }
+    return { w, contentW, subjectColW, examColW, totalColW: 0 };
+  }
+
+  const totalColW = rhythm.totalColW;
+  const subjectColW = Math.min(rhythm.subjectColW, Math.max(32, pageContentW - totalColW - examCount * 14));
+  const examColW = (pageContentW - subjectColW - totalColW) / examCount;
+  return { w, contentW: pageContentW, subjectColW, examColW, totalColW };
 }
 
 function examHeaderLayout(doc: jsPDF, names: string[], examColW: number, rhythm: ReportRhythm) {
@@ -684,7 +723,7 @@ function tableBlockHeight(
   mode: "marks" | "grades",
   rhythm: ReportRhythm
 ) {
-  const cols = tableColumns(doc, examNames.length, mode, rhythm);
+  const cols = tableColumns(doc, examNames, subjectNames, mode, rhythm);
   const header = examHeaderLayout(doc, examNames, cols.examColW, rhythm);
   const rows = subjectNames.reduce((sum, name) => sum + subjectRowHeight(doc, name, cols.subjectColW, rhythm), 0);
   const summary = mode === "marks" ? rhythm.rowH * 2 : 0;
@@ -699,7 +738,13 @@ function drawMultiExamSubjectTable(
   mode: "marks" | "grades",
   rhythm: ReportRhythm
 ): { y: number; grandTotalObtained: number; grandTotalMax: number } {
-  const { w, contentW, subjectColW, examColW, totalColW } = tableColumns(doc, exams.length, mode, rhythm);
+  const { contentW, subjectColW, examColW, totalColW } = tableColumns(
+    doc,
+    exams.map((exam) => exam.name),
+    subjects.map((subject) => subject.subjectName),
+    mode,
+    rhythm
+  );
   const margin = rhythm.margin;
   const header = examHeaderLayout(doc, exams.map((exam) => exam.name), examColW, rhythm);
   const headerH = header.headerH;
@@ -757,7 +802,7 @@ function drawMultiExamSubjectTable(
 
     doc.setDrawColor(...COLORS.midGray);
     doc.setLineWidth(0.1);
-    doc.line(margin, y + thisRowH, w - margin, y + thisRowH);
+    doc.line(margin, y + thisRowH, margin + contentW, y + thisRowH);
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(rhythm.rowFont);
@@ -832,7 +877,7 @@ function drawMultiExamSubjectTable(
     const drawSummaryRow = (rowY: number, label: string, valueFor: (obtained: number, max: number) => string) => {
       doc.setDrawColor(...COLORS.midGray);
       doc.setLineWidth(0.1);
-      doc.line(margin, rowY + totalRowH, w - margin, rowY + totalRowH);
+      doc.line(margin, rowY + totalRowH, margin + contentW, rowY + totalRowH);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(rhythm.rowFont);
       doc.setTextColor(...COLORS.darkText);
