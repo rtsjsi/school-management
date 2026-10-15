@@ -17,6 +17,12 @@ const COLORS = {
 
 const LOGO_SIZE = 16; // mm
 
+/**
+ * Term 1, Term 2, and annual cards print on pre-printed A4 stock.
+ * The letterhead occupies the top 5 cm, so student content starts at 50 mm.
+ */
+const PREPRINTED_CONTENT_TOP = 50;
+
 // ── Interfaces ──────────────────────────────────────────────────────────────
 
 export interface ReportCardSubject {
@@ -567,8 +573,7 @@ function continueReportPage(doc: jsPDF, y: number, needed: number): number {
   const pageH = doc.internal.pageSize.getHeight();
   if (y + needed <= pageH - 18) return y;
   doc.addPage();
-  drawPageBorder(doc);
-  return 16;
+  return PREPRINTED_CONTENT_TOP;
 }
 
 function drawMultiExamSubjectTable(
@@ -643,8 +648,7 @@ function drawMultiExamSubjectTable(
 
     if (y + thisRowH > doc.internal.pageSize.getHeight() - 18) {
       doc.addPage();
-      drawPageBorder(doc);
-      y = drawHeader(16);
+      y = drawHeader(PREPRINTED_CONTENT_TOP);
     }
 
     if (i % 2 === 0) {
@@ -875,12 +879,8 @@ async function renderMultiExamReportCard(
     doc.addPage();
   }
 
-  drawPageBorder(doc);
-
-  const schoolName = data.schoolName ?? "SCHOOL NAME";
-  const schoolAddress = data.schoolAddress ?? "Address";
-
-  let y = await drawHeader(doc, schoolName, schoolAddress, data.reportTitle, data.schoolLogoUrl);
+  // Letterhead is already printed in the top 5 cm of the sheet.
+  let y = PREPRINTED_CONTENT_TOP;
 
   y = drawStudentInfo(doc, y, {
     studentName: data.studentName,
