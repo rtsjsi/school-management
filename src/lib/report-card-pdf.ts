@@ -1088,8 +1088,9 @@ const TERM2_HALF_ID = "__term2_half";
 const FINAL_RESULT_ID = "__final_result";
 
 /**
- * Scholastic table content. Annual cards add Term-1 50%, Term-2 50% and
- * Final Result columns (marks and out-of both halved / summed) and drop the plain Total column.
+ * Scholastic table content. Term cards show exam columns only (no Total).
+ * Annual cards add Term-1 50%, Term-2 50% and Final Result columns
+ * (marks and out-of both halved / summed) and also drop the plain Total column.
  */
 function buildScholasticTable(
   data: MultiExamReportCardData,
@@ -1100,7 +1101,7 @@ function buildScholasticTable(
     return {
       exams: data.exams.map((exam) => ({ id: exam.id, name: exam.name })),
       subjects: markSubjects,
-      rhythm,
+      rhythm: { ...rhythm, totalColW: 0 },
     };
   }
 
